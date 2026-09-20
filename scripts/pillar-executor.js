@@ -263,7 +263,28 @@ function seedTasks() {
   for (const pillar of PILLARS) {
     const marker = `<!-- qd-task-key:${pillar.key} -->`;
     const existing = all.find(i => (i.body || '').includes(marker));
-    if (existing) continue;
+    if (existing) {
+      if (String(existing.state).toLowerCase() === 'open') {
+        const wanted = ['coord:task', 'exec:connector', 'priority:p1', pillar.label];
+        const existingLabels = labelNames(existing);
+        const args = ['issue', 'edit', String(existing.number)];
+        let changed = false;
+        for (const label of wanted) {
+          if (!existingLabels.includes(label)) {
+            args.push('--add-label', label);
+            changed = true;
+          }
+        }
+        const hasState = ['coord:ready', 'coord:active', 'coord:blocked', 'coord:done']
+          .some(label => existingLabels.includes(label));
+        if (!hasState) {
+          args.push('--add-label', 'coord:ready');
+          changed = true;
+        }
+        if (changed) gh(args);
+      }
+      continue;
+    }
 
     fs.writeFileSync('/tmp/qd-task.md', pillar.body + '\n');
     gh([
