@@ -1,5 +1,15 @@
 # 🧭 QuantDeus Coordination Protocol
 
+## Execution-first mode
+
+QuantDeus now coordinates the six public pillars through **executable GitHub tasks**, not periodic six-pillar news-report Issues.
+
+The canonical queue is `🧭 QuantDeus Six-Pillar Execution Board`. Each pillar points to one concrete task with an observable artifact and acceptance checklist. Tasks marked `exec:connector` are intended for the GitHub connector / Control Tower to execute through file changes, issue operations, tests, reviews, or other verifiable repository actions.
+
+The old Pulse headline reports are legacy history. The replacement workflow does **not** create a new report Issue every scheduled run. It maintains the task queue and refreshes the coordination hub only when state changes.
+
+Production publication, spending, secrets, irreversible actions and sensitive outreach still require explicit human approval.
+
 QuantDeus Coordinator turns GitHub Issues into an opt-in human coordination layer.
 
 ## Create a task
