@@ -1,23 +1,12 @@
-name: QuantDeus Pulse 🌌
+name: QuantDeus Six-Pillar Executor 🧭
 
 on:
   schedule:
-    - cron: '23 */3 * * *'
+    - cron: '23 */6 * * *'
   workflow_dispatch:
-    inputs:
-      pillars:
-        description: 'Pillars to scan (all or comma-separated)'
-        default: 'all'
-        required: false
-
-env:
-  QUANTDEUS_FRONTEND: telegram-mini-app
-  QUANTDEUS_STORE_NAME: QuantDeus Store
-  QUANTDEUS_CANONICAL_DOMAIN: https://quantdeus.github.io/quantdeus-core-pulse/
-  QUANTDEUS_HOST: github-pages
 
 concurrency:
-  group: quantdeus-pulse
+  group: quantdeus-six-pillar-executor
   cancel-in-progress: false
 
 permissions:
@@ -25,26 +14,24 @@ permissions:
   issues: write
 
 jobs:
-  pulse:
+  execute:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install dependencies
-        run: |
-          npm install playwright
-          npx playwright install chromium
-      - name: Run QuantDeus Pulse
+
+      - name: Maintain six-pillar execution queue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PILLARS: ${{ inputs.pillars || 'all' }}
-        run: node scripts/orchestrator.js
-      - name: Post report
+        run: node scripts/pillar-executor.js
+
+      - name: Refresh coordination hub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/report-to-issue.js
+        run: node scripts/coordinator.js
