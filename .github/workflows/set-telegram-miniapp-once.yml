@@ -16,15 +16,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Validate Telegram bot
+      - name: Check Telegram configuration
+        id: telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
-          set -euo pipefail
-          test -n "${TELEGRAM_BOT_TOKEN:-}"
+          if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Telegram bot not bound::Add repository secret QUANTDEUS_TELEGRAM_BOT_TOKEN, then run this workflow manually."
+            exit 0
+          fi
+          echo "configured=true" >> "$GITHUB_OUTPUT"
           curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"             | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True, d.get("description","getMe failed"); r=d["result"]; print("Telegram bot:", "@"+r.get("username","?"), "id="+str(r.get("id","?")))'
 
       - name: Bind QuantDeus Mini App menu
+        if: steps.telegram.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
@@ -33,6 +39,7 @@ jobs:
           printf '%s' "$response" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True and d.get("result") is True, d.get("description","setChatMenuButton failed"); print("Telegram menu points to https://quantdeus.github.io/telegram/")'
 
       - name: Verify Telegram menu
+        if: steps.telegram.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
