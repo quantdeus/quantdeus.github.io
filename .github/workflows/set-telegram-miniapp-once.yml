@@ -1,6 +1,7 @@
-name: Set Telegram Mini App URL Once
+name: Set Telegram Mini App URL
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -11,17 +12,29 @@ permissions:
 
 jobs:
   bind:
-    if: contains(github.event.head_commit.message, '[bind-telegram-miniapp]')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[bind-telegram-miniapp]')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Set QuantDeus Store as Telegram menu Web App
+      - name: Validate Telegram bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
           set -euo pipefail
           test -n "${TELEGRAM_BOT_TOKEN:-}"
-          response=$(curl -fsS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setChatMenuButton" \
-            -H 'Content-Type: application/json' \
-            --data '{"menu_button":{"type":"web_app","text":"QuantDeus Store","web_app":{"url":"https://quantdeus.github.io/quantdeus-core-pulse/"}}}')
-          echo "$response" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True and d.get("result") is True; print("Telegram Mini App menu button updated successfully")'
+          curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"             | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True, d.get("description","getMe failed"); r=d["result"]; print("Telegram bot:", "@"+r.get("username","?"), "id="+str(r.get("id","?")))'
+
+      - name: Bind QuantDeus Mini App menu
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          response=$(curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setChatMenuButton"             -H 'Content-Type: application/json'             --data '{"menu_button":{"type":"web_app","text":"QuantDeus","web_app":{"url":"https://quantdeus.github.io/telegram/"}}}')
+          printf '%s' "$response" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True and d.get("result") is True, d.get("description","setChatMenuButton failed"); print("Telegram menu points to https://quantdeus.github.io/telegram/")'
+
+      - name: Verify Telegram menu
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMenuButton"             | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True, d.get("description","getChatMenuButton failed"); b=d.get("result",{}); url=((b.get("web_app") or {}).get("url")); assert url=="https://quantdeus.github.io/telegram/", "unexpected menu URL: "+str(url); print("Verified:", b.get("text"), url)'
