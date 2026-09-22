@@ -25,7 +25,7 @@
 <main class="shell">
   <header class="top">
     <div class="brand"><div class="orb"></div><div><h1>QuantDeus Chat</h1><div class="small muted">Human + Agent Coordination Center</div></div></div>
-    <div class="pill" id="syncState">Синхронизация…</div>
+    <div class="pill" id="syncState">Синхронизация…</div><div class="pill" id="coordIdentity">👤 Гость</div>
   </header>
 
   <section class="hero">
@@ -136,6 +136,7 @@ $("composer").addEventListener("submit",e=>{
   $("message").value="";
 });
 (async()=>{await loadRegistry();try{await loadLive()}catch(e){$("syncState").textContent="OFFLINE VIEW";addMsg("QuantDeus Coordinator","🧭","Не удалось получить live-данные GitHub: "+e.message,"bad","ERROR")}})();
+try{const u=JSON.parse(sessionStorage.getItem("qd_telegram_user")||"null");if(u){document.getElementById("coordIdentity").textContent="✈ "+(u.name||u.username||("Telegram #"+u.id));}}catch(e){}
 const tg=window.Telegram?.WebApp;if(tg){try{tg.ready();tg.expand()}catch(e){}}
 </script>
 </body>
