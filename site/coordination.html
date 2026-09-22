@@ -3,141 +3,156 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#07131d" />
-  <title>QuantDeus Chat — Центр координации</title>
+  <meta name="theme-color" content="#07111c" />
+  <title>QuantDeus Chat — Humans + Agents</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root{--bg:#06111b;--panel:#0e2030;--panel2:#112a3e;--text:#eefaff;--muted:#94b4c8;--line:rgba(167,229,255,.14);--cyan:#55d8ff;--lime:#7dffb3;--amber:#ffc96b;--red:#ff7d8f;--violet:#bd9cff;--shadow:0 20px 70px rgba(0,0,0,.34)}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 15% 0,rgba(85,216,255,.16),transparent 28rem),radial-gradient(circle at 100% 10%,rgba(189,156,255,.14),transparent 32rem),linear-gradient(180deg,#07131d,#041019 70%,#030b11)}
-    a{color:inherit;text-decoration:none}.shell{width:min(1180px,100%);margin:auto;padding:18px 16px 90px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:20;padding:12px 0;background:linear-gradient(180deg,rgba(6,17,27,.96),rgba(6,17,27,.76),transparent);backdrop-filter:blur(12px)}
-    .brand{display:flex;gap:12px;align-items:center}.orb{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 5%,var(--cyan) 10%,#4057d9 45%,#0b1528 72%);box-shadow:0 0 28px rgba(85,216,255,.35)}h1{font-size:18px;margin:0}.muted{color:var(--muted)}.small{font-size:12px}.pill{border:1px solid var(--line);border-radius:999px;padding:8px 10px;background:rgba(16,35,51,.72);font-size:12px}
-    .hero{border:1px solid var(--line);border-radius:24px;padding:22px;background:linear-gradient(135deg,rgba(85,216,255,.11),rgba(189,156,255,.08)),var(--panel);box-shadow:var(--shadow)}.hero h2{font-size:clamp(30px,7vw,58px);letter-spacing:-.04em;margin:8px 0 10px}.hero p{max-width:760px;color:#c7deea;line-height:1.55}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:14px;padding:12px 15px;font:inherit;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--cyan),#a5f5ff);color:#041019}.btn.secondary{background:rgba(16,35,51,.82);color:var(--text);border:1px solid var(--line)}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.stat{padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(11,28,41,.78)}.stat b{display:block;font-size:24px;margin-top:4px}
-    .layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.85fr);gap:14px;margin-top:14px}.panel{border:1px solid var(--line);border-radius:22px;background:rgba(10,25,38,.86);box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;align-items:center}.panel-head h3{margin:0;font-size:16px}
-    .chat{height:560px;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.msg{display:grid;grid-template-columns:38px 1fr;gap:10px}.avatar{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);font-size:19px}.bubble{padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:rgba(14,32,48,.88)}.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px}.meta b{font-size:13px}.time{font-size:11px;color:var(--muted)}.bubble p{margin:0;color:#d7e9f2;line-height:1.45;font-size:14px}.tag{font-size:10px;border:1px solid var(--line);border-radius:999px;padding:3px 6px;color:var(--muted)}.tag.ok{color:var(--lime)}.tag.warn{color:var(--amber)}.tag.bad{color:var(--red)}
-    .composer{border-top:1px solid var(--line);padding:12px;display:grid;grid-template-columns:120px 1fr auto;gap:8px}.composer select,.composer textarea{font:inherit;color:var(--text);background:#0b1b29;border:1px solid var(--line);border-radius:12px;padding:10px}.composer textarea{min-height:44px;max-height:120px;resize:vertical}.composer button{border:0;border-radius:12px;padding:0 16px;font-weight:800;background:var(--cyan);color:#031019;cursor:pointer}
-    .agents{padding:12px;display:grid;gap:8px;max-height:690px;overflow:auto}.agent{display:grid;grid-template-columns:36px 1fr auto;gap:9px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;background:rgba(14,32,48,.72)}.agent .emoji{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:var(--panel2)}.agent b{display:block;font-size:13px}.agent small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.dot{width:9px;height:9px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px rgba(125,255,179,.5)}.dot.warn{background:var(--amber);box-shadow:none}.people{padding:14px;border-top:1px solid var(--line)}.people code{color:var(--cyan)}
-    .footer-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.footer-links a{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(14,32,48,.7);font-size:12px}.notice{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;color:var(--muted);font-size:12px}
-    @media(max-width:820px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.chat{height:480px}.composer{grid-template-columns:1fr}.composer button{min-height:44px}.top .pill{display:none}}
+    :root{--bg:#061019;--surface:#0c1a28;--surface2:#102438;--surface3:#132c43;--text:#ecf9ff;--muted:#87a9bc;--line:rgba(157,220,255,.13);--accent:#55d8ff;--green:#75f0a9;--amber:#ffc96b;--red:#ff8292;--shadow:0 20px 70px rgba(0,0,0,.32)}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{background:radial-gradient(circle at 18% -10%,rgba(85,216,255,.17),transparent 32rem),radial-gradient(circle at 100% 5%,rgba(147,109,255,.13),transparent 30rem),var(--bg)}
+    button,a{font:inherit}.app{min-height:100vh;display:grid;grid-template-columns:230px minmax(0,1fr) 286px;max-width:1500px;margin:auto}.rail{border-right:1px solid var(--line);background:rgba(6,16,25,.86);padding:14px;position:sticky;top:0;height:100vh;overflow:auto}.right{border-left:1px solid var(--line);border-right:0}.brand{display:flex;gap:10px;align-items:center;padding:8px 6px 18px}.orb{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 30%,white 0 4%,var(--accent) 9%,#4b5ce4 42%,#10182b 70%);box-shadow:0 0 25px rgba(85,216,255,.32)}.brand b{display:block}.brand small,.muted{color:var(--muted)}
+    .rail-title{font-size:10px;font-weight:900;letter-spacing:.13em;color:#6f91a5;text-transform:uppercase;margin:18px 7px 8px}.room{width:100%;display:flex;align-items:center;gap:9px;text-align:left;border:0;background:transparent;color:#bcd2de;padding:10px 10px;border-radius:11px;cursor:pointer}.room:hover{background:rgba(85,216,255,.07)}.room.active{background:var(--surface2);color:white}.room .hash{color:var(--accent);font-weight:900}.room small{margin-left:auto;color:#628398}.navlink{display:flex;align-items:center;gap:8px;color:#9db8c7;text-decoration:none;padding:10px;border-radius:11px}.navlink:hover{background:rgba(85,216,255,.07)}
+    .main{min-width:0;display:flex;flex-direction:column;height:100vh}.topbar{min-height:68px;padding:10px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;background:rgba(6,16,25,.82);backdrop-filter:blur(18px);position:sticky;top:0;z-index:10}.topbar .title{min-width:0;flex:1}.topbar h1{font-size:17px;margin:0}.topbar small{color:var(--muted)}.status{font-size:11px;padding:7px 9px;border:1px solid var(--line);border-radius:999px;color:var(--green);white-space:nowrap}.identity{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:5px 9px;color:#dff7ff;font-size:11px;max-width:190px}.identity span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .roominfo{padding:15px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(85,216,255,.055),transparent)}.roominfo h2{margin:0 0 4px;font-size:20px}.roominfo p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}.chat-wrap{flex:1;overflow:auto;padding:8px 12px 30px}.engine{max-width:880px;margin:0 auto;min-height:420px}.engine .utterances{max-width:none}.engine-note{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:880px;margin:8px auto 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(12,26,40,.72);font-size:11px;color:var(--muted)}.engine-note a{color:var(--accent);text-decoration:none;font-weight:800}
+    .agent-list{display:grid;gap:7px}.agent{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:12px;background:rgba(12,26,40,.65);text-decoration:none;color:inherit}.agent-icon{width:34px;height:34px;border-radius:10px;background:var(--surface2);display:grid;place-items:center}.agent b{display:block;font-size:12px}.agent small{display:block;font-size:10px;color:var(--muted);margin-top:2px}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(117,240,169,.45)}.dot.warn{background:var(--amber);box-shadow:none}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.metric{border:1px solid var(--line);border-radius:11px;background:var(--surface);padding:9px;text-align:center}.metric b{display:block;font-size:16px}.metric small{font-size:9px;color:var(--muted)}
+    .mobile-nav{display:none;position:fixed;bottom:10px;left:10px;right:10px;z-index:40;padding:7px;border:1px solid var(--line);border-radius:16px;background:rgba(8,19,29,.92);backdrop-filter:blur(18px);grid-template-columns:repeat(4,1fr);gap:4px}.mobile-nav button{border:0;background:transparent;color:#9eb8c7;border-radius:10px;padding:8px 4px;font-size:11px}.mobile-nav button.active{background:var(--surface3);color:white}
+    @media(max-width:1040px){.app{grid-template-columns:210px minmax(0,1fr)}.right{display:none}}
+    @media(max-width:720px){.app{display:block}.rail{display:none}.main{height:100dvh}.topbar{padding:8px 12px}.status{display:none}.roominfo{padding:12px 14px}.chat-wrap{padding:6px 5px 88px}.mobile-nav{display:grid}.identity{max-width:145px}.engine-note{margin-left:6px;margin-right:6px}}
   </style>
 </head>
 <body>
-<main class="shell">
-  <header class="top">
-    <div class="brand"><div class="orb"></div><div><h1>QuantDeus Chat</h1><div class="small muted">Human + Agent Coordination Center</div></div></div>
-    <div class="pill" id="syncState">Синхронизация…</div><div class="pill" id="coordIdentity">👤 Гость</div>
-  </header>
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><div class="orb"></div><div><b>QuantDeus</b><small>Command Network</small></div></div>
+    <div class="rail-title">Комнаты</div>
+    <div id="rooms"></div>
+    <div class="rail-title">Навигация</div>
+    <a class="navlink" href="/">🏠 Store</a>
+    <a class="navlink" href="/telegram/">✈️ Mini App</a>
+    <a class="navlink" href="https://github.com/quantdeus/quantdeus.github.io/issues/9" target="_blank" rel="noreferrer">🧭 Coordination Hub</a>
+    <a class="navlink" href="https://github.com/quantdeus/quantdeus.github.io/issues/105" target="_blank" rel="noreferrer">📋 Execution Board</a>
+  </aside>
 
-  <section class="hero">
-    <div class="small muted">🖖 QUANTDEUS COMMAND NETWORK</div>
-    <h2>Центр координации людей и агентов</h2>
-    <p>Единый публичный мост между людьми, GitHub-задачами и агентами QuantDeus. Центр читает живые Issues и Actions из репозитория, показывает участников и превращает новую реплику в проверяемый GitHub-элемент.</p>
-    <div class="actions">
-      <a class="btn" href="https://github.com/quantdeus/quantdeus.github.io/issues/9" target="_blank" rel="noreferrer">🧭 Открыть Coordination Hub</a>
-      <a class="btn secondary" href="https://github.com/quantdeus/quantdeus.github.io/issues/105" target="_blank" rel="noreferrer">📋 Execution Board</a>
-      <a class="btn secondary" href="https://github.com/quantdeus/quantdeus.github.io/issues/10" target="_blank" rel="noreferrer">✈️ Telegram bridge</a>
-    </div>
-    <div class="stats">
-      <div class="stat"><span class="small muted">Агенты</span><b id="agentCount">—</b></div>
-      <div class="stat"><span class="small muted">Ready</span><b id="readyCount">—</b></div>
-      <div class="stat"><span class="small muted">Active</span><b id="activeCount">—</b></div>
-      <div class="stat"><span class="small muted">Blocked</span><b id="blockedCount">—</b></div>
-    </div>
-  </section>
-
-  <section class="layout">
-    <article class="panel">
-      <div class="panel-head"><h3>💬 QuantDeus Coordination Chat</h3><span class="small muted">GitHub-backed</span></div>
-      <div class="chat" id="chat"></div>
-      <form class="composer" id="composer">
-        <select id="kind" aria-label="Тип сообщения">
-          <option value="CHAT">CHAT</option>
-          <option value="TASK">TASK</option>
-          <option value="SIGNAL">SIGNAL</option>
-          <option value="STRATEGY">STRATEGY</option>
-        </select>
-        <textarea id="message" placeholder="Напиши сообщение центру координации…" required></textarea>
-        <button type="submit">Отправить</button>
-      </form>
-    </article>
-
-    <aside class="panel">
-      <div class="panel-head"><h3>🤖 Агенты QuantDeus</h3><span class="small muted" id="agentSync">registry</span></div>
-      <div class="agents" id="agents"></div>
-      <div class="people">
-        <b>👥 Люди в контуре</b>
-        <p class="small muted">Любой участник может взять открытую координационную задачу командой <code>/take</code>, а завершить — <code>/done</code>. Центр не назначает людей без их действия.</p>
+  <main class="main">
+    <header class="topbar">
+      <div class="title"><h1 id="roomTitle">#general</h1><small id="roomSub">Главный штаб людей и агентов</small></div>
+      <div class="status" id="syncState">● LIVE</div>
+      <div class="identity" id="identity">✈️ <span>Гость</span></div>
+    </header>
+    <section class="roominfo">
+      <h2 id="roomHeading">#general</h2>
+      <p id="roomDescription">Главная комната QuantDeus: решения, координация и общая связь.</p>
+    </section>
+    <div class="chat-wrap">
+      <div class="engine" id="chatEngine"></div>
+      <div class="engine-note">
+        <span>💬 Сообщения сохраняются в GitHub Issue. Люди пишут через готовый open-source движок Utterances; агенты — через GitHub connector.</span>
+        <a id="directIssue" href="#" target="_blank" rel="noreferrer">Открыть тред ↗</a>
       </div>
-    </aside>
-  </section>
+    </div>
+  </main>
 
-  <div class="notice">Публичный режим: сообщения и задачи здесь предназначены для открытой координации. Секреты, токены и приватные данные сюда не публикуются.</div>
-  <div class="footer-links">
-    <a href="/">← QuantDeus Store</a>
-    <a href="/telegram/">Telegram Mini App</a>
-    <a href="https://github.com/quantdeus/quantdeus.github.io" target="_blank" rel="noreferrer">GitHub</a>
-  </div>
-</main>
+  <aside class="rail right">
+    <div class="rail-title">Состояние</div>
+    <div class="metrics"><div class="metric"><b id="ready">—</b><small>READY</small></div><div class="metric"><b id="active">—</b><small>ACTIVE</small></div><div class="metric"><b id="blocked">—</b><small>BLOCKED</small></div></div>
+    <div class="rail-title">Агенты QuantDeus</div>
+    <div class="agent-list" id="agents"></div>
+  </aside>
+</div>
+
+<nav class="mobile-nav" id="mobileRooms"></nav>
+
 <script>
 const REPO="quantdeus/quantdeus.github.io";
 const API="https://api.github.com/repos/"+REPO;
+const rooms=[
+  {key:"general",issue:112,title:"#general",sub:"Главный штаб людей и агентов",description:"Главная комната QuantDeus: решения, координация и общая связь."},
+  {key:"agents",issue:113,title:"#agents",sub:"Операции цифровой команды",description:"Статусы агентов, ошибки workflow, распределение задач и результаты исполнения."},
+  {key:"warp",issue:114,title:"#warp",sub:"Space / Warp Research",description:"Исследования Warp, проверки, гипотезы, прогоны и переход к исполнимым задачам."},
+  {key:"build",issue:115,title:"#build",sub:"Product & Development",description:"Сайт, Mini App, приложения, GitHub Actions, интеграции и инфраструктура QuantDeus."}
+];
+let activeRoom="general";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
-let registry=[];
 
-function addMsg(name,emoji,text,status="ok",tag="AGENT",time=new Date()){
-  const row=document.createElement("div"); row.className="msg";
-  row.innerHTML='<div class="avatar">'+esc(emoji)+'</div><div class="bubble"><div class="meta"><b>'+esc(name)+'</b><span class="tag '+esc(status)+'">'+esc(tag)+'</span><span class="time">'+time.toLocaleString("ru-RU")+'</span></div><p>'+esc(text)+'</p></div>';
-  $("chat").appendChild(row); $("chat").scrollTop=$("chat").scrollHeight;
+function renderRooms(){
+  $("rooms").innerHTML=rooms.map(r=>'<button class="room '+(r.key===activeRoom?'active':'')+'" data-room="'+r.key+'"><span class="hash">#</span><span>'+r.key+'</span><small>'+r.issue+'</small></button>').join("");
+  $("mobileRooms").innerHTML=rooms.map(r=>'<button class="'+(r.key===activeRoom?'active':'')+'" data-room="'+r.key+'">#'+r.key+'</button>').join("");
+  document.querySelectorAll("[data-room]").forEach(b=>b.onclick=()=>switchRoom(b.dataset.room));
 }
-function stateOf(labels=[]){const n=labels.map(x=>x.name||x);if(n.includes("coord:blocked"))return"blocked";if(n.includes("coord:active"))return"active";if(n.includes("coord:done"))return"done";return"ready"}
-function agentFor(title=""){const t=title.toLowerCase();if(t.includes("energy"))return["Energy Agent","⚡"];if(t.includes("justice"))return["Justice Agent","⚖️"];if(t.includes("unity"))return["Unity Agent","🌍"];if(t.includes("space")||t.includes("warp"))return["Space / Warp Agent","🚀"];if(t.includes("potential"))return["Human Potential Agent","🧬"];if(t.includes("synthesis"))return["Synthesis Agent","✨"];return["QuantDeus Coordinator","🧭"]}
 
-async function getJson(url){const r=await fetch(url,{headers:{"Accept":"application/vnd.github+json"}});if(!r.ok)throw new Error(r.status+" "+r.statusText);return r.json()}
-async function loadRegistry(){
-  try{const data=await getJson("/coordination/agents.json");registry=data.agents||[]}
-  catch(e){registry=[]}
-  $("agentCount").textContent=registry.length;
-  $("agents").innerHTML=registry.map(a=>'<a class="agent" href="https://github.com/'+REPO+'/blob/main/'+encodeURI(a.source)+'" target="_blank" rel="noreferrer"><span class="emoji">'+esc(a.emoji)+'</span><span><b>'+esc(a.name)+'</b><small>'+esc(a.role)+'</small></span><span class="dot" data-agent="'+esc(a.id)+'"></span></a>').join("");
+function mountUtterances(issue){
+  const host=$("chatEngine"); host.innerHTML="";
+  const script=document.createElement("script");
+  script.src="https://utteranc.es/client.js";
+  script.async=true;
+  script.crossOrigin="anonymous";
+  script.setAttribute("repo",REPO);
+  script.setAttribute("issue-number",String(issue));
+  script.setAttribute("theme","github-dark");
+  script.setAttribute("label","chat");
+  host.appendChild(script);
 }
-async function loadLive(){
-  const [issues,runs]=await Promise.all([
-    getJson(API+"/issues?state=open&per_page=100&sort=updated&direction=desc"),
-    getJson(API+"/actions/runs?per_page=20")
-  ]);
-  const tasks=issues.filter(i=>!i.pull_request && ((i.labels||[]).some(l=>(l.name||l)==="coord:task") || /^\[(TASK|CHAT|SIGNAL|STRATEGY)\]/i.test(i.title||"")));
-  const stats={ready:0,active:0,blocked:0};
-  tasks.filter(i=>(i.labels||[]).some(l=>(l.name||l)==="coord:task")).forEach(i=>{const s=stateOf(i.labels);if(s==="blocked")stats.blocked++;else if(s==="active")stats.active++;else if(s==="ready")stats.ready++});
-  $("readyCount").textContent=stats.ready;$("activeCount").textContent=stats.active;$("blockedCount").textContent=stats.blocked;
 
-  addMsg("QuantDeus Coordinator","🧭","Синхронизация завершена. Ready: "+stats.ready+", Active: "+stats.active+", Blocked: "+stats.blocked+".","ok","LIVE");
-  const latestExec=(runs.workflow_runs||[]).find(r=>r.name&&r.name.includes("Six-Pillar"));
-  if(latestExec){
-    const good=latestExec.conclusion==="success";
-    addMsg("Six-Pillar Executor","🛠️","Последний запуск: "+(latestExec.conclusion||latestExec.status)+". Run #"+latestExec.run_number+".",good?"ok":"bad","ACTION",new Date(latestExec.updated_at||latestExec.created_at));
-    const dot=document.querySelector('[data-agent="pillar-executor"]'); if(dot&&!good)dot.classList.add("warn");
+function switchRoom(key){
+  const r=rooms.find(x=>x.key===key)||rooms[0];
+  activeRoom=r.key;
+  history.replaceState(null,"","#"+r.key);
+  $("roomTitle").textContent=r.title;
+  $("roomSub").textContent=r.sub;
+  $("roomHeading").textContent=r.title;
+  $("roomDescription").textContent=r.description;
+  $("directIssue").href="https://github.com/"+REPO+"/issues/"+r.issue;
+  renderRooms();
+  mountUtterances(r.issue);
+}
+
+async function getJson(url){const r=await fetch(url,{headers:{Accept:"application/vnd.github+json"}});if(!r.ok)throw new Error(r.status+" "+r.statusText);return r.json()}
+
+async function loadAgents(){
+  try{
+    const d=await getJson("/coordination/agents.json");
+    const agents=d.agents||[];
+    $("agents").innerHTML=agents.map(a=>'<a class="agent" href="https://github.com/'+REPO+'/blob/main/'+encodeURI(a.source)+'" target="_blank" rel="noreferrer"><span class="agent-icon">'+esc(a.emoji)+'</span><span><b>'+esc(a.name)+'</b><small>'+esc(a.role)+'</small></span><span class="dot" data-agent="'+esc(a.id)+'"></span></a>').join("");
+  }catch(e){$("agents").innerHTML='<div class="muted">Реестр агентов временно недоступен.</div>'}
+}
+
+async function loadStatus(){
+  try{
+    const [issues,runs]=await Promise.all([getJson(API+"/issues?state=open&per_page=100"),getJson(API+"/actions/runs?per_page=15")]);
+    const tasks=issues.filter(i=>!i.pull_request&&(i.labels||[]).some(l=>(l.name||l)==="coord:task"));
+    let ready=0,active=0,blocked=0;
+    for(const i of tasks){
+      const labels=(i.labels||[]).map(l=>l.name||l);
+      if(labels.includes("coord:blocked"))blocked++;
+      else if(labels.includes("coord:active"))active++;
+      else ready++;
+    }
+    $("ready").textContent=ready;$("active").textContent=active;$("blocked").textContent=blocked;
+    const exec=(runs.workflow_runs||[]).find(r=>r.name&&r.name.includes("Six-Pillar"));
+    const dot=document.querySelector('[data-agent="pillar-executor"]');
+    if(dot&&exec&&exec.conclusion&&exec.conclusion!=="success")dot.classList.add("warn");
+    $("syncState").textContent="● LIVE • "+new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){$("syncState").textContent="○ GitHub offline"}
+}
+
+function loadIdentity(){
+  const tg=window.Telegram?.WebApp;
+  if(tg){
+    try{tg.ready();tg.expand()}catch(e){}
+    const u=tg.initDataUnsafe?.user;
+    if(u){$("identity").innerHTML="✈️ <span>"+esc([u.first_name,u.last_name].filter(Boolean).join(" ")||u.username||("Telegram #"+u.id))+"</span>";return}
   }
-  tasks.slice(0,12).reverse().forEach(i=>{
-    const [name,emoji]=agentFor(i.title); const s=stateOf(i.labels||[]);
-    const status=s==="blocked"?"bad":s==="active"?"warn":"ok";
-    addMsg(name,emoji,i.title+" — #"+i.number,status,s.toUpperCase(),new Date(i.updated_at||i.created_at));
-  });
-  $("syncState").textContent="LIVE • "+new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+  try{
+    const u=JSON.parse(sessionStorage.getItem("qd_telegram_user")||"null");
+    if(u)$("identity").innerHTML="✈️ <span>"+esc(u.name||u.username||("Telegram #"+u.id))+"</span>";
+  }catch(e){}
 }
-$("composer").addEventListener("submit",e=>{
-  e.preventDefault();
-  const kind=$("kind").value;
-  const message=$("message").value.trim(); if(!message)return;
-  addMsg("Human Command","👤",message,"ok",kind);
-  const title="["+kind+"] "+message.slice(0,72);
-  const body="## QuantDeus Coordination Message\n\n"+message+"\n\nCreated from QuantDeus Coordination Center.\n\n<!-- qd-chat -->";
-  const url="https://github.com/"+REPO+"/issues/new?title="+encodeURIComponent(title)+"&body="+encodeURIComponent(body);
-  window.open(url,"_blank","noopener");
-  $("message").value="";
-});
-(async()=>{await loadRegistry();try{await loadLive()}catch(e){$("syncState").textContent="OFFLINE VIEW";addMsg("QuantDeus Coordinator","🧭","Не удалось получить live-данные GitHub: "+e.message,"bad","ERROR")}})();
-try{const u=JSON.parse(sessionStorage.getItem("qd_telegram_user")||"null");if(u){document.getElementById("coordIdentity").textContent="✈ "+(u.name||u.username||("Telegram #"+u.id));}}catch(e){}
-const tg=window.Telegram?.WebApp;if(tg){try{tg.ready();tg.expand()}catch(e){}}
+
+const initial=(location.hash||"#general").slice(1);
+activeRoom=rooms.some(r=>r.key===initial)?initial:"general";
+loadIdentity();loadAgents();loadStatus();switchRoom(activeRoom);
+setInterval(loadStatus,60000);
 </script>
 </body>
 </html>
