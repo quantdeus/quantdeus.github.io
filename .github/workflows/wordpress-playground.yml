@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: quantdeus-wordpress-playground-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   wordpress-smoke:
     runs-on: ubuntu-latest
