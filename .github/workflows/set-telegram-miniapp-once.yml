@@ -8,7 +8,7 @@ on:
       - '.github/workflows/set-telegram-miniapp-once.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   bind:
@@ -45,3 +45,32 @@ jobs:
         run: |
           set -euo pipefail
           curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMenuButton"             | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True, d.get("description","getChatMenuButton failed"); b=d.get("result",{}); url=((b.get("web_app") or {}).get("url")); assert url=="https://quantdeus.github.io/telegram/", "unexpected menu URL: "+str(url); print("Verified:", b.get("text"), url)'
+
+      - name: Publish public Telegram Login config
+        if: steps.telegram.outputs.configured == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe" > /tmp/qd-getme.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/qd-getme.json'))
+          assert d.get('ok') is True, d.get('description','getMe failed')
+          r=d['result']
+          out={
+            'configured': True,
+            'bot_id': r.get('id'),
+            'client_id': r.get('id'),
+            'username': r.get('username'),
+            'name': r.get('first_name'),
+          }
+          open('telegram-public.json','w').write(json.dumps(out,ensure_ascii=False)+'\n')
+          PY
+          git config user.name "quantdeus-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add telegram-public.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Telegram public auth config"
+            git push
+          fi

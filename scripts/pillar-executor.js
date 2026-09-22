@@ -343,11 +343,11 @@ ${rows.join('\n')}
 
 ## Execution protocol
 
-- `coord:ready` — executable now.
-- `coord:active` — work is actually in progress.
-- `coord:blocked` — a concrete blocker exists.
-- `coord:done` — acceptance criteria verified.
-- `exec:connector` — suitable for execution through the GitHub connector / Control Tower.
+- **coord:ready** — executable now.
+- **coord:active** — work is actually in progress.
+- **coord:blocked** — a concrete blocker exists.
+- **coord:done** — acceptance criteria verified.
+- **exec:connector** — suitable for execution through the GitHub connector / Control Tower.
 
 The coordinator may summarize this board, but **the board exists to drive file changes, issues, reviews, tests and verified artifacts — not to generate six-pillar reports**.
 
