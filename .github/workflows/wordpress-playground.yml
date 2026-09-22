@@ -39,12 +39,8 @@ jobs:
           npx -y @wp-playground/cli@latest --blueprint=wordpress/blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
           pid=$!
           trap 'kill $pid 2>/dev/null || true' EXIT
-          for i in {1..90}; do
-            if curl -fsS http://127.0.0.1:9400/ >/tmp/wp-home.html; then
-              break
-            fi
-            sleep 2
-          done
+          timeout 180 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
+          timeout 120 bash -c 'until curl -fsS http://127.0.0.1:9400/ >/tmp/wp-home.html; do sleep 2; done'
           test -s /tmp/wp-home.html || { cat /tmp/quantdeus-wordpress.log; exit 1; }
           grep -qi "wordpress\|wp-" /tmp/wp-home.html || { echo "Unexpected response"; head -80 /tmp/wp-home.html; cat /tmp/quantdeus-wordpress.log; exit 1; }
           echo "WordPress Playground booted successfully"
