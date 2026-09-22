@@ -1,0 +1,54 @@
+name: QuantDeus Static Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JavaScript syntax
+        run: |
+          node --check scripts/coordinator.js
+          node --check scripts/pillar-executor.js
+          node --check scripts/strategic-hub.js
+          node --check scripts/orchestrator.js
+
+      - name: Validate production routes
+        run: |
+          test -f index.html
+          test -f telegram/index.html
+          test -f coordination/index.html
+          test -f coordination.html
+          test -f coordination/agents.json
+          grep -q '/coordination/' index.html
+          grep -q '/coordination/' telegram/index.html
+
+      - name: Validate agent registry
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));
+          if(!Array.isArray(data.agents) || data.agents.length < 8) throw new Error('agent registry too small');
+          const ids=data.agents.map(a=>a.id);
+          if(new Set(ids).size!==ids.length) throw new Error('duplicate agent ids');
+          console.log('agents:',data.agents.length);
+          NODE
+
+      - name: Detect duplicate custom Pages deployers
+        run: |
+          if grep -R "actions/deploy-pages@" .github/workflows --include='*.yml' --include='*.yaml' | grep -v "Static Smoke"; then
+            echo "Unexpected custom Pages deploy workflow detected"
+            exit 1
+          fi
+          echo "Single Pages source: repository branch/root"
