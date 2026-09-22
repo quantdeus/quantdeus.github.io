@@ -31,6 +31,8 @@ jobs:
           test -f coordination/index.html
           test -f coordination.html
           test -f coordination/agents.json
+          test -f wordpress/index.html
+          test -f wordpress/blueprint.json
           grep -q '/coordination/' index.html
           grep -q '/coordination/' telegram/index.html
 

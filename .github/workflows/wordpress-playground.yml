@@ -1,0 +1,50 @@
+name: QuantDeus WordPress Playground
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wordpress/**'
+      - '.github/workflows/wordpress-playground.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'wordpress/**'
+      - '.github/workflows/wordpress-playground.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantdeus-wordpress-playground-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wordpress-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate WordPress files
+        run: |
+          test -f wordpress/index.html
+          test -f wordpress/blueprint.json
+          node -e "const fs=require('fs'); const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8')); if(!b.preferredVersions?.wp) throw new Error('wp version missing'); if(!b.steps?.some(x=>x.step==='login')) throw new Error('login step missing'); console.log('Blueprint OK:',b.preferredVersions)"
+
+      - name: Boot WordPress Playground in CI
+        run: |
+          set -euo pipefail
+          npx -y @wp-playground/cli@latest --blueprint=wordpress/blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true' EXIT
+          timeout 180 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
+          kill -0 "$pid"
+          grep -q "PHP 8.3  WordPress latest" /tmp/quantdeus-wordpress.log
+          echo "WordPress Playground booted successfully"
+          tail -20 /tmp/quantdeus-wordpress.log
