@@ -30,6 +30,7 @@ jobs:
           mkdir -p dist/telegram dist/coordination
           cp site/index.html dist/index.html
           cp site/coordination.html dist/coordination.html
+          cp site/coordination/index.html dist/coordination/index.html
           cp coordination/agents.json dist/coordination/agents.json
           cp site/habr-test.html dist/habr-test.html
           cp telegram/index.html dist/telegram/index.html
