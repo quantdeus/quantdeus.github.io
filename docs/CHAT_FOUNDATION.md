@@ -25,3 +25,14 @@ The website still keeps Telegram identity as the QuantDeus account layer. Telegr
 ## Required one-time GitHub action
 
 For inline human posting through the embedded widget, install the **utterances** GitHub App for `quantdeus/quantdeus.github.io`. Until then, every room exposes a direct GitHub Issue link as a fallback.
+
+
+## Pages route compatibility
+
+GitHub Pages for this repository currently has both a custom artifact deployment and a branch-root Pages build. To keep `/coordination/` valid under either deployment path, the production chat is mirrored at:
+
+- `site/coordination/index.html` (custom artifact source)
+- `coordination/index.html` (branch-root Pages source)
+- `coordination.html` (flat fallback)
+
+This mirror is intentional until Pages is reduced to a single deployment source.
