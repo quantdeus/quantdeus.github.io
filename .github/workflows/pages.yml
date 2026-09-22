@@ -25,6 +25,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build public Pages artifact
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
           rm -rf dist
           mkdir -p dist/telegram dist/coordination
@@ -34,6 +36,14 @@ jobs:
           cp coordination/agents.json dist/coordination/agents.json
           cp site/habr-test.html dist/habr-test.html
           cp telegram/index.html dist/telegram/index.html
+
+          # Publish only non-secret bot identity needed by browser Telegram Login.
+          if [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then
+            curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe" | python3 -c 'import json,sys; d=json.load(sys.stdin); r=d.get("result") if d.get("ok") else None; out={"configured":bool(r)}; out.update({"bot_id":r.get("id"),"client_id":r.get("id"),"username":r.get("username"),"name":r.get("first_name")} if r else {}); open("dist/telegram-public.json","w").write(json.dumps(out,ensure_ascii=False))'
+          else
+            printf '{"configured":false}' > dist/telegram-public.json
+          fi
+          cp dist/telegram-public.json dist/telegram/telegram-public.json
           touch dist/.nojekyll
 
       - name: Setup Pages
