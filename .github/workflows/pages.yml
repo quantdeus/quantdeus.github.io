@@ -27,8 +27,10 @@ jobs:
       - name: Build public Pages artifact
         run: |
           rm -rf dist
-          mkdir -p dist/telegram
+          mkdir -p dist/telegram dist/coordination
           cp site/index.html dist/index.html
+          cp site/coordination.html dist/coordination.html
+          cp coordination/agents.json dist/coordination/agents.json
           cp site/habr-test.html dist/habr-test.html
           cp telegram/index.html dist/telegram/index.html
           touch dist/.nojekyll

@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus Human + Agent Coordination Center",
+  "source_of_truth": "quantdeus/quantdeus.github.io",
+  "updated": "2026-09-22",
+  "agents": [
+    {
+      "id": "coordinator",
+      "name": "QuantDeus Coordinator",
+      "emoji": "🧭",
+      "role": "Диспетчер людей, агентов и задач",
+      "source": "scripts/coordinator.js",
+      "group": "core"
+    },
+    {
+      "id": "pillar-executor",
+      "name": "Six-Pillar Executor",
+      "emoji": "🛠️",
+      "role": "Поддерживает очередь исполнения шести столпов",
+      "source": "scripts/pillar-executor.js",
+      "group": "core"
+    },
+    {
+      "id": "strategic-hub",
+      "name": "Strategic Navigation Hub",
+      "emoji": "🧠",
+      "role": "Маршрутизирует SIGNAL → STRATEGY → TASK",
+      "source": "scripts/strategic-hub.js",
+      "group": "core"
+    },
+    {
+      "id": "orchestrator",
+      "name": "Research Orchestrator",
+      "emoji": "📡",
+      "role": "Запускает исследовательские сканеры столпов",
+      "source": "scripts/orchestrator.js",
+      "group": "research"
+    },
+    {
+      "id": "energy",
+      "name": "Energy Agent",
+      "emoji": "⚡",
+      "role": "Энергетика будущего",
+      "source": "scripts/pillar_01_energy.js",
+      "group": "pillar"
+    },
+    {
+      "id": "justice",
+      "name": "Justice Agent",
+      "emoji": "⚖️",
+      "role": "Алгоритмическая справедливость",
+      "source": "scripts/pillar_02_justice.js",
+      "group": "pillar"
+    },
+    {
+      "id": "unity",
+      "name": "Unity Agent",
+      "emoji": "🌍",
+      "role": "Планетарная кооперация",
+      "source": "scripts/pillar_03_unity.js",
+      "group": "pillar"
+    },
+    {
+      "id": "space",
+      "name": "Space / Warp Agent",
+      "emoji": "🚀",
+      "role": "Космическая экспансия и Warp",
+      "source": "scripts/pillar_04_space.js",
+      "group": "pillar"
+    },
+    {
+      "id": "potential",
+      "name": "Human Potential Agent",
+      "emoji": "🧬",
+      "role": "Человеческий потенциал",
+      "source": "scripts/pillar_05_potential.js",
+      "group": "pillar"
+    },
+    {
+      "id": "synthesis",
+      "name": "Synthesis Agent",
+      "emoji": "✨",
+      "role": "Эстетика синтеза",
+      "source": "scripts/pillar_06_synthesis.js",
+      "group": "pillar"
+    },
+    {
+      "id": "control-tower",
+      "name": "Control Tower / GitHub Connector",
+      "emoji": "🛰️",
+      "role": "Исполняет безопасные изменения, ревью и координацию",
+      "source": "COORDINATION.md",
+      "group": "core"
+    }
+  ]
+}

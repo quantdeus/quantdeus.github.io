@@ -462,6 +462,7 @@ dialog p {
       <section class="hero">
         <p>Личный пульт QuantDeus: микропродукты, Y2K-мотивация и игровые хабы в одном Telegram интерфейсе.</p>
         <button id="mainAction" type="button">Открыть первый модуль</button>
+        <button id="coordinationAction" class="secondary-button" type="button" style="margin-left:8px">🧭 Центр координации</button>
       </section>
 
       <nav class="tabs" aria-label="Разделы QuantDeus">
@@ -799,6 +800,10 @@ document.querySelector("#themeToggle").addEventListener("click", () => {
 
 document.querySelector("#mainAction").addEventListener("click", () => {
   openModule("binaural");
+});
+
+document.querySelector("#coordinationAction").addEventListener("click", () => {
+  window.location.href = "/coordination.html";
 });
 
 document.querySelectorAll(".tab").forEach((tab) => {
