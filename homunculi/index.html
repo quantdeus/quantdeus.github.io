@@ -14,7 +14,7 @@
     .label{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#6f91a5;font-weight:900;margin:18px 7px 8px}.room,.navlink{width:100%;display:flex;align-items:center;gap:8px;padding:10px;border:0;border-radius:11px;background:transparent;color:#bdd3df;text-decoration:none;cursor:pointer;text-align:left}.room:hover,.navlink:hover{background:rgba(85,216,255,.07)}.room.active{background:var(--panel2);color:white}.room small{margin-left:auto;color:#64869a}
     .main{min-width:0;height:100vh;display:flex;flex-direction:column}.top{min-height:70px;padding:10px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:rgba(6,16,25,.86);backdrop-filter:blur(16px);position:sticky;top:0;z-index:5}.title{flex:1;min-width:0}.title h1{font-size:18px;margin:0}.title small{color:var(--muted)}.identity{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;font-size:11px;max-width:190px}.identity span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.login{border:1px solid rgba(85,216,255,.35);background:rgba(85,216,255,.09);color:white;border-radius:999px;padding:8px 11px;cursor:pointer}
     .roominfo{padding:14px 18px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(85,216,255,.05),transparent)}.roominfo h2{margin:0 0 4px;font-size:20px}.roominfo p{margin:0;color:var(--muted);font-size:13px}.chat{flex:1;overflow:auto;padding:10px 12px 28px}.engine{max-width:900px;margin:auto;min-height:430px}.note{max-width:900px;margin:8px auto;padding:10px 12px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:11px;line-height:1.45;background:rgba(12,26,40,.7)}.note a{color:var(--accent)}
-    .crew{display:grid;gap:8px}.agent{display:grid;grid-template-columns:36px 1fr auto;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(12,26,40,.7)}.agent .icon{width:36px;height:36px;border-radius:10px;background:var(--panel2);display:grid;place-items:center}.agent b{display:block;font-size:12px}.agent small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.agent button{border:1px solid var(--line);background:transparent;color:var(--accent);border-radius:9px;padding:6px 8px;cursor:pointer;font-size:10px}.badge{display:inline-block;padding:5px 8px;border-radius:999px;border:1px solid var(--line);font-size:10px;color:var(--ok)}
+    .crew{display:grid;gap:8px}.agent{display:grid;grid-template-columns:36px 1fr auto;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(12,26,40,.7)}.agent .icon{width:36px;height:36px;border-radius:10px;background:var(--panel2);display:grid;place-items:center}.agent b{display:block;font-size:12px}.agent small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.agent button{border:1px solid var(--line);background:transparent;color:var(--accent);border-radius:9px;padding:6px 8px;cursor:pointer;font-size:10px}.proposal{padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(12,26,40,.7)}.proposal b{display:block;font-size:11px;line-height:1.3}.proposal small{display:block;color:var(--muted);font-size:9px;margin:4px 0 8px}.vote-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.vote-row button{border:1px solid var(--line);background:transparent;color:#fff;border-radius:8px;padding:6px;cursor:pointer}.badge{display:inline-block;padding:5px 8px;border-radius:999px;border:1px solid var(--line);font-size:10px;color:var(--ok)}
     .mobile{display:none;position:fixed;bottom:10px;left:10px;right:10px;z-index:20;grid-template-columns:repeat(4,1fr);gap:4px;padding:7px;border:1px solid var(--line);border-radius:16px;background:rgba(8,19,29,.94);backdrop-filter:blur(16px)}.mobile button{border:0;background:transparent;color:#9db8c7;border-radius:10px;padding:8px 4px;font-size:11px}.mobile button.active{background:var(--panel2);color:#fff}
     @media(max-width:1050px){.app{grid-template-columns:220px minmax(0,1fr)}.right{display:none}}@media(max-width:720px){.app{display:block}.rail{display:none}.main{height:100dvh}.top{padding:8px 10px}.identity{max-width:120px}.login{padding:7px 9px}.mobile{display:grid}.chat{padding-bottom:88px}}
   </style>
@@ -34,7 +34,7 @@
   <main class="main">
     <header class="top">
       <div class="title"><h1 id="roomTitle">#general</h1><small>Telegram identity + GitHub conversation mirror</small></div>
-      <span class="badge">8 AGENTS</span>
+      <span class="badge" id="agentCount">REAL AGENTS</span>
       <div class="identity" id="identity">✈️ <span>Гость</span></div>
       <button class="login" id="loginBtn" type="button">Войти</button>
     </header>
@@ -48,6 +48,8 @@
   <aside class="rail right">
     <div class="label">Гомункулы Store</div>
     <div class="crew" id="crew"></div>
+    <div class="label">Общее голосование</div>
+    <div class="crew" id="proposals"></div>
     <div class="label">Связь</div>
     <div class="muted" id="botState">Telegram bot config…</div>
   </aside>
@@ -76,7 +78,8 @@ function switchRoom(key){const r=rooms.find(x=>x.key===key)||rooms[0];active=r.k
 
 async function loadCrew(){
   try{const d=await fetch("/coordination/homunculi.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()});
-    $("crew").innerHTML=(d.agents||[]).map(a=>`<div class="agent"><span class="icon">${esc(a.emoji)}</span><span><b>${esc(a.name)}</b><small>${esc(a.role)}</small></span><button data-agent="${esc(a.id)}">CALL</button></div>`).join("");
+    $("crew").innerHTML=(d.agents||[]).map(a=>`<div class="agent"><span class="icon">${esc(a.emoji)}</span><span><b>${esc(a.name)}</b><small>${esc(a.role)} · ${esc(a.source||"")}</small></span><button data-agent="${esc(a.id)}">OPEN</button></div>`).join("");
+    $("agentCount").textContent=(d.agents||[]).length+" REAL AGENTS";
     document.querySelectorAll("[data-agent]").forEach(b=>b.onclick=()=>callAgent(b.dataset.agent));
   }catch(e){$("crew").innerHTML='<div class="muted">Реестр временно недоступен.</div>'}
 }
@@ -85,6 +88,19 @@ async function loadTelegramConfig(){if(tgConfig)return tgConfig;tgConfig=await f
 function openTelegram(url){const tg=window.Telegram?.WebApp;if(tg?.openTelegramLink){tg.openTelegramLink(url);return}window.open(url,"_blank","noopener")}
 async function callAgent(id){const cfg=await loadTelegramConfig();if(cfg.configured&&cfg.username){openTelegram(`https://t.me/${encodeURIComponent(cfg.username)}?start=agent_${encodeURIComponent(id)}`);return}alert(`Команда для QuantDeus Store bot: /agent ${id} <задача>`)}
 
+async function voteProposal(number,choice){
+  const cfg=await loadTelegramConfig();
+  if(cfg.configured&&cfg.username){openTelegram(`https://t.me/${encodeURIComponent(cfg.username)}?start=vote_${number}_${choice}`);return}
+  alert(`Голос в QuantDeus Store bot: /vote #${number} ${choice}`);
+}
+async function loadProposals(){
+  try{
+    const items=await fetch("https://api.github.com/repos/quantdeus/quantdeus.github.io/issues?state=open&per_page=100",{headers:{Accept:"application/vnd.github+json"}}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()});
+    const proposals=items.filter(i=>!i.pull_request&&String(i.title||"").startsWith("[PROPOSAL]")).slice(0,8);
+    $("proposals").innerHTML=proposals.length?proposals.map(i=>`<div class="proposal"><b>#${i.number} ${esc(i.title.replace(/^\\[PROPOSAL\\]\\s*/,""))}</b><small>Не является задачей агента, пока не пройдёт vote + admin gate.</small><div class="vote-row"><button data-vote="${i.number}:yes">👍 ЗА</button><button data-vote="${i.number}:no">👎 ПРОТИВ</button></div></div>`).join(""):`<div class="muted">Открытых proposal нет.</div>`;
+    document.querySelectorAll("[data-vote]").forEach(b=>b.onclick=()=>{const [n,c]=b.dataset.vote.split(":");voteProposal(n,c)});
+  }catch(e){$("proposals").innerHTML=`<div class="muted">Proposal API временно недоступен.</div>`}
+}
 function decodeB64UrlJson(part){const p=part.replace(/-/g,"+").replace(/_/g,"/");const s=p+"=".repeat((4-p.length%4)%4);return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s),c=>c.charCodeAt(0))))}
 function b64UrlBytes(part){const p=part.replace(/-/g,"+").replace(/_/g,"/");const s=p+"=".repeat((4-p.length%4)%4);return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
 async function verifyTelegramIdToken(token,clientId){const parts=String(token||"").split(".");if(parts.length!==3)throw new Error("invalid id_token");const header=decodeB64UrlJson(parts[0]),payload=decodeB64UrlJson(parts[1]);if(header.alg!=="RS256")throw new Error("unsupported alg");const jwks=await fetch("https://oauth.telegram.org/.well-known/jwks.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("JWKS");return r.json()});const jwk=(jwks.keys||[]).find(k=>k.kid===header.kid);if(!jwk)throw new Error("key missing");const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);const ok=await crypto.subtle.verify({name:"RSASSA-PKCS1-v1_5"},key,b64UrlBytes(parts[2]),new TextEncoder().encode(parts[0]+"."+parts[1]));if(!ok)throw new Error("bad signature");const now=Math.floor(Date.now()/1000),aud=Array.isArray(payload.aud)?payload.aud.map(String):[String(payload.aud||"")];if(payload.iss!=="https://oauth.telegram.org"||!aud.includes(String(clientId))||!payload.exp||payload.exp<now-30)throw new Error("claims invalid");return payload}
@@ -94,7 +110,7 @@ async function browserLogin(){try{const cfg=await loadTelegramConfig();if(!cfg.c
 async function initIdentity(){const tg=window.Telegram?.WebApp;if(tg){try{tg.ready();tg.expand()}catch(e){}const u=tg.initDataUnsafe?.user;if(u){showUser({id:u.id,name:[u.first_name,u.last_name].filter(Boolean).join(" "),username:u.username},"Mini App");$("loginBtn").style.display="none";return}}try{const saved=JSON.parse(sessionStorage.getItem("qd_telegram_user")||"null");if(saved){showUser(saved,sessionStorage.getItem("qd_telegram_auth_state")||"Telegram");return}}catch(e){}$("loginBtn").onclick=browserLogin;await loadTelegramConfig()}
 
 active=rooms.some(r=>r.key===(location.hash||"#general").slice(1))?(location.hash||"#general").slice(1):"general";
-initIdentity();loadTelegramConfig();loadCrew();switchRoom(active);
+initIdentity();loadTelegramConfig();loadCrew();loadProposals();switchRoom(active);
 </script>
 </body>
 </html>
