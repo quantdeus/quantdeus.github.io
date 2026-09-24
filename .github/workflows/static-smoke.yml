@@ -50,6 +50,17 @@ jobs:
           console.log('agents:',data.agents.length);
           NODE
 
+      - name: Validate homunculi inline JavaScript
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('homunculi/index.html','utf8');
+          const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]).filter(x=>x.trim());
+          if(!scripts.length) throw new Error('no inline homunculi script');
+          for(const source of scripts) new Function(source);
+          console.log('homunculi inline JS: OK');
+          NODE
+
       - name: Validate homunculi registry
         run: |
           node - <<'NODE'
