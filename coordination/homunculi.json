@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus Store Homunculi Crew",
+  "updated": "2026-09-25",
+  "bot_repo": "quantdeus/quantdeus_core.pulse",
+  "site_repo": "quantdeus/quantdeus.github.io",
+  "site": "https://quantdeus.github.io/homunculi/",
+  "agents": [
+    {"id":"coord","emoji":"🧭","name":"Coordinator","role":"Координация людей, агентов и задач","command":"/agent coord"},
+    {"id":"code","emoji":"💻","name":"Code","role":"Код, GitHub, интеграции и ревью","command":"/agent code"},
+    {"id":"science","emoji":"🔬","name":"Science","role":"Научный анализ, расчёты и проверка гипотез","command":"/agent science"},
+    {"id":"research","emoji":"📡","name":"Research","role":"Поиск источников, разведка и факт-карта","command":"/agent research"},
+    {"id":"security","emoji":"🛡️","name":"Security","role":"RBAC, секреты, угрозы и безопасные настройки","command":"/agent security"},
+    {"id":"web","emoji":"🌐","name":"Web","role":"Сайт, Telegram UI, UX и GitHub Pages","command":"/agent web"},
+    {"id":"ops","emoji":"⚙️","name":"Ops","role":"Деплой, вебхуки, мониторинг и диагностика","command":"/agent ops"},
+    {"id":"archive","emoji":"🗃️","name":"Archive","role":"Протокол решений, контекст и история проекта","command":"/agent archive"}
+  ]
+}
