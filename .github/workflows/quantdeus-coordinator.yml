@@ -36,6 +36,8 @@ jobs:
           QUANTDEUS_GENERIC_WEBHOOK: ${{ secrets.QUANTDEUS_GENERIC_WEBHOOK }}
           QUANTDEUS_TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
           QUANTDEUS_TELEGRAM_CHAT_ID: ${{ secrets.QUANTDEUS_TELEGRAM_CHAT_ID }}
+          QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
         run: |
+          node scripts/governance-gate.js
           node scripts/coordinator.js
           node scripts/strategic-hub.js
