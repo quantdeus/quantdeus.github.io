@@ -20,6 +20,7 @@ jobs:
       - name: Validate JavaScript syntax
         run: |
           node --check scripts/coordinator.js
+          node --check scripts/governance-gate.js
           node --check scripts/pillar-executor.js
           node --check scripts/strategic-hub.js
           node --check scripts/orchestrator.js
@@ -31,6 +32,8 @@ jobs:
           test -f coordination/index.html
           test -f coordination.html
           test -f coordination/agents.json
+          test -f coordination/homunculi.json
+          test -f homunculi/index.html
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
           grep -q '/coordination/' index.html
@@ -45,6 +48,30 @@ jobs:
           const ids=data.agents.map(a=>a.id);
           if(new Set(ids).size!==ids.length) throw new Error('duplicate agent ids');
           console.log('agents:',data.agents.length);
+          NODE
+
+      - name: Validate homunculi inline JavaScript
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('homunculi/index.html','utf8');
+          const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(x=>x.trim());
+          if(!scripts.length) throw new Error('no inline homunculi script');
+          for(const source of scripts) new Function(source);
+          console.log('homunculi inline JS: OK');
+          NODE
+
+      - name: Validate homunculi registry
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('coordination/homunculi.json','utf8'));
+          if(!Array.isArray(data.agents) || data.agents.length < 11) throw new Error('real agent registry must contain the QuantDeus runtime agents');
+          const ids=data.agents.map(a=>a.id);
+          if(new Set(ids).size!==ids.length) throw new Error('duplicate agent ids');
+          const expected=['coordinator','pillar-executor','strategic-hub','orchestrator','energy','justice','unity','space','potential','synthesis','control-tower'];
+          for(const id of expected) if(!ids.includes(id)) throw new Error('missing homunculus '+id);
+          console.log('homunculi:',ids.join(', '));
           NODE
 
       - name: Detect duplicate custom Pages deployers
