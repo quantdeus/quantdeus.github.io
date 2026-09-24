@@ -10,19 +10,25 @@ The old Pulse headline reports are legacy history. The replacement workflow does
 
 Production publication, spending, secrets, irreversible actions and sensitive outreach still require explicit human approval.
 
-QuantDeus Coordinator turns GitHub Issues into an opt-in human coordination layer.
+QuantDeus Coordinator turns **governance-approved** GitHub Issues into an opt-in human coordination layer. The governance gate runs before the Coordinator.
 
-## Create a task
+## Governance: proposal before task
 
-Open an Issue whose title begins with `[TASK]`.
+Only QuantDeus chat **owner/admin** may directly put work into the real agent queue.
 
-Examples:
+Participants use the community path:
 
-- `[TASK] Review new warp-drive papers`
-- `[TASK] Validate energy-source links`
-- `[TASK] Prepare Russian summary of a research result`
+1. `/propose <agent> <idea>` in QuantDeus Store bot creates a `[PROPOSAL]` Issue.
+2. Participants vote `yes/no` in Telegram (the website exposes the same vote buttons).
+3. Telegram user IDs are not written to GitHub; votes use pseudonymous HMAC voter markers.
+4. When the configured quorum is reached and YES > NO, a chat admin may run `/promote #N`.
+5. Promotion marks the proposal `governance:passed`; only then may it become `coord:task`.
 
-The coordinator adds `coord:task` and `coord:ready`, then includes the task in the Coordination Hub.
+Direct admin work uses `/task <agent> <task>`.
+
+A manually opened `[TASK]` Issue from a non-admin is **not** accepted as executable work. `scripts/governance-gate.js` converts it to `[PROPOSAL]`, strips task-state labels, and routes it through voting.
+
+The target is one of the real agents registered in `coordination/agents.json` (Coordinator, Six-Pillar Executor, Strategic Hub, Orchestrator, six pillar agents, or Control Tower).
 
 ## Contributor commands
 
@@ -55,4 +61,4 @@ When configured, the coordinator sends a compact digest only when the task-state
 
 ## Agent-to-human workflow
 
-Research agents can create `[TASK]` Issues when they detect work that needs a person: source verification, expert review, translation, experiment reproduction, outreach preparation, or implementation. Humans claim those tasks voluntarily with `/take`. The Coordinator tracks ownership, blockage and completion and exposes the whole queue through the Coordination Hub.
+Trusted QuantDeus repository agents may create `[TASK]` Issues when they detect work that needs a person: source verification, expert review, translation, experiment reproduction, outreach preparation, or implementation. Community-originated work enters as `[PROPOSAL]` first. Humans claim those tasks voluntarily with `/take`. The Coordinator tracks ownership, blockage and completion and exposes the whole queue through the Coordination Hub.
