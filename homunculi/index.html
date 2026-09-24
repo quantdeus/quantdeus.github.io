@@ -86,7 +86,7 @@ async function loadCrew(){
 
 async function loadTelegramConfig(){if(tgConfig)return tgConfig;tgConfig=await fetch("/telegram-public.json",{cache:"no-store"}).then(r=>r.ok?r.json():({configured:false})).catch(()=>({configured:false}));$("botState").textContent=tgConfig.configured?`@${tgConfig.username||"bot"} connected`:"Bot public config not bound yet";return tgConfig}
 function openTelegram(url){const tg=window.Telegram?.WebApp;if(tg?.openTelegramLink){tg.openTelegramLink(url);return}window.open(url,"_blank","noopener")}
-async function callAgent(id){const cfg=await loadTelegramConfig();if(cfg.configured&&cfg.username){openTelegram(`https://t.me/${encodeURIComponent(cfg.username)}?start=agent_${encodeURIComponent(id)}`);return}alert(`Команда для QuantDeus Store bot: /agent ${id} <задача>`)}
+async function callAgent(id){const cfg=await loadTelegramConfig();if(cfg.configured&&cfg.username){openTelegram(`https://t.me/${encodeURIComponent(cfg.username)}?start=agent_${encodeURIComponent(id)}`);return}alert(`Чат: /agent ${id} <вопрос>\nПредложить задачу: /propose ${id} <идея>`)}
 
 async function voteProposal(number,choice){
   const cfg=await loadTelegramConfig();
@@ -97,7 +97,7 @@ async function loadProposals(){
   try{
     const items=await fetch("https://api.github.com/repos/quantdeus/quantdeus.github.io/issues?state=open&per_page=100",{headers:{Accept:"application/vnd.github+json"}}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()});
     const proposals=items.filter(i=>!i.pull_request&&String(i.title||"").startsWith("[PROPOSAL]")).slice(0,8);
-    $("proposals").innerHTML=proposals.length?proposals.map(i=>`<div class="proposal"><b>#${i.number} ${esc(i.title.replace(/^\\[PROPOSAL\\]\\s*/,""))}</b><small>Не является задачей агента, пока не пройдёт vote + admin gate.</small><div class="vote-row"><button data-vote="${i.number}:yes">👍 ЗА</button><button data-vote="${i.number}:no">👎 ПРОТИВ</button></div></div>`).join(""):`<div class="muted">Открытых proposal нет.</div>`;
+    $("proposals").innerHTML=proposals.length?proposals.map(i=>`<div class="proposal"><b>#${i.number} ${esc(i.title.replace(/^\[PROPOSAL\]\s*/,""))}</b><small>Не является задачей агента, пока не пройдёт vote + admin gate.</small><div class="vote-row"><button data-vote="${i.number}:yes">👍 ЗА</button><button data-vote="${i.number}:no">👎 ПРОТИВ</button></div></div>`).join(""):`<div class="muted">Открытых proposal нет.</div>`;
     document.querySelectorAll("[data-vote]").forEach(b=>b.onclick=()=>{const [n,c]=b.dataset.vote.split(":");voteProposal(n,c)});
   }catch(e){$("proposals").innerHTML=`<div class="muted">Proposal API временно недоступен.</div>`}
 }
