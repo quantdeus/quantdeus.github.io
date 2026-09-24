@@ -21,6 +21,7 @@ jobs:
         run: |
           node --check scripts/coordinator.js
           node --check scripts/governance-gate.js
+          node --check scripts/site-agent-reply.js
           node --check scripts/pillar-executor.js
           node --check scripts/strategic-hub.js
           node --check scripts/orchestrator.js
