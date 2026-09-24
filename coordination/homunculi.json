@@ -1,18 +1,124 @@
 {
-  "schema_version": 1,
-  "title": "QuantDeus Store Homunculi Crew",
+  "schema_version": 2,
+  "title": "QuantDeus real agent governance registry",
+  "source_of_truth": "coordination/agents.json",
   "updated": "2026-09-25",
-  "bot_repo": "quantdeus/quantdeus_core.pulse",
-  "site_repo": "quantdeus/quantdeus.github.io",
-  "site": "https://quantdeus.github.io/homunculi/",
+  "governance": {
+    "participant_direct_task_control": false,
+    "participant_path": "proposal -> community vote -> admin promote",
+    "admin_direct_task_control": true,
+    "proposal_min_votes_default": 3
+  },
   "agents": [
-    {"id":"coord","emoji":"🧭","name":"Coordinator","role":"Координация людей, агентов и задач","command":"/agent coord"},
-    {"id":"code","emoji":"💻","name":"Code","role":"Код, GitHub, интеграции и ревью","command":"/agent code"},
-    {"id":"science","emoji":"🔬","name":"Science","role":"Научный анализ, расчёты и проверка гипотез","command":"/agent science"},
-    {"id":"research","emoji":"📡","name":"Research","role":"Поиск источников, разведка и факт-карта","command":"/agent research"},
-    {"id":"security","emoji":"🛡️","name":"Security","role":"RBAC, секреты, угрозы и безопасные настройки","command":"/agent security"},
-    {"id":"web","emoji":"🌐","name":"Web","role":"Сайт, Telegram UI, UX и GitHub Pages","command":"/agent web"},
-    {"id":"ops","emoji":"⚙️","name":"Ops","role":"Деплой, вебхуки, мониторинг и диагностика","command":"/agent ops"},
-    {"id":"archive","emoji":"🗃️","name":"Archive","role":"Протокол решений, контекст и история проекта","command":"/agent archive"}
+    {
+      "id": "coordinator",
+      "name": "QuantDeus Coordinator",
+      "emoji": "🧭",
+      "role": "Диспетчер людей, агентов и задач",
+      "source": "scripts/coordinator.js",
+      "group": "core",
+      "command": "/agent coordinator",
+      "proposal_command": "/propose coordinator"
+    },
+    {
+      "id": "pillar-executor",
+      "name": "Six-Pillar Executor",
+      "emoji": "🛠️",
+      "role": "Поддерживает очередь исполнения шести столпов",
+      "source": "scripts/pillar-executor.js",
+      "group": "core",
+      "command": "/agent pillar-executor",
+      "proposal_command": "/propose pillar-executor"
+    },
+    {
+      "id": "strategic-hub",
+      "name": "Strategic Navigation Hub",
+      "emoji": "🧠",
+      "role": "Маршрутизирует SIGNAL → STRATEGY → TASK",
+      "source": "scripts/strategic-hub.js",
+      "group": "core",
+      "command": "/agent strategic-hub",
+      "proposal_command": "/propose strategic-hub"
+    },
+    {
+      "id": "orchestrator",
+      "name": "Research Orchestrator",
+      "emoji": "📡",
+      "role": "Запускает исследовательские сканеры столпов",
+      "source": "scripts/orchestrator.js",
+      "group": "research",
+      "command": "/agent orchestrator",
+      "proposal_command": "/propose orchestrator"
+    },
+    {
+      "id": "energy",
+      "name": "Energy Agent",
+      "emoji": "⚡",
+      "role": "Энергетика будущего",
+      "source": "scripts/pillar_01_energy.js",
+      "group": "pillar",
+      "command": "/agent energy",
+      "proposal_command": "/propose energy"
+    },
+    {
+      "id": "justice",
+      "name": "Justice Agent",
+      "emoji": "⚖️",
+      "role": "Алгоритмическая справедливость",
+      "source": "scripts/pillar_02_justice.js",
+      "group": "pillar",
+      "command": "/agent justice",
+      "proposal_command": "/propose justice"
+    },
+    {
+      "id": "unity",
+      "name": "Unity Agent",
+      "emoji": "🌍",
+      "role": "Планетарная кооперация",
+      "source": "scripts/pillar_03_unity.js",
+      "group": "pillar",
+      "command": "/agent unity",
+      "proposal_command": "/propose unity"
+    },
+    {
+      "id": "space",
+      "name": "Space / Warp Agent",
+      "emoji": "🚀",
+      "role": "Космическая экспансия и Warp",
+      "source": "scripts/pillar_04_space.js",
+      "group": "pillar",
+      "command": "/agent space",
+      "proposal_command": "/propose space"
+    },
+    {
+      "id": "potential",
+      "name": "Human Potential Agent",
+      "emoji": "🧬",
+      "role": "Человеческий потенциал",
+      "source": "scripts/pillar_05_potential.js",
+      "group": "pillar",
+      "command": "/agent potential",
+      "proposal_command": "/propose potential"
+    },
+    {
+      "id": "synthesis",
+      "name": "Synthesis Agent",
+      "emoji": "✨",
+      "role": "Эстетика синтеза",
+      "source": "scripts/pillar_06_synthesis.js",
+      "group": "pillar",
+      "command": "/agent synthesis",
+      "proposal_command": "/propose synthesis"
+    },
+    {
+      "id": "control-tower",
+      "name": "Control Tower / GitHub Connector",
+      "emoji": "🛰️",
+      "role": "Исполняет безопасные изменения, ревью и координацию",
+      "source": "COORDINATION.md",
+      "group": "core",
+      "command": "/agent control-tower",
+      "proposal_command": "/propose control-tower"
+    }
   ]
 }
