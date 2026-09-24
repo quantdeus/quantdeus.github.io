@@ -36,6 +36,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/pillar-executor.js
 
+      - name: Apply governance gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
+        run: node scripts/governance-gate.js
+
       - name: Refresh coordination hub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
