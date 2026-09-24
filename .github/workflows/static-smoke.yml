@@ -31,6 +31,8 @@ jobs:
           test -f coordination/index.html
           test -f coordination.html
           test -f coordination/agents.json
+          test -f coordination/homunculi.json
+          test -f homunculi/index.html
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
           grep -q '/coordination/' index.html
@@ -45,6 +47,19 @@ jobs:
           const ids=data.agents.map(a=>a.id);
           if(new Set(ids).size!==ids.length) throw new Error('duplicate agent ids');
           console.log('agents:',data.agents.length);
+          NODE
+
+      - name: Validate homunculi registry
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('coordination/homunculi.json','utf8'));
+          if(!Array.isArray(data.agents) || data.agents.length !== 8) throw new Error('homunculi registry must contain exactly 8 agents');
+          const ids=data.agents.map(a=>a.id);
+          if(new Set(ids).size!==8) throw new Error('duplicate homunculus ids');
+          const expected=['coord','code','science','research','security','web','ops','archive'];
+          for(const id of expected) if(!ids.includes(id)) throw new Error('missing homunculus '+id);
+          console.log('homunculi:',ids.join(', '));
           NODE
 
       - name: Detect duplicate custom Pages deployers
