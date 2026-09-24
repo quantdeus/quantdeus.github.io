@@ -1,0 +1,32 @@
+name: QuantDeus Site Agent Replies
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: qd-site-agent-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  reply:
+    if: >
+      github.event.issue.pull_request == null &&
+      contains(fromJSON('[112,113,114,115]'), github.event.issue.number) &&
+      github.event.comment.user.type != 'Bot' &&
+      !contains(github.event.comment.body, '<!-- qd-agent-reply -->')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Route comment to real QuantDeus agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/site-agent-reply.js
