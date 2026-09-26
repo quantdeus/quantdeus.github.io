@@ -22,6 +22,7 @@ function doctrineSummary() {
     manifest_sources: (d.manifest_sources || []).map(s => s.id),
     constitutional_core: d.constitutional_core || null,
     epidemic_of_good: d.epidemic_of_good || null,
+    cultural_layer: d.cultural_layer || null,
     kpis: d.kpis || {},
     acceleration_plan: d.acceleration_plan || null,
     transition_protocol: d.transition_protocol || [],

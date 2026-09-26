@@ -110,6 +110,12 @@
       "space",
       "potential",
       "synthesis"
-    ]
+    ],
+    "cultural_layer": {
+      "name": "Synthwave × Frutiger Aero",
+      "synthwave": "ночной космический исследовательский слой",
+      "frutiger_aero": "дневной экологический постдефицитный слой",
+      "rule": "aesthetics support culture and participation; evidence remains independent"
+    }
   }
 }

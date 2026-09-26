@@ -40,6 +40,9 @@ check((doctrine.epidemic_of_good?.replication_loop||[]).length>=6,'doctrine','Ep
 check(Object.keys(doctrine.kpis||{}).length>=10,'doctrine','acceleration KPI set declared');
 check((doctrine.acceleration_plan?.phases||[]).length===4,'doctrine','four acceleration phase gates declared');
 check((doctrine.future_fund?.instruments||[]).length>=4,'doctrine','Future Fund instruments declared');
+check(Boolean(doctrine.cultural_layer?.aesthetics?.synthwave),'doctrine','Synthwave cultural layer declared');
+check(Boolean(doctrine.cultural_layer?.aesthetics?.frutiger_aero),'doctrine','Frutiger Aero cultural layer declared');
+check(doctrine.cultural_layer?.status==='cultural-and-design-layer-not-evidence-source','doctrine','culture cannot substitute for evidence');
 check(doctrine.cron_policy?.required_check==='node scripts/mission-alignment.js','doctrine','cron guard points to mission alignment');
 
 for(const [name,registry] of [['agents',agents],['homunculi',homunculi]]){

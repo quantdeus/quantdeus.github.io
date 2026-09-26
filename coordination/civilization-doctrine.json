@@ -101,7 +101,9 @@
     "unity-in-goal-freedom-in-paths",
     "red-team-before-censorship",
     "replication-package-after-success",
-    "kill-or-pause-without-evidence-of-progress"
+    "kill-or-pause-without-evidence-of-progress",
+    "culture-as-voluntary-participation-layer",
+    "aesthetics-never-upgrade-evidence"
   ],
   "transition_protocol": [
     "define-human-need-or-scarcity",
@@ -370,5 +372,63 @@
     "content-without-knowledge-action-or-cultural-value",
     "too-many-parallel-moonshots-diluting-resources",
     "growth-through-pressure-or-manipulation"
-  ]
+  ],
+  "cultural_layer": {
+    "purpose": "Делать проверяемое, гуманное и постдефицитное будущее эмоционально желаемым, узнаваемым и воспроизводимым через визуальный язык, музыку, интерфейсы, кино, игры, образовательный контент и публичные артефакты.",
+    "status": "cultural-and-design-layer-not-evidence-source",
+    "rule": "Культурный слой может повышать понятность, мотивацию, участие и целостность бренда, но не повышает evidence grade, не заменяет научную проверку и не оправдывает технические или медицинские заявления.",
+    "aesthetics": {
+      "synthwave": {
+        "role": "ночной / космический / исследовательский слой",
+        "associations": [
+          "Neon Horizon",
+          "Y2K/2000s futurism",
+          "space",
+          "warp",
+          "AI",
+          "night interfaces",
+          "music",
+          "exploration",
+          "long-horizon civilization"
+        ],
+        "use": [
+          "dark-mode interfaces",
+          "space and frontier research media",
+          "music and video identity",
+          "agent/control surfaces",
+          "future-tech storytelling"
+        ]
+      },
+      "frutiger_aero": {
+        "role": "дневной / экологический / постдефицитный слой",
+        "associations": [
+          "clean water",
+          "blue sky",
+          "greenery",
+          "glass",
+          "light",
+          "optimistic technology",
+          "human-scale future cities",
+          "ecological restoration",
+          "accessibility"
+        ],
+        "use": [
+          "light-mode interfaces",
+          "Earth restoration and resource-economy visuals",
+          "education",
+          "public-service UX",
+          "future-city visualization",
+          "wellbeing-oriented non-medical design"
+        ]
+      }
+    },
+    "synthesis_rule": "Synthwave показывает горизонт и тягу к неизвестному; Frutiger Aero показывает пригодное для жизни, чистое и доступное будущее на Земле. Оба слоя могут смешиваться, если сохраняются читаемость, доступность и смысл задачи.",
+    "constraints": [
+      "accessibility-and-contrast-before-style",
+      "no-dark-patterns-or-manipulative-design",
+      "culture-must-not-upgrade-evidence",
+      "visual-language-must-not-obscure-risk-or-uncertainty",
+      "user-choice-and-exit-remain-visible"
+    ]
+  }
 }

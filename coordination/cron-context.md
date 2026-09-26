@@ -52,6 +52,10 @@
 - github_role: `source of truth for doctrine, registries, task state, QA, execution and public Pages`
 - coordination_model: `GitHub Issues [SIGNAL]/[STRATEGY]/[TASK] + opt-in /take + Squad B for approved reversible execution`
 - media_rule: `verified success can become a content/education/replication package; media never upgrades evidence grade and participation remains voluntary`
+- cultural_layer: `Synthwave + Frutiger Aero`
+- synthwave_role: `night / space / warp / AI / Y2K / exploration / Neon Horizon`
+- frutiger_aero_role: `day / Earth / ecology / clean water / optimistic technology / post-scarcity cities / accessibility`
+- culture_rule: `aesthetics shape emotion, interfaces and participation but never upgrade evidence or hide risk/uncertainty`
 - kill_pause_filters: `reach without action; untestable project; founder-bottleneck manual routine; irreplaceable partner; unjustified secrecy; content without value; excessive moonshot spread; pressure/manipulation`
 - legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
 - next_step: `keep Cron, Zapier, GitHub boards and all 22 agents on v3; fail closed on doctrine drift; convert successful outputs into reproducible packages rather than activity reports`
