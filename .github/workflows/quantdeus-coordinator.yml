@@ -2,7 +2,7 @@ name: QuantDeus Coordinator 🧭
 
 on:
   schedule:
-    - cron: '17,47 * * * *'
+    - cron: '27 6 * * *'
   workflow_dispatch:
   issues:
     types: [opened, edited, reopened, closed, labeled, unlabeled]
