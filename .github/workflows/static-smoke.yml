@@ -70,8 +70,8 @@ jobs:
           const pages=['index.html','site/index.html','telegram/index.html','homunculi/index.html','coordination/index.html'];
           for(const page of pages){
             const html=fs.readFileSync(page,'utf8');
-            const scripts=[...html.matchAll(/<script([^>]*)>([\\s\\S]*?)<\\/script>/gi)]
-              .filter(m=>!/(?:^|\\s)src=/i.test(m[1]) && !/application\\/ld\\+json/i.test(m[1]))
+            const scripts=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)]
+              .filter(m=>!/(?:^|\s)src=/i.test(m[1]) && !/application\/ld\+json/i.test(m[1]))
               .map(m=>m[2]).filter(x=>x.trim());
             for(const source of scripts) new Function(source);
             console.log(page+': inline JS OK');
