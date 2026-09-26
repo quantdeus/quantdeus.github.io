@@ -29,6 +29,7 @@ const body = String(comment.body || '').trim();
 if (!body || body.includes('<!-- qd-agent-reply -->')) process.exit(0);
 
 const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
+const doctrine = JSON.parse(fs.readFileSync('coordination/civilization-doctrine.json', 'utf8'));
 const agents = registry.agents || [];
 const byId = new Map(agents.map(a => [a.id, a]));
 
@@ -145,6 +146,7 @@ async function buildReply(agentId, query) {
       '',
       'Очередь: 🟢 ' + ready + ' ready · 🟡 ' + active + ' active · 🚧 ' + blocked + ' blocked · 🗳️ ' + proposals.length + ' proposals.',
       'Источник: `' + agent.source + '`.',
+      'Доктрина: `' + doctrine.version + '` — evidence-first post-scarcity.',
       '',
       'Для изменения очереди обычный участник использует proposal/vote; прямой task-control остаётся у owner/admin.',
     ].join('\n');
@@ -156,6 +158,7 @@ async function buildReply(agentId, query) {
     agent.role + '.',
     query ? 'Запрос: ' + escMd(query) : '',
     'Источник агента: `' + agent.source + '`.',
+    'Доктрина: `' + doctrine.version + '` — inspiration ≠ evidence.',
   ].filter(Boolean);
 
   if (relevant.length) {
