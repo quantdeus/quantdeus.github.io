@@ -1,89 +1,89 @@
 {
   "schema_version": 1,
   "version": "2026.09-post-scarcity-v1",
-  "title": "QuantDeus Post-Scarcity Civilization Doctrine",
-  "objective": "Reduce measurable scarcity and expand human flourishing through evidence-first science, automation, resource accounting, ecological restoration, voluntary cooperation and scalable open infrastructure.",
-  "operating_rule": "Inspiration is not evidence. Every extraordinary technical or historical claim must pass an independent evidence gate before it changes roadmap, code, spending, public claims or outreach.",
+  "title": "Постдефицитная цивилизационная доктрина QuantDeus",
+  "objective": "Уменьшать измеримый дефицит и расширять человеческие возможности через доказательную науку, автоматизацию, учёт ресурсов, восстановление экосистем, добровольное сотрудничество и масштабируемую открытую инфраструктуру.",
+  "operating_rule": "Вдохновение не является доказательством. Любое необычное техническое или историческое утверждение должно пройти независимую проверку доказательств до того, как повлияет на дорожную карту, код, расходы, публичные заявления или внешние контакты.",
   "source_streams": [
     {
       "id": "thrive-1",
       "name": "THRIVE: What On Earth Will It Take?",
-      "use": "systems mapping, follow-the-incentives analysis, solution discovery, human agency",
-      "status": "inspiration-and-hypothesis-source",
-      "rule": "Do not inherit conspiracy, energy, health, UFO or governance claims as facts; independently verify each claim.",
+      "use": "системное картирование, анализ стимулов, поиск решений и человеческая субъектность",
+      "status": "источник вдохновения и гипотез",
+      "rule": "Не принимать конспирологические, энергетические, медицинские, НЛО-утверждения и заявления об управлении как факты; каждое утверждение проверять независимо.",
       "url": "https://www.freetothrive.com/movie/thrive/"
     },
     {
       "id": "thrive-2",
       "name": "THRIVE II: This Is What It Takes",
-      "use": "scan proposed solutions in energy, health, consciousness and voluntary/decentralized organization",
-      "status": "inspiration-and-hypothesis-source",
-      "rule": "Technical efficacy requires primary evidence, reproducibility and failure criteria before promotion.",
+      "use": "поиск заявленных решений в энергетике, здоровье, сознании и добровольной/децентрализованной организации",
+      "status": "источник вдохновения и гипотез",
+      "rule": "Техническая эффективность требует первичных доказательств, воспроизводимости и критериев неуспеха до повышения статуса.",
       "url": "https://www.freetothrive.com/movie/thrive-ii/"
     },
     {
       "id": "venus-project",
       "name": "The Venus Project / Jacque Fresco",
-      "use": "resource-based-economy framing, cybernation, access, carrying-capacity constraints, closed-loop systems and scientific social design",
-      "status": "design-inspiration",
+      "use": "ресурсно-ориентированная экономика, кибернетизация, доступ к благам, ограничения несущей способности среды, замкнутые циклы и научное проектирование общества",
+      "status": "источник проектных идей",
       "url": "https://www.thevenusproject.com/resource-based-economy/"
     },
     {
       "id": "earth-renovation",
       "name": "Реновация Земли",
-      "use": "volunteer execution, modern scientific correction of legacy ideas, media production and community building",
-      "status": "collaboration-and-practice-reference",
+      "use": "волонтёрское исполнение, современная научная корректировка прежних идей, производство медиа и развитие сообщества",
+      "status": "ориентир сотрудничества и практики",
       "url": "https://www.earthrenovate.com/"
     },
     {
       "id": "gravity-frontiers",
       "name": "Рубежи науки / Илья Чех",
-      "use": "fundamental research, space technology, life-support systems, science media, commercialization and long-horizon space capability",
-      "status": "science-and-technology-reference",
+      "use": "фундаментальные исследования, космические технологии, системы жизнеобеспечения, научные медиа, коммерциализация и долгосрочные космические возможности",
+      "status": "научно-технологический ориентир",
       "url": "https://gravityfrontiers.org/"
     }
   ],
   "principles": [
-    "human-needs-first",
-    "resource-census-before-abundance-claims",
-    "evidence-before-narrative",
-    "automation-for-access-not-busywork",
-    "closed-loops-and-ecological-carrying-capacity",
-    "voluntary-participation-and-human-override",
-    "open-science-and-reproducibility",
-    "prototype-before-scale",
-    "science-engineering-media-network-capital-feedback-loop",
-    "space-capability-must-also-create-earthside-value"
+    "сначала человеческие потребности",
+    "инвентаризация ресурсов до заявлений об изобилии",
+    "доказательства до нарратива",
+    "автоматизация ради доступа, а не ради занятости",
+    "замкнутые циклы и экологическая ёмкость",
+    "добровольное участие и человеческий контроль",
+    "открытая наука и воспроизводимость",
+    "прототип до масштабирования",
+    "цикл наука → инженерия → медиа → сеть → капитал → обратная связь",
+    "космические технологии должны создавать ценность и на Земле"
   ],
   "evidence_grades": {
-    "A": "independently verifiable primary evidence, reproducible result or deployed system",
-    "B": "promising evidence with material uncertainty or limited replication",
-    "C": "exploratory hypothesis, proposal, early signal or unverified claim"
+    "A": "независимо проверяемые первичные доказательства, воспроизводимый результат или работающая система",
+    "B": "перспективные данные при существенной неопределённости или ограниченной воспроизводимости",
+    "C": "исследовательская гипотеза, предложение, ранний сигнал или непроверенное утверждение"
   },
   "execution_gates": [
-    "need-or-bottleneck-defined",
-    "resource-and-energy-cost-known-or-marked-unknown",
-    "evidence-grade-assigned",
-    "falsifier-or-failure-condition-written",
-    "smallest-reversible-prototype-selected",
-    "human-and-ecological-impact-checked",
-    "observable-artifact-required",
-    "acceptance-criteria-verified"
+    "потребность или узкое место определены",
+    "стоимость ресурсов и энергии известна либо явно помечена как неизвестная",
+    "назначен уровень доказательности",
+    "записано условие опровержения или неуспеха",
+    "выбран минимальный обратимый прототип",
+    "проверено влияние на людей и экологию",
+    "требуется наблюдаемый артефакт",
+    "критерии приёмки проверены"
   ],
   "priority_tracks": {
-    "energy": "abundant clean energy, storage, grid resilience, efficiency and resource productivity",
-    "justice": "fair access, transparent allocation, human override, automation dividends and privacy",
-    "unity": "voluntary cooperation, open science, Earth restoration and interoperable civic/scientific infrastructure",
-    "space": "fundamental physics, life support, ISRU, robotics, propulsion and dual-use Earth/space technologies",
-    "potential": "education, health evidence, accessibility, creativity and human-AI augmentation without unsupported medical claims",
-    "synthesis": "science communication, future-city visualization, culture and media that convert verified results into participation"
+    "energy": "обильная чистая энергия, накопители, устойчивость сетей, эффективность и продуктивность ресурсов",
+    "justice": "справедливый доступ, прозрачное распределение, человеческий контроль, дивиденды автоматизации и приватность",
+    "unity": "добровольное сотрудничество, открытая наука, восстановление Земли и совместимая гражданская/научная инфраструктура",
+    "space": "фундаментальная физика, жизнеобеспечение, ISRU, робототехника, двигательные системы и двойные технологии Земля/космос",
+    "potential": "образование, доказательность здоровья, доступность, творчество и взаимодействие человека с ИИ без необоснованных медицинских заявлений",
+    "synthesis": "научная коммуникация, визуализация городов будущего, культура и медиа, превращающие проверенные результаты в участие"
   },
   "forbidden_shortcuts": [
-    "treating a film claim as scientific proof",
-    "calling unreplicated energy devices a breakthrough",
-    "medical efficacy claims without high-quality evidence",
-    "proxy metrics presented as real-world outcomes",
-    "coercive participation or hidden governance",
-    "automatic production publishing, spending or irreversible action"
+    "считать утверждение из фильма научным доказательством",
+    "называть невоспроизведённое энергетическое устройство прорывом",
+    "заявлять медицинскую эффективность без качественных доказательств",
+    "выдавать прокси-метрики за реальные результаты",
+    "принудительное участие или скрытое управление",
+    "автоматическая публикация в production, расходы или необратимые действия"
   ]
 }
