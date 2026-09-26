@@ -51,12 +51,12 @@ const PILLARS = [
     slug: 'energy',
     label: 'pillar-01-energy',
     emoji: '⚡',
-    name: 'Energy Future',
-    title: '[TASK][Energy] Build evidence-first energy opportunity register',
-    body: `## Outcome
+    name: 'Энергетика будущего',
+    title: '[TASK][Энергия] Создать доказательный реестр энергетических возможностей',
+    body: `## Результат
 Create a small evidence-first register of future-energy opportunities that QuantDeus can actually act on.
 
-## Deliverable
+## Артефакт
 Add \`coordination/pillars/energy.md\` with **3 concrete opportunities**. Each item must include:
 - claim;
 - primary or high-quality source URL + date;
@@ -64,14 +64,14 @@ Add \`coordination/pillars/energy.md\` with **3 concrete opportunities**. Each i
 - what would falsify or weaken the claim;
 - one next executable action for QuantDeus.
 
-## Acceptance
+## Критерии приёмки
 - [ ] File exists in GitHub.
 - [ ] Exactly 3 opportunities are evaluated.
 - [ ] Every opportunity has source, evidence grade, falsifier and next action.
 - [ ] No "breakthrough" language without evidence.
 
-## Execution
-Preferred executor: **GitHub connector / Control Tower**.
+## Исполнение
+Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
 Safe scope: research + repository docs only; no spending, outreach or production deployment.
 
 <!-- qd-task-key:energy-evidence-register-v1 -->`
@@ -82,12 +82,12 @@ Safe scope: research + repository docs only; no spending, outreach or production
     slug: 'justice',
     label: 'pillar-02-justice',
     emoji: '⚖️',
-    name: 'Algorithmic Justice',
-    title: '[TASK][Justice] Add audit contract for autonomous actions',
-    body: `## Outcome
+    name: 'Алгоритмическая справедливость',
+    title: '[TASK][Справедливость] Добавить контракт аудита автономных действий',
+    body: `## Результат
 Turn "algorithmic justice" into an operational rule for QuantDeus agents instead of a slogan.
 
-## Deliverable
+## Артефакт
 Add \`coordination/pillars/justice.md\` containing a reusable decision record with:
 - goal and affected people;
 - evidence/provenance;
@@ -100,14 +100,14 @@ Add \`coordination/pillars/justice.md\` containing a reusable decision record wi
 
 Use the template on **one real QuantDeus action**.
 
-## Acceptance
+## Критерии приёмки
 - [ ] Reusable decision template exists.
 - [ ] One real action is logged end-to-end.
 - [ ] Human override and rollback are explicit.
 - [ ] Proxy metrics are not presented as outcomes.
 
-## Execution
-Preferred executor: **GitHub connector / Control Tower**.
+## Исполнение
+Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
 
 <!-- qd-task-key:justice-autonomy-audit-v1 -->`
   },
@@ -117,12 +117,12 @@ Preferred executor: **GitHub connector / Control Tower**.
     slug: 'unity',
     label: 'pillar-03-unity',
     emoji: '🌍',
-    name: 'Planetary Unity',
-    title: '[TASK][Unity] Build opt-in collaboration intake',
-    body: `## Outcome
+    name: 'Планетарное единство',
+    title: '[TASK][Единство] Создать добровольную форму сотрудничества',
+    body: `## Результат
 Create a concrete collaboration path for researchers, builders and creators.
 
-## Deliverable
+## Артефакт
 Add a GitHub Issue template for collaboration proposals with fields for:
 - contribution / need;
 - relevant pillar(s);
@@ -132,14 +132,14 @@ Add a GitHub Issue template for collaboration proposals with fields for:
 - privacy/safety constraints;
 - opt-in contact method.
 
-## Acceptance
+## Критерии приёмки
 - [ ] Collaboration issue template is committed.
 - [ ] Template avoids requesting secrets or private personal data.
 - [ ] A contributor can understand the next step without private chat.
 - [ ] Coordination Hub can classify the resulting issue.
 
-## Execution
-Preferred executor: **GitHub connector / Control Tower**.
+## Исполнение
+Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
 
 <!-- qd-task-key:unity-collaboration-intake-v1 -->`
   },
@@ -149,25 +149,25 @@ Preferred executor: **GitHub connector / Control Tower**.
     slug: 'space',
     label: 'pillar-04-space',
     emoji: '🚀',
-    name: 'Space Expansion',
-    title: '[TASK][Space] Connect Warp-buble to evidence gates',
-    body: `## Outcome
+    name: 'Космическое развитие',
+    title: '[TASK][Космос] Подключить Warp-buble к доказательным воротам',
+    body: `## Результат
 Make the Warp track actionable and falsifiable from the central coordination layer.
 
-## Deliverable
+## Артефакт
 Add \`coordination/pillars/space.md\` with the current \`quantdeus/Warp-buble\` checkpoint and explicit status for:
 geometry, EOM, residual, NEC, energy, curvature/tidal, horizon, causality, stability and EFT.
 
 Each gate must be **PASS / FAIL / UNKNOWN** with a repository evidence link.
 
-## Acceptance
+## Критерии приёмки
 - [ ] Latest checked Warp SHA is recorded.
 - [ ] All ten gates have explicit status and evidence.
 - [ ] UNKNOWN is used when evidence is absent.
 - [ ] No physical-breakthrough claim unless all required gates justify it.
 
-## Execution
-Preferred executor: **GitHub connector / Control Tower**.
+## Исполнение
+Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
 
 <!-- qd-task-key:space-warp-gates-v1 -->`
   },
@@ -177,23 +177,23 @@ Preferred executor: **GitHub connector / Control Tower**.
     slug: 'potential',
     label: 'pillar-05-potential',
     emoji: '🧬',
-    name: 'Human Potential',
-    title: '[TASK][Potential] Add measurable Mini App feedback loop',
-    body: `## Outcome
+    name: 'Человеческий потенциал',
+    title: '[TASK][Потенциал] Добавить измеримый цикл обратной связи Mini App',
+    body: `## Результат
 Turn the Telegram Mini App into a measurable user loop rather than a static surface.
 
-## Deliverable
+## Артефакт
 Add a small, privacy-preserving feedback action to the Mini App (for example "useful / not useful" plus optional short note), stored locally unless a separate backend is explicitly approved.
 
-## Acceptance
+## Критерии приёмки
 - [ ] User can submit feedback from the Mini App.
 - [ ] No health diagnosis or medical inference is made.
 - [ ] No private data is transmitted by default.
 - [ ] One observable completion event can be verified locally.
 - [ ] README documents how to test it.
 
-## Execution
-Preferred executor: **GitHub connector / Control Tower**.
+## Исполнение
+Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
 Production publication requires separate approval.
 
 <!-- qd-task-key:potential-miniapp-feedback-v1 -->`
@@ -204,12 +204,12 @@ Production publication requires separate approval.
     slug: 'synthesis',
     label: 'pillar-06-synthesis',
     emoji: '✨',
-    name: 'Synthesis Aesthetics',
-    title: '[TASK][Synthesis] Encode Synthwave × Frutiger Aero design tokens',
-    body: `## Outcome
+    name: 'Эстетика синтеза',
+    title: '[TASK][Синтез] Описать дизайн-токены Synthwave × Frutiger Aero',
+    body: `## Результат
 Convert the culture pillar into reusable implementation assets.
 
-## Deliverable
+## Артефакт
 Add \`docs/design-system.md\` and a small set of reusable CSS variables/tokens for the Telegram Mini App:
 - typography hierarchy;
 - spacing/radius;
@@ -217,14 +217,14 @@ Add \`docs/design-system.md\` and a small set of reusable CSS variables/tokens f
 - light/water/green Frutiger Aero tokens;
 - accessibility/contrast rule.
 
-## Acceptance
+## Критерии приёмки
 - [ ] Tokens are documented.
 - [ ] Tokens are implemented in code or a dedicated stylesheet.
 - [ ] Existing UI can adopt them without a full rewrite.
 - [ ] Culture language is kept separate from scientific claims.
 
-## Execution
-Preferred executor: **GitHub connector / Control Tower**.
+## Исполнение
+Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
 Production publication requires separate approval.
 
 <!-- qd-task-key:synthesis-design-tokens-v1 -->`
@@ -233,30 +233,30 @@ Production publication requires separate approval.
 
 function ensureLabels() {
   const common = [
-    ['coord:task', '1f6feb', 'QuantDeus coordination task'],
-    ['coord:ready', '2da44e', 'Ready for execution'],
-    ['coord:active', 'bf8700', 'Execution in progress'],
-    ['coord:blocked', 'd1242f', 'Blocked and needs intervention'],
-    ['coord:done', '8250df', 'Completed and verified'],
-    ['exec:connector', '5319e7', 'Preferred executor: GitHub connector / Control Tower'],
-    ['priority:p1', 'b60205', 'Highest current execution priority'],
+    ['coord:task', '1f6feb', 'Координационная задача QuantDeus'],
+    ['coord:ready', '2da44e', 'Готово к исполнению'],
+    ['coord:active', 'bf8700', 'Исполнение идёт'],
+    ['coord:blocked', 'd1242f', 'Заблокировано, требуется вмешательство'],
+    ['coord:done', '8250df', 'Завершено и проверено'],
+    ['exec:connector', '5319e7', 'Предпочтительный исполнитель: коннектор GitHub / Control Tower'],
+    ['priority:p1', 'b60205', 'Наивысший текущий приоритет исполнения'],
   ];
   const pillarLabels = [
-    ['pillar-01-energy', 'f9d71c', 'Future energy'],
-    ['pillar-02-justice', '6f42c1', 'Algorithmic justice'],
-    ['pillar-03-unity', '0e8a16', 'Planetary cooperation'],
-    ['pillar-04-space', '1d76db', 'Space expansion'],
-    ['pillar-05-potential', 'd93f0b', 'Human potential'],
-    ['pillar-06-synthesis', 'c5def5', 'Aesthetic synthesis'],
+    ['pillar-01-energy', 'f9d71c', 'Энергетика будущего'],
+    ['pillar-02-justice', '6f42c1', 'Алгоритмическая справедливость'],
+    ['pillar-03-unity', '0e8a16', 'Планетарное сотрудничество'],
+    ['pillar-04-space', '1d76db', 'Космическое развитие'],
+    ['pillar-05-potential', 'd93f0b', 'Человеческий потенциал'],
+    ['pillar-06-synthesis', 'c5def5', 'Эстетика синтеза'],
   ];
   for (const args of [...common, ...pillarLabels]) ensureLabel(...args);
 }
 
 function taskState(issue) {
-  if (hasLabel(issue, 'coord:blocked')) return '🚧 BLOCKED';
-  if (hasLabel(issue, 'coord:active')) return '🟡 ACTIVE';
-  if (hasLabel(issue, 'coord:done')) return '✅ DONE';
-  return '🟢 READY';
+  if (hasLabel(issue, 'coord:blocked')) return '🚧 ЗАБЛОКИРОВАНО';
+  if (hasLabel(issue, 'coord:active')) return '🟡 АКТИВНО';
+  if (hasLabel(issue, 'coord:done')) return '✅ ГОТОВО';
+  return '🟢 ГОТОВО';
 }
 
 function seedTasks() {
@@ -299,7 +299,7 @@ function seedTasks() {
       '--label', 'priority:p1',
       '--label', pillar.label,
     ]);
-    console.log(`seeded ${pillar.slug}`);
+    console.log(`создана начальная задача ${pillar.slug}`);
   }
 }
 
@@ -317,7 +317,7 @@ function refreshBoard() {
     const current = items[0];
     return current
       ? `| ${pillar.emoji} ${pillar.name} | ${taskState(current)} | [#${current.number} ${current.title}](${current.url}) | connector | `
-      : `| ${pillar.emoji} ${pillar.name} | ⚪ EMPTY | Create next executable task | — |`;
+      : `| ${pillar.emoji} ${pillar.name} | ⚪ ПУСТО | Создать следующую исполнимую задачу | — |`;
   });
 
   const digestSource = rows.join('\n');
@@ -327,35 +327,35 @@ function refreshBoard() {
   let board = allBoards.find(i => i.title === BOARD_TITLE);
   const oldDigest = board?.body?.match(/<!--\s*pillar-exec-digest:([a-f0-9]+)\s*-->/i)?.[1];
 
-  const body = `# 🧭 QuantDeus Six-Pillar Execution Board
+  const body = `# 🧭 Доска исполнения шести столпов QuantDeus
 
-This board is an **execution queue**, not a news digest.
+Эта доска — **очередь исполнения**, а не новостная сводка.
 
-**Doctrine:** ${doctrine.version}  
-**Objective:** ${doctrine.objective}
+**Доктрина:** ${doctrine.version}  
+**Цель:** ${doctrine.objective}
 
-Rules:
-1. Every pillar must point to a concrete task with an observable artifact.
-2. Prefer one P1 task at a time per pillar.
-3. GitHub connector / Control Tower may execute safe reversible repository work directly.
-4. Human approval is still required for production publication, spending, secrets, irreversible actions or sensitive outreach.
-5. A task is DONE only after its acceptance checklist is verified.
-6. No periodic Pulse issue is created just to say that a scan happened.
-7. Every task must reduce a measurable scarcity/bottleneck or build a reusable capability; inspiration never substitutes for evidence.
+Правила:
+1. Каждый столп должен указывать на конкретную задачу с наблюдаемым артефактом.
+2. Предпочтительно иметь одну задачу P1 на столп одновременно.
+3. Коннектор GitHub / Control Tower может напрямую выполнять безопасную обратимую работу в репозитории.
+4. Публикация в production, расходы, секреты, необратимые действия и чувствительные контакты требуют одобрения человека.
+5. Задача считается ГОТОВОЙ только после проверки критериев приёмки.
+6. Периодический Pulse Issue не создаётся только ради факта сканирования.
+7. Каждая задача должна уменьшать измеримый дефицит/узкое место или создавать повторно используемую возможность; вдохновение не заменяет доказательства.
 
-| Pillar | State | Current executable task | Preferred executor |
+| Столп | Состояние | Текущая исполнимая задача | Предпочтительный исполнитель |
 |---|---|---|---|
 ${rows.join('\n')}
 
-## Execution protocol
+## Исполнение protocol
 
-- **coord:ready** — executable now.
-- **coord:active** — work is actually in progress.
-- **coord:blocked** — a concrete blocker exists.
-- **coord:done** — acceptance criteria verified.
-- **exec:connector** — suitable for execution through the GitHub connector / Control Tower.
+- **coord:ready** — можно исполнять сейчас.
+- **coord:active** — работа действительно выполняется.
+- **coord:blocked** — есть конкретная блокировка.
+- **coord:done** — критерии приёмки проверены.
+- **exec:connector** — подходит для исполнения через коннектор GitHub / Control Tower.
 
-The coordinator may summarize this board, but **the board exists to drive file changes, issues, reviews, tests and verified artifacts — not to generate six-pillar reports**.
+Coordinator может сводить состояние доски, но **доска существует ради изменений файлов, Issues, ревью, тестов и проверенных артефактов, а не ради генерации отчётов по шести столпам**.
 
 <!-- pillar-exec-digest:${digest} -->
 `;
@@ -364,13 +364,13 @@ The coordinator may summarize this board, but **the board exists to drive file c
 
   if (!board) {
     gh(['issue', 'create', '--title', BOARD_TITLE, '--body-file', '/tmp/qd-board.md']);
-    console.log('execution board created');
+    console.log('доска исполнения создана');
   } else if (oldDigest !== digest) {
     if (String(board.state).toLowerCase() !== 'open') gh(['issue', 'reopen', String(board.number)]);
     gh(['issue', 'edit', String(board.number), '--body-file', '/tmp/qd-board.md']);
-    console.log('execution board updated');
+    console.log('доска исполнения обновлена');
   } else {
-    console.log('execution board unchanged');
+    console.log('доска исполнения без изменений');
   }
 }
 
