@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "title": "QuantDeus Octet Squad B — second execution crew",
+  "source_of_truth": "quantdeus/quantdeus.github.io",
+  "updated": "2026-09-26",
+  "squad_id": "octet-b",
+  "mode": "issue-driven-execution",
+  "mission": "Convert approved QuantDeus GitHub tasks into reviewed repository changes on isolated branches and Pull Requests.",
+  "workflow": ".github/workflows/octet-squad.yml",
+  "trigger_labels": ["coord:task", "squad-b:ready"],
+  "agents": [
+    {"id":"scout","name":"Repo Scout","emoji":"🔭","role":"Intake: reads the approved task, execution manifest and repository context.","source":"scripts/octet/scout.js","group":"executor-b"},
+    {"id":"verifier","name":"Task Verifier","emoji":"🔬","role":"Validates manifest syntax, supported operations and repository paths.","source":"scripts/octet/verify.js","group":"executor-b"},
+    {"id":"analyst","name":"Change Analyst","emoji":"📊","role":"Classifies change lanes, touched surfaces and risk level.","source":"scripts/octet/analyze.js","group":"executor-b"},
+    {"id":"strategist","name":"Execution Strategist","emoji":"🧠","role":"Builds an ordered execution plan and branch strategy.","source":"scripts/octet/strategize.js","group":"executor-b"},
+    {"id":"guardian","name":"Guardian","emoji":"🛡️","role":"Governance and safety gate; protects sensitive repository surfaces.","source":"scripts/octet/guardian.js","group":"executor-b"},
+    {"id":"tasksmith","name":"Task Smith","emoji":"⚒️","role":"Applies file operations, runs local checks, commits and pushes an isolated branch.","source":"scripts/octet/tasksmith.js","group":"executor-b"},
+    {"id":"archivist","name":"Execution Archivist","emoji":"🗄️","role":"Writes an auditable execution record into coordination/executions.","source":"scripts/octet/archivist.js","group":"executor-b"},
+    {"id":"herald","name":"PR Herald","emoji":"📣","role":"Opens/updates the Pull Request and reports status back to the task Issue.","source":"scripts/octet/herald.js","group":"executor-b"}
+  ],
+  "guardrails": {
+    "direct_main_push": false,
+    "automatic_merge": false,
+    "deletion": false,
+    "secret_paths": false,
+    "privileged_label": "squad-b:privileged"
+  }
+}
