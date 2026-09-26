@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "title": "QuantDeus Holding Startup Organization",
+  "title": "QuantDeus Holding — организационная структура стартапа",
   "updated": "2026-09-26",
-  "model": "Founder-led AI-native holding",
-  "mission": "Build evidence-first products, research and infrastructure that reduce measurable scarcity and expand human capability.",
+  "model": "Холдинг под руководством основателя с цифровой командой",
+  "mission": "Создавать доказательные продукты, исследования и инфраструктуру, которые уменьшают измеримый дефицит и расширяют возможности человека.",
   "workforce": {
     "human_leadership": true,
     "ai_agents": 22,
@@ -12,9 +12,9 @@
   "departments": [
     {
       "id": "executive",
-      "name": "Executive & Strategy",
+      "name": "Руководство и стратегия",
       "emoji": "🛰️",
-      "mandate": "Strategy, portfolio, operations and technical control.",
+      "mandate": "Стратегия, портфель, операционная работа и технический контроль.",
       "agents": [
         "coordinator",
         "pillar-executor",
@@ -24,9 +24,9 @@
     },
     {
       "id": "research",
-      "name": "Science & R&D",
+      "name": "Наука и исследования",
       "emoji": "🔬",
-      "mandate": "Evidence-first research across energy, governance, space and human capability.",
+      "mandate": "Доказательные исследования энергетики, управления, космоса и человеческих возможностей.",
       "agents": [
         "orchestrator",
         "energy",
@@ -37,9 +37,9 @@
     },
     {
       "id": "growth-marketing",
-      "name": "Growth, Marketing & Partnerships",
+      "name": "Рост, маркетинг и партнёрства",
       "emoji": "📣",
-      "mandate": "Brand, SEO, content, PR, community and strategic partnerships.",
+      "mandate": "Бренд, SEO, контент, PR, сообщество и стратегические партнёрства.",
       "agents": [
         "unity",
         "synthesis",
@@ -49,9 +49,9 @@
     },
     {
       "id": "product-engineering",
-      "name": "Product & Engineering",
+      "name": "Продукт и разработка",
       "emoji": "⚒️",
-      "mandate": "Discovery, requirements, architecture, security and software delivery.",
+      "mandate": "Исследование продукта, требования, архитектура, безопасность и поставка изменений.",
       "agents": [
         "scout",
         "verifier",
@@ -63,9 +63,9 @@
     },
     {
       "id": "quality-reliability",
-      "name": "Quality & Reliability",
+      "name": "Качество и надёжность",
       "emoji": "🦀",
-      "mandate": "Automated QA, contract validation, repair loops and release confidence.",
+      "mandate": "Автоматизированный QA, проверка контрактов, циклы исправления и уверенность в релизах.",
       "agents": [
         "qa-syntax",
         "qa-contract",
@@ -74,10 +74,10 @@
     }
   ],
   "operating_model": [
-    "Research discovers evidence-backed opportunities.",
-    "Strategy converts signals into prioritized outcomes.",
-    "Product & Engineering ships reversible, testable changes.",
-    "QA blocks defects and coordinates repairs.",
-    "Growth, Marketing & Partnerships turns verified outcomes into adoption, discoverability and collaboration."
+    "Исследовательский отдел находит возможности, подтверждённые данными.",
+    "Стратегический отдел превращает сигналы в приоритетные результаты.",
+    "Продукт и разработка выпускают обратимые и проверяемые изменения.",
+    "QA блокирует дефекты и координирует исправления.",
+    "Маркетинг, SEO, PR и партнёрства превращают проверенные результаты в охват, обнаруживаемость и сотрудничество."
   ]
 }
