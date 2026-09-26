@@ -1,4 +1,4 @@
-name: QuantDeus Octet Squad B ⚒️
+name: QuantDeus Octet Squad B — исполнительная команда ⚒️
 
 on:
   issues:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: "Approved task Issue number"
+        description: "Номер одобренного Issue с задачей"
         required: true
         type: number
 
@@ -37,5 +37,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: ⚒️ Run second execution crew
+      - name: ⚒️ Запустить вторую исполнительную команду
         run: node scripts/octet/task-handler.js
