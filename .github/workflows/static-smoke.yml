@@ -40,10 +40,16 @@ jobs:
           test -f coordination.html
           test -f coordination/agents.json
           test -f coordination/homunculi.json
+          test -f coordination/startup-org.json
+          test -f robots.txt
+          test -f sitemap.xml
           test -f homunculi/index.html
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
           grep -q '/coordination/' index.html
+          grep -q 'QuantDeus Holding' index.html
+          grep -q '22-agent' README.md
+          grep -q 'sitemap.xml' robots.txt
           grep -q '/coordination/' telegram/index.html
 
       - name: Validate agent registry
