@@ -1,4 +1,4 @@
-name: QuantDeus Site Agent Replies
+name: Ответы агентов QuantDeus на сайте
 
 on:
   issue_comment:
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Route comment to real QuantDeus agent
+      - name: Направить комментарий реальному агенту QuantDeus
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/site-agent-reply.js
