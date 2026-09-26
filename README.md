@@ -1,101 +1,120 @@
-# 🌌 QuantDeus
+# QuantDeus Holding
 
-**Операционная Система Цивилизации**
+> **AI-native R&D, product and creative holding for an evidence-first post-scarcity future.**
 
-QuantDeus — открытая сеть людей и ИИ-агентов, которая превращает исследования, технологические сигналы и идеи в проверяемые проекты Столетнего Плана: алгоритмическую справедливость, чистую энергетику, планетарную кооперацию, космическую экспансию и раскрытие человеческого потенциала.
+QuantDeus is a founder-led experimental holding that combines **22 specialized AI agents**, GitHub-native operations, research workflows, product engineering, QA, marketing/SEO and community coordination.
 
----
+The repository is both the **operating system** and the **public presentation layer** of QuantDeus.
 
-## 🚀 Как присоединиться
-
-1. **Forkни** этот репозиторий
-2. Выбери столп, который тебе близок
-3. Создай Issue с идеей, стратегическим сигналом или предложением
-4. Бери координационные `[TASK]` через `/take`
-5. Делай Pull Request с контентом, кодом, исследованиями и результатами
-
-Каждый участник — человек или агент — часть Столетнего Плана.
+🌐 **Holding:** https://quantdeus.github.io/  
+✈️ **Telegram product:** https://quantdeus.github.io/telegram/  
+🧭 **Coordination Center:** https://quantdeus.github.io/coordination/  
+🤖 **AI workforce:** https://quantdeus.github.io/homunculi/
 
 ---
 
-## 🌐 Активный фронтенд
+## What QuantDeus builds
 
-**QuantDeus Store** — канонический пользовательский интерфейс QuantDeus.
+QuantDeus converts research signals into small, reversible, verifiable outputs:
 
-- frontend: `Telegram Mini App`
-- canonical URL: `https://quantdeus.github.io/telegram/`
-- host/domain: `GitHub Pages / quantdeus.github.io`
-- browser-compatible build: `index.html`
-- bot/menu configuration: `GitHub Actions + Telegram Bot API`
-- Make: только вспомогательный dev/vibe-coding слой; production Telegram webhooks через Make не используются
-- runtime backend: подключается отдельно только для функций, которым действительно нужен сервер
-- current MVP: `QuantDeus Mini App Store / Binaural.exe`
+**NEED → RESOURCE MAP → EVIDENCE → PROTOTYPE → QA → DELIVERY → COMMUNICATION → ITERATION**
 
-Предыдущие frontend-платформы и прежний план `quantdeus.tk` больше не считаются активными. Каноническая архитектура теперь Telegram-first, GitHub-Pages-hosted и web-compatible.
+The operating doctrine is evidence-first: inspiration may generate hypotheses, but technical or scientific claims must survive explicit evidence and falsification gates.
 
-### 📚 Telegram Mini Apps — reference
+### Portfolio directions
 
-- Habr / Amvera: [Как создать Telegram Mini App](https://habr.com/en/companies/amvera/articles/838180/?ysclid=mtzv0737v64486599)
-- Official Telegram Mini Apps docs: https://core.telegram.org/bots/webapps
-
-Статья Habr используется как практический вводный материал; при реализации API и security-критичных частей приоритет имеют актуальные официальные документы Telegram.
+| Direction | Focus |
+|---|---|
+| ⚡ Energy & resources | clean energy, storage, grid resilience, resource productivity |
+| 🧠 AI & automation | agent operations, safe automation, human override, product tooling |
+| 🌍 Planet & cooperation | open science, circular systems, partnerships and communities |
+| 🚀 Space & frontier R&D | life support, ISRU, robotics, propulsion and warp research |
+| 🧬 Human capability | education, accessibility, creativity and human-AI augmentation |
+| ✨ Media & culture | brand, science communication, future interfaces and creative products |
 
 ---
 
-## 🧭 Цель координации
+## 22-agent startup team
 
-QuantDeus Coordinator нужен не для простой выдачи новостей. Его задача — помогать формировать **сообщество людей и ИИ-агентов, которое последовательно реализует Столетний План 2025–2125**.
+QuantDeus keeps stable technical agent IDs for automation, while each agent also has a real startup role.
 
-Pulse и другие исследовательские агенты работают как сенсоры. Их результаты должны проходить цикл:
+| Department | Team | Mandate |
+|---|---:|---|
+| 🛰️ Executive & Strategy | 4 | strategy, portfolio, operations, automation |
+| 🔬 Science & R&D | 5 | evidence-first research and technology scouting |
+| 📣 Growth, Marketing & Partnerships | 4 | brand, SEO, content, PR, community and partnerships |
+| ⚒️ Product & Engineering | 6 | discovery, architecture, security and delivery |
+| 🦀 Quality & Reliability | 3 | automated QA, contract checks and repair loops |
 
-**сигнал → проверка → оценка влияния → стратегическое предложение → обсуждение → приоритет → `[TASK]` → результат → обновление плана**
+Canonical organization data: [`coordination/startup-org.json`](coordination/startup-org.json)  
+Agent registry: [`coordination/agents.json`](coordination/agents.json)  
+Governance registry: [`coordination/homunculi.json`](coordination/homunculi.json)
 
-Особое внимание получают сигналы, способные существенно изменить траекторию плана:
+### Marketing & SEO
 
-- публичные и официальные материалы по **UAP** и новым аэрокосмическим наблюдениям;
-- прогресс в теориях и моделях **warp drive / модифицированной гравитации**;
-- **метаматериалы**, необычные электромагнитные и структурные свойства материалов;
-- термояд, космическая солнечная энергетика, новые накопители и **энергетика космического масштаба**;
-- ИИ, робототехника, биотехнологии и другие технологии общего назначения.
+The holding has a dedicated growth layer:
 
-Подробная процедура: [`docs/ADAPTIVE_COORDINATION.md`](docs/ADAPTIVE_COORDINATION.md).
-
----
-
-## 📜 Шесть Столпов
-
-| # | Столп | Описание |
-|---|-------|----------|
-| ⚡ | **Энергетика будущего** | Термояд, ВИЭ, БОД, чистая энергия для всех |
-| ⚖️ | **Алгоритмическая справедливость** | ИИ-этика, UBI, распределение ресурсов |
-| 🌍 | **Планетарное единство** | Глобальная кооперация, экология, климат |
-| 🚀 | **Космическая экспансия** | Колонизация, варп, орбитальные города |
-| 🧬 | **Человеческий потенциал** | Продление жизни, биохакинг, нейросети |
-| ✨ | **Эстетика синтеза** | Технологии + искусство, культура будущего |
-
-## 🗺️ Столетний План (2025–2125)
-
-| Квартал | Период | Цель |
-|---------|--------|------|
-| 🟢 I | 2025–2050 | Синхронизация |
-| 🔵 II | 2050–2075 | Ренессанс |
-| 🟣 III | 2075–2100 | Варп-Порог |
-| ⚪ IV | 2100–2125 | Звёздная Федерация |
-
-### Умная корректировка целей
-
-Столетний План — долгосрочный компас, а не неподвижный список дат. Существенные новые данные могут ускорять, замедлять, дробить или переупорядочивать промежуточные цели. Любая корректировка должна оставлять прозрачный след: **какой сигнал её вызвал, насколько он подтверждён, какое решение принято и какие задачи из него возникли**.
+- **Head of Partnerships & Community Growth** — partnerships, communities and qualified contributors.
+- **Brand & Creative Director** — brand system, creative direction and campaigns.
+- **SEO & Content Operations Lead** — searchable knowledge, information architecture, metadata and organic discovery.
+- **PR & Communications Manager** — releases, summaries and external communication.
 
 ---
 
-*«Алгоритмы управляют ресурсами — люди управляют смыслами»*
+## Delivery system
+
+QuantDeus uses GitHub as the source of truth.
+
+- **Control Tower** — portfolio and automation control.
+- **Octet Squad B** — eight-stage execution crew: discovery → verification → analysis → strategy → governance → code → archive → PR handoff.
+- **QA Triad** — syntax validator, contract validator and repair coordinator.
+- **Daily automations** — health, QA, coordination and research cycles run on a controlled daily cadence.
+- **Human override** — privileged, irreversible and public-impact operations stay under explicit human control.
+
+### Quality gate
+
+Every relevant change is expected to pass:
+
+`All-agent health → Syntax → Contracts → Static Smoke → Review → Merge`
+
+The QA system is designed to **block or repair defects**, not hide them by weakening tests.
 
 ---
 
-## 🧭 QuantDeus Coordination Center
+## Post-scarcity doctrine
 
-- Public chat / coordination mirror: `https://quantdeus.github.io/coordination.html`
-- Live source: GitHub Issues + Actions
-- Agent registry: `coordination/agents.json`
-- Human participation: opt-in via coordination Issues and `/take`
-- Telegram bridge: tracked in Issue #10 and enabled only after explicit configuration
+The canonical doctrine is [`coordination/civilization-doctrine.json`](coordination/civilization-doctrine.json).
+
+It combines useful design ideas from resource-oriented systems thinking, open science, automation, ecological constraints and frontier R&D while keeping a strict rule:
+
+> **Inspiration ≠ evidence.**
+
+Claims are graded by evidence, given explicit failure conditions, and converted into the smallest reversible prototype before scale.
+
+---
+
+## Repository map
+
+```text
+/
+├─ index.html                     # QuantDeus Holding public landing
+├─ telegram/                      # Telegram-first product interface
+├─ coordination/                  # org, doctrine, boards and execution records
+│  ├─ agents.json                 # 22-agent canonical registry
+│  ├─ homunculi.json              # governance-facing registry
+│  ├─ startup-org.json            # startup departments and org chart
+│  └─ civilization-doctrine.json  # operating doctrine
+├─ homunculi/                     # public AI-workforce view
+├─ scripts/                       # agent and automation runtime
+└─ .github/workflows/             # QA, coordination and execution automation
+```
+
+---
+
+## Participation
+
+QuantDeus is designed around **human agency + AI leverage**. Contributors can submit proposals, research, code, design and verified outcomes through GitHub Issues and Pull Requests. Governance separates ordinary proposals from privileged changes.
+
+---
+
+**QuantDeus — algorithms manage workflows; humans retain meaning and final authority.**
