@@ -235,14 +235,22 @@ async function refreshHub() {
     if (hasLabel(task, 'coord:stale')) stats.stale++;
   }
 
-  const digestData = finalTasks.map(t => ({
-    n: t.number,
-    title: t.title,
-    state: stateOf(t),
-    owner: getOwner(t.body || '') || '',
-    pillar: pillarOf(t),
-    labels: (t.labels || []).map(l => typeof l === 'string' ? l : l.name).sort(),
-  })).sort((a, b) => a.n - b.n);
+  const digestData = {
+    doctrine: {
+      version: doctrine.version,
+      objective: doctrine.objective,
+      operating_rule: doctrine.operating_rule,
+      source_streams: doctrine.source_streams || [],
+    },
+    tasks: finalTasks.map(t => ({
+      n: t.number,
+      title: t.title,
+      state: stateOf(t),
+      owner: getOwner(t.body || '') || '',
+      pillar: pillarOf(t),
+      labels: (t.labels || []).map(l => typeof l === 'string' ? l : l.name).sort(),
+    })).sort((a, b) => a.n - b.n),
+  };
   const hash = crypto.createHash('sha256').update(JSON.stringify(digestData)).digest('hex').slice(0, 16);
 
   const hubs = ghJson(['issue', 'list', '--state', 'all', '--search', `${HUB_TITLE} in:title`, '--limit', '10', '--json', 'number,title,body,url,state']) || [];

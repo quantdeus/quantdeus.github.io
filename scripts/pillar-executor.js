@@ -320,7 +320,12 @@ function refreshBoard() {
       : `| ${pillar.emoji} ${pillar.name} | ⚪ EMPTY | Create next executable task | — |`;
   });
 
-  const digestSource = rows.join('\n');
+  const digestSource = JSON.stringify({
+    doctrine_version: doctrine.version,
+    objective: doctrine.objective,
+    source_streams: doctrine.source_streams || [],
+    rows,
+  });
   const digest = crypto.createHash('sha256').update(digestSource).digest('hex').slice(0, 16);
 
   const allBoards = ghJson(['issue', 'list', '--state', 'all', '--search', `${BOARD_TITLE} in:title`, '--limit', '10', '--json', 'number,title,body,state,url']) || [];
