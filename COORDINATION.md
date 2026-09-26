@@ -1,64 +1,57 @@
-# 🧭 QuantDeus Coordination Protocol
+# 🧭 Протокол координации QuantDeus
 
-## Execution-first mode
+## Режим «сначала исполнение»
 
-QuantDeus now coordinates the six public pillars through **executable GitHub tasks**, not periodic six-pillar news-report Issues.
+QuantDeus координирует шесть публичных направлений через **исполняемые задачи GitHub**, а не через периодические новостные Issues.
 
-The canonical queue is `🧭 QuantDeus Six-Pillar Execution Board`. Each pillar points to one concrete task with an observable artifact and acceptance checklist. Tasks marked `exec:connector` are intended for the GitHub connector / Control Tower to execute through file changes, issue operations, tests, reviews, or other verifiable repository actions.
+Каноническая очередь — `🧭 QuantDeus Six-Pillar Execution Board`. Каждый столп указывает на одну конкретную задачу с наблюдаемым артефактом и чек-листом приёмки. Задачи с меткой `exec:connector` предназначены для исполнения через GitHub connector / Control Tower: изменения файлов, операции с Issues, тесты, ревью и другие проверяемые действия в репозитории.
 
-The old Pulse headline reports are legacy history. The replacement workflow does **not** create a new report Issue every scheduled run. It maintains the task queue and refreshes the coordination hub only when state changes.
+Старые Pulse-отчёты остаются историей. Новый workflow не создаёт новый отчёт при каждом запуске, а поддерживает очередь задач и обновляет центр координации только при изменении состояния.
 
-Production publication, spending, secrets, irreversible actions and sensitive outreach still require explicit human approval.
+Публикация в production, расходы, секреты, необратимые действия и чувствительные внешние контакты требуют явного одобрения человека.
 
-QuantDeus Coordinator turns **governance-approved** GitHub Issues into an opt-in human coordination layer. The governance gate runs before the Coordinator.
+QuantDeus Coordinator превращает **одобренные правилами управления** GitHub Issues в добровольный слой координации людей. Перед Coordinator всегда работает governance gate.
 
-## Governance: proposal before task
+## Управление: предложение перед задачей
 
-Only QuantDeus chat **owner/admin** may directly put work into the real agent queue.
+Только владелец или администратор чата QuantDeus может напрямую помещать работу в реальную очередь агентов.
 
-Participants use the community path:
+Обычный участник использует общественный путь:
 
-1. `/propose <agent> <idea>` in QuantDeus Store bot creates a `[PROPOSAL]` Issue.
-2. Participants vote `yes/no` in Telegram (the website exposes the same vote buttons).
-3. Telegram user IDs are not written to GitHub; votes use pseudonymous HMAC voter markers.
-4. When the configured quorum is reached and YES > NO, a chat admin may run `/promote #N`.
-5. Promotion marks the proposal `governance:passed`; only then may it become `coord:task`.
+1. `/propose <agent> <идея>` в боте QuantDeus Store создаёт Issue `[PROPOSAL]`.
+2. Участники голосуют `yes/no` в Telegram; сайт показывает те же кнопки голосования.
+3. Telegram user ID не записываются в GitHub: голоса используют псевдонимные HMAC-маркеры.
+4. Когда достигнут кворум и голосов YES больше, чем NO, администратор может выполнить `/promote #N`.
+5. После повышения предложение получает `governance:passed` и только тогда может стать `coord:task`.
 
-Direct admin work uses `/task <agent> <task>`.
+Прямая администраторская задача создаётся командой `/task <agent> <задача>`.
 
-A manually opened `[TASK]` Issue from a non-admin is **not** accepted as executable work. `scripts/governance-gate.js` converts it to `[PROPOSAL]`, strips task-state labels, and routes it through voting.
+Если не-администратор вручную создаёт `[TASK]`, такая задача не принимается к исполнению: `scripts/governance-gate.js` превращает её в `[PROPOSAL]`, снимает метки состояния задачи и отправляет на голосование.
 
-The target is one of the real agents registered in `coordination/agents.json` (Coordinator, Six-Pillar Executor, Strategic Hub, Orchestrator, six pillar agents, or Control Tower).
+Целевой агент должен существовать в `coordination/agents.json`.
 
-## Contributor commands
+## Команды участника
 
-Post one of these commands as an Issue comment:
+В комментарии Issue доступны:
 
-- `/take` — claim a free task.
-- `/release` — release a task you own.
-- `/block reason` — mark your task blocked and request human help.
-- `/ready` — return your task to the ready queue.
-- `/done` — mark your task complete and close the Issue.
+- `/take` — взять свободную задачу;
+- `/release` — освободить свою задачу;
+- `/block причина` — отметить блокировку и запросить помощь;
+- `/ready` — вернуть задачу в очередь готовых;
+- `/done` — завершить задачу и закрыть Issue.
 
-The bot stores the claimant in a hidden metadata marker in the Issue body. It does not assign work to a person unless that person explicitly uses `/take`.
+Система сохраняет владельца задачи в скрытом мета-маркере Issue и никогда не назначает человека без его явной команды `/take`.
 
-## Hourly coordination
+## Суточная координация
 
-The coordinator runs every hour and also reacts to Issue and Issue-comment events. It maintains `🧭 QuantDeus Coordination Hub` with counts and a live task table.
+Плановый Coordinator запускается раз в сутки и дополнительно реагирует на события Issues и комментариев. Он поддерживает центр координации с живой таблицей задач.
 
-Active tasks older than 72 hours are marked `coord:stale` and `coord:human` so stalled work becomes visible.
+Активные задачи старше 72 часов получают `coord:stale` и `coord:human`, чтобы зависшая работа становилась видимой.
 
-## External channels
+## Внешние каналы
 
-External notifications are opt-in. Configure any of these repository Actions secrets:
+Внешние уведомления включаются только явно через доступные секреты Actions. Если ни один канал не настроен, сообщения не покидают GitHub.
 
-- `QUANTDEUS_DISCORD_WEBHOOK`
-- `QUANTDEUS_SLACK_WEBHOOK`
-- `QUANTDEUS_GENERIC_WEBHOOK`
-- `QUANTDEUS_TELEGRAM_BOT_TOKEN` together with `QUANTDEUS_TELEGRAM_CHAT_ID`
+## Поток «агент → человек»
 
-When configured, the coordinator sends a compact digest only when the task-state digest changes. If no external secret is configured, no message leaves GitHub.
-
-## Agent-to-human workflow
-
-Trusted QuantDeus repository agents may create `[TASK]` Issues when they detect work that needs a person: source verification, expert review, translation, experiment reproduction, outreach preparation, or implementation. Community-originated work enters as `[PROPOSAL]` first. Humans claim those tasks voluntarily with `/take`. The Coordinator tracks ownership, blockage and completion and exposes the whole queue through the Coordination Hub.
+Доверенные агенты QuantDeus могут создавать `[TASK]`, когда требуется человеческая работа: проверка источника, экспертное ревью, перевод, воспроизведение эксперимента, подготовка внешнего контакта или реализация. Работа от сообщества сначала входит как `[PROPOSAL]`. Люди берут её добровольно через `/take`, а Coordinator отслеживает владельца, блокировки и завершение.
