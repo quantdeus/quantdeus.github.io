@@ -1,4 +1,4 @@
-name: QuantDeus WordPress Playground
+name: QuantDeus — песочница WordPress
 
 on:
   push:
@@ -31,13 +31,13 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate WordPress files
+      - name: Проверить файлы WordPress
         run: |
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
-          node -e "const fs=require('fs'); const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8')); if(!b.preferredVersions?.wp) throw new Error('wp version missing'); if(!b.steps?.some(x=>x.step==='login')) throw new Error('login step missing'); console.log('Blueprint OK:',b.preferredVersions)"
+          node -e "const fs=require('fs'); const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8')); if(!b.preferredVersions?.wp) throw new Error('не указана версия WordPress'); if(!b.steps?.some(x=>x.step==='login')) throw new Error('не найден шаг входа'); console.log('Blueprint в порядке:',b.preferredVersions)"
 
-      - name: Boot WordPress Playground in CI
+      - name: Запустить WordPress Playground в CI
         run: |
           set -euo pipefail
           npx -y @wp-playground/cli@latest --blueprint=wordpress/blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
@@ -46,5 +46,5 @@ jobs:
           timeout 180 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
           kill -0 "$pid"
           grep -q "PHP 8.3  WordPress latest" /tmp/quantdeus-wordpress.log
-          echo "WordPress Playground booted successfully"
+          echo "WordPress Playground успешно запущен"
           tail -20 /tmp/quantdeus-wordpress.log
