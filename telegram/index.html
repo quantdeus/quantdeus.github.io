@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QuantDeus Telegram Mini App</title>
+    <title>QuantDeus — мини-приложение Telegram</title>
     <style>
 :root {
   color-scheme: light;
@@ -446,7 +446,7 @@ dialog p {
       <section class="topbar">
         <div>
           <p class="eyebrow">QuantDeus</p>
-          <h1>Mini App Store</h1>
+          <h1>Магазин мини-приложений</h1>
         </div>
         <button id="themeToggle" class="icon-button" type="button" aria-label="Сменить тему">◐</button>
       </section>
@@ -466,10 +466,10 @@ dialog p {
       </section>
 
       <nav class="tabs" aria-label="Разделы QuantDeus">
-        <button class="tab active" type="button" data-tab="store">Store</button>
-        <button class="tab" type="button" data-tab="binaural">Binaural</button>
+        <button class="tab active" type="button" data-tab="store">Магазин</button>
+        <button class="tab" type="button" data-tab="binaural">Бинауральное</button>
         <button class="tab" type="button" data-tab="personal">Личный</button>
-        <button class="tab" type="button" data-tab="roadmap">Roadmap</button>
+        <button class="tab" type="button" data-tab="roadmap">План</button>
       </nav>
 
       <section id="store" class="tab-panel active">
@@ -477,14 +477,14 @@ dialog p {
           <div>
             <p class="tag">Первый запуск</p>
             <h2>Binaural.exe</h2>
-            <p>Мини-продукт для фокуса, сна и цифрового nootropic вайба.</p>
+            <p>Мини-продукт для фокуса, сна и цифрового ноотропного вайба.</p>
           </div>
           <button type="button" data-open="binaural">Запустить</button>
         </article>
 
         <article class="product-card">
           <div>
-            <p class="tag">Game Hub</p>
+            <p class="tag">Игровой хаб</p>
             <h2>Дети Эльтана</h2>
             <p>Новости мода, лор, расы, карта рукава галактики и патчноуты.</p>
           </div>
@@ -493,8 +493,8 @@ dialog p {
 
         <article class="product-card">
           <div>
-            <p class="tag">Soon</p>
-            <h2>Warp Research</h2>
+            <p class="tag">Скоро</p>
+            <h2>Варп-исследования</h2>
             <p>Пульс исследований SubWarp, Lentz/Krasnikov и статусы прогонов.</p>
           </div>
           <button type="button" data-open="warp">В план</button>
@@ -505,24 +505,24 @@ dialog p {
         <article class="binaural-player">
           <div class="player-head">
             <div>
-              <p class="tag">Audio module</p>
+              <p class="tag">Аудиомодуль</p>
               <h2>Binaural.exe</h2>
-              <p id="presetDescription">Выбери режим и запускай мягкий binaural-поток.</p>
+              <p id="presetDescription">Выбери режим и запускай мягкий бинауральный поток.</p>
             </div>
             <strong id="timerDisplay">05:00</strong>
           </div>
 
           <div class="preset-grid" aria-label="Пресеты Binaural.exe">
             <button class="preset active" type="button" data-preset="focus">
-              <span>Focus</span>
+              <span>Фокус</span>
               <small>14 Hz</small>
             </button>
             <button class="preset" type="button" data-preset="sleep">
-              <span>Sleep</span>
+              <span>Сон</span>
               <small>4 Hz</small>
             </button>
             <button class="preset" type="button" data-preset="cooldown">
-              <span>Cooldown</span>
+              <span>Перезагрузка</span>
               <small>8 Hz</small>
             </button>
           </div>
@@ -575,10 +575,10 @@ dialog p {
 
       <section id="roadmap" class="tab-panel">
         <ol class="roadmap">
-          <li><span>01</span> Store shell и Telegram SDK</li>
-          <li><span>02</span> Binaural.exe MVP</li>
-          <li><span>03</span> Дети Эльтана Hub</li>
-          <li><span>04</span> API gateway и пользовательские профили</li>
+          <li><span>01</span> Оболочка магазина и Telegram SDK</li>
+          <li><span>02</span> Минимальная версия Binaural.exe</li>
+          <li><span>03</span> Хаб «Дети Эльтана»</li>
+          <li><span>04</span> API-шлюз и пользовательские профили</li>
         </ol>
       </section>
 
@@ -597,36 +597,36 @@ const tg = window.Telegram?.WebApp;
 const modules = {
   binaural: {
     title: "Binaural.exe",
-    text: "MVP: пресеты Focus, Sleep, Cooldown, таймер и мягкая монетизация через рекламу."
+    text: "Минимальная версия: режимы «Фокус», «Сон», «Перезагрузка», таймер и мягкая монетизация через рекламу."
   },
   eltan: {
     title: "Дети Эльтана",
     text: "Хаб мода: новости, расы, лор, карта соседнего рукава и ссылки на сборки."
   },
   warp: {
-    title: "Warp Research",
+    title: "Варп-исследования",
     text: "Следующий слой: статусы прогонов, SubWarp v12, Lentz/Krasnikov и отчеты."
   }
 };
 
 const presets = {
   focus: {
-    label: "Focus",
+    label: "Фокус",
     base: 220,
     beat: 14,
-    description: "Focus: бодрый 14 Hz слой для работы, кода и сборки идей."
+    description: "Фокус: бодрый слой 14 Гц для работы, кода и сборки идей."
   },
   sleep: {
-    label: "Sleep",
+    label: "Сон",
     base: 174,
     beat: 4,
-    description: "Sleep: медленный 4 Hz слой для вечернего сброса оборотов."
+    description: "Сон: медленный слой 4 Гц для вечернего сброса оборотов."
   },
   cooldown: {
-    label: "Cooldown",
+    label: "Перезагрузка",
     base: 196,
     beat: 8,
-    description: "Cooldown: ровный 8 Hz слой для охлаждения головы и перезапуска."
+    description: "Перезагрузка: ровный слой 8 Гц для охлаждения головы и перезапуска."
   }
 };
 
@@ -654,7 +654,7 @@ function initTelegram() {
 
   tg.ready();
   tg.expand();
-  status.textContent = "Telegram Mini App активен";
+  status.textContent = "Мини-приложение Telegram активно";
 
   const user = tg.initDataUnsafe?.user;
   if (user?.first_name) {
@@ -709,8 +709,8 @@ function updateBinauralView() {
   const preset = presets[binauralState.activePreset];
   document.querySelector("#presetDescription").textContent = preset.description;
   document.querySelector("#timerDisplay").textContent = formatTime(binauralState.remainingSeconds);
-  document.querySelector("#leftFrequency").textContent = `${preset.base} Hz`;
-  document.querySelector("#rightFrequency").textContent = `${preset.base + preset.beat} Hz`;
+  document.querySelector("#leftFrequency").textContent = `${preset.base} Гц`;
+  document.querySelector("#rightFrequency").textContent = `${preset.base + preset.beat} Гц`;
   document.querySelector("#playBinaural").textContent = binauralState.isPlaying ? "Пауза" : "Старт";
   document.querySelector(".signal-line").classList.toggle("playing", binauralState.isPlaying);
 

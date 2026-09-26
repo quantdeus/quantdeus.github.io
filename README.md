@@ -1,120 +1,120 @@
 # QuantDeus Holding
 
-> **AI-native R&D, product and creative holding for an evidence-first post-scarcity future.**
+> **ИИ-холдинг исследований, продуктов и креативных проектов для постдефицитного будущего с опорой на доказательства.**
 
-QuantDeus is a founder-led experimental holding that combines **22 specialized AI agents**, GitHub-native operations, research workflows, product engineering, QA, marketing/SEO and community coordination.
+QuantDeus — экспериментальный холдинг под управлением основателя, который объединяет **22 специализированных ИИ-агента**, операции через GitHub, исследовательские процессы, продуктовую инженерию, контроль качества, маркетинг/SEO и координацию сообщества.
 
-The repository is both the **operating system** and the **public presentation layer** of QuantDeus.
+Этот репозиторий одновременно является **операционной системой** и **публичным слоем представления** QuantDeus.
 
-🌐 **Holding:** https://quantdeus.github.io/  
-✈️ **Telegram product:** https://quantdeus.github.io/telegram/  
-🧭 **Coordination Center:** https://quantdeus.github.io/coordination/  
-🤖 **AI workforce:** https://quantdeus.github.io/homunculi/
+🌐 **Холдинг:** https://quantdeus.github.io/  
+✈️ **Продукт Telegram:** https://quantdeus.github.io/telegram/  
+🧭 **Центр координации:** https://quantdeus.github.io/coordination/  
+🤖 **Команда ИИ:** https://quantdeus.github.io/homunculi/
 
 ---
 
-## What QuantDeus builds
+## Что создаёт QuantDeus
 
-QuantDeus converts research signals into small, reversible, verifiable outputs:
+QuantDeus превращает исследовательские сигналы в небольшие, обратимые и проверяемые результаты:
 
-**NEED → RESOURCE MAP → EVIDENCE → PROTOTYPE → QA → DELIVERY → COMMUNICATION → ITERATION**
+**ПОТРЕБНОСТЬ → КАРТА РЕСУРСОВ → ДОКАЗАТЕЛЬСТВА → ПРОТОТИП → КОНТРОЛЬ КАЧЕСТВА → ВЫПУСК → КОММУНИКАЦИЯ → ИТЕРАЦИЯ**
 
-The operating doctrine is evidence-first: inspiration may generate hypotheses, but technical or scientific claims must survive explicit evidence and falsification gates.
+Рабочая доктрина опирается на доказательства: вдохновение может порождать гипотезы, но технические и научные утверждения должны проходить явные проверки доказательствами и критериями опровержения.
 
-### Portfolio directions
+### Направления портфеля
 
-| Direction | Focus |
+| Направление | Фокус |
 |---|---|
-| ⚡ Energy & resources | clean energy, storage, grid resilience, resource productivity |
-| 🧠 AI & automation | agent operations, safe automation, human override, product tooling |
-| 🌍 Planet & cooperation | open science, circular systems, partnerships and communities |
-| 🚀 Space & frontier R&D | life support, ISRU, robotics, propulsion and warp research |
-| 🧬 Human capability | education, accessibility, creativity and human-AI augmentation |
-| ✨ Media & culture | brand, science communication, future interfaces and creative products |
+| ⚡ Энергетика и ресурсы | чистая энергетика, накопители, устойчивость сетей, продуктивность ресурсов |
+| 🧠 ИИ и автоматизация | работа агентов, безопасная автоматизация, контроль человека, продуктовые инструменты |
+| 🌍 Планета и сотрудничество | открытая наука, циклические системы, партнёрства и сообщества |
+| 🚀 Космос и передовые исследования | жизнеобеспечение, ISRU, робототехника, двигательные системы и варп-исследования |
+| 🧬 Человеческий потенциал | образование, доступность, творчество и усиление возможностей человека с ИИ |
+| ✨ Медиа и культура | бренд, научная коммуникация, интерфейсы будущего и креативные продукты |
 
 ---
 
-## 22-agent startup team
+## Стартап-команда из 22 ИИ-агентов
 
-QuantDeus keeps stable technical agent IDs for automation, while each agent also has a real startup role.
+QuantDeus сохраняет стабильные технические ID агентов для автоматизации, а каждому агенту назначает понятную рабочую роль.
 
-| Department | Team | Mandate |
+| Отдел | Команда | Задача |
 |---|---:|---|
-| 🛰️ Executive & Strategy | 4 | strategy, portfolio, operations, automation |
-| 🔬 Science & R&D | 5 | evidence-first research and technology scouting |
-| 📣 Growth, Marketing & Partnerships | 4 | brand, SEO, content, PR, community and partnerships |
-| ⚒️ Product & Engineering | 6 | discovery, architecture, security and delivery |
-| 🦀 Quality & Reliability | 3 | automated QA, contract checks and repair loops |
+| 🛰️ Руководство и стратегия | 4 | стратегия, портфель, операции, автоматизация |
+| 🔬 Наука и НИОКР | 5 | исследования с опорой на доказательства и поиск технологий |
+| 📣 Рост, маркетинг и партнёрства | 4 | бренд, SEO, контент, PR, сообщество и партнёрства |
+| ⚒️ Продукт и инженерия | 6 | исследование продукта, архитектура, безопасность и выпуск |
+| 🦀 Качество и надёжность | 3 | автоматический контроль качества, проверка контрактов и циклы исправлений |
 
-Canonical organization data: [`coordination/startup-org.json`](coordination/startup-org.json)  
-Agent registry: [`coordination/agents.json`](coordination/agents.json)  
-Governance registry: [`coordination/homunculi.json`](coordination/homunculi.json)
+Канонические данные организации: [`coordination/startup-org.json`](coordination/startup-org.json)  
+Реестр агентов: [`coordination/agents.json`](coordination/agents.json)  
+Реестр управления: [`coordination/homunculi.json`](coordination/homunculi.json)
 
-### Marketing & SEO
+### Маркетинг и SEO
 
-The holding has a dedicated growth layer:
+У холдинга есть отдельный контур роста:
 
-- **Head of Partnerships & Community Growth** — partnerships, communities and qualified contributors.
-- **Brand & Creative Director** — brand system, creative direction and campaigns.
-- **SEO & Content Operations Lead** — searchable knowledge, information architecture, metadata and organic discovery.
-- **PR & Communications Manager** — releases, summaries and external communication.
-
----
-
-## Delivery system
-
-QuantDeus uses GitHub as the source of truth.
-
-- **Control Tower** — portfolio and automation control.
-- **Octet Squad B** — eight-stage execution crew: discovery → verification → analysis → strategy → governance → code → archive → PR handoff.
-- **QA Triad** — syntax validator, contract validator and repair coordinator.
-- **Daily automations** — health, QA, coordination and research cycles run on a controlled daily cadence.
-- **Human override** — privileged, irreversible and public-impact operations stay under explicit human control.
-
-### Quality gate
-
-Every relevant change is expected to pass:
-
-`All-agent health → Syntax → Contracts → Static Smoke → Review → Merge`
-
-The QA system is designed to **block or repair defects**, not hide them by weakening tests.
+- **Руководитель партнёрств и роста сообщества** — партнёрства, сообщества и квалифицированные участники.
+- **Директор по бренду и креативу** — бренд-система, творческое направление и кампании.
+- **Руководитель SEO и контент-операций** — поисковая база знаний, информационная архитектура, метаданные и органическое продвижение.
+- **Менеджер по PR и коммуникациям** — релизы, сводки и внешняя коммуникация.
 
 ---
 
-## Post-scarcity doctrine
+## Система исполнения
 
-The canonical doctrine is [`coordination/civilization-doctrine.json`](coordination/civilization-doctrine.json).
+QuantDeus использует GitHub как источник истины.
 
-It combines useful design ideas from resource-oriented systems thinking, open science, automation, ecological constraints and frontier R&D while keeping a strict rule:
+- **Control Tower** — управление портфелем и автоматизацией.
+- **Octet Squad B** — команда из восьми этапов: исследование → проверка → анализ → стратегия → управление → код → архив → передача в PR.
+- **QA Triad** — проверка синтаксиса, проверка контрактов и координатор исправлений.
+- **Ежедневные автоматизации** — циклы здоровья системы, QA, координации и исследований идут по контролируемому ежедневному расписанию.
+- **Контроль человека** — привилегированные, необратимые и публично значимые операции остаются под явным контролем человека.
 
-> **Inspiration ≠ evidence.**
+### Контур качества
 
-Claims are graded by evidence, given explicit failure conditions, and converted into the smallest reversible prototype before scale.
+Каждое значимое изменение должно пройти:
+
+`Здоровье всех агентов → Синтаксис → Контракты → Статический smoke-тест → Проверка → Слияние`
+
+Система QA предназначена для **блокировки или исправления дефектов**, а не для их сокрытия ослаблением тестов.
 
 ---
 
-## Repository map
+## Доктрина постдефицитного будущего
+
+Каноническая доктрина находится в [`coordination/civilization-doctrine.json`](coordination/civilization-doctrine.json).
+
+Она объединяет полезные проектные идеи ресурсно-ориентированных систем, открытой науки, автоматизации, экологических ограничений и передовых исследований, сохраняя строгое правило:
+
+> **Вдохновение ≠ доказательство.**
+
+Утверждения оцениваются по уровню доказательств, получают явные условия провала и до масштабирования превращаются в минимальный обратимый прототип.
+
+---
+
+## Карта репозитория
 
 ```text
 /
-├─ index.html                     # QuantDeus Holding public landing
-├─ telegram/                      # Telegram-first product interface
-├─ coordination/                  # org, doctrine, boards and execution records
-│  ├─ agents.json                 # 22-agent canonical registry
-│  ├─ homunculi.json              # governance-facing registry
-│  ├─ startup-org.json            # startup departments and org chart
-│  └─ civilization-doctrine.json  # operating doctrine
-├─ homunculi/                     # public AI-workforce view
-├─ scripts/                       # agent and automation runtime
-└─ .github/workflows/             # QA, coordination and execution automation
+├─ index.html                     # публичная главная QuantDeus
+├─ telegram/                      # интерфейс продукта для Telegram
+├─ coordination/                  # организация, доктрина, доски и записи исполнения
+│  ├─ agents.json                 # канонический реестр 22 агентов
+│  ├─ homunculi.json              # реестр для управления
+│  ├─ startup-org.json            # стартап-отделы и оргструктура
+│  └─ civilization-doctrine.json  # рабочая доктрина
+├─ homunculi/                     # публичное представление команды ИИ
+├─ scripts/                       # среда агентов и автоматизации
+└─ .github/workflows/             # автоматизация QA, координации и исполнения
 ```
 
 ---
 
-## Participation
+## Участие
 
-QuantDeus is designed around **human agency + AI leverage**. Contributors can submit proposals, research, code, design and verified outcomes through GitHub Issues and Pull Requests. Governance separates ordinary proposals from privileged changes.
+QuantDeus построен вокруг **самостоятельности человека + усиления ИИ**. Участники могут предлагать идеи, исследования, код, дизайн и проверенные результаты через GitHub Issues и Pull Requests. Система управления отделяет обычные предложения от привилегированных изменений.
 
 ---
 
-**QuantDeus — algorithms manage workflows; humans retain meaning and final authority.**
+**QuantDeus — алгоритмы управляют рабочими процессами; смысл и окончательное решение остаются за людьми.**
