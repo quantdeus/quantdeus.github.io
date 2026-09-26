@@ -1,4 +1,4 @@
-name: QuantDeus QA Triad 🦀
+name: QuantDeus — триада QA 🦀
 
 on:
   push:
@@ -24,20 +24,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 🩺 Run all-agent monitor
+      - name: 🩺 Проверить всех агентов
         run: node scripts/agent-monitor.js
 
-      - name: 🔎 QA Syntax Validator
+      - name: 🔎 QA-валидатор синтаксиса
         id: syntax
         continue-on-error: true
         run: node scripts/qa/syntax-validator.js
 
-      - name: 🧩 QA Contract Validator
+      - name: 🧩 QA-валидатор контрактов
         id: contract
         continue-on-error: true
         run: node scripts/qa/contract-validator.js
 
-      - name: 🛠️ QA Repair Coordinator
+      - name: 🛠️ Координатор QA-исправлений
         env:
           SYNTAX_OUTCOME: ${{ steps.syntax.outcome }}
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/qa/repair-coordinator.js
 
-      - name: Upload QA reports
+      - name: Загрузить отчёты QA
         if: always()
         uses: actions/upload-artifact@v4
         with:
