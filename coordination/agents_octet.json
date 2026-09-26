@@ -1,22 +1,81 @@
 {
   "schema_version": 2,
-  "title": "QuantDeus Octet Squad B — second execution crew",
+  "title": "QuantDeus Octet Squad B — вторая исполнительная команда",
   "source_of_truth": "quantdeus/quantdeus.github.io",
   "updated": "2026-09-26",
   "squad_id": "octet-b",
-  "mode": "issue-driven-execution",
-  "mission": "Convert approved QuantDeus GitHub tasks into reviewed repository changes on isolated branches and Pull Requests.",
+  "mode": "исполнение задач из Issues",
+  "mission": "Превращать одобренные задачи QuantDeus в проверенные изменения репозитория в изолированных ветках и Pull Requests.",
   "workflow": ".github/workflows/octet-squad.yml",
-  "trigger_labels": ["coord:task", "squad-b:ready"],
+  "trigger_labels": [
+    "coord:task",
+    "squad-b:ready"
+  ],
   "agents": [
-    {"id":"scout","name":"Repo Scout","emoji":"🔭","role":"Intake: reads the approved task, execution manifest and repository context.","source":"scripts/octet/scout.js","group":"executor-b"},
-    {"id":"verifier","name":"Task Verifier","emoji":"🔬","role":"Validates manifest syntax, supported operations and repository paths.","source":"scripts/octet/verify.js","group":"executor-b"},
-    {"id":"analyst","name":"Change Analyst","emoji":"📊","role":"Classifies change lanes, touched surfaces and risk level.","source":"scripts/octet/analyze.js","group":"executor-b"},
-    {"id":"strategist","name":"Execution Strategist","emoji":"🧠","role":"Builds an ordered execution plan and branch strategy.","source":"scripts/octet/strategize.js","group":"executor-b"},
-    {"id":"guardian","name":"Guardian","emoji":"🛡️","role":"Governance and safety gate; protects sensitive repository surfaces.","source":"scripts/octet/guardian.js","group":"executor-b"},
-    {"id":"tasksmith","name":"Task Smith","emoji":"⚒️","role":"Applies file operations, runs local checks, commits and pushes an isolated branch.","source":"scripts/octet/tasksmith.js","group":"executor-b"},
-    {"id":"archivist","name":"Execution Archivist","emoji":"🗄️","role":"Writes an auditable execution record into coordination/executions.","source":"scripts/octet/archivist.js","group":"executor-b"},
-    {"id":"herald","name":"PR Herald","emoji":"📣","role":"Opens/updates the Pull Request and reports status back to the task Issue.","source":"scripts/octet/herald.js","group":"executor-b"}
+    {
+      "id": "scout",
+      "name": "Разведчик репозитория",
+      "emoji": "🔭",
+      "role": "Приём: читает одобренную задачу, манифест исполнения и контекст репозитория.",
+      "source": "scripts/octet/scout.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "verifier",
+      "name": "Проверяющий задачи",
+      "emoji": "🔬",
+      "role": "Проверяет синтаксис манифеста, поддерживаемые операции и пути репозитория.",
+      "source": "scripts/octet/verify.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "analyst",
+      "name": "Аналитик изменений",
+      "emoji": "📊",
+      "role": "Классифицирует область изменений, затронутые поверхности и уровень риска.",
+      "source": "scripts/octet/analyze.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "strategist",
+      "name": "Стратег исполнения",
+      "emoji": "🧠",
+      "role": "Строит упорядоченный план исполнения и стратегию ветки.",
+      "source": "scripts/octet/strategize.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "guardian",
+      "name": "Страж",
+      "emoji": "🛡️",
+      "role": "Проверяет правила управления и безопасность; защищает чувствительные зоны репозитория.",
+      "source": "scripts/octet/guardian.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "tasksmith",
+      "name": "Кузнец задач",
+      "emoji": "⚒️",
+      "role": "Применяет файловые операции, запускает локальные проверки, коммитит и отправляет изолированную ветку.",
+      "source": "scripts/octet/tasksmith.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "archivist",
+      "name": "Архивариус исполнения",
+      "emoji": "🗄️",
+      "role": "Пишет проверяемый журнал исполнения в coordination/executions.",
+      "source": "scripts/octet/archivist.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "herald",
+      "name": "Вестник PR",
+      "emoji": "📣",
+      "role": "Открывает или обновляет Pull Request и сообщает статус обратно в исходный Issue.",
+      "source": "scripts/octet/herald.js",
+      "group": "executor-b"
+    }
   ],
   "guardrails": {
     "direct_main_push": false,
