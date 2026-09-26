@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "title": "QuantDeus QA Triad",
-  "policy": "detect -> validate -> repair-or-block",
+  "title": "Триада QA QuantDeus",
+  "policy": "обнаружить → проверить → исправить или заблокировать",
   "agents": [
     {
       "id": "qa-syntax",
-      "purpose": "Validate every JavaScript source under scripts/** and parse project JSON registries/configuration."
+      "purpose": "Проверять каждый JavaScript-файл в scripts/** и разбирать JSON-реестры и конфигурацию проекта."
     },
     {
       "id": "qa-contract",
-      "purpose": "Validate agent registries, sources, doctrine inheritance, governance labels, daily Cron constraints and no-Teams policy."
+      "purpose": "Проверять реестры агентов, исходные файлы, наследование доктрины, метки управления, суточные ограничения Cron и отсутствие Microsoft Teams."
     },
     {
       "id": "qa-repair",
-      "purpose": "Aggregate failures, block unsafe merges and create a durable repair ticket for Task Smith/Squad B."
+      "purpose": "Собирать ошибки, блокировать небезопасное слияние и создавать устойчивую задачу на исправление для Task Smith / Squad B."
     }
   ],
-  "invariant": "A red validator may never be bypassed merely to obtain a green check."
+  "invariant": "Красный валидатор нельзя обходить только ради получения зелёной проверки."
 }
