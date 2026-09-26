@@ -30,10 +30,10 @@ function ghJson(args) {
 
 function ensureStrategicLabels() {
   const labels = [
-    ['evidence:A', '1a7f37', 'Strong, independently verifiable evidence'],
-    ['evidence:B', 'bf8700', 'Promising evidence requiring further verification'],
-    ['evidence:C', '6e7781', 'Exploratory signal or early hypothesis'],
-    ['publish:wix-ready', '8250df', 'Verified and approved for selective Wix publication'],
+    ['evidence:A', '1a7f37', 'Сильные независимо проверяемые доказательства'],
+    ['evidence:B', 'bf8700', 'Перспективные данные, требующие дополнительной проверки'],
+    ['evidence:C', '6e7781', 'Исследовательский сигнал или ранняя гипотеза'],
+    ['publish:wix-ready', '8250df', 'Проверено и одобрено для выборочной публичной публикации'],
   ];
 
   for (const [name, color, description] of labels) {
@@ -57,20 +57,20 @@ function kindOf(issue) {
 
 function evidenceOf(issue) {
   const labels = labelsOf(issue).map(label => label.toLowerCase());
-  if (labels.some(label => /evidence[: -]?a|evidence-strong/.test(label))) return 'A — strong';
-  if (labels.some(label => /evidence[: -]?b|evidence-promising/.test(label))) return 'B — promising';
-  if (labels.some(label => /evidence[: -]?c|evidence-exploratory/.test(label))) return 'C — exploratory';
+  if (labels.some(label => /evidence[: -]?a|evidence-сильные/.test(label))) return 'A — сильные';
+  if (labels.some(label => /evidence[: -]?b|evidence-перспективные/.test(label))) return 'B — перспективные';
+  if (labels.some(label => /evidence[: -]?c|evidence-исследовательские/.test(label))) return 'C — исследовательские';
 
   const text = issue.body || '';
   const checkedGrade = text.match(/^\s*[-*]\s*\[[xX]\]\s*([ABC])\s*(?:—|-|:)/m);
   if (checkedGrade) {
-    const names = { A: 'strong', B: 'promising', C: 'exploratory' };
+    const names = { A: 'сильные', B: 'перспективные', C: 'исследовательские' };
     const grade = checkedGrade[1].toUpperCase();
     return `${grade} — ${names[grade]}`;
   }
 
   const match = text.match(/(?:evidence|доказательств[ао]?|уровень уверенности)\s*[:—-]\s*([ABC])\b/i);
-  return match ? `${match[1].toUpperCase()} — declared` : '—';
+  return match ? `${match[1].toUpperCase()} — заявлено` : '—';
 }
 
 function pillarOf(issue) {
@@ -91,7 +91,7 @@ function pillarOf(issue) {
 
 function wixTargetOf(issue) {
   const pillar = pillarOf(issue);
-  if (/warp|uap|material/i.test(`${issue.title} ${issue.body || ''}`)) return '🌀 Warp Bubble Lab';
+  if (/warp|uap|material/i.test(`${issue.title} ${issue.body || ''}`)) return '🌀 Лаборатория варп-пузыря';
   const targets = {
     energy: '⚡ Энергетика будущего',
     justice: '⚖️ Алгоритмическая справедливость',
@@ -100,7 +100,7 @@ function wixTargetOf(issue) {
     potential: '🧬 Человеческий потенциал',
     synthesis: '✨ Эстетика синтеза',
   };
-  return targets[pillar] || 'Wix Blog / triage';
+  return targets[pillar] || 'Публичная публикация / разбор';
 }
 
 function isPublicCandidate(issue) {
@@ -145,13 +145,13 @@ function rows(items) {
     || '| — | — | — | — | — | Нет открытых элементов |';
 }
 
-const body = `# 🧭 QuantDeus Strategic Navigation Hub\n\nОперационная панель цикла **[SIGNAL] → [STRATEGY] → [TASK] → verified result → selective public publication**. Источник истины — GitHub; наружу выходят только явно подготовленные и проверенные результаты.
+const body = `# 🧭 Стратегический навигационный центр QuantDeus\n\nОперационная панель цикла **[SIGNAL] → [STRATEGY] → [TASK] → проверенный результат → выборочная публичная публикация**. Источник истины — GitHub; наружу выходят только явно подготовленные и проверенные результаты.
 
-## Civilization doctrine
+## Цивилизационная доктрина
 
-- Version: **${doctrine.version}**
-- Objective: ${doctrine.objective}
-- Evidence rule: ${doctrine.operating_rule}\n\n## Pipeline\n\n- 📡 Open signals: **${signals.length}**\n- 🧠 Open strategies: **${strategies.length}**\n- 🧪 Signals without evidence grade: **${ungraded.length}**\n- 🌐 Explicit Wix-ready candidates: **${publishReady.length}**\n\n### Signals\n\n| Issue | Evidence | Pillar | Wix-ready | Public target | Item |\n|---|---|---|---|---|---|\n${rows(signals)}\n\n### Strategies\n\n| Issue | Evidence | Pillar | Wix-ready | Public target | Item |\n|---|---|---|---|---|---|\n${rows(strategies)}\n\n## Promotion rule\n\nПубличная публикация не выводится из самого факта существования Issue. Для Wix кандидат должен пройти проверку источников и получить явную метку \`publish:wix-ready\` (или совместимую \`publish-wix-ready\` / \`public:ready\`). До этого материал остаётся внутри исследовательского/стратегического контура.\n\nДля сильного сигнала без evidence-grade следующий шаг — **проверка доказательств**, а не изменение roadmap. THRIVE I/II и другие мировоззренческие источники могут порождать гипотезы, но не повышают evidence-grade сами по себе. Для принятой стратегии следующий шаг — конкретный **[TASK]** с наблюдаемым результатом.\n\n_Last strategic refresh: ${new Date().toISOString()}_\n\n<!-- strategic-digest:${digest} -->\n`;
+- Версия: **${doctrine.version}**
+- Цель: ${doctrine.objective}
+- Правило доказательности: ${doctrine.operating_rule}\n\n## Конвейер\n\n- 📡 Открытые сигналы: **${signals.length}**\n- 🧠 Открытые стратегии: **${strategies.length}**\n- 🧪 Сигналы без уровня доказательности: **${ungraded.length}**\n- 🌐 Явно подготовленные кандидаты на публикацию: **${publishReady.length}**\n\n### Сигналы\n\n| Issue | Доказательства | Столп | Готово к публикации | Публичная цель | Элемент |\n|---|---|---|---|---|---|\n${rows(signals)}\n\n### Стратегии\n\n| Issue | Доказательства | Столп | Готово к публикации | Публичная цель | Элемент |\n|---|---|---|---|---|---|\n${rows(strategies)}\n\n## Promotion rule\n\nПубличная публикация не выводится из самого факта существования Issue. Для Wix кандидат должен пройти проверку источников и получить явную метку \`publish:wix-ready\` (или совместимую \`publish-wix-ready\` / \`public:ready\`). До этого материал остаётся внутри исследовательского/стратегического контура.\n\nДля сильного сигнала без evidence-grade следующий шаг — **проверка доказательств**, а не изменение roadmap. THRIVE I/II и другие мировоззренческие источники могут порождать гипотезы, но не повышают evidence-grade сами по себе. Для принятой стратегии следующий шаг — конкретный **[TASK]** с наблюдаемым результатом.\n\n_Last strategic refresh: ${new Date().toISOString()}_\n\n<!-- strategic-digest:${digest} -->\n`;
 
 const hubs = ghJson([
   'issue', 'list', '--state', 'all', '--search', `${HUB_TITLE} in:title`, '--limit', '10',
