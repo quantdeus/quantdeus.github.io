@@ -11,6 +11,6 @@ function main() {
   const doctrine = doctrineSummary();
   saveState({ issue, manifest, doctrine, started_at: new Date().toISOString(), stage: 'scout' });
   editIssueLabels(issueNumber(), ['team:octet-b','squad-b:active'], ['squad-b:ready','squad-b:blocked']);
-  console.log(`Repo Scout accepted Issue #${issue.number}: ${issue.title}`);
+  console.log(`Разведчик репозитория принял Issue #${issue.number}: ${issue.title}`);
 }
 main();
