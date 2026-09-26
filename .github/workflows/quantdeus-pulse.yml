@@ -2,7 +2,7 @@ name: QuantDeus Six-Pillar Executor 🧭
 
 on:
   schedule:
-    - cron: '23 */6 * * *'
+    - cron: '37 6 * * *'
   workflow_dispatch:
   push:
     branches: [main]
