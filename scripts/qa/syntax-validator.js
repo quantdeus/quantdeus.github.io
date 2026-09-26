@@ -32,7 +32,7 @@ for (const file of jsFiles) {
 }
 
 const jsonRoots = ['coordination','wordpress'].map(x=>path.join(root,x)).filter(fs.existsSync);
-const jsonFiles = jsonRoots.flatMap(walk).filter(p => p.endsWith('.json'));
+const jsonFiles = jsonRoots.flatMap(dir => walk(dir)).filter(p => p.endsWith('.json'));
 for (const file of jsonFiles) {
   try {
     JSON.parse(fs.readFileSync(file,'utf8'));
