@@ -10,11 +10,11 @@ let doctrine = null;
 try {
   doctrine = JSON.parse(fs.readFileSync(doctrinePath, 'utf8'));
 } catch (err) {
-  console.error('Civilization doctrine missing or invalid:', err.message);
+  console.error('Цивилизационная доктрина отсутствует или повреждена:', err.message);
   process.exit(1);
 }
 if (doctrine.schema_version !== 1 || !doctrine.version || !Array.isArray(doctrine.execution_gates)) {
-  console.error('Civilization doctrine schema invalid');
+  console.error('Схема цивилизационной доктрины недействительна');
   process.exit(1);
 }
 const agents = registry.agents || [];
@@ -30,22 +30,22 @@ function check(condition, agent, message) {
 for (const agent of agents) {
   const source = agent.source;
   if (!source) {
-    check(false, agent, 'missing source declaration');
+    check(false, agent, 'не указан исходный файл');
     continue;
   }
 
   const sourcePath = path.join(root, source);
   const exists = fs.existsSync(sourcePath);
-  check(exists, agent, exists ? `source present: ${source}` : `source missing: ${source}`);
+  check(exists, agent, exists ? `исходный файл найден: ${source}` : `исходный файл отсутствует: ${source}`);
 
   if (!exists || !source.endsWith('.js')) continue;
 
   try {
     execFileSync(process.execPath, ['--check', sourcePath], { stdio: 'pipe' });
-    check(true, agent, 'JavaScript syntax OK');
+    check(true, agent, 'синтаксис JavaScript: ОК');
   } catch (err) {
     const detail = (err.stderr || err.stdout || err.message || '').toString().trim().split('\n')[0];
-    check(false, agent, `JavaScript syntax error: ${detail}`);
+    check(false, agent, `ошибка синтаксиса JavaScript: ${detail}`);
   }
 }
 
@@ -64,8 +64,8 @@ fs.writeFileSync('/tmp/quantdeus-agent-health.json', JSON.stringify(report, null
 console.log(JSON.stringify(report, null, 2));
 
 if (failures.length) {
-  console.error(`Agent health check failed for ${failures.length} check(s).`);
+  console.error(`Проверка здоровья агентов завершилась ошибками: ${failures.length} проверок.`);
   process.exit(1);
 }
 
-console.log(`All ${agents.length} registered agents passed the daily health check.`);
+console.log(`Все ${agents.length} зарегистрированных агентов прошли суточную проверку здоровья.`);
