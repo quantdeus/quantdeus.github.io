@@ -26,6 +26,12 @@ jobs:
           node --check scripts/strategic-hub.js
           node --check scripts/orchestrator.js
 
+      - name: Run QA syntax validator
+        run: node scripts/qa/syntax-validator.js
+
+      - name: Run QA contract validator
+        run: node scripts/qa/contract-validator.js
+
       - name: Validate production routes
         run: |
           test -f index.html

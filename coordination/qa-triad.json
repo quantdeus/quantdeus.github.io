@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus QA Triad",
+  "policy": "detect -> validate -> repair-or-block",
+  "agents": [
+    {
+      "id": "qa-syntax",
+      "purpose": "Validate every JavaScript source under scripts/** and parse project JSON registries/configuration."
+    },
+    {
+      "id": "qa-contract",
+      "purpose": "Validate agent registries, sources, doctrine inheritance, governance labels, daily Cron constraints and no-Teams policy."
+    },
+    {
+      "id": "qa-repair",
+      "purpose": "Aggregate failures, block unsafe merges and create a durable repair ticket for Task Smith/Squad B."
+    }
+  ],
+  "invariant": "A red validator may never be bypassed merely to obtain a green check."
+}

@@ -155,6 +155,30 @@
       "role": "Открывает Pull Request и возвращает результат в исходный Issue",
       "source": "scripts/octet/herald.js",
       "group": "executor-b"
+    },
+    {
+      "id": "qa-syntax",
+      "name": "QA Syntax Validator",
+      "emoji": "🔎",
+      "role": "Проверяет синтаксис всего JavaScript и целостность JSON",
+      "source": "scripts/qa/syntax-validator.js",
+      "group": "qa"
+    },
+    {
+      "id": "qa-contract",
+      "name": "QA Contract Validator",
+      "emoji": "🧩",
+      "role": "Проверяет контракты агентов, doctrine, labels и Cron",
+      "source": "scripts/qa/contract-validator.js",
+      "group": "qa"
+    },
+    {
+      "id": "qa-repair",
+      "name": "QA Repair Coordinator",
+      "emoji": "🛠️",
+      "role": "Блокирует дефектный код и создаёт точный repair-loop для исправления",
+      "source": "scripts/qa/repair-coordinator.js",
+      "group": "qa"
     }
   ],
   "doctrine": {

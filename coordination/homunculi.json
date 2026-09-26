@@ -199,6 +199,36 @@
       "group": "executor-b",
       "command": "/agent herald",
       "proposal_command": "/propose herald"
+    },
+    {
+      "id": "qa-syntax",
+      "name": "QA Syntax Validator",
+      "emoji": "🔎",
+      "role": "Проверяет синтаксис всего JavaScript и целостность JSON",
+      "source": "scripts/qa/syntax-validator.js",
+      "group": "qa",
+      "command": "/agent qa-syntax",
+      "proposal_command": "/propose qa-syntax"
+    },
+    {
+      "id": "qa-contract",
+      "name": "QA Contract Validator",
+      "emoji": "🧩",
+      "role": "Проверяет контракты агентов, doctrine, labels и Cron",
+      "source": "scripts/qa/contract-validator.js",
+      "group": "qa",
+      "command": "/agent qa-contract",
+      "proposal_command": "/propose qa-contract"
+    },
+    {
+      "id": "qa-repair",
+      "name": "QA Repair Coordinator",
+      "emoji": "🛠️",
+      "role": "Блокирует дефектный код и создаёт точный repair-loop для исправления",
+      "source": "scripts/qa/repair-coordinator.js",
+      "group": "qa",
+      "command": "/agent qa-repair",
+      "proposal_command": "/propose qa-repair"
     }
   ],
   "doctrine": {
