@@ -1,5 +1,5 @@
-# QuantDeus Final Acceptance — 2026-09-26
+# Финальная приёмка QuantDeus — 2026-09-26
 
-Final live smoke task dispatched after QA Triad activation.
+Финальная живая задача дымового тестирования отправлена после активации QA-триады.
 
-Acceptance requires: Squad B pipeline success, branch creation, committed artifact, execution archive, and review handoff.
+Для приёмки требуются: успешный конвейер Squad B, создание ветки, закоммиченный артефакт, архив исполнения и передача на ревью.
