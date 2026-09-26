@@ -5,7 +5,7 @@ const token = process.env.GITHUB_TOKEN;
 const eventPath = process.env.GITHUB_EVENT_PATH;
 
 if (!repo || !token || !eventPath || !fs.existsSync(eventPath)) {
-  console.error('Missing GitHub runtime context');
+  console.error('Отсутствует контекст выполнения GitHub');
   process.exit(1);
 }
 
@@ -70,11 +70,11 @@ function labelsOf(i) {
 
 function stateOf(i) {
   const l = labelsOf(i);
-  if (l.includes('coord:blocked')) return '🚧 BLOCKED';
-  if (l.includes('coord:active')) return '🟡 ACTIVE';
-  if (l.includes('coord:done')) return '✅ DONE';
-  if (l.includes('coord:ready')) return '🟢 READY';
-  return '⚪ OPEN';
+  if (l.includes('coord:blocked')) return '🚧 ЗАБЛОКИРОВАНО';
+  if (l.includes('coord:active')) return '🟡 АКТИВНО';
+  if (l.includes('coord:done')) return '✅ ГОТОВО';
+  if (l.includes('coord:ready')) return '🟢 ГОТОВО';
+  return '⚪ ОТКРЫТО';
 }
 
 function pillarLabel(id) {
@@ -104,7 +104,7 @@ async function buildReply(agentId, query) {
 
   if (/^\/start\b/i.test(body)) {
     return [
-      '🖖 **QuantDeus web agents online**',
+      '🖖 **Веб-агенты QuantDeus в сети**',
       '',
       'Команды:',
       '- `/agents` — реальные агенты репозитория',
@@ -146,7 +146,7 @@ async function buildReply(agentId, query) {
       '',
       'Очередь: 🟢 ' + ready + ' ready · 🟡 ' + active + ' active · 🚧 ' + blocked + ' blocked · 🗳️ ' + proposals.length + ' proposals.',
       'Источник: `' + agent.source + '`.',
-      'Доктрина: `' + doctrine.version + '` — evidence-first post-scarcity.',
+      'Доктрина: `' + doctrine.version + '` — доказательный постдефицитный подход.',
       '',
       'Для изменения очереди обычный участник использует proposal/vote; прямой task-control остаётся у owner/admin.',
     ].join('\n');
@@ -158,7 +158,7 @@ async function buildReply(agentId, query) {
     agent.role + '.',
     query ? 'Запрос: ' + escMd(query) : '',
     'Источник агента: `' + agent.source + '`.',
-    'Доктрина: `' + doctrine.version + '` — inspiration ≠ evidence.',
+    'Доктрина: `' + doctrine.version + '` — вдохновение ≠ доказательство.',
   ].filter(Boolean);
 
   if (relevant.length) {
@@ -172,7 +172,7 @@ async function buildReply(agentId, query) {
     lines.push('', '**Контекст из репозитория:**', context.text, '', '_Файл: ' + context.path + '_');
   }
 
-  lines.push('', 'Это repo-grounded ответ: сообщение само по себе не изменяет очередь задач.');
+  lines.push('', 'Это ответ, основанный на состоянии репозитория: сообщение само по себе не изменяет очередь задач.');
   return lines.join('\n');
 }
 
@@ -187,7 +187,7 @@ async function postReply(text) {
     },
     body: JSON.stringify({ body: text + '\n\n<!-- qd-agent-reply -->' }),
   });
-  if (!r.ok) throw new Error('Comment failed: ' + r.status + ' ' + await r.text());
+  if (!r.ok) throw new Error('Не удалось опубликовать комментарий: ' + r.status + ' ' + await r.text());
 }
 
 (async () => {
