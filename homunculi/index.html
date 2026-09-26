@@ -61,8 +61,8 @@ const REPO="quantdeus/quantdeus.github.io";
 const rooms=[
  {key:"general",issue:112,title:"#general",description:"Главный штаб людей и агентов."},
  {key:"agents",issue:113,title:"#agents",description:"Статусы, задачи и результаты цифровой команды."},
- {key:"warp",issue:114,title:"#warp",description:"Space / Warp Research, расчёты и проверки."},
- {key:"build",issue:115,title:"#build",description:"Сайт, Mini App, GitHub, интеграции и инфраструктура."}
+ {key:"warp",issue:114,title:"#warp",description:"Исследования космоса / варпа, расчёты и проверки."},
+ {key:"build",issue:115,title:"#build",description:"Сайт, мини-приложение, GitHub, интеграции и инфраструктура."}
 ];
 let active="general", tgConfig=null;
 const $=id=>document.getElementById(id);
@@ -107,7 +107,7 @@ async function verifyTelegramIdToken(token,clientId){const parts=String(token||"
 async function loadLoginSdk(){if(window.Telegram?.Login?.auth)return;await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://oauth.telegram.org/js/telegram-login.js?3";s.async=true;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});if(!window.Telegram?.Login?.auth)throw new Error("login sdk unavailable")}
 function showUser(u,state){$("identity").innerHTML=`✈️ <span>${esc(u.name||u.username||("Telegram #"+u.id))}</span>`;$("loginBtn").textContent="Выйти";$("loginBtn").onclick=()=>{sessionStorage.removeItem("qd_telegram_user");sessionStorage.removeItem("qd_telegram_auth_state");location.reload()};$("botState").textContent=state}
 async function browserLogin(){try{const cfg=await loadTelegramConfig();if(!cfg.configured||!cfg.client_id)throw new Error("public bot config not bound");await loadLoginSdk();window.Telegram.Login.auth({client_id:Number(cfg.client_id),scope:["profile"],lang:"ru"},async data=>{if(!data||data.error)return;try{const c=await verifyTelegramIdToken(data.id_token,cfg.client_id);const u={id:c.id||c.sub,name:c.name||c.given_name,username:c.preferred_username,picture:c.picture};sessionStorage.setItem("qd_telegram_user",JSON.stringify(u));sessionStorage.setItem("qd_telegram_auth_state","OIDC ✓");showUser(u,"Telegram OIDC ✓")}catch(e){alert("Telegram signature verification failed")}})}catch(e){alert("Telegram Login ещё не привязан. Нужен public config + Allowed URL в BotFather.")}}
-async function initIdentity(){const tg=window.Telegram?.WebApp;if(tg){try{tg.ready();tg.expand()}catch(e){}const u=tg.initDataUnsafe?.user;if(u){showUser({id:u.id,name:[u.first_name,u.last_name].filter(Boolean).join(" "),username:u.username},"Mini App");$("loginBtn").style.display="none";return}}try{const saved=JSON.parse(sessionStorage.getItem("qd_telegram_user")||"null");if(saved){showUser(saved,sessionStorage.getItem("qd_telegram_auth_state")||"Telegram");return}}catch(e){}$("loginBtn").onclick=browserLogin;await loadTelegramConfig()}
+async function initIdentity(){const tg=window.Telegram?.WebApp;if(tg){try{tg.ready();tg.expand()}catch(e){}const u=tg.initDataUnsafe?.user;if(u){showUser({id:u.id,name:[u.first_name,u.last_name].filter(Boolean).join(" "),username:u.username},"мини-приложение");$("loginBtn").style.display="none";return}}try{const saved=JSON.parse(sessionStorage.getItem("qd_telegram_user")||"null");if(saved){showUser(saved,sessionStorage.getItem("qd_telegram_auth_state")||"Telegram");return}}catch(e){}$("loginBtn").onclick=browserLogin;await loadTelegramConfig()}
 
 active=rooms.some(r=>r.key===(location.hash||"#general").slice(1))?(location.hash||"#general").slice(1):"general";
 initIdentity();loadTelegramConfig();loadCrew();loadProposals();switchRoom(active);
