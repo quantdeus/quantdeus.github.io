@@ -54,25 +54,25 @@ const PILLARS = [
     name: 'Энергетика будущего',
     title: '[TASK][Энергия] Создать доказательный реестр энергетических возможностей',
     body: `## Результат
-Create a small evidence-first register of future-energy opportunities that QuantDeus can actually act on.
+Создать небольшой доказательный реестр энергетических возможностей, по которым QuantDeus может выполнить конкретную работу.
 
 ## Артефакт
-Add \`coordination/pillars/energy.md\` with **3 concrete opportunities**. Each item must include:
-- claim;
-- primary or high-quality source URL + date;
-- evidence grade A/B/C;
-- what would falsify or weaken the claim;
-- one next executable action for QuantDeus.
+Добавить \`coordination/pillars/energy.md\` с **3 конкретными возможностями**. Каждая должна содержать:
+- утверждение;
+- URL первичного или качественного источника + дату;
+- уровень доказательности A/B/C;
+- условие, которое опровергнет или ослабит утверждение;
+- одно следующее исполнимое действие QuantDeus.
 
 ## Критерии приёмки
-- [ ] File exists in GitHub.
-- [ ] Exactly 3 opportunities are evaluated.
-- [ ] Every opportunity has source, evidence grade, falsifier and next action.
-- [ ] No "breakthrough" language without evidence.
+- [ ] Файл существует в GitHub.
+- [ ] Оценены ровно 3 возможности.
+- [ ] У каждой есть источник, уровень доказательности, условие опровержения и следующее действие.
+- [ ] Слово «прорыв» не используется без соответствующих доказательств.
 
 ## Исполнение
 Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
-Safe scope: research + repository docs only; no spending, outreach or production deployment.
+Безопасная область: исследования + документация репозитория; без расходов, внешних контактов и публикации в production.
 
 <!-- qd-task-key:energy-evidence-register-v1 -->`
   },
@@ -85,26 +85,26 @@ Safe scope: research + repository docs only; no spending, outreach or production
     name: 'Алгоритмическая справедливость',
     title: '[TASK][Справедливость] Добавить контракт аудита автономных действий',
     body: `## Результат
-Turn "algorithmic justice" into an operational rule for QuantDeus agents instead of a slogan.
+Превратить «алгоритмическую справедливость» из лозунга в операционное правило для агентов QuantDeus.
 
 ## Артефакт
-Add \`coordination/pillars/justice.md\` containing a reusable decision record with:
-- goal and affected people;
-- evidence/provenance;
-- privacy impact;
-- reversibility;
-- money/credit cost;
-- required human approval;
-- red-team/failure condition;
-- final verified outcome.
+Добавить \`coordination/pillars/justice.md\` с повторно используемой записью решения:
+- цель и затронутые люди;
+- доказательства и происхождение;
+- влияние на приватность;
+- обратимость;
+- денежная/кредитная стоимость;
+- требуемое человеческое одобрение;
+- условие неуспеха красной команды;
+- окончательный проверенный результат.
 
-Use the template on **one real QuantDeus action**.
+Применить шаблон к **одному реальному действию QuantDeus**.
 
 ## Критерии приёмки
-- [ ] Reusable decision template exists.
-- [ ] One real action is logged end-to-end.
-- [ ] Human override and rollback are explicit.
-- [ ] Proxy metrics are not presented as outcomes.
+- [ ] Есть повторно используемый шаблон решения.
+- [ ] Одно реальное действие записано от начала до конца.
+- [ ] Человеческий контроль и откат указаны явно.
+- [ ] Прокси-метрики не выдаются за реальные результаты.
 
 ## Исполнение
 Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
@@ -120,23 +120,23 @@ Use the template on **one real QuantDeus action**.
     name: 'Планетарное единство',
     title: '[TASK][Единство] Создать добровольную форму сотрудничества',
     body: `## Результат
-Create a concrete collaboration path for researchers, builders and creators.
+Создать конкретный путь сотрудничества для исследователей, разработчиков и авторов.
 
 ## Артефакт
-Add a GitHub Issue template for collaboration proposals with fields for:
-- contribution / need;
-- relevant pillar(s);
-- public evidence or portfolio;
-- expected deliverable;
-- dependencies;
-- privacy/safety constraints;
-- opt-in contact method.
+Добавить шаблон GitHub Issue для предложений о сотрудничестве с полями:
+- вклад / потребность;
+- связанные столпы;
+- публичные доказательства или портфолио;
+- ожидаемый результат;
+- зависимости;
+- ограничения приватности и безопасности;
+- добровольный способ связи.
 
 ## Критерии приёмки
-- [ ] Collaboration issue template is committed.
-- [ ] Template avoids requesting secrets or private personal data.
-- [ ] A contributor can understand the next step without private chat.
-- [ ] Coordination Hub can classify the resulting issue.
+- [ ] Шаблон сотрудничества добавлен в репозиторий.
+- [ ] Он не просит секреты или закрытые персональные данные.
+- [ ] Участник понимает следующий шаг без приватного чата.
+- [ ] Центр координации может классифицировать новый Issue.
 
 ## Исполнение
 Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
@@ -152,19 +152,19 @@ Add a GitHub Issue template for collaboration proposals with fields for:
     name: 'Космическое развитие',
     title: '[TASK][Космос] Подключить Warp-buble к доказательным воротам',
     body: `## Результат
-Make the Warp track actionable and falsifiable from the central coordination layer.
+Сделать варп-направление исполнимым и фальсифицируемым из центрального координационного слоя.
 
 ## Артефакт
-Add \`coordination/pillars/space.md\` with the current \`quantdeus/Warp-buble\` checkpoint and explicit status for:
-geometry, EOM, residual, NEC, energy, curvature/tidal, horizon, causality, stability and EFT.
+Добавить \`coordination/pillars/space.md\` с текущей контрольной точкой \`quantdeus/Warp-buble\` и явным состоянием для:
+геометрии, EOM, остатка, NEC, энергии, кривизны/приливных сил, горизонта, причинности, устойчивости и EFT.
 
-Each gate must be **PASS / FAIL / UNKNOWN** with a repository evidence link.
+Каждые ворота должны иметь явный статус и ссылку на доказательства репозитория.
 
 ## Критерии приёмки
-- [ ] Latest checked Warp SHA is recorded.
-- [ ] All ten gates have explicit status and evidence.
-- [ ] UNKNOWN is used when evidence is absent.
-- [ ] No physical-breakthrough claim unless all required gates justify it.
+- [ ] Записан последний проверенный SHA Warp.
+- [ ] Все десять ворот имеют явное состояние и доказательства.
+- [ ] При отсутствии доказательств используется статус НЕИЗВЕСТНО.
+- [ ] Физический прорыв не заявляется без прохождения требуемых ворот.
 
 ## Исполнение
 Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
@@ -180,21 +180,21 @@ Each gate must be **PASS / FAIL / UNKNOWN** with a repository evidence link.
     name: 'Человеческий потенциал',
     title: '[TASK][Потенциал] Добавить измеримый цикл обратной связи Mini App',
     body: `## Результат
-Turn the Telegram Mini App into a measurable user loop rather than a static surface.
+Превратить Telegram Mini App из статической поверхности в измеримый пользовательский цикл.
 
 ## Артефакт
-Add a small, privacy-preserving feedback action to the Mini App (for example "useful / not useful" plus optional short note), stored locally unless a separate backend is explicitly approved.
+Добавить небольшое сохраняющее приватность действие обратной связи в Mini App (например «полезно / не полезно» и необязательную короткую заметку), сохраняемое локально, пока отдельный бэкенд не одобрен явно.
 
 ## Критерии приёмки
-- [ ] User can submit feedback from the Mini App.
-- [ ] No health diagnosis or medical inference is made.
-- [ ] No private data is transmitted by default.
-- [ ] One observable completion event can be verified locally.
-- [ ] README documents how to test it.
+- [ ] Пользователь может отправить обратную связь из Mini App.
+- [ ] Медицинский диагноз или вывод не производится.
+- [ ] Закрытые данные по умолчанию не передаются.
+- [ ] Одно наблюдаемое событие завершения можно проверить локально.
+- [ ] README описывает способ тестирования.
 
 ## Исполнение
 Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
-Production publication requires separate approval.
+Публикация в production требует отдельного одобрения.
 
 <!-- qd-task-key:potential-miniapp-feedback-v1 -->`
   },
@@ -207,25 +207,25 @@ Production publication requires separate approval.
     name: 'Эстетика синтеза',
     title: '[TASK][Синтез] Описать дизайн-токены Synthwave × Frutiger Aero',
     body: `## Результат
-Convert the culture pillar into reusable implementation assets.
+Превратить культурный столп в повторно используемые артефакты реализации.
 
 ## Артефакт
-Add \`docs/design-system.md\` and a small set of reusable CSS variables/tokens for the Telegram Mini App:
-- typography hierarchy;
-- spacing/radius;
-- neon/night tokens;
-- light/water/green Frutiger Aero tokens;
-- accessibility/contrast rule.
+Добавить \`docs/design-system.md\` и небольшой набор CSS-переменных/токенов для Telegram Mini App:
+- иерархия типографики;
+- отступы и радиусы;
+- ночные/неоновые токены;
+- светлые/водные/зелёные токены Frutiger Aero;
+- правила доступности и контраста.
 
 ## Критерии приёмки
-- [ ] Tokens are documented.
-- [ ] Tokens are implemented in code or a dedicated stylesheet.
-- [ ] Existing UI can adopt them without a full rewrite.
-- [ ] Culture language is kept separate from scientific claims.
+- [ ] Токены документированы.
+- [ ] Токены реализованы в коде или отдельном stylesheet.
+- [ ] Существующий UI может внедрять их без полной переписи.
+- [ ] Культурный язык не смешивается с научными утверждениями.
 
 ## Исполнение
 Предпочтительный исполнитель: **коннектор GitHub / Control Tower**.
-Production publication requires separate approval.
+Публикация в production требует отдельного одобрения.
 
 <!-- qd-task-key:synthesis-design-tokens-v1 -->`
   },
