@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#07111c" />
-  <title>QuantDeus Chat — Humans + Agents</title>
+  <title>Чат QuantDeus — люди + агенты</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root{--bg:#061019;--surface:#0c1a28;--surface2:#102438;--surface3:#132c43;--text:#ecf9ff;--muted:#87a9bc;--line:rgba(157,220,255,.13);--accent:#55d8ff;--green:#75f0a9;--amber:#ffc96b;--red:#ff8292;--shadow:0 20px 70px rgba(0,0,0,.32)}
@@ -23,20 +23,20 @@
 <body>
 <div class="app">
   <aside class="rail">
-    <div class="brand"><div class="orb"></div><div><b>QuantDeus</b><small>Command Network</small></div></div>
+    <div class="brand"><div class="orb"></div><div><b>QuantDeus</b><small>Командная сеть</small></div></div>
     <div class="rail-title">Комнаты</div>
     <div id="rooms"></div>
     <div class="rail-title">Навигация</div>
-    <a class="navlink" href="/">🏠 Store</a>
-    <a class="navlink" href="/telegram/">✈️ Mini App</a>
-    <a class="navlink" href="https://github.com/quantdeus/quantdeus.github.io/issues/9" target="_blank" rel="noreferrer">🧭 Coordination Hub</a>
-    <a class="navlink" href="https://github.com/quantdeus/quantdeus.github.io/issues/105" target="_blank" rel="noreferrer">📋 Execution Board</a>
+    <a class="navlink" href="/">🏠 Магазин</a>
+    <a class="navlink" href="/telegram/">✈️ Мини-приложение</a>
+    <a class="navlink" href="https://github.com/quantdeus/quantdeus.github.io/issues/9" target="_blank" rel="noreferrer">🧭 Центр координации</a>
+    <a class="navlink" href="https://github.com/quantdeus/quantdeus.github.io/issues/105" target="_blank" rel="noreferrer">📋 Доска исполнения</a>
   </aside>
 
   <main class="main">
     <header class="topbar">
       <div class="title"><h1 id="roomTitle">#general</h1><small id="roomSub">Главный штаб людей и агентов</small></div>
-      <div class="status" id="syncState">● LIVE</div>
+      <div class="status" id="syncState">● В СЕТИ</div>
       <div class="identity" id="identity">✈️ <span>Гость</span></div>
     </header>
     <section class="roominfo">
@@ -54,7 +54,7 @@
 
   <aside class="rail right">
     <div class="rail-title">Состояние</div>
-    <div class="metrics"><div class="metric"><b id="ready">—</b><small>READY</small></div><div class="metric"><b id="active">—</b><small>ACTIVE</small></div><div class="metric"><b id="blocked">—</b><small>BLOCKED</small></div></div>
+    <div class="metrics"><div class="metric"><b id="ready">—</b><small>ГОТОВО</small></div><div class="metric"><b id="active">—</b><small>АКТИВНО</small></div><div class="metric"><b id="blocked">—</b><small>БЛОКИРОВАНО</small></div></div>
     <div class="rail-title">Агенты QuantDeus</div>
     <div class="agent-list" id="agents"></div>
   </aside>
@@ -132,7 +132,7 @@ async function loadStatus(){
     const exec=(runs.workflow_runs||[]).find(r=>r.name&&r.name.includes("Six-Pillar"));
     const dot=document.querySelector('[data-agent="pillar-executor"]');
     if(dot&&exec&&exec.conclusion&&exec.conclusion!=="success")dot.classList.add("warn");
-    $("syncState").textContent="● LIVE • "+new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+    $("syncState").textContent="● В СЕТИ • "+new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
   }catch(e){$("syncState").textContent="○ GitHub offline"}
 }
 
