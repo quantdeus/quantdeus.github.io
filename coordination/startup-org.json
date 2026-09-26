@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "title": "QuantDeus Holding Startup Organization",
-  "updated": "2026-09-26",
+  "updated": "2026-09-27",
   "model": "Founder-led AI-native holding",
-  "mission": "Build evidence-first products, research and infrastructure that reduce measurable scarcity and expand human capability.",
+  "mission": "Создавать научно проверяемые продукты, исследования и инфраструктуру, которые снижают измеримый дефицит через ресурсный учёт, автоматизацию, открытый доступ, экологическое восстановление и технологии с земной и космической ценностью.",
   "workforce": {
     "human_leadership": true,
     "ai_agents": 22,
@@ -74,10 +74,10 @@
     }
   ],
   "operating_model": [
-    "Research discovers evidence-backed opportunities.",
-    "Strategy converts signals into prioritized outcomes.",
-    "Product & Engineering ships reversible, testable changes.",
-    "QA blocks defects and coordinates repairs.",
-    "Growth, Marketing & Partnerships turns verified outcomes into adoption, discoverability and collaboration."
+    "Research maps needs, resources, constraints and evidence-backed opportunities.",
+    "Strategy converts signals from THRIVE I/II, The Venus Project, Реновация Земли and Рубежи науки into independently verifiable priorities.",
+    "Product & Engineering ships the smallest reversible prototype before scale.",
+    "QA blocks evidence, doctrine and contract drift and coordinates repairs.",
+    "Growth, Marketing & Partnerships turns verified outcomes into voluntary adoption, discoverability, collaboration and science communication."
   ]
 }

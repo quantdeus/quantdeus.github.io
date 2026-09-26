@@ -2,7 +2,7 @@
   "schema_version": 1,
   "title": "QuantDeus Holding — 22-agent startup organization",
   "source_of_truth": "quantdeus/quantdeus.github.io",
-  "updated": "2026-09-26",
+  "updated": "2026-09-27",
   "agents": [
     {
       "id": "coordinator",
@@ -248,9 +248,16 @@
     }
   ],
   "doctrine": {
-    "version": "2026.09-post-scarcity-v1",
+    "version": "2026.09-post-scarcity-v2",
     "source": "coordination/civilization-doctrine.json",
-    "inheritance": "all-agents"
+    "inheritance": "all-agents",
+    "source_streams": [
+      "thrive-1",
+      "thrive-2",
+      "venus-project",
+      "earth-renovation",
+      "gravity-frontiers"
+    ]
   },
   "organization": {
     "model": "AI-native startup holding",

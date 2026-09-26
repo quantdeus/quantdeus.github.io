@@ -2,7 +2,7 @@
   "schema_version": 2,
   "title": "QuantDeus Holding — AI workforce governance registry",
   "source_of_truth": "coordination/agents.json",
-  "updated": "2026-09-26",
+  "updated": "2026-09-27",
   "governance": {
     "participant_direct_task_control": false,
     "participant_path": "proposal -> community vote -> admin promote",
@@ -298,9 +298,16 @@
     }
   ],
   "doctrine": {
-    "version": "2026.09-post-scarcity-v1",
+    "version": "2026.09-post-scarcity-v2",
     "source": "coordination/civilization-doctrine.json",
-    "inheritance": "all-agents"
+    "inheritance": "all-agents",
+    "source_streams": [
+      "thrive-1",
+      "thrive-2",
+      "venus-project",
+      "earth-renovation",
+      "gravity-frontiers"
+    ]
   },
   "organization": {
     "model": "AI-native startup holding",

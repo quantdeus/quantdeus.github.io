@@ -18,6 +18,9 @@ function doctrineSummary() {
     objective: d.objective,
     operating_rule: d.operating_rule,
     execution_gates: d.execution_gates,
+    source_streams: (d.source_streams || []).map(s => s.id),
+    transition_protocol: d.transition_protocol || [],
+    cron_policy: d.cron_policy || null,
   };
 }
 

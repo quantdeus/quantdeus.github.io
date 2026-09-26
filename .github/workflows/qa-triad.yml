@@ -24,6 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 🌐 Validate shared post-scarcity mission
+        run: node scripts/mission-alignment.js
+
       - name: 🩺 Run all-agent monitor
         run: node scripts/agent-monitor.js
 
@@ -50,5 +53,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: quantdeus-qa-triad
-          path: /tmp/quantdeus-qa-*.json
+          path: |
+            /tmp/quantdeus-qa-*.json
+            /tmp/quantdeus-mission-alignment.json
           if-no-files-found: error

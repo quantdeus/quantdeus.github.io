@@ -1,37 +1,44 @@
 # QuantDeus Daily Context Checkpoint
 
-- date: 2026-09-13
-- canonical_repo: `QuantDeus/quantdeus-core-pulse`
+- date: 2026-09-27
+- canonical_repo: `quantdeus/quantdeus.github.io`
 - canonical_branch: `main`
-- active_frontend: `Telegram Mini App`
+- canonical_url: `https://quantdeus.github.io/`
+- canonical_host: `GitHub Pages / repository root`
+- active_frontend: `QuantDeus Store + Telegram Mini App`
 - active_store_name: `QuantDeus Store`
-- canonical_url: `https://quantdeus.github.io/quantdeus-core-pulse/`
-- canonical_host: `GitHub Pages / quantdeus.github.io`
-- web_compatible_host: `GitHub Pages from repository root index.html`
-- pages_deployment_status: `success; redeploys on main pushes`
-- frontend_surface: `Telegram Mini App first; same build remains browser-compatible`
-- frontend_current_mvp: `Y2K Cinema`
-- frontend_current_features: `Y2K/2007 UI; search; category filters; favorites in localStorage; detail sheet; Cinema Vibes; Telegram WebApp SDK ready`
-- make_active_scenario: `QuantDeus.store`
-- make_role: `automation/backend gateway only; not the frontend`
-- make_credit_strategy: `frontend interaction and vibe-coding do not call Make unless an automation action is explicitly needed`
-- telegram_role: `primary user entry point and identity/context surface for Store`
-- telegram_mini_app_target: `https://quantdeus.github.io/quantdeus-core-pulse/`
-- chat_direction: `Store chat should mirror/synchronize the real QuantDeus Telegram chat rather than become an isolated second chat`
-- forum_direction: `forum/community surfaces may live inside QuantDeus Store`
-- legacy_frontends: `Replit and Lovable retired; do not treat them as active QuantDeus frontend platforms`
-- retired_domain_plan: `quantdeus.tk retired; GitHub Pages URL is canonical`
-- coordination_model: `GitHub Issues [SIGNAL]/[STRATEGY]/[TASK] + opt-in /take workflow`
-- pages_workflow: `Deploy QuantDeus Store Mini App`
-- coordinator_workflow: `QuantDeus Coordinator; cadence unchanged; Telegram credentials remain protected in GitHub Secrets`
-- pulse_workflow: `QuantDeus Pulse; cadence unchanged; canonical frontend metadata points to Telegram Mini App on GitHub Pages`
-- children_of_eltan_repo_reference: `QuantDeus/SRHD_Children_of_Eltan`
-- warp_repo: `QuantDeus/Warp-buble`
-- chosen_increment: `migrate the canonical QuantDeus Store address to GitHub Pages after the GitHub username change`
-- increment_status: `complete`
-- changed_this_cycle: `Make ACK points to the GitHub Pages Store; Pages and Pulse workflows use the GitHub Pages canonical URL; README and cron context migrated from quantdeus.tk to quantdeus.github.io; Telegram Mini App target is the GitHub Pages build`
-- blockers:
-  - `GitHub connector metadata may temporarily cache the former account login after the username rename; repository redirects continue to allow writes.`
-  - `A root https://quantdeus.github.io/ URL requires the Pages repository itself to be named quantdeus.github.io; until then the canonical project URL includes /quantdeus-core-pulse/.`
-  - `Forum and synchronized chat are planned surfaces, not implemented in the current MVP.`
-- next_step: `use the GitHub Pages Store URL as the Telegram bot web-app/menu target and continue building Store modules without reintroducing paid frontend hosts.`
+- telegram_mini_app_target: `https://quantdeus.github.io/telegram/`
+- coordination_url: `https://quantdeus.github.io/coordination/`
+- homunculi_url: `https://quantdeus.github.io/homunculi/`
+- pages_deployment_status: `main pushes deploy through GitHub Pages; final RU smoke/QA green before this doctrine update`
+- active_language: `Russian UI; technical identifiers remain stable`
+- doctrine_version: `2026.09-post-scarcity-v2`
+- doctrine_source: `coordination/civilization-doctrine.json`
+- doctrine_inheritance: `all 22 registered agents`
+- doctrine_source_streams:
+  - `THRIVE I — systems mapping / incentives / human agency`
+  - `THRIVE II — decentralized solutions / needs-to-resources / practical next actions`
+  - `The Venus Project / Jacque Fresco — resource census / carrying capacity / cybernation / prototype-before-scale`
+  - `Реновация Земли — volunteer execution / modern scientific correction / demonstrators / media-community`
+  - `Рубежи науки / Илья Чех — fundamental research / research→engineering→commercialization / Earth-space dual use / science media`
+- post_scarcity_definition: `engineering target measured by scarcity reduction, access, resource productivity, energy/material constraints and ecological outcomes`
+- shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
+- scheduled_workflows:
+  - `06:17 UTC — QuantDeus Daily Agent Health Check`
+  - `06:27 UTC — QuantDeus Coordinator`
+  - `06:37 UTC — QuantDeus Six-Pillar Executor`
+  - `06:47 UTC — QuantDeus QA Triad`
+- cron_cadence_rule: `staggered once per day; event triggers remain independent`
+- cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports`
+- privileged_action_rule: `production publication, spending, secrets, irreversible changes and sensitive outreach require explicit human approval`
+- zapier_active_zap: `QuantDeus 2-Step GPT Bridge`
+- zapier_active_zap_state: `on / configured`
+- zapier_canonical_skill: `quantdeus github dispatcher`
+- zapier_role: `low-cost transport/dispatcher; GitHub doctrine is source of truth to avoid policy drift`
+- github_role: `source of truth for doctrine, registries, task state, QA, execution and public Pages`
+- coordination_model: `GitHub Issues [SIGNAL]/[STRATEGY]/[TASK] + opt-in /take + Squad B for approved reversible execution`
+- resource_economy_loop: `NEED → RESOURCE/CAPACITY MAP → EVIDENCE → REVERSIBLE PROTOTYPE → QA → MEASURED OUTCOME → OPEN LEARNING → SCALE`
+- space_dual_use_rule: `space technology should also be evaluated for useful Earth-side application, scalability and portfolio synergy`
+- media_rule: `media communicates verified progress and invites voluntary participation; it does not upgrade evidence grades`
+- legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
+- next_step: `keep all Cron, Zapier dispatch and GitHub execution on the same v2 doctrine and let QA fail closed on mission drift`
