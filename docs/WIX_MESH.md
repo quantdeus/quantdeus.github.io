@@ -1,28 +1,28 @@
-# QuantDeus Wix Mesh
+# Историческая архитектура QuantDeus в Wix
 
-> Historical document. Wix is not an active QuantDeus frontend. The active frontend is the Telegram Mini App hosted on GitHub Pages.
+> Исторический документ. Wix не является активным фронтендом QuantDeus. Активный публичный контур размещён в GitHub Pages, а продуктовый интерфейс — в Telegram Mini App.
 
-Public community portal (historical): https://elektron2345.wixsite.com/quantdeus
+Исторический портал сообщества: https://elektron2345.wixsite.com/quantdeus
 
-Connected repositories:
-- QuantDeus core: https://github.com/QuantDeus/quantdeus-core-pulse
-- Warp Bubble research: https://github.com/QuantDeus/Warp-buble
+Связанные репозитории:
+- ядро QuantDeus: https://github.com/QuantDeus/quantdeus-core-pulse
+- исследования варп-пузыря: https://github.com/QuantDeus/Warp-buble
 
-## Verified historical site state
+## Проверенное историческое состояние
 
-Last API preflight: 2026-08-31.
+Последняя API-проверка: 2026-08-31.
 
 - Wix site ID: `699629f7-f78f-4473-9f66-0a34a0e6da39`
-- Status at that time: published
-- Editor: Odeditor
-- Velo: disabled
-- Confirmed installed apps at that time: Wix Blog, Wix Forms, Wix Groups, Wix Members Area, Promote SEO, Wix Invoices.
+- состояние на тот момент: опубликован;
+- редактор: Odeditor;
+- Velo: выключен;
+- подтверждённые приложения: Wix Blog, Wix Forms, Wix Groups, Wix Members Area, Promote SEO, Wix Invoices.
 
-This file is retained only for provenance. It does not define the current QuantDeus frontend, deployment, community, or automation architecture.
+Файл сохранён только для происхождения решений. Он не определяет текущую архитектуру фронтенда, публикации, сообщества или автоматизации QuantDeus.
 
-Current canonical frontend:
-- QuantDeus Store
-- Telegram Mini App
-- https://quantdeus.github.io/quantdeus-core-pulse/
-- GitHub Pages hosting
-- Make as automation/backend gateway only
+Текущий канонический контур:
+- QuantDeus Holding;
+- Telegram Mini App;
+- https://quantdeus.github.io/;
+- GitHub Pages;
+- Zapier/GitHub как слой диспетчеризации и исполнения.
