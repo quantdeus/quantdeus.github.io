@@ -1,8 +1,10 @@
+const { queryForPillar } = require('./doctrine');
 async function scan(browser) {
   const page = await browser.newPage();
   const findings = [];
   try {
-    await page.goto('https://news.google.com/search?q=space+infrastructure+lunar+Mars+ISRU+propulsion+space+solar+power+in-space+manufacturing&hl=en', { waitUntil: 'domcontentloaded', timeout: 15000 });
+    const query = encodeURIComponent(queryForPillar('space'));
+    await page.goto(`https://news.google.com/search?q=${query}&hl=en`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForSelector('article', { timeout: 5000 });
     const headlines = await page.$$eval('article h3, article h4, article a[href]', els => {
       const titles = els

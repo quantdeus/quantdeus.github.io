@@ -1,6 +1,8 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const crypto = require('crypto');
+const { doctrineSummary } = require('./doctrine');
+const doctrine = doctrineSummary();
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -329,6 +331,9 @@ function refreshBoard() {
 
 This board is an **execution queue**, not a news digest.
 
+**Doctrine:** ${doctrine.version}  
+**Objective:** ${doctrine.objective}
+
 Rules:
 1. Every pillar must point to a concrete task with an observable artifact.
 2. Prefer one P1 task at a time per pillar.
@@ -336,6 +341,7 @@ Rules:
 4. Human approval is still required for production publication, spending, secrets, irreversible actions or sensitive outreach.
 5. A task is DONE only after its acceptance checklist is verified.
 6. No periodic Pulse issue is created just to say that a scan happened.
+7. Every task must reduce a measurable scarcity/bottleneck or build a reusable capability; inspiration never substitutes for evidence.
 
 | Pillar | State | Current executable task | Preferred executor |
 |---|---|---|---|

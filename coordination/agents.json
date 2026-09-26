@@ -156,5 +156,10 @@
       "source": "scripts/octet/herald.js",
       "group": "executor-b"
     }
-  ]
+  ],
+  "doctrine": {
+    "version": "2026.09-post-scarcity-v1",
+    "source": "coordination/civilization-doctrine.json",
+    "inheritance": "all-agents"
+  }
 }

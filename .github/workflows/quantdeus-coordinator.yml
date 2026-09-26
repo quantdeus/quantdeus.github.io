@@ -28,6 +28,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Validate post-scarcity civilization doctrine
+        run: node -e "const d=require('./scripts/doctrine').loadDoctrine(); console.log('Doctrine', d.version)"
+
       - name: Coordinate contributors and refresh hubs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

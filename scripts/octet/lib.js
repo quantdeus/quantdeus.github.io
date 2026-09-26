@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { doctrineSummary } = require('../doctrine');
 
 const RUN_DIR = path.join(process.env.RUNNER_TEMP || '/tmp', 'quantdeus-octet-run');
 const STATE_PATH = path.join(RUN_DIR, 'state.json');
@@ -128,5 +129,5 @@ function runNode(script) { execFileSync(process.execPath, [script], { stdio:'inh
 module.exports = {
   RUN_DIR, STATE_PATH, ensureRunDir, loadState, saveState, labelsOf, hasLabel,
   gh, ghJson, issueNumber, readIssue, isAdminAuthor, isAuthorized, parseManifest, normalizeRepoPath,
-  pathRisk, laneForPath, validateManifest, ensureLabels, editIssueLabels, commentIssue, runNode,
+  pathRisk, laneForPath, validateManifest, ensureLabels, editIssueLabels, commentIssue, runNode, doctrineSummary,
 };

@@ -1,6 +1,8 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const crypto = require('crypto');
+const { doctrineSummary } = require('./doctrine');
+const doctrine = doctrineSummary();
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -252,7 +254,13 @@ async function refreshHub() {
     return `| #${t.number} | ${stateOf(t)} | ${pillarOf(t)} | ${owner ? `@${owner}` : '—'} | [${t.title}](${t.url}) |`;
   }).join('\n') || '| — | — | — | — | Нет активных задач |';
 
-  const body = `# 🧭 QuantDeus Coordination Hub\n\nАвтоматический диспетчер задач и человеческого участия. Обновляется каждый час и при событиях Issues.\n\n## Состояние\n\n- 🟢 Ready: **${stats.ready}**\n- 🟡 Active: **${stats.active}**\n- 🚧 Blocked: **${stats.blocked}**\n- 🕸️ Stale (72h+): **${stats.stale}**\n\n## Команды участника\n\n- \`/take\` — взять свободную задачу\n- \`/release\` — освободить её\n- \`/block причина\` — отметить препятствие и запросить помощь\n- \`/ready\` — вернуть в очередь\n- \`/done\` — завершить задачу\n\nНовая координационная задача создаётся с префиксом **[TASK]**. Система никому не назначает работу без явного \`/take\`.\n\n## Активные задачи\n\n| Issue | Статус | Направление | Владелец | Задача |\n|---|---|---|---|---|\n${rows}\n\n## Внешние каналы\n\nПри наличии секретов репозитория диспетчер может отправлять изменившийся digest в Discord, Slack, Telegram или generic webhook. Без настроенного секрета наружу ничего не отправляется.\n\n_Last coordinator update: ${new Date().toISOString()}_\n\n<!-- coord-digest:${hash} -->\n`;
+  const body = `# 🧭 QuantDeus Coordination Hub\n\nАвтоматический диспетчер задач и человеческого участия. Плановый refresh — раз в сутки, плюс событийные триггеры Issues.
+
+## Civilization doctrine
+
+- Version: **${doctrine.version}**
+- Objective: ${doctrine.objective}
+- Rule: ${doctrine.operating_rule}\n\n## Состояние\n\n- 🟢 Ready: **${stats.ready}**\n- 🟡 Active: **${stats.active}**\n- 🚧 Blocked: **${stats.blocked}**\n- 🕸️ Stale (72h+): **${stats.stale}**\n\n## Команды участника\n\n- \`/take\` — взять свободную задачу\n- \`/release\` — освободить её\n- \`/block причина\` — отметить препятствие и запросить помощь\n- \`/ready\` — вернуть в очередь\n- \`/done\` — завершить задачу\n\nНовая координационная задача создаётся с префиксом **[TASK]**. Система никому не назначает работу без явного \`/take\`.\n\n## Активные задачи\n\n| Issue | Статус | Направление | Владелец | Задача |\n|---|---|---|---|---|\n${rows}\n\n## Внешние каналы\n\nПри наличии секретов репозитория диспетчер может отправлять изменившийся digest в Discord, Slack, Telegram или generic webhook. Без настроенного секрета наружу ничего не отправляется.\n\n_Last coordinator update: ${new Date().toISOString()}_\n\n<!-- coord-digest:${hash} -->\n`;
 
   fs.writeFileSync('/tmp/quantdeus-coordination-hub.md', body);
   if (hub) {

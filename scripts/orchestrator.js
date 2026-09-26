@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
+const { doctrineSummary } = require('./doctrine');
 
 const PILLARS = [
   { id: 1, name: 'energy', title: '⚡ Energy Future' },
@@ -28,6 +29,7 @@ function selectPillars(value = 'all') {
 }
 
 async function run() {
+  const doctrine = doctrineSummary();
   const activePillars = selectPillars(process.env.PILLARS || 'all');
   const browser = await chromium.launch({ headless: true });
   const results = [];
@@ -46,7 +48,7 @@ async function run() {
         results.push({ pillar: pillar.title, status: 'error', error: err.message });
       }
     }
-    fs.writeFileSync('/tmp/quantdeus-report.json', JSON.stringify({ timestamp: new Date().toISOString(), results }, null, 2));
+    fs.writeFileSync('/tmp/quantdeus-report.json', JSON.stringify({ timestamp: new Date().toISOString(), doctrine, results }, null, 2));
     console.log('Report saved.');
   } finally {
     await browser.close();

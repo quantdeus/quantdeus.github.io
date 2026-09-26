@@ -5,6 +5,18 @@ const { execFileSync } = require('child_process');
 const root = process.cwd();
 const registryPath = path.join(root, 'coordination', 'agents.json');
 const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+const doctrinePath = path.join(root, 'coordination', 'civilization-doctrine.json');
+let doctrine = null;
+try {
+  doctrine = JSON.parse(fs.readFileSync(doctrinePath, 'utf8'));
+} catch (err) {
+  console.error('Civilization doctrine missing or invalid:', err.message);
+  process.exit(1);
+}
+if (doctrine.schema_version !== 1 || !doctrine.version || !Array.isArray(doctrine.execution_gates)) {
+  console.error('Civilization doctrine schema invalid');
+  process.exit(1);
+}
 const agents = registry.agents || [];
 
 const failures = [];
@@ -40,6 +52,7 @@ for (const agent of agents) {
 const report = {
   timestamp: new Date().toISOString(),
   registry_version: registry.schema_version,
+  doctrine_version: doctrine.version,
   agent_count: agents.length,
   healthy_count: checks.filter(c => c.ok).length,
   failed_count: failures.length,
