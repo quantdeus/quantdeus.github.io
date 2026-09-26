@@ -57,9 +57,9 @@ function kindOf(issue) {
 
 function evidenceOf(issue) {
   const labels = labelsOf(issue).map(label => label.toLowerCase());
-  if (labels.some(label => /evidence[: -]?a|evidence-сильные/.test(label))) return 'A — сильные';
-  if (labels.some(label => /evidence[: -]?b|evidence-перспективные/.test(label))) return 'B — перспективные';
-  if (labels.some(label => /evidence[: -]?c|evidence-исследовательские/.test(label))) return 'C — исследовательские';
+  if (labels.some(label => /evidence[: -]?a|evidence-strong/.test(label))) return 'A — сильные';
+  if (labels.some(label => /evidence[: -]?b|evidence-promising/.test(label))) return 'B — перспективные';
+  if (labels.some(label => /evidence[: -]?c|evidence-exploratory/.test(label))) return 'C — исследовательские';
 
   const text = issue.body || '';
   const checkedGrade = text.match(/^\s*[-*]\s*\[[xX]\]\s*([ABC])\s*(?:—|-|:)/m);
@@ -151,7 +151,7 @@ const body = `# 🧭 Стратегический навигационный ц�
 
 - Версия: **${doctrine.version}**
 - Цель: ${doctrine.objective}
-- Правило доказательности: ${doctrine.operating_rule}\n\n## Конвейер\n\n- 📡 Открытые сигналы: **${signals.length}**\n- 🧠 Открытые стратегии: **${strategies.length}**\n- 🧪 Сигналы без уровня доказательности: **${ungraded.length}**\n- 🌐 Явно подготовленные кандидаты на публикацию: **${publishReady.length}**\n\n### Сигналы\n\n| Issue | Доказательства | Столп | Готово к публикации | Публичная цель | Элемент |\n|---|---|---|---|---|---|\n${rows(signals)}\n\n### Стратегии\n\n| Issue | Доказательства | Столп | Готово к публикации | Публичная цель | Элемент |\n|---|---|---|---|---|---|\n${rows(strategies)}\n\n## Promotion rule\n\nПубличная публикация не выводится из самого факта существования Issue. Для Wix кандидат должен пройти проверку источников и получить явную метку \`publish:wix-ready\` (или совместимую \`publish-wix-ready\` / \`public:ready\`). До этого материал остаётся внутри исследовательского/стратегического контура.\n\nДля сильного сигнала без evidence-grade следующий шаг — **проверка доказательств**, а не изменение roadmap. THRIVE I/II и другие мировоззренческие источники могут порождать гипотезы, но не повышают evidence-grade сами по себе. Для принятой стратегии следующий шаг — конкретный **[TASK]** с наблюдаемым результатом.\n\n_Last strategic refresh: ${new Date().toISOString()}_\n\n<!-- strategic-digest:${digest} -->\n`;
+- Правило доказательности: ${doctrine.operating_rule}\n\n## Конвейер\n\n- 📡 Открытые сигналы: **${signals.length}**\n- 🧠 Открытые стратегии: **${strategies.length}**\n- 🧪 Сигналы без уровня доказательности: **${ungraded.length}**\n- 🌐 Явно подготовленные кандидаты на публикацию: **${publishReady.length}**\n\n### Сигналы\n\n| Issue | Доказательства | Столп | Готово к публикации | Публичная цель | Элемент |\n|---|---|---|---|---|---|\n${rows(signals)}\n\n### Стратегии\n\n| Issue | Доказательства | Столп | Готово к публикации | Публичная цель | Элемент |\n|---|---|---|---|---|---|\n${rows(strategies)}\n\n## Правило публикации\n\nПубличная публикация не выводится из самого факта существования Issue. Для публичной публикации кандидат должен пройти проверку источников и получить явную метку \`publish:wix-ready\` (или совместимую \`publish-wix-ready\` / \`public:ready\`). До этого материал остаётся внутри исследовательского/стратегического контура.\n\nДля сильного сигнала без уровня доказательности следующий шаг — **проверка доказательств**, а не изменение дорожной карты. THRIVE I/II и другие мировоззренческие источники могут порождать гипотезы, но не повышают уровень доказательности сами по себе. Для принятой стратегии следующий шаг — конкретный **[TASK]** с наблюдаемым результатом.\n\n_Последнее стратегическое обновление: ${new Date().toISOString()}_\n\n<!-- strategic-digest:${digest} -->\n`;
 
 const hubs = ghJson([
   'issue', 'list', '--state', 'all', '--search', `${HUB_TITLE} in:title`, '--limit', '10',
