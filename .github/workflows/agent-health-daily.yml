@@ -1,0 +1,54 @@
+name: QuantDeus Daily Agent Health Check 🩺
+
+on:
+  schedule:
+    # Once per day at 06:17 UTC.
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: quantdeus-agent-health-daily
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Check all registered agents
+        id: health
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/agent-monitor.js
+
+      - name: Upload health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-agent-health
+          path: /tmp/quantdeus-agent-health.json
+          if-no-files-found: ignore
+
+      - name: Create/update monitoring issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[AGENT HEALTH] Daily agent check failed" \
+            --body "Daily agent health monitoring detected one or more failed checks. See the workflow run and uploaded health report for details." \
+            --label "coord:human" || true
