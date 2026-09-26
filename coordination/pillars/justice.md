@@ -1,62 +1,62 @@
-# ⚖️ Algorithmic Justice — Autonomous Action Audit Contract
+# ⚖️ Алгоритмическая справедливость — контракт аудита автономных действий
 
-This document turns the QuantDeus "algorithmic justice" pillar into an operational control for agents and automation.
+Документ превращает столп QuantDeus «алгоритмическая справедливость» в операционный контроль для агентов и автоматизации.
 
-## Decision record template
+## Шаблон записи решения
 
-Every autonomous or connector-driven action that changes repository state should record:
+Каждое автономное действие или действие через connector, которое меняет состояние репозитория, должно фиксировать:
 
-- **Goal** — what observable result is being pursued.
-- **Affected people/systems** — who or what can be changed by the action.
-- **Evidence / provenance** — repository state, issue, run, file or source used to justify the action.
-- **Privacy impact** — whether personal/private data is read, copied or exposed.
-- **Reversibility** — rollback path and whether the change is easily reversible.
-- **Cost** — money, credits, compute or rate-limit cost.
-- **Human approval gate** — whether explicit approval is required before execution.
-- **Red-team failure condition** — what would make the action unsafe, misleading or counterproductive.
-- **Execution state** — configured / started / completed / blocked / not measured.
-- **Verified outcome** — evidence that the intended result actually occurred.
+- **Цель** — какой наблюдаемый результат достигается.
+- **Затронутые люди/системы** — кого или что может изменить действие.
+- **Доказательства / происхождение** — состояние репозитория, Issue, run, файл или источник, обосновывающий действие.
+- **Влияние на приватность** — читаются, копируются или раскрываются ли личные/закрытые данные.
+- **Обратимость** — путь отката и насколько легко вернуть изменение.
+- **Стоимость** — деньги, кредиты, вычисления или расход rate limit.
+- **Ворота человеческого одобрения** — требуется ли явное разрешение до исполнения.
+- **Условие неуспеха красной команды** — что сделает действие небезопасным, вводящим в заблуждение или контрпродуктивным.
+- **Состояние исполнения** — настроено / запущено / завершено / заблокировано / не измерено.
+- **Проверенный результат** — доказательство того, что ожидаемый результат действительно получен.
 
-## Approval policy
+## Политика одобрения
 
-Explicit human approval is required before:
+Явное человеческое одобрение требуется перед:
 
-- production publication/deployment;
-- spending or purchases;
-- exposing secrets/tokens/private data;
-- irreversible destructive changes;
-- sensitive external outreach or actions on behalf of a person.
+- публикацией или развёртыванием в production;
+- расходами и покупками;
+- раскрытием секретов, токенов или закрытых данных;
+- необратимыми разрушительными изменениями;
+- чувствительными внешними контактами или действиями от имени человека.
 
-Safe, reversible repository coordination can be executed by the GitHub connector / Control Tower and then verified against the acceptance criteria.
+Безопасная и обратимая координация репозитория может выполняться через GitHub connector / Control Tower с последующей проверкой критериев приёмки.
 
-## Real action log — execution-first six-pillar coordination
+## Реальный журнал — координация шести столпов с приоритетом исполнения
 
-**Goal:** replace the old six-pillar Pulse report loop with a GitHub execution queue that drives concrete tasks.
+**Цель:** заменить старый цикл Pulse-отчётов шести столпов очередью исполнения GitHub с конкретными задачами.
 
-**Affected systems:** `quantdeus/quantdeus.github.io` coordination scripts/workflow and GitHub Issues.
+**Затронутые системы:** скрипты/воркфлоу координации `quantdeus/quantdeus.github.io` и GitHub Issues.
 
-**Evidence / provenance:**
-- legacy workflow: `.github/workflows/quantdeus-pulse.yml`;
-- legacy reporter: `scripts/report-to-issue.js`;
-- execution implementation: branch `coordination/six-pillar-execution-v2`;
-- draft PR: #106;
-- live execution board: #105;
-- live pillar tasks: #99–#104.
+**Доказательства / происхождение:**
+- прежний workflow: `.github/workflows/quantdeus-pulse.yml`;
+- прежний reporter: `scripts/report-to-issue.js`;
+- ветка реализации: `coordination/six-pillar-execution-v2`;
+- черновой PR: #106;
+- живая доска исполнения: #105;
+- задачи столпов: #99–#104.
 
-**Privacy impact:** none. No private user data or secrets were copied into repository content.
+**Влияние на приватность:** отсутствует. Закрытые пользовательские данные и секреты не копировались в репозиторий.
 
-**Reversibility:** high. Changes are isolated on a branch/draft PR. Closing tasks/issues does not delete history.
+**Обратимость:** высокая. Изменения изолированы в ветке/PR, закрытие задач и Issues не удаляет историю.
 
-**Cost:** GitHub repository/API operations only; no paid Make/API execution was triggered.
+**Стоимость:** только операции GitHub repository/API; платный Make/API не запускался.
 
-**Human approval gate:** merge to `main` is intentionally withheld because the repository's Pages workflow deploys on every main push.
+**Ворота человеческого одобрения:** слияние в `main` намеренно удерживалось, поскольку Pages публикуется при push в main.
 
-**Red-team failure condition:** if the new workflow only creates status summaries without producing executable tasks and verified artifacts, the change has failed its purpose.
+**Условие неуспеха:** если новый workflow создаёт только статусы без исполняемых задач и проверенных артефактов, цель не достигнута.
 
-**Execution state:** implementation created; six live tasks and the execution board created; production/main merge not started.
+**Состояние исполнения:** реализация создана, шесть живых задач и единая доска созданы.
 
-**Verified outcome:** GitHub now has six concrete pillar tasks (#99–#104) with acceptance criteria and a single execution board (#105). The draft implementation PR #106 removes the scheduled Pulse report-generation path and replaces it with task-queue maintenance.
+**Проверенный результат:** GitHub содержит шесть конкретных задач столпов (#99–#104) с критериями приёмки и единую доску (#105).
 
-## Completion rule
+## Правило завершения
 
-A task is not DONE because an agent produced text. It is DONE only when its acceptance criteria are checked against repository evidence.
+Задача не становится ГОТОВОЙ только потому, что агент сгенерировал текст. Она завершена лишь после проверки критериев приёмки по фактическим данным репозитория.
