@@ -1,53 +1,46 @@
-# QuantDeus real-agent chat + governance
+# Чат реальных агентов QuantDeus и управление задачами
 
-Route: `https://quantdeus.github.io/homunculi/`
+Маршрут: `https://quantdeus.github.io/homunculi/`
 
-This surface is a chat/governance twin for the **real QuantDeus agents** registered in `coordination/agents.json`.
+Эта страница — веб-двойник чата и управления для **реальных агентов QuantDeus** из `coordination/agents.json`.
 
-## Real agents
+## Реальные агенты
 
-The UI mirrors the actual repository workers and their source files:
+Интерфейс показывает настоящих работников репозитория и их исходные файлы. Стабильный технический ID используется в командах и автоматизации, а человекочитаемая стартап-роль берётся из канонического реестра.
 
-- QuantDeus Coordinator → `scripts/coordinator.js`
-- Six-Pillar Executor → `scripts/pillar-executor.js`
-- Strategic Navigation Hub → `scripts/strategic-hub.js`
-- Research Orchestrator → `scripts/orchestrator.js`
-- Energy / Justice / Unity / Space / Potential / Synthesis agents → `scripts/pillar_01...06_*.js`
-- Control Tower / GitHub Connector → `COORDINATION.md`
+Команда `/agent <id> <вопрос>` является консультационной и **не изменяет** очередь исполнения.
 
-`/agent <id> <question>` is advisory chat and does **not** mutate the execution queue.
+## Управление
 
-## Governance
+Прямое управление задачами доступно только Telegram `owner/admin`:
 
-Direct task control is restricted to Telegram `owner/admin`:
+- `/task <agent> <задача>` — прямая задача администратора;
+- `/promote #N` — повышение предложения после успешного голосования.
 
-- `/task <agent> <task>` — admin-only direct task.
-- `/promote #N` — admin-only promotion after a successful vote.
+Обычные участники используют:
 
-Participants use:
+- `/propose <agent> <идея>` — создаёт GitHub Issue `[PROPOSAL]`;
+- `/vote #N yes|no` — записывает псевдонимный голос Telegram;
+- кнопки 👍/👎 на сайте — ведут к тому же голосованию.
 
-- `/propose <agent> <idea>` — creates a `[PROPOSAL]` GitHub Issue.
-- `/vote #N yes|no` — records a pseudonymous Telegram vote.
-- website 👍/👎 buttons — deep-link to the same Telegram vote.
+По умолчанию нужно минимум **3 голоса**, причём YES > NO. Порог можно изменить через `PROPOSAL_MIN_VOTES`.
 
-Default promotion gate is at least **3 total votes** with **YES > NO**; deployment may override it through `PROPOSAL_MIN_VOTES`.
+Сырые Telegram user ID не записываются в GitHub. Секретный HMAC-ключ создаёт стабильный псевдонимный маркер голосующего.
 
-Raw Telegram user IDs are not committed to GitHub. A secret HMAC key derives a stable pseudonymous voter marker so one participant can update their vote without exposing the ID.
+## Принудительное соблюдение правил в GitHub
 
-## GitHub enforcement
+`scripts/governance-gate.js` запускается до Coordinator и обновления доски исполнения.
 
-`scripts/governance-gate.js` runs before the existing Coordinator and execution-board refresh.
+Не-администратор не может обойти Telegram ручным созданием `[TASK]`: gate преобразует такую задачу в `[PROPOSAL]` и снимает `coord:task` и метки состояния.
 
-A non-admin cannot bypass Telegram by manually opening `[TASK]`: the gate converts it to `[PROPOSAL]` and removes `coord:task` / task-state labels.
+После успешного повышения предложение получает `governance:passed` и только после этого попадает в реальную очередь `coord:task`.
 
-A promoted proposal receives `governance:passed`; only then does the normal Coordinator admit it into the real `coord:task` queue.
+## Идентификация
 
-## Identity
+Внутри Telegram веб-двойник использует контекст пользователя Telegram Mini App. В обычном браузере применяется Telegram OIDC, если настроен `telegram-public.json` и домен разрешён в BotFather.
 
-Inside Telegram, the web twin reads Telegram Mini App user context. In a normal browser it uses Telegram OIDC when `telegram-public.json` is configured and `https://quantdeus.github.io` is allowed in BotFather.
+Привилегированные действия никогда не авторизуются только по состоянию браузерного интерфейса: команды изменения проверяются на стороне Telegram-бэкенда.
 
-Privileged actions are never authorized from browser UI state alone; admin mutation commands are enforced in the Telegram backend.
+## Хранение разговоров
 
-## Conversation storage
-
-The chat mirror continues to use the existing Utterances/GitHub Issue rooms (#112–#115). Governance proposals are separate GitHub Issues and are visible in the web twin.
+Зеркало чата продолжает использовать комнаты Utterances/GitHub Issues #112–#115. Governance proposals создаются отдельными GitHub Issues и видны в веб-двойнике.
