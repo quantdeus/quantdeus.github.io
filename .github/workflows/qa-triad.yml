@@ -24,6 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 🩺 Run all-agent monitor
+        run: node scripts/agent-monitor.js
+
       - name: 🔎 QA Syntax Validator
         id: syntax
         continue-on-error: true
