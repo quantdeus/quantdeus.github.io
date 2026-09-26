@@ -10,18 +10,30 @@
 - telegram_mini_app_target: `https://quantdeus.github.io/telegram/`
 - coordination_url: `https://quantdeus.github.io/coordination/`
 - homunculi_url: `https://quantdeus.github.io/homunculi/`
-- pages_deployment_status: `main pushes deploy through GitHub Pages; final RU smoke/QA green before this doctrine update`
 - active_language: `Russian UI; technical identifiers remain stable`
-- doctrine_version: `2026.09-post-scarcity-v2`
+- doctrine_version: `2026.09-post-scarcity-v3`
 - doctrine_source: `coordination/civilization-doctrine.json`
 - doctrine_inheritance: `all 22 registered agents`
+- canonical_manifest_sources:
+  - `Манифест Неонового Горизонта — QuantDeus v2.0 / Dropbox: QuantDeus_Manifest_Neon_Horizon_v2.0.pdf`
+  - `Эпидемия Добра — 24-месячный план / Dropbox: QuantDeus_2Y_Epidemiya_Dobra_Cron.pdf`
+- constitutional_motto: `Единство в цели. Свобода в путях. Доказательства в результатах.`
+- constitutional_core: `жизнь и достоинство; безопасность; прозрачность и доверие; творчество/наука; экологическая гармония; постдефицит; IDIC; долгий космический горизонт`
+- exit_rule: `чем сильнее технология влияет на человека/данные/идентичность, тем проще и надёжнее должен быть добровольный EXIT`
+- human_ai_rule: `люди задают ценности, направление и финальную ответственность; AI-агенты ускоряют исследование, прототипирование, код, координацию и аудит`
 - doctrine_source_streams:
   - `THRIVE I — systems mapping / incentives / human agency`
   - `THRIVE II — decentralized solutions / needs-to-resources / practical next actions`
   - `The Venus Project / Jacque Fresco — resource census / carrying capacity / cybernation / prototype-before-scale`
   - `Реновация Земли — volunteer execution / modern scientific correction / demonstrators / media-community`
   - `Рубежи науки / Илья Чех — fundamental research / research→engineering→commercialization / Earth-space dual use / science media`
+- program_model: `six execution lenses (energy/justice/unity/space/potential/synthesis) + five manifesto programs (AI/Energy/Space/Bio/Eco)`
 - post_scarcity_definition: `engineering target measured by scarcity reduction, access, resource productivity, energy/material constraints and ecological outcomes`
+- resource_economy_loop: `NEED → RESOURCE/CAPACITY MAP → EVIDENCE → REVERSIBLE PROTOTYPE → QA → MEASURED OUTCOME → OPEN LEARNING → SCALE`
+- epidemic_of_good_loop: `USEFUL RESULT → EXPLANATION → ONE-STEP ENTRY → CREATION → OPEN ARTIFACT → REPLICATION PACKAGE → AUTONOMOUS NODE/NEXT CYCLE`
+- kpis: `R_QD; Active Nodes; Action Conversion; Open Artifacts; Verified Results; Partner Density; Future Fund Flow; Automation Ratio; Impact Ledger; Transparency Score`
+- phase_gates: `M1-6 Synchronization → M7-12 Renaissance → M13-18 Warp Threshold → M19-24 Federation; no gate advance without evidence`
+- future_fund_rule: `fund only testable outcomes with falsifier/failure condition and a resulting verifiable/open artifact after reserves and obligations`
 - shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
 - scheduled_workflows:
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
@@ -29,16 +41,17 @@
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:47 UTC — QuantDeus QA Triad`
 - cron_cadence_rule: `staggered once per day; event triggers remain independent`
-- cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports`
-- privileged_action_rule: `production publication, spending, secrets, irreversible changes and sensitive outreach require explicit human approval`
+- cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
+- cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
+- cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
+- privileged_action_rule: `production publication, spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval`
 - zapier_active_zap: `QuantDeus 2-Step GPT Bridge`
 - zapier_active_zap_state: `on / configured`
 - zapier_canonical_skill: `quantdeus github dispatcher`
 - zapier_role: `low-cost transport/dispatcher; GitHub doctrine is source of truth to avoid policy drift`
 - github_role: `source of truth for doctrine, registries, task state, QA, execution and public Pages`
 - coordination_model: `GitHub Issues [SIGNAL]/[STRATEGY]/[TASK] + opt-in /take + Squad B for approved reversible execution`
-- resource_economy_loop: `NEED → RESOURCE/CAPACITY MAP → EVIDENCE → REVERSIBLE PROTOTYPE → QA → MEASURED OUTCOME → OPEN LEARNING → SCALE`
-- space_dual_use_rule: `space technology should also be evaluated for useful Earth-side application, scalability and portfolio synergy`
-- media_rule: `media communicates verified progress and invites voluntary participation; it does not upgrade evidence grades`
+- media_rule: `verified success can become a content/education/replication package; media never upgrades evidence grade and participation remains voluntary`
+- kill_pause_filters: `reach without action; untestable project; founder-bottleneck manual routine; irreplaceable partner; unjustified secrecy; content without value; excessive moonshot spread; pressure/manipulation`
 - legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
-- next_step: `keep all Cron, Zapier dispatch and GitHub execution on the same v2 doctrine and let QA fail closed on mission drift`
+- next_step: `keep Cron, Zapier, GitHub boards and all 22 agents on v3; fail closed on doctrine drift; convert successful outputs into reproducible packages rather than activity reports`

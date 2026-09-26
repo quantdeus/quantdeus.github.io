@@ -51,11 +51,23 @@ check(registry.doctrine?.inheritance === 'all-agents', 'coordination/agents.json
 
 const requiredDoctrineSources = ['thrive-1','thrive-2','venus-project','earth-renovation','gravity-frontiers'];
 const doctrineSourceIds = (doctrine.source_streams || []).map(s=>s.id);
+const requiredManifestSources = ['neon-horizon-v2','epidemiya-dobra-2y'];
+const doctrineManifestIds = (doctrine.manifest_sources || []).map(s=>s.id);
 for (const id of requiredDoctrineSources) {
   check(doctrineSourceIds.includes(id), 'coordination/civilization-doctrine.json', 'required doctrine source present: '+id);
   check((registry.doctrine?.source_streams || []).includes(id), 'coordination/agents.json', 'all-agent doctrine inheritance includes source: '+id);
   check((hom.doctrine?.source_streams || []).includes(id), 'coordination/homunculi.json', 'homunculi doctrine inheritance includes source: '+id);
 }
+for (const id of requiredManifestSources) {
+  check(doctrineManifestIds.includes(id), 'coordination/civilization-doctrine.json', 'required manifesto present: '+id);
+  check((registry.doctrine?.manifest_sources || []).includes(id), 'coordination/agents.json', 'all-agent inheritance includes manifesto: '+id);
+  check((hom.doctrine?.manifest_sources || []).includes(id), 'coordination/homunculi.json', 'homunculi inheritance includes manifesto: '+id);
+}
+check((doctrine.constitutional_core?.eight_pillars || []).length === 8, 'coordination/civilization-doctrine.json', 'eight Neon Horizon pillars preserved');
+check(Boolean(doctrine.constitutional_core?.exit_principle?.rule), 'coordination/civilization-doctrine.json', 'EXIT principle preserved');
+check((doctrine.epidemic_of_good?.replication_loop || []).length >= 6, 'coordination/civilization-doctrine.json', 'Epidemic of Good replication loop preserved');
+check(Object.keys(doctrine.kpis || {}).length >= 10, 'coordination/civilization-doctrine.json', 'acceleration KPI set preserved');
+check((doctrine.acceleration_plan?.phases || []).length === 4, 'coordination/civilization-doctrine.json', 'four six-month phase gates preserved');
 check(doctrine.inheritance === 'all-agents', 'coordination/civilization-doctrine.json', 'canonical doctrine applies to all agents');
 check(Array.isArray(doctrine.transition_protocol) && doctrine.transition_protocol.length >= 6, 'coordination/civilization-doctrine.json', 'post-scarcity transition protocol declared');
 check(doctrine.cron_policy?.required_check === 'node scripts/mission-alignment.js', 'coordination/civilization-doctrine.json', 'cron mission guard declared');

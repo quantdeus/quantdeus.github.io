@@ -248,7 +248,7 @@
     }
   ],
   "doctrine": {
-    "version": "2026.09-post-scarcity-v2",
+    "version": "2026.09-post-scarcity-v3",
     "source": "coordination/civilization-doctrine.json",
     "inheritance": "all-agents",
     "source_streams": [
@@ -257,6 +257,10 @@
       "venus-project",
       "earth-renovation",
       "gravity-frontiers"
+    ],
+    "manifest_sources": [
+      "neon-horizon-v2",
+      "epidemiya-dobra-2y"
     ]
   },
   "organization": {

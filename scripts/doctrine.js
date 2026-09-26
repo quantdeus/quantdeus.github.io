@@ -19,6 +19,11 @@ function doctrineSummary() {
     operating_rule: d.operating_rule,
     execution_gates: d.execution_gates,
     source_streams: (d.source_streams || []).map(s => s.id),
+    manifest_sources: (d.manifest_sources || []).map(s => s.id),
+    constitutional_core: d.constitutional_core || null,
+    epidemic_of_good: d.epidemic_of_good || null,
+    kpis: d.kpis || {},
+    acceleration_plan: d.acceleration_plan || null,
     transition_protocol: d.transition_protocol || [],
     cron_policy: d.cron_policy || null,
   };

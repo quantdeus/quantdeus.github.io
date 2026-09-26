@@ -3,7 +3,7 @@
   "title": "QuantDeus Holding Startup Organization",
   "updated": "2026-09-27",
   "model": "Founder-led AI-native holding",
-  "mission": "Создавать научно проверяемые продукты, исследования и инфраструктуру, которые снижают измеримый дефицит через ресурсный учёт, автоматизацию, открытый доступ, экологическое восстановление и технологии с земной и космической ценностью.",
+  "mission": "Снижать измеримый дефицит и увеличивать способность людей добровольно созидать: человек сохраняет достоинство, выбор и EXIT; AI снимает рутину и ускоряет проверяемые исследования, прототипы и координацию; каждый успех стремится стать воспроизводимым артефактом и новым автономным узлом.",
   "workforce": {
     "human_leadership": true,
     "ai_agents": 22,
@@ -74,10 +74,42 @@
     }
   ],
   "operating_model": [
-    "Research maps needs, resources, constraints and evidence-backed opportunities.",
-    "Strategy converts signals from THRIVE I/II, The Venus Project, Реновация Земли and Рубежи науки into independently verifiable priorities.",
-    "Product & Engineering ships the smallest reversible prototype before scale.",
-    "QA blocks evidence, doctrine and contract drift and coordinates repairs.",
-    "Growth, Marketing & Partnerships turns verified outcomes into voluntary adoption, discoverability, collaboration and science communication."
-  ]
+    "Intelligence/Research maps needs, resources, constraints, threats and evidence-backed opportunities.",
+    "Strategy prioritizes bottlenecks using QuantDeus doctrine plus THRIVE I/II, The Venus Project, Реновация Земли and Рубежи науки as attributed inputs rather than automatic proof.",
+    "Product & Engineering builds the smallest reversible prototype and preserves user EXIT/portability where applicable.",
+    "QA and Red Team block evidence, safety, doctrine and contract drift and coordinate repair or kill/pause decisions.",
+    "Growth, Media & Partnerships convert verified results into education, culture, voluntary participation and replication packages rather than optimizing reach alone.",
+    "Capital, bounties and grants require explicit success/failure criteria, human approval for spending and an observable artifact.",
+    "Every successful cycle asks whether the result can become a reusable template, automation or autonomous node."
+  ],
+  "charter": {
+    "doctrine_version": "2026.09-post-scarcity-v3",
+    "manifesto": "Неоновый горизонт v2.0 + Эпидемия Добра",
+    "motto": "Единство в цели. Свобода в путях. Доказательства в результатах.",
+    "eight_pillars": [
+      "human-life-and-dignity-first",
+      "safety-as-foundation-of-freedom",
+      "transparency-and-trust",
+      "creativity-science-and-innovation",
+      "ecological-harmony",
+      "post-scarcity-thinking-and-expanded-access",
+      "idic-diversity-without-unification",
+      "long-horizon-and-space-civilization"
+    ],
+    "five_manifest_programs": [
+      "AI",
+      "Energy",
+      "Space",
+      "Bio",
+      "Eco"
+    ],
+    "execution_lenses": [
+      "energy",
+      "justice",
+      "unity",
+      "space",
+      "potential",
+      "synthesis"
+    ]
+  }
 }
