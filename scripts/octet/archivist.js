@@ -8,7 +8,7 @@ function main() {
   const dir = 'coordination/executions';
   fs.mkdirSync(dir, { recursive:true });
   const p = path.join(dir, `issue-${state.issue.number}.md`);
-  const body = `# Squad B execution — Issue #${state.issue.number}\n\n- Task: ${state.issue.title}\n- Started: ${state.started_at}\n- Executed commit: ${state.execution.commit}\n- Risk: ${state.analysis.risk}\n- Lanes: ${state.analysis.lanes.join(', ')}\n- Branch: \`${state.execution.branch}\`\n\n## Changed files\n\n${state.execution.changed_files.map(x => `- \`${x}\``).join('\n')}\n\n## Summary\n\n${state.plan.summary}\n`;
+  const body = `# Squad B execution — Issue #${state.issue.number}\n\n- Task: ${state.issue.title}\n- Doctrine: ${state.doctrine?.version || 'missing'}\n- Started: ${state.started_at}\n- Executed commit: ${state.execution.commit}\n- Risk: ${state.analysis.risk}\n- Lanes: ${state.analysis.lanes.join(', ')}\n- Branch: \`${state.execution.branch}\`\n\n## Changed files\n\n${state.execution.changed_files.map(x => `- \`${x}\``).join('\n')}\n\n## Summary\n\n${state.plan.summary}\n`;
   fs.writeFileSync(p, body);
   git(['add',p]);
   git(['commit','-m',`🗄️ squad-b: archive issue #${state.issue.number}`], { inherit:true });
