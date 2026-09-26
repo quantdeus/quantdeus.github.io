@@ -13,6 +13,7 @@ function readJson(p){ return JSON.parse(fs.readFileSync(path.join(root,p),'utf8'
 const registry = readJson('coordination/agents.json');
 const hom = readJson('coordination/homunculi.json');
 const doctrine = readJson('coordination/civilization-doctrine.json');
+const startupOrg = readJson('coordination/startup-org.json');
 const ids = registry.agents.map(a=>a.id);
 const homIds = hom.agents.map(a=>a.id);
 
@@ -20,15 +21,22 @@ check(ids.length === 22, 'coordination/agents.json', 'expected exactly 22 regist
 check(new Set(ids).size === ids.length, 'coordination/agents.json', 'agent ids unique');
 check(new Set(homIds).size === homIds.length, 'coordination/homunculi.json', 'homunculus ids unique');
 check(JSON.stringify([...ids].sort()) === JSON.stringify([...homIds].sort()), 'registries', 'agents.json and homunculi.json contain identical ids');
+check(startupOrg.workforce?.ai_agents === 22, 'coordination/startup-org.json', 'startup org declares 22 AI agents');
+check(startupOrg.departments?.length === 5, 'coordination/startup-org.json', 'startup org declares 5 departments');
+const orgIds = (startupOrg.departments || []).flatMap(d => d.agents || []);
+check(orgIds.length === 22 && new Set(orgIds).size === 22, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
+check(JSON.stringify([...orgIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/startup-org.json', 'startup org covers the canonical agent registry');
 
 for (const agent of registry.agents) {
   const src = path.join(root, agent.source || '');
   check(Boolean(agent.id && agent.name && agent.role && agent.source && agent.group), agent.id || 'unknown', 'required metadata present');
+  check(Boolean(agent.startup_title && agent.department && agent.kpi), agent.id || 'unknown', 'startup title, department and KPI present');
   check(fs.existsSync(src), agent.id, 'source exists: ' + agent.source);
   const h = hom.agents.find(x=>x.id===agent.id);
   check(Boolean(h), agent.id, 'present in homunculi registry');
   if (h) {
     check(h.source===agent.source && h.group===agent.group, agent.id, 'registry source/group consistent');
+    check(h.startup_title===agent.startup_title && h.department===agent.department && h.kpi===agent.kpi, agent.id, 'startup role metadata consistent');
     check(h.command === '/agent ' + agent.id, agent.id, 'agent command canonical');
     check(h.proposal_command === '/propose ' + agent.id, agent.id, 'proposal command canonical');
   }

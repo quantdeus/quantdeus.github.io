@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus Holding Startup Organization",
+  "updated": "2026-09-26",
+  "model": "Founder-led AI-native holding",
+  "mission": "Build evidence-first products, research and infrastructure that reduce measurable scarcity and expand human capability.",
+  "workforce": {
+    "human_leadership": true,
+    "ai_agents": 22,
+    "departments": 5
+  },
+  "departments": [
+    {
+      "id": "executive",
+      "name": "Executive & Strategy",
+      "emoji": "🛰️",
+      "mandate": "Strategy, portfolio, operations and technical control.",
+      "agents": [
+        "coordinator",
+        "pillar-executor",
+        "strategic-hub",
+        "control-tower"
+      ]
+    },
+    {
+      "id": "research",
+      "name": "Science & R&D",
+      "emoji": "🔬",
+      "mandate": "Evidence-first research across energy, governance, space and human capability.",
+      "agents": [
+        "orchestrator",
+        "energy",
+        "justice",
+        "space",
+        "potential"
+      ]
+    },
+    {
+      "id": "growth-marketing",
+      "name": "Growth, Marketing & Partnerships",
+      "emoji": "📣",
+      "mandate": "Brand, SEO, content, PR, community and strategic partnerships.",
+      "agents": [
+        "unity",
+        "synthesis",
+        "archivist",
+        "herald"
+      ]
+    },
+    {
+      "id": "product-engineering",
+      "name": "Product & Engineering",
+      "emoji": "⚒️",
+      "mandate": "Discovery, requirements, architecture, security and software delivery.",
+      "agents": [
+        "scout",
+        "verifier",
+        "analyst",
+        "strategist",
+        "guardian",
+        "tasksmith"
+      ]
+    },
+    {
+      "id": "quality-reliability",
+      "name": "Quality & Reliability",
+      "emoji": "🦀",
+      "mandate": "Automated QA, contract validation, repair loops and release confidence.",
+      "agents": [
+        "qa-syntax",
+        "qa-contract",
+        "qa-repair"
+      ]
+    }
+  ],
+  "operating_model": [
+    "Research discovers evidence-backed opportunities.",
+    "Strategy converts signals into prioritized outcomes.",
+    "Product & Engineering ships reversible, testable changes.",
+    "QA blocks defects and coordinates repairs.",
+    "Growth, Marketing & Partnerships turns verified outcomes into adoption, discoverability and collaboration."
+  ]
+}
