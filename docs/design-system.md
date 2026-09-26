@@ -1,19 +1,20 @@
-# QuantDeus Design System — Synthwave × Frutiger Aero
+# Дизайн-система QuantDeus — Synthwave × Frutiger Aero
 
-This document encodes the **culture / presentation layer** of QuantDeus. It is an implementation grammar, not scientific evidence and must never be used to imply scientific validation.
+Документ описывает **культурный и презентационный слой** QuantDeus. Это грамматика реализации, а не научное доказательство; визуальный стиль никогда не должен использоваться как признак научной достоверности.
 
-## Principles
+## Принципы
 
-- **Synthwave** supplies night, depth, neon accents and deliberate futuristic contrast.
-- **Frutiger Aero** supplies daylight, water/sky clarity, green life cues, softness and approachable surfaces.
-- Scientific and research claims remain evidence-labelled independently of visual treatment.
-- Existing UI may adopt these variables incrementally; no full rewrite is required.
+- **Synthwave** даёт ночь, глубину, неоновые акценты и намеренный футуристический контраст.
+- **Frutiger Aero** даёт дневной свет, чистоту воды и неба, зелёные природные мотивы, мягкость и дружелюбные поверхности.
+- Научные и исследовательские утверждения получают уровень доказательности независимо от оформления.
+- Существующий интерфейс может внедрять переменные постепенно; полная перепись не обязательна.
 
-## CSS tokens
+## CSS-токены
+
+Имена CSS-переменных остаются техническими и не переводятся, чтобы не ломать код.
 
 ```css
 :root {
-  /* typography */
   --qd-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --qd-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   --qd-text-xs: 0.75rem;
@@ -21,8 +22,6 @@ This document encodes the **culture / presentation layer** of QuantDeus. It is a
   --qd-text-md: 1rem;
   --qd-text-lg: 1.25rem;
   --qd-text-xl: 1.75rem;
-
-  /* spacing */
   --qd-space-1: 0.25rem;
   --qd-space-2: 0.5rem;
   --qd-space-3: 0.75rem;
@@ -30,22 +29,16 @@ This document encodes the **culture / presentation layer** of QuantDeus. It is a
   --qd-space-6: 1.5rem;
   --qd-space-8: 2rem;
   --qd-space-12: 3rem;
-
-  /* radius */
   --qd-radius-sm: 0.5rem;
   --qd-radius-md: 0.875rem;
   --qd-radius-lg: 1.5rem;
   --qd-radius-pill: 999px;
-
-  /* synthwave / night */
   --qd-night-950: #080b1a;
   --qd-night-900: #10152b;
   --qd-night-800: #182044;
   --qd-neon-cyan: #35e7ff;
   --qd-neon-violet: #9d6cff;
   --qd-neon-pink: #ff5fcf;
-
-  /* Frutiger Aero / daylight */
   --qd-sky-50: #eefbff;
   --qd-sky-200: #bcecff;
   --qd-water-500: #19aee8;
@@ -53,8 +46,6 @@ This document encodes the **culture / presentation layer** of QuantDeus. It is a
   --qd-green-400: #58d66b;
   --qd-green-700: #177a39;
   --qd-cloud: #ffffff;
-
-  /* semantic */
   --qd-bg: var(--qd-night-950);
   --qd-surface: var(--qd-night-900);
   --qd-text: #f7f9ff;
@@ -63,7 +54,6 @@ This document encodes the **culture / presentation layer** of QuantDeus. It is a
   --qd-success: var(--qd-green-400);
   --qd-focus-ring: 0 0 0 3px rgba(53, 231, 255, 0.45);
 }
-
 [data-qd-theme="aero"] {
   --qd-bg: var(--qd-sky-50);
   --qd-surface: var(--qd-cloud);
@@ -75,38 +65,18 @@ This document encodes the **culture / presentation layer** of QuantDeus. It is a
 }
 ```
 
-## Incremental adoption
+## Постепенное внедрение
 
-A component can adopt the system without changing markup:
+Компоненты могут использовать токены без изменения разметки. Технические классы и переменные сохраняются латиницей.
 
-```css
-.qd-card {
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-4);
-}
+## Требования доступности
 
-.qd-link,
-.qd-button {
-  color: var(--qd-accent);
-}
+1. Обычный текст должен соответствовать **WCAG AA 4.5:1**, крупный — не менее **3:1**.
+2. Неоновое свечение — только декор: нельзя передавать состояние только цветом, оттенком или насыщенностью.
+3. Состояние фокуса должно быть заметно и в ночной, и в Aero-теме.
+4. Анимация должна учитывать `prefers-reduced-motion`; важная информация не должна зависеть от движения.
+5. Каждое смысловое состояние требует текстового, иконного или геометрического дублирования помимо цвета.
 
-.qd-link:focus-visible,
-.qd-button:focus-visible {
-  outline: none;
-  box-shadow: var(--qd-focus-ring);
-}
-```
+## Граница доказательности
 
-## Accessibility gate
-
-1. Normal text must target **WCAG AA 4.5:1** contrast; large text must target at least **3:1**.
-2. Neon glow is decoration only: never rely on glow, hue or saturation alone to communicate status.
-3. Focus state must remain visibly distinct in both night and Aero themes.
-4. Motion must respect `prefers-reduced-motion`; essential information cannot depend on animation.
-5. Every semantic status needs text/icon/shape redundancy in addition to colour.
-
-## Evidence boundary
-
-The Synthwave × Frutiger Aero grammar expresses optimism, clarity and a desirable future. It does **not** increase confidence in Warp, energy, health, AI or other scientific claims. Research status must come from provenance, tests and explicit evidence gates, never from visual authority.
+Synthwave × Frutiger Aero выражает оптимизм, ясность и желаемое будущее. Он **не повышает** достоверность утверждений о варпе, энергетике, здоровье, ИИ или других научных темах. Статус исследования определяется происхождением данных, тестами и явными доказательными воротами, а не визуальным авторитетом.
