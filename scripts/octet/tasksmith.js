@@ -7,16 +7,16 @@ function git(args, opts={}) { const out = execFileSync('git', args, { encoding:'
 function ensureParent(p) { fs.mkdirSync(path.dirname(p), { recursive:true }); }
 function apply(op) {
   if (op.op === 'create') {
-    if (fs.existsSync(op.path)) throw new Error(`create refused: ${op.path} already exists`);
+    if (fs.existsSync(op.path)) throw new Error(`создание отклонено: ${op.path} уже существует`);
     ensureParent(op.path); fs.writeFileSync(op.path, op.content);
   } else if (op.op === 'append') {
-    if (!fs.existsSync(op.path)) throw new Error(`append refused: ${op.path} does not exist`);
+    if (!fs.existsSync(op.path)) throw new Error(`добавление отклонено: ${op.path} не существует`);
     fs.appendFileSync(op.path, op.content);
   } else if (op.op === 'replace') {
-    if (!fs.existsSync(op.path)) throw new Error(`replace refused: ${op.path} does not exist`);
+    if (!fs.existsSync(op.path)) throw new Error(`замена отклонена: ${op.path} не существует`);
     const before = fs.readFileSync(op.path, 'utf8');
     const count = before.split(op.find).length - 1;
-    if (count !== 1) throw new Error(`replace refused: expected exactly one match in ${op.path}, got ${count}`);
+    if (count !== 1) throw new Error(`замена отклонена: ожидалось ровно одно совпадение в ${op.path}, got ${count}`);
     fs.writeFileSync(op.path, before.replace(op.find, op.replace));
   }
 }
@@ -41,6 +41,6 @@ function main() {
   git(['commit','-m',`⚒️ squad-b: execute issue #${state.issue.number}`], { inherit:true });
   git(['push','-u','origin',branch], { inherit:true });
   saveState({ execution:{ branch, changed_files:changed, commit:git(['rev-parse','HEAD']) }, stage:'executed' });
-  console.log(`Task Smith pushed ${branch}`);
+  console.log(`Кузнец задач отправил ${branch}`);
 }
 main();
