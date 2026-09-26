@@ -1,14 +1,14 @@
-# QuantDeus WordPress on GitHub Pages
+# QuantDeus WordPress в GitHub Pages
 
-Production route: `/wordpress/`.
+Рабочий маршрут: `/wordpress/`.
 
-This is **WordPress Playground**, not a conventional server-side PHP/MySQL WordPress install.
+Это **WordPress Playground**, а не обычная серверная установка WordPress с PHP/MySQL.
 
-- WordPress and PHP run in the visitor's browser via WebAssembly.
-- The launcher is hosted by GitHub Pages.
-- The configuration lives in `wordpress/blueprint.json`.
-- Browser persistence is provided by WordPress Playground saved/autosaved sites.
-- GitHub Actions boots the same Blueprint with `@wp-playground/cli` and fails the build if WordPress does not start.
-- The regular QuantDeus Store, Mini App, and Coordination Center remain independent.
+- WordPress и PHP выполняются в браузере посетителя через WebAssembly.
+- Стартовая страница размещена в GitHub Pages.
+- Конфигурация находится в `wordpress/blueprint.json`.
+- Сохранение в браузере обеспечивается механизмом сохранённых сайтов WordPress Playground.
+- GitHub Actions запускает тот же Blueprint через `@wp-playground/cli` и завершает сборку ошибкой, если WordPress не стартует.
+- Обычный QuantDeus Store, Mini App и Центр координации работают независимо.
 
-A conventional multi-user production WordPress with a shared server database would still require PHP hosting. This Playground deployment is suitable for a browser-local CMS, demos, prototyping, theme/plugin work, and GitHub-driven experiments.
+Полноценный многопользовательский production WordPress с общей серверной базой данных всё ещё требует PHP-хостинга. Текущий Playground подходит для локальной браузерной CMS, демонстраций, прототипирования, работы с темами/плагинами и экспериментов через GitHub.
