@@ -1,44 +1,44 @@
-# Energy opportunity register
+# Реестр энергетических возможностей
 
-Evidence-first register for the **Future Energy** public pillar. Grades describe the maturity of the cited evidence, not investment advice or a claim of commercial readiness.
+Доказательный реестр публичного столпа **«Энергетика будущего»**. Уровни описывают зрелость приведённых данных, а не инвестиционный совет и не коммерческую готовность.
 
-## Grade rubric
+## Шкала уровней
 
-- **A** — demonstrated/independently documented system-level result or active field test from a primary institution.
-- **B** — strong laboratory/program evidence with a material scale-up, durability, cost, or schedule gap.
-- **C** — credible research program / target whose decisive system-level evidence is still pending.
+- **A** — продемонстрированный и независимо документированный результат на уровне системы либо активное полевое испытание первичной организацией.
+- **B** — сильные лабораторные или программные данные при существенном разрыве по масштабу, долговечности, стоимости или срокам.
+- **C** — заслуживающая внимания исследовательская программа или цель, для которой решающие системные доказательства ещё не получены.
 
-## 1. Enhanced geothermal systems (EGS) — open-data replication and cost learning
+## 1. Улучшенные геотермальные системы (EGS) — воспроизводимость открытых данных и снижение стоимости
 
-- **Evidence grade:** A
-- **Primary source:** U.S. Department of Energy, Utah FORGE, accessed 2026-09-21: https://www.energy.gov/hgeo/geothermal/forge
-- **Fresh evidence:** DOE reports that FORGE began an extended circulation test in August 2026; sustained circulation is a critical longevity test. The program also reports >133 TB of public data as of May 2026 and a seven-fold reduction in on-bottom drilling time at an equivalent 6,000-ft depth across its drilling-learning sequence.
-- **What this supports:** EGS is an experimentally active field with unusually rich public operational data that QuantDeus can analyze without claiming commercial success.
-- **Falsifier / failure condition:** sustained circulation fails to maintain useful thermal/hydraulic performance, induced-seismicity constraints prevent practical operation, or full-system cost reductions do not survive replication outside the FORGE setting.
-- **Next executable action:** create a small reproducible notebook/data note using public FORGE/GDR data that tracks circulation duration, thermal drawdown, flow/pressure and drilling-time metrics; publish only metrics traceable to dataset identifiers.
+- **Уровень доказательности:** A
+- **Первичный источник:** Министерство энергетики США, Utah FORGE, доступ 2026-09-21: https://www.energy.gov/hgeo/geothermal/forge
+- **Свежие данные:** DOE сообщает, что FORGE начал длительное циркуляционное испытание в августе 2026 года; устойчивая циркуляция является критической проверкой долговечности. Программа также сообщает о более чем 133 ТБ открытых данных на май 2026 года и семикратном сокращении времени бурения на забое при эквивалентной глубине 6000 футов в ходе серии обучающих бурений.
+- **Что это поддерживает:** EGS — активно испытываемая в поле область с необычно богатым набором открытых эксплуатационных данных, которые QuantDeus может анализировать без заявлений о коммерческом успехе.
+- **Условие опровержения / неуспеха:** длительная циркуляция не сохраняет полезные тепловые/гидравлические характеристики, ограничения по наведённой сейсмичности мешают практической эксплуатации либо снижение полной стоимости системы не воспроизводится за пределами FORGE.
+- **Следующее исполнимое действие:** создать небольшой воспроизводимый notebook/отчёт на открытых FORGE/GDR данных с длительностью циркуляции, тепловым спадом, расходом/давлением и временем бурения; публиковать только метрики, привязанные к идентификаторам наборов данных.
 
-## 2. Perovskite/silicon tandem photovoltaics — efficiency versus durability/manufacturability gate
+## 2. Перовскитно-кремниевые тандемные фотоэлементы — эффективность против долговечности и производимости
 
-- **Evidence grade:** B
-- **Primary sources:** NREL tandem roadmap, 2024, https://www.nrel.gov/news/detail/program/2024/nrel-researchers-outline-path-forward-for-tandem-solar-cells ; NREL perovskite stability result, 2022, https://www.nrel.gov/news/detail/press/2022/nrel-led-breakthrough-pushes-perovskite-cell-to-greater-stability-efficiency
-- **Evidence:** NREL describes metal-halide perovskites as a promising top-cell route for higher-efficiency hybrid tandems while explicitly identifying long-term stability as an open research problem. A separate NREL result reported a certified stabilized 24% inverted perovskite cell retaining 87% of initial efficiency after 2,400 h at 55 °C. These are laboratory/device results, not proof of bankable tandem modules.
-- **What this supports:** a high-value monitoring/benchmark opportunity focused on the gap between record efficiency and deployable module lifetime/manufacturing.
-- **Falsifier / failure condition:** tandem modules fail accelerated and field durability gates, scalable manufacturing erases the efficiency advantage, or levelized-energy gains fail to compensate for added process/material cost.
-- **Next executable action:** maintain a provenance table of independently certified tandem efficiency, test duration/conditions, module area and manufacturing method; require module-scale durability evidence before upgrading this opportunity to grade A.
+- **Уровень доказательности:** B
+- **Первичные источники:** дорожная карта NREL по тандемам, 2024: https://www.nrel.gov/news/detail/program/2024/nrel-researchers-outline-path-forward-for-tandem-solar-cells ; результат NREL по стабильности перовскитов, 2022: https://www.nrel.gov/news/detail/press/2022/nrel-led-breakthrough-pushes-perovskite-cell-to-greater-stability-efficiency
+- **Доказательства:** NREL описывает металлогалогенидные перовскиты как перспективный верхний элемент для более эффективных гибридных тандемов, одновременно прямо называя долговременную стабильность открытой исследовательской проблемой. Отдельный результат NREL сообщил о сертифицированном стабилизированном инвертированном перовскитном элементе с эффективностью 24%, сохранившем 87% исходной эффективности после 2400 часов при 55 °C. Это результаты лабораторного устройства, а не доказательство банковской пригодности тандемных модулей.
+- **Что это поддерживает:** ценную возможность мониторинга разрыва между рекордной эффективностью и сроком службы/производимостью развёртываемых модулей.
+- **Условие опровержения / неуспеха:** тандемные модули проваливают ускоренные и полевые испытания долговечности, масштабируемое производство уничтожает преимущество по эффективности либо выигрыш по приведённой стоимости энергии не компенсирует дополнительные технологические и материальные расходы.
+- **Следующее исполнимое действие:** вести таблицу происхождения независимо сертифицированной эффективности, длительности/условий тестов, площади модуля и метода производства; не повышать возможность до уровня A без доказательств долговечности на масштабе модуля.
 
-## 3. Magnetic-confinement fusion / ITER — integration evidence watch, not near-term power claim
+## 3. Магнитное удержание плазмы / ITER — мониторинг интеграционных доказательств, а не обещание скорой энергии
 
-- **Evidence grade:** C
-- **Primary source:** ITER 2024 baseline summary, https://www.iter.org/sites/default/files/media/2024-07/baseline_press_conference_summary_july-2024_b.pdf
-- **Evidence:** the revised baseline targets Start of Research Operation in 2034, full magnetic energy in 2036 and the start of deuterium-tritium operation in 2039. ITER's program goal remains integrated burning-plasma operation (500 MW thermal fusion output for 50 MW plasma heating, Q>=10), but this is a target rather than a completed result.
-- **What this supports:** a long-horizon integration/evidence watch relevant to the ~15-year scenario, not a 24-month deployment promise.
-- **Falsifier / failure condition:** further schedule/integration slippage removes decision value for the QuantDeus horizon, key plasma-facing/magnet/heating/disruption-mitigation systems miss commissioning gates, or DT operation fails to demonstrate the planned integrated performance.
-- **Next executable action:** create a milestone watcher keyed only to official ITER commissioning events (SRO, DD, full magnetic energy, DT) and record schedule changes separately from physics results.
+- **Уровень доказательности:** C
+- **Первичный источник:** сводка базового плана ITER 2024: https://www.iter.org/sites/default/files/media/2024-07/baseline_press_conference_summary_july-2024_b.pdf
+- **Доказательства:** пересмотренный план нацелен на начало исследовательской эксплуатации в 2034 году, полную магнитную энергию в 2036 году и начало дейтерий-тритиевой эксплуатации в 2039 году. Цель программы ITER остаётся интегрированной работой горящей плазмы (500 МВт тепловой мощности синтеза при 50 МВт нагрева плазмы, Q>=10), но это цель, а не завершённый результат.
+- **Что это поддерживает:** долгосрочный мониторинг интеграции и доказательств, релевантный горизонту около 15 лет, а не обещание развёртывания за 24 месяца.
+- **Условие опровержения / неуспеха:** дальнейшие задержки лишают направление ценности для горизонта QuantDeus, ключевые системы не проходят ввод в эксплуатацию или DT-режим не демонстрирует запланированную интегральную производительность.
+- **Следующее исполнимое действие:** создать мониторинг вех только по официальным событиям ITER и отдельно фиксировать изменения расписания и физические результаты.
 
-## Portfolio decision
+## Решение по портфелю
 
-For the 24-month **Epidemic of Good** program, EGS has the highest immediate value of information because public field data can yield a reproducible QuantDeus artifact now. Tandem PV is second: monitor certified performance versus durability and manufacturing. ITER belongs to the long-horizon evidence watch; it must not be represented as available energy production.
+Для 24-месячной программы **«Эпидемия добра»** EGS имеет наибольшую немедленную ценность информации, потому что открытые полевые данные позволяют уже сейчас получить воспроизводимый артефакт QuantDeus. Тандемная фотоэлектрика — второе направление: следить за сертифицированной производительностью относительно долговечности и производства. ITER относится к долгосрочному мониторингу доказательств и не должен представляться как уже доступный источник энергии.
 
-## Red-team rule
+## Правило красной команды
 
-A press release, funding announcement, efficiency record, schedule milestone or simulation is a **signal**, not a breakthrough by itself. Upgrade an opportunity only when the evidence required by its falsifier is actually observed.
+Пресс-релиз, объявление о финансировании, рекорд эффективности, веха расписания или симуляция — это **сигнал**, а не прорыв сами по себе. Повышать уровень возможности можно только после фактического выполнения требований её условия опровержения.
