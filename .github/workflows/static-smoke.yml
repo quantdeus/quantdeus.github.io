@@ -1,4 +1,4 @@
-name: QuantDeus Static Smoke
+name: QuantDeus — статический дымовой тест
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate JavaScript syntax
+      - name: Проверить синтаксис JavaScript
         run: |
           node --check scripts/coordinator.js
           node --check scripts/governance-gate.js
@@ -26,13 +26,13 @@ jobs:
           node --check scripts/strategic-hub.js
           node --check scripts/orchestrator.js
 
-      - name: Run QA syntax validator
+      - name: Запустить QA-валидатор синтаксиса
         run: node scripts/qa/syntax-validator.js
 
-      - name: Run QA contract validator
+      - name: Запустить QA-валидатор контрактов
         run: node scripts/qa/contract-validator.js
 
-      - name: Validate production routes
+      - name: Проверить рабочие маршруты
         run: |
           test -f index.html
           test -f telegram/index.html
@@ -48,49 +48,49 @@ jobs:
           test -f wordpress/blueprint.json
           grep -q '/coordination/' index.html
           grep -q 'QuantDeus Holding' index.html
-          grep -q '22-agent' README.md
+          grep -q '22 агентов' README.md
           grep -q 'sitemap.xml' robots.txt
           grep -q '/coordination/' telegram/index.html
 
-      - name: Validate agent registry
+      - name: Проверить реестр агентов
         run: |
           node - <<'NODE'
           const fs=require('fs');
           const data=JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));
-          if(!Array.isArray(data.agents) || data.agents.length < 8) throw new Error('agent registry too small');
+          if(!Array.isArray(data.agents) || data.agents.length < 8) throw new Error('реестр агентов слишком мал');
           const ids=data.agents.map(a=>a.id);
-          if(new Set(ids).size!==ids.length) throw new Error('duplicate agent ids');
+          if(new Set(ids).size!==ids.length) throw new Error('повторяющиеся ID агентов');
           console.log('agents:',data.agents.length);
           NODE
 
-      - name: Validate homunculi inline JavaScript
+      - name: Проверить встроенный JavaScript гомункулов
         run: |
           node - <<'NODE'
           const fs=require('fs');
           const html=fs.readFileSync('homunculi/index.html','utf8');
           const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(x=>x.trim());
-          if(!scripts.length) throw new Error('no inline homunculi script');
+          if(!scripts.length) throw new Error('встроенный скрипт гомункулов не найден');
           for(const source of scripts) new Function(source);
-          console.log('homunculi inline JS: OK');
+          console.log('встроенный JS гомункулов: ОК');
           NODE
 
-      - name: Validate homunculi registry
+      - name: Проверить реестр гомункулов
         run: |
           node - <<'NODE'
           const fs=require('fs');
           const data=JSON.parse(fs.readFileSync('coordination/homunculi.json','utf8'));
-          if(!Array.isArray(data.agents) || data.agents.length < 11) throw new Error('real agent registry must contain the QuantDeus runtime agents');
+          if(!Array.isArray(data.agents) || data.agents.length < 11) throw new Error('реестр должен содержать рабочих агентов QuantDeus');
           const ids=data.agents.map(a=>a.id);
-          if(new Set(ids).size!==ids.length) throw new Error('duplicate agent ids');
+          if(new Set(ids).size!==ids.length) throw new Error('повторяющиеся ID агентов');
           const expected=['coordinator','pillar-executor','strategic-hub','orchestrator','energy','justice','unity','space','potential','synthesis','control-tower'];
-          for(const id of expected) if(!ids.includes(id)) throw new Error('missing homunculus '+id);
+          for(const id of expected) if(!ids.includes(id)) throw new Error('отсутствует гомункул '+id);
           console.log('homunculi:',ids.join(', '));
           NODE
 
-      - name: Detect duplicate custom Pages deployers
+      - name: Проверить отсутствие дублирующих публикаций Pages
         run: |
           if grep -R "actions/deploy-pages@" .github/workflows --include='*.yml' --include='*.yaml' | grep -v "Static Smoke"; then
-            echo "Unexpected custom Pages deploy workflow detected"
+            echo "Обнаружен неожиданный дополнительный workflow публикации Pages"
             exit 1
           fi
-          echo "Single Pages source: repository branch/root"
+          echo "Единый источник Pages: ветка/корень репозитория"
