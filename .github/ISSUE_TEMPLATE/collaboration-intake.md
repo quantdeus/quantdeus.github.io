@@ -1,46 +1,46 @@
 ---
-name: QuantDeus collaboration proposal
-about: Propose a public, opt-in collaboration with a concrete deliverable
+name: Предложение о сотрудничестве QuantDeus
+about: Предложить публичное добровольное сотрудничество с конкретным результатом
 title: "[COLLAB] "
 labels: "pillar-03-unity"
 assignees: ""
 ---
 
-# QuantDeus collaboration proposal
+# Предложение о сотрудничестве QuantDeus
 
-Use this form for a **public, opt-in** proposal to collaborate on a concrete QuantDeus result. Keep the issue suitable for a public repository.
+Используйте эту форму для **публичного добровольного** предложения о совместной работе над конкретным результатом QuantDeus. Issue должен быть пригоден для открытого репозитория.
 
-## Contribution / need
-What can you contribute, or what specific capability do you need from collaborators?
+## Вклад / потребность
+Что вы можете внести или какая конкретная возможность нужна от участников?
 
-## Relevant pillar(s)
-Select one or more and explain the connection:
-- [ ] Energy — future energy
-- [ ] Justice — algorithmic fairness
-- [ ] Unity — planetary cooperation
-- [ ] Space — space expansion
-- [ ] Human Potential
-- [ ] Synthesis — aesthetics / culture
+## Связанные столпы
+Выберите один или несколько и объясните связь:
+- [ ] Энергия — энергетика будущего
+- [ ] Справедливость — алгоритмическая справедливость
+- [ ] Единство — планетарное сотрудничество
+- [ ] Космос — космическое развитие
+- [ ] Человеческий потенциал
+- [ ] Синтез — эстетика / культура
 
-## Public evidence / portfolio
-Link only to material you are comfortable making public: repository, paper, demo, portfolio, prior project, or other verifiable evidence.
+## Публичные доказательства / портфолио
+Добавляйте только материалы, которые вы согласны публиковать: репозиторий, статья, демонстрация, портфолио, предыдущий проект или иное проверяемое подтверждение.
 
-## Expected deliverable
-Describe the observable artifact or outcome. Prefer a file, PR, test, dataset, research note, design asset, reproducible experiment, or other checkable result.
+## Ожидаемый результат
+Опишите наблюдаемый артефакт или итог: файл, PR, тест, набор данных, исследовательская записка, дизайн, воспроизводимый эксперимент или другой проверяемый результат.
 
-## Dependencies
-List inputs, repositories, skills, decisions, approvals, or external dependencies required before work can complete.
+## Зависимости
+Перечислите необходимые входные данные, репозитории, навыки, решения, согласования и внешние зависимости.
 
-## Privacy / safety constraints
-State constraints that collaborators must respect. **Do not post secrets, credentials, webhook URLs, private personal data, private contact details, or material you do not have permission to share.**
+## Ограничения приватности и безопасности
+Укажите ограничения, которые должны соблюдать участники. **Не публикуйте секреты, учётные данные, webhook URL, закрытые персональные данные, частные контакты или материалы без разрешения на публикацию.**
 
-## Opt-in contact method
-Optional. Provide only a **public contact route you explicitly consent to publish** (for example, a public GitHub profile or public project/community page). You may also write `GitHub issue only` and keep all coordination in this thread.
+## Добровольный способ связи
+Необязательно. Укажите только **публичный канал, который вы явно согласны опубликовать**. Можно написать `только GitHub Issue` и вести всю координацию в этой ветке.
 
-## Acceptance / definition of done
-How can another contributor verify that the proposed collaboration succeeded?
+## Критерии приёмки
+Как другой участник сможет проверить, что сотрудничество успешно завершено?
 
-## Consent
-- [ ] I understand this issue is public.
-- [ ] I have not included secrets or private personal data.
-- [ ] Any contact route above is intentionally public and opt-in.
+## Согласие
+- [ ] Я понимаю, что этот Issue публичный.
+- [ ] Я не включил секреты или закрытые персональные данные.
+- [ ] Любой указанный выше канал связи опубликован намеренно и добровольно.
