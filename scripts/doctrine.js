@@ -6,7 +6,7 @@ const DOCTRINE_PATH = path.join(process.cwd(), 'coordination', 'civilization-doc
 function loadDoctrine() {
   const doctrine = JSON.parse(fs.readFileSync(DOCTRINE_PATH, 'utf8'));
   if (doctrine.schema_version !== 1 || !doctrine.version || !Array.isArray(doctrine.execution_gates)) {
-    throw new Error('Invalid civilization doctrine');
+    throw new Error('Недействительная цивилизационная доктрина');
   }
   return doctrine;
 }
@@ -33,7 +33,7 @@ const PILLAR_QUERIES = {
 function queryForPillar(name) {
   const d = loadDoctrine();
   const base = PILLAR_QUERIES[name];
-  if (!base || !d.priority_tracks[name]) throw new Error(`Unknown doctrine pillar: ${name}`);
+  if (!base || !d.priority_tracks[name]) throw new Error(`Неизвестный столп доктрины: ${name}`);
   return base;
 }
 
