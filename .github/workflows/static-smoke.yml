@@ -47,8 +47,8 @@ jobs:
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
           grep -q '/coordination/' index.html
-          grep -q 'QuantDeus Holding' index.html
-          grep -q '22-agent' README.md
+          grep -q 'постдефицитного' index.html
+          grep -q '22 ИИ-агента' README.md
           grep -q 'sitemap.xml' robots.txt
           grep -q '/coordination/' telegram/index.html
 
@@ -63,15 +63,19 @@ jobs:
           console.log('agents:',data.agents.length);
           NODE
 
-      - name: Validate homunculi inline JavaScript
+      - name: Validate public-page inline JavaScript
         run: |
           node - <<'NODE'
           const fs=require('fs');
-          const html=fs.readFileSync('homunculi/index.html','utf8');
-          const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(x=>x.trim());
-          if(!scripts.length) throw new Error('no inline homunculi script');
-          for(const source of scripts) new Function(source);
-          console.log('homunculi inline JS: OK');
+          const pages=['index.html','site/index.html','telegram/index.html','homunculi/index.html','coordination/index.html'];
+          for(const page of pages){
+            const html=fs.readFileSync(page,'utf8');
+            const scripts=[...html.matchAll(/<script([^>]*)>([\\s\\S]*?)<\\/script>/gi)]
+              .filter(m=>!/(?:^|\\s)src=/i.test(m[1]) && !/application\\/ld\\+json/i.test(m[1]))
+              .map(m=>m[2]).filter(x=>x.trim());
+            for(const source of scripts) new Function(source);
+            console.log(page+': inline JS OK');
+          }
           NODE
 
       - name: Validate homunculi registry
