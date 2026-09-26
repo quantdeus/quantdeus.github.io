@@ -11,6 +11,6 @@ function main() {
     summary: state.manifest.summary || state.issue.title,
   };
   saveState({ plan, stage:'planned' });
-  console.log(`Execution Strategist: ${primary} → ${plan.branch}`);
+  console.log(`Стратег исполнения: ${primary} → ${plan.branch}`);
 }
 main();
