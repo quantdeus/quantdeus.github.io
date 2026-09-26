@@ -1,33 +1,33 @@
-# Telegram bot + website login setup
+# Настройка Telegram-бота и входа на сайт
 
-QuantDeus uses two Telegram surfaces:
+QuantDeus использует два интерфейса Telegram:
 
-1. **Mini App menu button** → `https://quantdeus.github.io/telegram/`
-2. **Website Login** → Telegram Login / OIDC on `https://quantdeus.github.io/`
+1. **Кнопка меню Mini App** → `https://quantdeus.github.io/telegram/`
+2. **Вход на сайте** → Telegram Login / OIDC на `https://quantdeus.github.io/`
 
-## Repository secret
+## Секрет репозитория
 
-Create the repository Actions secret:
+Создайте секрет GitHub Actions:
 
 - `QUANTDEUS_TELEGRAM_BOT_TOKEN`
 
-Do not commit or paste the token into repository files.
+Не коммитьте и не вставляйте токен в файлы репозитория.
 
-After the secret exists, run the workflow **Set Telegram Mini App URL** manually. It validates `getMe`, applies `setChatMenuButton`, then verifies the resulting menu URL.
+После создания секрета вручную запустите workflow **Set Telegram Mini App URL**. Он проверяет `getMe`, применяет `setChatMenuButton`, затем проверяет итоговый URL меню.
 
-## BotFather Login Widget
+## Login Widget в BotFather
 
-In @BotFather:
+В @BotFather:
 
-- select the QuantDeus bot;
-- open **Login Widget**;
-- add `https://quantdeus.github.io` to Allowed URLs / trusted origins.
+- выберите бота QuantDeus;
+- откройте **Login Widget**;
+- добавьте `https://quantdeus.github.io` в разрешённые URL / доверенные источники.
 
-The public site loads only non-secret bot identity generated at deploy time. The bot token is never written to GitHub Pages.
+Публичный сайт загружает только несекретную идентификацию бота. Токен никогда не записывается в GitHub Pages.
 
-## Runtime behavior
+## Поведение во время работы
 
-- Inside Telegram Mini App, the UI uses Telegram WebApp user context.
-- In a normal browser, the site shows **Войти через Telegram** and uses Telegram Login OIDC.
-- Browser OIDC ID tokens are checked against Telegram JWKS before the UI marks the session `OIDC ✓`.
-- Any future privileged backend action should validate the ID token again server-side.
+- Внутри Telegram Mini App интерфейс использует контекст пользователя Telegram WebApp.
+- В обычном браузере сайт показывает **Войти через Telegram** и использует Telegram Login OIDC.
+- ID-токены браузерного OIDC проверяются по Telegram JWKS до отображения состояния `OIDC ✓`.
+- Любое будущее привилегированное действие должно повторно проверять токен на стороне сервера.
