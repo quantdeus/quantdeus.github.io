@@ -3,7 +3,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { loadState, saveState } = require('./lib');
 
-function git(args, opts={}) { return execFileSync('git', args, { encoding:'utf8', stdio:opts.inherit?'inherit':['ignore','pipe','pipe'] }).trim(); }
+function git(args, opts={}) { const out = execFileSync('git', args, { encoding:'utf8', stdio:opts.inherit?'inherit':['ignore','pipe','pipe'] }); return typeof out === 'string' ? out.trim() : ''; }
 function ensureParent(p) { fs.mkdirSync(path.dirname(p), { recursive:true }); }
 function apply(op) {
   if (op.op === 'create') {
