@@ -1,6 +1,8 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 const crypto = require('crypto');
+const { doctrineSummary } = require('./doctrine');
+const doctrine = doctrineSummary();
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -143,7 +145,13 @@ function rows(items) {
     || '| — | — | — | — | — | Нет открытых элементов |';
 }
 
-const body = `# 🧭 QuantDeus Strategic Navigation Hub\n\nОперационная панель цикла **[SIGNAL] → [STRATEGY] → [TASK] → verified result → selective Wix publication**. Источник истины — GitHub; Wix получает только явно подготовленные публичные результаты.\n\n## Pipeline\n\n- 📡 Open signals: **${signals.length}**\n- 🧠 Open strategies: **${strategies.length}**\n- 🧪 Signals without evidence grade: **${ungraded.length}**\n- 🌐 Explicit Wix-ready candidates: **${publishReady.length}**\n\n### Signals\n\n| Issue | Evidence | Pillar | Wix-ready | Public target | Item |\n|---|---|---|---|---|---|\n${rows(signals)}\n\n### Strategies\n\n| Issue | Evidence | Pillar | Wix-ready | Public target | Item |\n|---|---|---|---|---|---|\n${rows(strategies)}\n\n## Promotion rule\n\nПубличная публикация не выводится из самого факта существования Issue. Для Wix кандидат должен пройти проверку источников и получить явную метку \`publish:wix-ready\` (или совместимую \`publish-wix-ready\` / \`public:ready\`). До этого материал остаётся внутри исследовательского/стратегического контура.\n\nДля сильного сигнала без evidence-grade следующий шаг — **проверка доказательств**, а не изменение roadmap. Для принятой стратегии следующий шаг — конкретный **[TASK]** с наблюдаемым результатом.\n\n_Last strategic refresh: ${new Date().toISOString()}_\n\n<!-- strategic-digest:${digest} -->\n`;
+const body = `# 🧭 QuantDeus Strategic Navigation Hub\n\nОперационная панель цикла **[SIGNAL] → [STRATEGY] → [TASK] → verified result → selective public publication**. Источник истины — GitHub; наружу выходят только явно подготовленные и проверенные результаты.
+
+## Civilization doctrine
+
+- Version: **${doctrine.version}**
+- Objective: ${doctrine.objective}
+- Evidence rule: ${doctrine.operating_rule}\n\n## Pipeline\n\n- 📡 Open signals: **${signals.length}**\n- 🧠 Open strategies: **${strategies.length}**\n- 🧪 Signals without evidence grade: **${ungraded.length}**\n- 🌐 Explicit Wix-ready candidates: **${publishReady.length}**\n\n### Signals\n\n| Issue | Evidence | Pillar | Wix-ready | Public target | Item |\n|---|---|---|---|---|---|\n${rows(signals)}\n\n### Strategies\n\n| Issue | Evidence | Pillar | Wix-ready | Public target | Item |\n|---|---|---|---|---|---|\n${rows(strategies)}\n\n## Promotion rule\n\nПубличная публикация не выводится из самого факта существования Issue. Для Wix кандидат должен пройти проверку источников и получить явную метку \`publish:wix-ready\` (или совместимую \`publish-wix-ready\` / \`public:ready\`). До этого материал остаётся внутри исследовательского/стратегического контура.\n\nДля сильного сигнала без evidence-grade следующий шаг — **проверка доказательств**, а не изменение roadmap. THRIVE I/II и другие мировоззренческие источники могут порождать гипотезы, но не повышают evidence-grade сами по себе. Для принятой стратегии следующий шаг — конкретный **[TASK]** с наблюдаемым результатом.\n\n_Last strategic refresh: ${new Date().toISOString()}_\n\n<!-- strategic-digest:${digest} -->\n`;
 
 const hubs = ghJson([
   'issue', 'list', '--state', 'all', '--search', `${HUB_TITLE} in:title`, '--limit', '10',
