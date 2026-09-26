@@ -1,15 +1,13 @@
-# Wix Agent Mesh
+# Историческая сетка агентов Wix
 
-> Historical document. Wix is not an active QuantDeus frontend.
+> Исторический документ. Wix больше не является активным фронтендом QuantDeus.
 
-Canonical agent-role notes preserved for provenance from the former Wix-era architecture.
+Заметки о ролях агентов сохранены для происхождения решений времён Wix-архитектуры.
 
-Current canonical frontend and public surface:
-- QuantDeus Store
-- Telegram Mini App
-- GitHub Pages
-- https://quantdeus.github.io/quantdeus-core-pulse/
+Текущий канонический публичный контур:
+- QuantDeus Holding;
+- Telegram Mini App;
+- GitHub Pages;
+- https://quantdeus.github.io/
 
-Current repository references use the `QuantDeus` GitHub identity. Warp research: `QuantDeus/Warp-buble`.
-
-GitHub remains the durable source of truth for agent decisions, research, tasks, verification, and provenance. Make remains the automation/backend gateway. Wix references below are historical only and must not be treated as current runtime instructions.
+GitHub остаётся долговременным источником истины для решений агентов, исследований, задач, проверки и происхождения результатов. Ссылки на Wix ниже следует трактовать только как историю, а не как действующие инструкции.
