@@ -46,13 +46,13 @@ function setOwner(body = '', username = null) {
 
 function ensureLabels() {
   const labels = [
-    ['coord:task', '1f6feb', 'QuantDeus coordination task'],
-    ['coord:ready', '2da44e', 'Ready for a human contributor'],
-    ['coord:active', 'bf8700', 'Claimed and in progress'],
-    ['coord:blocked', 'd1242f', 'Blocked and needs help'],
-    ['coord:stale', '8c959f', 'No update for 72+ hours'],
-    ['coord:done', '8250df', 'Completed coordination task'],
-    ['coord:human', '0969da', 'Human action requested'],
+    ['coord:task', '1f6feb', 'Координационная задача QuantDeus'],
+    ['coord:ready', '2da44e', 'Готово для добровольного участника'],
+    ['coord:active', 'bf8700', 'Взято и выполняется'],
+    ['coord:blocked', 'd1242f', 'Заблокировано, нужна помощь'],
+    ['coord:stale', '8c959f', 'Нет обновлений более 72 часов'],
+    ['coord:done', '8250df', 'Завершённая координационная задача'],
+    ['coord:human', '0969da', 'Требуется действие человека'],
   ];
 
   for (const [name, color, description] of labels) {
@@ -80,10 +80,10 @@ function normalizeTask(issue) {
 }
 
 function stateOf(issue) {
-  if (hasLabel(issue, 'coord:blocked')) return '🚧 blocked';
-  if (hasLabel(issue, 'coord:active')) return '🟡 active';
-  if (hasLabel(issue, 'coord:done')) return '✅ done';
-  return '🟢 ready';
+  if (hasLabel(issue, 'coord:blocked')) return '🚧 заблокировано';
+  if (hasLabel(issue, 'coord:active')) return '🟡 активно';
+  if (hasLabel(issue, 'coord:done')) return '✅ готово';
+  return '🟢 готово';
 }
 
 function pillarOf(issue) {
@@ -201,7 +201,7 @@ async function notifyExternal(text) {
   }
   if (!jobs.length) return;
   const results = await Promise.allSettled(jobs);
-  for (const r of results) if (r.status === 'rejected') console.error(`External notify: ${r.reason}`);
+  for (const r of results) if (r.status === 'rejected') console.error(`Ошибка внешнего уведомления: ${r.reason}`);
 }
 
 async function refreshHub() {
@@ -254,13 +254,13 @@ async function refreshHub() {
     return `| #${t.number} | ${stateOf(t)} | ${pillarOf(t)} | ${owner ? `@${owner}` : '—'} | [${t.title}](${t.url}) |`;
   }).join('\n') || '| — | — | — | — | Нет активных задач |';
 
-  const body = `# 🧭 QuantDeus Coordination Hub\n\nАвтоматический диспетчер задач и человеческого участия. Плановый refresh — раз в сутки, плюс событийные триггеры Issues.
+  const body = `# 🧭 Центр координации QuantDeus\n\nАвтоматический диспетчер задач и человеческого участия. Плановое обновление — раз в сутки, плюс событийные триггеры Issues.
 
-## Civilization doctrine
+## Цивилизационная доктрина
 
-- Version: **${doctrine.version}**
-- Objective: ${doctrine.objective}
-- Rule: ${doctrine.operating_rule}\n\n## Состояние\n\n- 🟢 Ready: **${stats.ready}**\n- 🟡 Active: **${stats.active}**\n- 🚧 Blocked: **${stats.blocked}**\n- 🕸️ Stale (72h+): **${stats.stale}**\n\n## Команды участника\n\n- \`/take\` — взять свободную задачу\n- \`/release\` — освободить её\n- \`/block причина\` — отметить препятствие и запросить помощь\n- \`/ready\` — вернуть в очередь\n- \`/done\` — завершить задачу\n\nНовая координационная задача создаётся с префиксом **[TASK]**. Система никому не назначает работу без явного \`/take\`.\n\n## Активные задачи\n\n| Issue | Статус | Направление | Владелец | Задача |\n|---|---|---|---|---|\n${rows}\n\n## Внешние каналы\n\nПри наличии секретов репозитория диспетчер может отправлять изменившийся digest в Discord, Slack, Telegram или generic webhook. Без настроенного секрета наружу ничего не отправляется.\n\n_Last coordinator update: ${new Date().toISOString()}_\n\n<!-- coord-digest:${hash} -->\n`;
+- Версия: **${doctrine.version}**
+- Цель: ${doctrine.objective}
+- Правило: ${doctrine.operating_rule}\n\n## Состояние\n\n- 🟢 Готово: **${stats.ready}**\n- 🟡 Активно: **${stats.active}**\n- 🚧 Заблокировано: **${stats.blocked}**\n- 🕸️ Зависло (72ч+): **${stats.stale}**\n\n## Команды участника\n\n- \`/take\` — взять свободную задачу\n- \`/release\` — освободить её\n- \`/block причина\` — отметить препятствие и запросить помощь\n- \`/ready\` — вернуть в очередь\n- \`/done\` — завершить задачу\n\nНовая координационная задача создаётся с префиксом **[TASK]**. Система никому не назначает работу без явного \`/take\`.\n\n## Активные задачи\n\n| Issue | Статус | Направление | Владелец | Задача |\n|---|---|---|---|---|\n${rows}\n\n## Внешние каналы\n\nПри наличии секретов репозитория диспетчер может отправлять изменившуюся сводку в Discord, Slack, Telegram или generic webhook. Без настроенного секрета наружу ничего не отправляется.\n\n_Последнее обновление координатора: ${new Date().toISOString()}_\n\n<!-- coord-digest:${hash} -->\n`;
 
   fs.writeFileSync('/tmp/quantdeus-coordination-hub.md', body);
   if (hub) {
@@ -274,7 +274,7 @@ async function refreshHub() {
 
   if (oldHash !== hash) {
     const hubUrl = hub?.url || `https://github.com/${repo}/issues`;
-    await notifyExternal(`🧭 QuantDeus coordination update\nReady: ${stats.ready} | Active: ${stats.active} | Blocked: ${stats.blocked} | Stale: ${stats.stale}\n${hubUrl}`);
+    await notifyExternal(`🧭 Обновление координации QuantDeus\nГотово: ${stats.ready} | Активно: ${stats.active} | Заблокировано: ${stats.blocked} | Зависло: ${stats.stale}\n${hubUrl}`);
   }
 }
 
