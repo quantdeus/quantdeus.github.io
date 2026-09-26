@@ -73,6 +73,21 @@ function ensureLabels() {
     ['agent:potential','55d8ff','Target: Human Potential Agent'],
     ['agent:synthesis','55d8ff','Target: Synthesis Agent'],
     ['agent:control-tower','55d8ff','Target: Control Tower'],
+    ['agent:scout','55d8ff','Target: Repo Scout / Squad B'],
+    ['agent:verifier','55d8ff','Target: Task Verifier / Squad B'],
+    ['agent:analyst','55d8ff','Target: Change Analyst / Squad B'],
+    ['agent:strategist','55d8ff','Target: Execution Strategist / Squad B'],
+    ['agent:guardian','55d8ff','Target: Guardian / Squad B'],
+    ['agent:tasksmith','55d8ff','Target: Task Smith / Squad B'],
+    ['agent:archivist','55d8ff','Target: Execution Archivist / Squad B'],
+    ['agent:herald','55d8ff','Target: PR Herald / Squad B'],
+    ['squad-b:ready','2da44e','Ready for Octet Squad B execution'],
+    ['squad-b:active','bf8700','Octet Squad B is executing'],
+    ['squad-b:review','1f6feb','Octet Squad B opened a PR for review'],
+    ['squad-b:blocked','d1242f','Octet Squad B execution is blocked'],
+    ['squad-b:done','8250df','Octet Squad B execution merged/finished'],
+    ['squad-b:privileged','b60205','Allows approved changes to sensitive repository surfaces'],
+    ['team:octet-b','5319e7','QuantDeus second execution crew'],
   ];
   for (const args of labels) ensureLabel(...args);
 }

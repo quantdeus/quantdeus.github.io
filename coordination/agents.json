@@ -2,7 +2,7 @@
   "schema_version": 1,
   "title": "QuantDeus Human + Agent Coordination Center",
   "source_of_truth": "quantdeus/quantdeus.github.io",
-  "updated": "2026-09-22",
+  "updated": "2026-09-26",
   "agents": [
     {
       "id": "coordinator",
@@ -91,6 +91,70 @@
       "role": "Исполняет безопасные изменения, ревью и координацию",
       "source": "COORDINATION.md",
       "group": "core"
+    },
+    {
+      "id": "scout",
+      "name": "Repo Scout",
+      "emoji": "🔭",
+      "role": "Принимает одобренную GitHub-задачу и execution manifest",
+      "source": "scripts/octet/scout.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "verifier",
+      "name": "Task Verifier",
+      "emoji": "🔬",
+      "role": "Проверяет формат задачи, операции и пути перед исполнением",
+      "source": "scripts/octet/verify.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "analyst",
+      "name": "Change Analyst",
+      "emoji": "📊",
+      "role": "Классифицирует область, влияние и риск изменений",
+      "source": "scripts/octet/analyze.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "strategist",
+      "name": "Execution Strategist",
+      "emoji": "🧠",
+      "role": "Строит план исполнения и стратегию ветки/PR",
+      "source": "scripts/octet/strategize.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "guardian",
+      "name": "Guardian",
+      "emoji": "🛡️",
+      "role": "Проверяет governance и защищает чувствительные зоны репозитория",
+      "source": "scripts/octet/guardian.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "tasksmith",
+      "name": "Task Smith",
+      "emoji": "⚒️",
+      "role": "Реально изменяет файлы, проверяет их, коммитит и пушит ветку",
+      "source": "scripts/octet/tasksmith.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "archivist",
+      "name": "Execution Archivist",
+      "emoji": "🗄️",
+      "role": "Ведёт проверяемый журнал исполненных изменений",
+      "source": "scripts/octet/archivist.js",
+      "group": "executor-b"
+    },
+    {
+      "id": "herald",
+      "name": "PR Herald",
+      "emoji": "📣",
+      "role": "Открывает Pull Request и возвращает результат в исходный Issue",
+      "source": "scripts/octet/herald.js",
+      "group": "executor-b"
     }
   ]
 }
