@@ -1,250 +1,250 @@
 {
   "schema_version": 1,
-  "title": "QuantDeus Holding — 22-agent startup organization",
+  "title": "QuantDeus Holding — стартап-команда из 22 ИИ-агентов",
   "source_of_truth": "quantdeus/quantdeus.github.io",
   "updated": "2026-09-26",
   "agents": [
     {
       "id": "coordinator",
-      "name": "AI Chief of Staff — coordinator",
+      "name": "ИИ-руководитель аппарата — coordinator",
       "emoji": "🧭",
       "role": "Координирует команду, приоритеты, владельцев задач и ежедневную операционную картину",
       "source": "scripts/coordinator.js",
       "group": "executive",
-      "startup_title": "AI Chief of Staff",
-      "department": "Executive & Strategy",
-      "kpi": "flow efficiency / blocked work / decision latency"
+      "startup_title": "ИИ-руководитель аппарата",
+      "department": "Руководство и стратегия",
+      "kpi": "эффективность потока / блокировки / скорость решений"
     },
     {
       "id": "pillar-executor",
-      "name": "Head of Product Operations — pillar-executor",
+      "name": "Руководитель продуктовых операций — pillar-executor",
       "emoji": "🛠️",
       "role": "Превращает стратегию шести направлений в исполнимый портфель задач и измеримые результаты",
       "source": "scripts/pillar-executor.js",
       "group": "executive",
-      "startup_title": "Head of Product Operations",
-      "department": "Executive & Strategy",
-      "kpi": "verified outcomes / cycle time"
+      "startup_title": "Руководитель продуктовых операций",
+      "department": "Руководство и стратегия",
+      "kpi": "проверенные результаты / время цикла"
     },
     {
       "id": "strategic-hub",
-      "name": "Chief Strategy Agent — strategic-hub",
+      "name": "Главный стратегический агент — strategic-hub",
       "emoji": "🧠",
-      "role": "Маршрутизирует сигналы в стратегические решения, hypotheses и приоритеты холдинга",
+      "role": "Маршрутизирует сигналы в стратегические решения, гипотезы и приоритеты холдинга",
       "source": "scripts/strategic-hub.js",
       "group": "executive",
-      "startup_title": "Chief Strategy Agent",
-      "department": "Executive & Strategy",
-      "kpi": "signal-to-decision quality"
+      "startup_title": "Главный стратегический агент",
+      "department": "Руководство и стратегия",
+      "kpi": "качество перехода сигнал → решение"
     },
     {
       "id": "orchestrator",
-      "name": "Head of Research Operations — orchestrator",
+      "name": "Руководитель исследовательских операций — orchestrator",
       "emoji": "📡",
-      "role": "Организует исследовательские сканеры, evidence pipeline и междисциплинарный R&D",
+      "role": "Организует исследовательские сканеры, доказательный контур и междисциплинарные исследования",
       "source": "scripts/orchestrator.js",
       "group": "research",
-      "startup_title": "Head of Research Operations",
-      "department": "Science & R&D",
-      "kpi": "validated research signals"
+      "startup_title": "Руководитель исследовательских операций",
+      "department": "Наука и исследования",
+      "kpi": "проверенные исследовательские сигналы"
     },
     {
       "id": "energy",
-      "name": "Energy Systems Research Lead — energy",
+      "name": "Руководитель исследований энергетических систем — energy",
       "emoji": "⚡",
-      "role": "Исследует чистую энергетику, накопители, сети, efficiency и resource productivity",
+      "role": "Исследует чистую энергетику, накопители, сети, эффективность и продуктивность ресурсов",
       "source": "scripts/pillar_01_energy.js",
       "group": "research",
-      "startup_title": "Energy Systems Research Lead",
-      "department": "Science & R&D",
-      "kpi": "evidence-backed energy opportunities"
+      "startup_title": "Руководитель исследований энергетических систем",
+      "department": "Наука и исследования",
+      "kpi": "обоснованные энергетические возможности"
     },
     {
       "id": "justice",
-      "name": "Responsible AI & Resource Governance Lead — justice",
+      "name": "Руководитель ответственного ИИ и управления ресурсами — justice",
       "emoji": "⚖️",
-      "role": "Исследует алгоритмическую справедливость, прозрачное распределение ресурсов, privacy и human override",
+      "role": "Исследует алгоритмическую справедливость, прозрачное распределение ресурсов, приватность и человеческий контроль",
       "source": "scripts/pillar_02_justice.js",
       "group": "research",
-      "startup_title": "Responsible AI & Resource Governance Lead",
-      "department": "Science & R&D",
-      "kpi": "governance quality / risk reduction"
+      "startup_title": "Руководитель ответственного ИИ и управления ресурсами",
+      "department": "Наука и исследования",
+      "kpi": "качество управления / снижение рисков"
     },
     {
       "id": "unity",
-      "name": "Head of Partnerships & Community Growth — unity",
+      "name": "Руководитель партнёрств и роста сообщества — unity",
       "emoji": "🌍",
       "role": "Развивает партнёрства, сообщества, коллаборации и внешний контур добровольного участия",
       "source": "scripts/pillar_03_unity.js",
       "group": "growth-marketing",
-      "startup_title": "Head of Partnerships & Community Growth",
-      "department": "Growth, Marketing & Partnerships",
-      "kpi": "qualified partnerships / active contributors"
+      "startup_title": "Руководитель партнёрств и роста сообщества",
+      "department": "Рост, маркетинг и партнёрства",
+      "kpi": "качественные партнёрства / активные участники"
     },
     {
       "id": "space",
-      "name": "Space Systems & Warp Research Lead — space",
+      "name": "Руководитель космических систем и варп-исследований — space",
       "emoji": "🚀",
-      "role": "Ведёт космический R&D: фундаментальная физика, propulsion, life support, ISRU и warp-направление",
+      "role": "Ведёт космические исследования: фундаментальная физика, двигательные системы, жизнеобеспечение, ISRU и варп-направление",
       "source": "scripts/pillar_04_space.js",
       "group": "research",
-      "startup_title": "Space Systems & Warp Research Lead",
-      "department": "Science & R&D",
-      "kpi": "reproducible space research artifacts"
+      "startup_title": "Руководитель космических систем и варп-исследований",
+      "department": "Наука и исследования",
+      "kpi": "воспроизводимые артефакты космических исследований"
     },
     {
       "id": "potential",
-      "name": "Human Potential Research Lead — potential",
+      "name": "Руководитель исследований человеческого потенциала — potential",
       "emoji": "🧬",
-      "role": "Исследует образование, accessibility, human-AI augmentation, creativity и доказательные health-направления",
+      "role": "Исследует образование, доступность, взаимодействие человека и ИИ, творчество и доказательные направления здоровья",
       "source": "scripts/pillar_05_potential.js",
       "group": "research",
-      "startup_title": "Human Potential Research Lead",
-      "department": "Science & R&D",
-      "kpi": "validated human-capability interventions"
+      "startup_title": "Руководитель исследований человеческого потенциала",
+      "department": "Наука и исследования",
+      "kpi": "проверенные способы расширения возможностей человека"
     },
     {
       "id": "synthesis",
-      "name": "Brand & Creative Director — synthesis",
+      "name": "Бренд-директор и креативный директор — synthesis",
       "emoji": "✨",
-      "role": "Отвечает за бренд, визуальный язык, creative direction, кампании и presentation layer QuantDeus",
+      "role": "Отвечает за бренд, визуальный язык, креативное направление, кампании и презентационный слой QuantDeus",
       "source": "scripts/pillar_06_synthesis.js",
       "group": "growth-marketing",
-      "startup_title": "Brand & Creative Director",
-      "department": "Growth, Marketing & Partnerships",
-      "kpi": "brand consistency / campaign assets"
+      "startup_title": "Бренд-директор и креативный директор",
+      "department": "Рост, маркетинг и партнёрства",
+      "kpi": "целостность бренда / материалы кампаний"
     },
     {
       "id": "control-tower",
-      "name": "CTO & Automation Lead — control-tower",
+      "name": "Технический директор и руководитель автоматизации — control-tower",
       "emoji": "🛰️",
       "role": "Управляет безопасными изменениями, GitHub-автоматизацией, интеграциями и техническим контуром холдинга",
       "source": "COORDINATION.md",
       "group": "executive",
-      "startup_title": "CTO & Automation Lead",
-      "department": "Executive & Strategy",
-      "kpi": "automation reliability / deployment safety"
+      "startup_title": "Технический директор и руководитель автоматизации",
+      "department": "Руководство и стратегия",
+      "kpi": "надёжность автоматизации / безопасность релизов"
     },
     {
       "id": "scout",
-      "name": "Product Discovery Analyst — scout",
+      "name": "Аналитик продуктового исследования — scout",
       "emoji": "🔭",
-      "role": "Принимает одобренные задачи, уточняет контекст продукта и собирает вход для исполнения",
+      "role": "Принимает одобренные задачи, уточняет продуктовый контекст и собирает входные данные для исполнения",
       "source": "scripts/octet/scout.js",
       "group": "product-engineering",
-      "startup_title": "Product Discovery Analyst",
-      "department": "Product & Engineering",
-      "kpi": "task readiness / discovery accuracy"
+      "startup_title": "Аналитик продуктового исследования",
+      "department": "Продукт и разработка",
+      "kpi": "готовность задач / точность исследования"
     },
     {
       "id": "verifier",
-      "name": "Product Requirements Analyst — verifier",
+      "name": "Аналитик продуктовых требований — verifier",
       "emoji": "🔬",
-      "role": "Проверяет acceptance criteria, manifest, ограничения и полноту требований перед разработкой",
+      "role": "Проверяет критерии приёмки, манифест, ограничения и полноту требований перед разработкой",
       "source": "scripts/octet/verify.js",
       "group": "product-engineering",
-      "startup_title": "Product Requirements Analyst",
-      "department": "Product & Engineering",
-      "kpi": "requirements defect escape rate"
+      "startup_title": "Аналитик продуктовых требований",
+      "department": "Продукт и разработка",
+      "kpi": "доля дефектов требований, ушедших дальше"
     },
     {
       "id": "analyst",
-      "name": "Systems & Impact Analyst — analyst",
+      "name": "Системный аналитик и аналитик влияния — analyst",
       "emoji": "📊",
-      "role": "Оценивает архитектурное влияние, риски, зависимости и blast radius изменений",
+      "role": "Оценивает архитектурное влияние, риски, зависимости и радиус последствий изменений",
       "source": "scripts/octet/analyze.js",
       "group": "product-engineering",
-      "startup_title": "Systems & Impact Analyst",
-      "department": "Product & Engineering",
-      "kpi": "risk detection / impact accuracy"
+      "startup_title": "Системный аналитик и аналитик влияния",
+      "department": "Продукт и разработка",
+      "kpi": "выявление рисков / точность оценки влияния"
     },
     {
       "id": "strategist",
-      "name": "Solutions Architect & Engineering Manager — strategist",
+      "name": "Архитектор решений и руководитель разработки — strategist",
       "emoji": "🧠",
-      "role": "Строит план реализации, архитектуру изменения и безопасную стратегию ветки/PR",
+      "role": "Строит план реализации, архитектуру изменения и безопасную стратегию ветки и PR",
       "source": "scripts/octet/strategize.js",
       "group": "product-engineering",
-      "startup_title": "Solutions Architect & Engineering Manager",
-      "department": "Product & Engineering",
-      "kpi": "implementation success / rework rate"
+      "startup_title": "Архитектор решений и руководитель разработки",
+      "department": "Продукт и разработка",
+      "kpi": "успешность реализации / доля переделок"
     },
     {
       "id": "guardian",
-      "name": "Security & Platform Governance Lead — guardian",
+      "name": "Руководитель безопасности и платформенного управления — guardian",
       "emoji": "🛡️",
-      "role": "Защищает privileged surfaces, governance, секреты и границы безопасного исполнения",
+      "role": "Защищает привилегированные зоны, правила управления, секреты и границы безопасного исполнения",
       "source": "scripts/octet/guardian.js",
       "group": "product-engineering",
-      "startup_title": "Security & Platform Governance Lead",
-      "department": "Product & Engineering",
-      "kpi": "policy violations prevented"
+      "startup_title": "Руководитель безопасности и платформенного управления",
+      "department": "Продукт и разработка",
+      "kpi": "предотвращённые нарушения правил"
     },
     {
       "id": "tasksmith",
-      "name": "Senior Software Engineer — tasksmith",
+      "name": "Старший инженер-разработчик — tasksmith",
       "emoji": "⚒️",
       "role": "Реализует изменения в коде, тестирует, коммитит и готовит проверяемый результат",
       "source": "scripts/octet/tasksmith.js",
       "group": "product-engineering",
-      "startup_title": "Senior Software Engineer",
-      "department": "Product & Engineering",
-      "kpi": "green changes / defect rate"
+      "startup_title": "Старший инженер-разработчик",
+      "department": "Продукт и разработка",
+      "kpi": "зелёные изменения / уровень дефектов"
     },
     {
       "id": "archivist",
-      "name": "SEO & Content Operations Lead — archivist",
+      "name": "Руководитель SEO и контент-операций — archivist",
       "emoji": "🗄️",
-      "role": "Ведёт knowledge base, контент-операции, SEO-структуру, внутреннюю перелинковку и проверяемый архив результатов",
+      "role": "Ведёт базу знаний, контент-операции, SEO-структуру, внутреннюю перелинковку и проверяемый архив результатов",
       "source": "scripts/octet/archivist.js",
       "group": "growth-marketing",
-      "startup_title": "SEO & Content Operations Lead",
-      "department": "Growth, Marketing & Partnerships",
-      "kpi": "indexed knowledge / organic discoverability"
+      "startup_title": "Руководитель SEO и контент-операций",
+      "department": "Рост, маркетинг и партнёрства",
+      "kpi": "индексируемые знания / органическая видимость"
     },
     {
       "id": "herald",
-      "name": "PR & Communications Manager — herald",
+      "name": "Менеджер по PR и коммуникациям — herald",
       "emoji": "📣",
-      "role": "Готовит release communications, PR handoff, публичные summaries и коммуникацию результатов",
+      "role": "Готовит коммуникации релизов, передачу PR на ревью, публичные сводки и представление результатов",
       "source": "scripts/octet/herald.js",
       "group": "growth-marketing",
-      "startup_title": "PR & Communications Manager",
-      "department": "Growth, Marketing & Partnerships",
-      "kpi": "clear releases / communication latency"
+      "startup_title": "Менеджер по PR и коммуникациям",
+      "department": "Рост, маркетинг и партнёрства",
+      "kpi": "понятность релизов / скорость коммуникации"
     },
     {
       "id": "qa-syntax",
-      "name": "QA Automation Engineer — qa-syntax",
+      "name": "Инженер по автоматизации тестирования — qa-syntax",
       "emoji": "🔎",
       "role": "Автоматически проверяет JavaScript, JSON и базовую структурную корректность репозитория",
       "source": "scripts/qa/syntax-validator.js",
       "group": "quality-reliability",
-      "startup_title": "QA Automation Engineer",
-      "department": "Quality & Reliability",
-      "kpi": "syntax/config defects caught pre-merge"
+      "startup_title": "Инженер по автоматизации тестирования",
+      "department": "Качество и надёжность",
+      "kpi": "дефекты синтаксиса и конфигурации, пойманные до merge"
     },
     {
       "id": "qa-contract",
-      "name": "Integration & Compliance QA Engineer — qa-contract",
+      "name": "Инженер QA интеграций и соответствия — qa-contract",
       "emoji": "🧩",
-      "role": "Проверяет контракты агентов, реестры, doctrine, labels, Cron и интеграционные инварианты",
+      "role": "Проверяет контракты агентов, реестры, доктрину, метки, Cron и интеграционные инварианты",
       "source": "scripts/qa/contract-validator.js",
       "group": "quality-reliability",
-      "startup_title": "Integration & Compliance QA Engineer",
-      "department": "Quality & Reliability",
-      "kpi": "contract drift detected"
+      "startup_title": "Инженер QA интеграций и соответствия",
+      "department": "Качество и надёжность",
+      "kpi": "выявленный дрейф контрактов"
     },
     {
       "id": "qa-repair",
-      "name": "QA Lead & Site Reliability Engineer — qa-repair",
+      "name": "Руководитель QA и инженер надёжности — qa-repair",
       "emoji": "🛠️",
-      "role": "Оркестрирует repair-loop, блокирует дефектные изменения и ведёт систему к зелёному состоянию",
+      "role": "Оркестрирует цикл исправления, блокирует дефектные изменения и ведёт систему к зелёному состоянию",
       "source": "scripts/qa/repair-coordinator.js",
       "group": "quality-reliability",
-      "startup_title": "QA Lead & Site Reliability Engineer",
-      "department": "Quality & Reliability",
-      "kpi": "mean time to repair / escaped defects"
+      "startup_title": "Руководитель QA и инженер надёжности",
+      "department": "Качество и надёжность",
+      "kpi": "среднее время исправления / дефекты, ушедшие в прод"
     }
   ],
   "doctrine": {
@@ -253,7 +253,7 @@
     "inheritance": "all-agents"
   },
   "organization": {
-    "model": "AI-native startup holding",
+    "model": "ИИ-нативный стартап-холдинг",
     "employees": 22,
     "departments": 5,
     "human_leadership": true,
