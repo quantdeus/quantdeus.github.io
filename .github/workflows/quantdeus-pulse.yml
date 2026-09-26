@@ -1,4 +1,4 @@
-name: QuantDeus Six-Pillar Executor 🧭
+name: QuantDeus — исполнитель шести столпов 🧭
 
 on:
   schedule:
@@ -33,21 +33,21 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate post-scarcity civilization doctrine
+      - name: Проверить постдефицитную цивилизационную доктрину
         run: node -e "const d=require('./scripts/doctrine').loadDoctrine(); console.log('Doctrine', d.version)"
 
-      - name: Apply governance gate
+      - name: Применить правила управления
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
         run: node scripts/governance-gate.js
 
-      - name: Maintain six-pillar execution queue
+      - name: Поддержать очередь исполнения шести столпов
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/pillar-executor.js
 
-      - name: Refresh coordination hub
+      - name: Обновить центр координации
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/coordinator.js
