@@ -25,7 +25,7 @@ const jsFiles = walk(path.join(root,'scripts')).filter(p => p.endsWith('.js'));
 for (const file of jsFiles) {
   try {
     execFileSync(process.execPath, ['--check', file], { stdio:'pipe' });
-    record(true, path.relative(root,file), 'JavaScript syntax OK');
+    record(true, path.relative(root,file), 'синтаксис JavaScript: ОК');
   } catch (err) {
     record(false, path.relative(root,file), (err.stderr || err.message || '').toString().trim().split('\n')[0]);
   }
@@ -36,9 +36,9 @@ const jsonFiles = jsonRoots.flatMap(dir => walk(dir)).filter(p => p.endsWith('.j
 for (const file of jsonFiles) {
   try {
     JSON.parse(fs.readFileSync(file,'utf8'));
-    record(true, path.relative(root,file), 'JSON parse OK');
+    record(true, path.relative(root,file), 'разбор JSON: ОК');
   } catch (err) {
-    record(false, path.relative(root,file), 'JSON parse error: ' + err.message);
+    record(false, path.relative(root,file), 'ошибка разбора JSON: ' + err.message);
   }
 }
 
