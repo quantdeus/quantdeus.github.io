@@ -135,7 +135,7 @@
     "privileged-human-approval-checked"
   ],
   "cron_policy": {
-    "applies_to": "all scheduled QuantDeus workflows and all 23 registered agents",
+    "applies_to": "all scheduled QuantDeus workflows and all 26 registered agents",
     "required_check": "node scripts/mission-alignment.js",
     "objective": "За каждый цикл находить главное ограничение, выбирать действия с максимальным отношением ожидаемый эффект / стоимость / время / риск и оставлять проверяемый полезный артефакт.",
     "minimum_cycle": [
