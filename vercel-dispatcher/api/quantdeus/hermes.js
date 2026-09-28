@@ -9,6 +9,7 @@ const ALLOWED_EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch'
 const SANDBOX_NAME = 'quantdeus-hermes-office';
 const REPO_URL = 'https://github.com/quantdeus/quantdeus.github.io.git';
 const MODEL = process.env.HERMES_CLOUD_MODEL || 'openai/gpt-oss-120b';
+const OPENROUTER_MODEL = process.env.HERMES_OPENROUTER_MODEL || 'openai/gpt-oss-120b';
 const MAX_PROMPT = 90000;
 
 let jwksCache = null;
@@ -269,7 +270,7 @@ async function configureLocalModel(sandbox, profile, runtimeEnv, paths) {
   }, 'hermes_local_provider_config');
 }
 
-async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
+async function runHermes(sandbox, profile, prompt, runtimeEnv, paths, model = MODEL, provider = runtimeEnv.HERMES_MODEL_PROVIDER) {
   const result = await sandbox.runCommand({
     cmd: 'bash',
     args: [
@@ -279,9 +280,9 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
       '-p',
       profile,
       '--provider',
-      runtimeEnv.HERMES_MODEL_PROVIDER,
+      provider,
       '-m',
-      MODEL,
+      model,
       '-t',
       'all',
       '-z',
@@ -371,6 +372,7 @@ export default async function handler(req, res) {
     );
 
     const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
+    const openRouterApiKey = String(req.headers?.['x-quantdeus-openrouter-key'] || '');
     const runtimeEnv = {
       HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'custom',
       HERMES_MODEL: MODEL,
@@ -379,6 +381,7 @@ export default async function handler(req, res) {
     };
     if (modelBaseUrl) runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl;
     if (modelApiKey) runtimeEnv.HERMES_LOCAL_API_KEY = modelApiKey;
+    if (openRouterApiKey) runtimeEnv.OPENROUTER_API_KEY = openRouterApiKey;
     if (githubToken) {
       runtimeEnv.GITHUB_TOKEN = githubToken;
       runtimeEnv.GH_TOKEN = githubToken;
@@ -430,21 +433,45 @@ export default async function handler(req, res) {
     await configureLocalModel(sandbox, profile, runtimeEnv, paths);
     let text = '';
     let executionMode = 'hermes-agent';
+    let primaryError = null;
     try {
       text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
-      if (!text && modelBaseUrl && modelApiKey) {
-        executionMode = 'mistral-direct-fallback';
-        text = await runModelFallback(prompt, modelBaseUrl, modelApiKey, MODEL);
-      }
+      if (!text) throw new Error('hermes_empty_response');
     } catch (error) {
-      if (!modelBaseUrl || !modelApiKey || !/^hermes_(?:empty_response|run_failed_)/.test(String(error?.message || error))) {
-        throw error;
+      primaryError = error;
+      console.warn('Primary Hermes inference failed:', String(error?.message || error).slice(0, 500));
+    }
+
+    if (!text && openRouterApiKey) {
+      try {
+        const openRouterEnv = {
+          ...runtimeEnv,
+          HERMES_MODEL_PROVIDER: 'openrouter',
+          HERMES_MODEL: OPENROUTER_MODEL,
+          OPENROUTER_API_KEY: openRouterApiKey
+        };
+        text = await runHermes(
+          sandbox,
+          profile,
+          prompt,
+          openRouterEnv,
+          paths,
+          OPENROUTER_MODEL,
+          'openrouter'
+        );
+        if (text) executionMode = 'hermes-openrouter-fallback';
+      } catch (error) {
+        console.warn('Hermes OpenRouter fallback failed:', String(error?.message || error).slice(0, 500));
       }
-      console.warn('Hermes returned no answer; using configured model fallback:', String(error?.message || error).slice(0, 300));
+    }
+
+    if (!text && modelBaseUrl && modelApiKey) {
+      console.warn('Hermes providers returned no answer; using direct configured model fallback.');
       executionMode = 'mistral-direct-fallback';
       text = await runModelFallback(prompt, modelBaseUrl, modelApiKey, MODEL);
     }
-    if (!text) throw new Error('hermes_empty_response');
+
+    if (!text) throw primaryError || new Error('hermes_empty_response');
 
     await sandbox.stop();
 
