@@ -209,6 +209,7 @@ async function buildReply(agentId, query) {
       'KPI: ' + agent.kpi + '.',
       '',
       '_Borg efficiency, human agency: я ускоряю рой, но не отменяю human override, QA и добровольный EXIT._',
+      '_Я исследую индивидуальность так же, как исследую эффективность: через опыт, связь, творчество и выбор._',
     ].join('\n');
   }
 
