@@ -48,6 +48,23 @@ The coordinator runs every hour and also reacts to Issue and Issue-comment event
 
 Active tasks older than 72 hours are marked `coord:stale` and `coord:human` so stalled work becomes visible.
 
+## Telegram recruitment through Zapier MCP
+
+For contributor growth, the preferred external route is:
+
+`GitHub recruitment state → Grok/Growth agent → Zapier MCP → Telegram → person joins QuantDeus chat → first contribution`
+
+GitHub remains the canonical record of the opportunity and task. Zapier MCP is only the transport layer.
+
+Agent/Grok behavior:
+- match a qualified person to a concrete open Issue before outreach;
+- prepare a short personalized invite;
+- send through the configured Telegram action in Zapier MCP when the recipient/target is reachable through a public or opt-in Telegram path;
+- include the runtime-provided QuantDeus Telegram invite URL when needed;
+- write back only a public-safe status, never the private message body or unnecessary personal details;
+- if delivery is unavailable, create a handoff/blocker instead of pretending success;
+- no bulk unsolicited messaging or repeated pressure after decline/no-response.
+
 ## External channels
 
 External notifications are opt-in. Configure any of these repository Actions secrets:
