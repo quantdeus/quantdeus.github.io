@@ -1,0 +1,29 @@
+name: QuantDeus Vercel Swarm Hourly
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  invoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate required secrets
+        env:
+          VERCEL_SWARM_URL: ${{ secrets.VERCEL_SWARM_URL }}
+          VERCEL_CRON_SECRET: ${{ secrets.VERCEL_CRON_SECRET }}
+        run: |
+          test -n "$VERCEL_SWARM_URL"
+          test -n "$VERCEL_CRON_SECRET"
+
+      - name: Invoke Vercel dispatcher
+        env:
+          VERCEL_SWARM_URL: ${{ secrets.VERCEL_SWARM_URL }}
+          VERCEL_CRON_SECRET: ${{ secrets.VERCEL_CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error             --retry 2             --max-time 55             -H "Authorization: Bearer $VERCEL_CRON_SECRET"             "$VERCEL_SWARM_URL/api/quantdeus/hourly"
