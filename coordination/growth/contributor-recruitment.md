@@ -39,10 +39,26 @@ The department optimizes for **qualified contributors and useful first contribut
 
 1. **Discover** — find people whose public work matches a real QuantDeus need.
 2. **Qualify** — attach one concrete open task or contribution path to the candidate.
-3. **Invite** — short personalized invitation explaining why their work is relevant.
-4. **Onboard** — point to `CONTRIBUTING.md` and one bounded first task.
+3. **Invite** — short personalized invitation explaining why their work is relevant. Preferred community entry is the QuantDeus Telegram chat through the configured Zapier MCP Telegram transport.
+4. **Onboard** — invite the person into QuantDeus Telegram, then point to `CONTRIBUTING.md` and one bounded first task.
 5. **First proof** — issue, PR, docs patch, research artifact, test, design asset or reproducible review.
 6. **Retain** — acknowledge the result, propose the next optional task, and keep EXIT voluntary.
+
+## Telegram invitation contract
+
+Agents and Grok should use the following route for qualified people:
+
+`public/opt-in lead → match to concrete Issue → prepare personalized invite → Zapier MCP Telegram action → QuantDeus Telegram → onboarding → first contribution`
+
+Rules:
+- GitHub is the source of truth for task and recruitment status; Zapier MCP is the external transport.
+- Use the configured QuantDeus Telegram bot/account and the native Telegram send action exposed through Zapier MCP.
+- Use a runtime-configured `QUANTDEUS_TELEGRAM_INVITE_URL` when an actual join link is needed. Do not commit private or rotating invite URLs.
+- A valid invite mentions the person's relevant public work, one specific QuantDeus task, why the match makes sense, and a simple invitation to continue in the QuantDeus Telegram chat.
+- Record only public-safe states such as `prepared`, `sent`, `replied`, `joined`, `first-contribution`, `active`. Do not copy private conversations or unnecessary personal data into GitHub.
+- If Zapier MCP, Telegram connection, target chat or invite URL is unavailable, record a handoff/blocker. Never claim an invitation was sent when it was only drafted.
+- Do not mass-DM strangers. Prefer people who expose a public contact path for collaboration, have interacted with QuantDeus, or otherwise opted into relevant outreach.
+- Respect decline/no-response; do not repeatedly chase the same person.
 
 ## Initial sprint
 
