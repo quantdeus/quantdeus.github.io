@@ -96,7 +96,7 @@ function canonicalConfig(agent, office, evolution) {
       source_of_truth: 'github'
     },
     model: {
-      provider: process.env.HERMES_MODEL_PROVIDER || office.model.provider || 'ai-gateway',
+      provider: process.env.HERMES_MODEL_PROVIDER || office.model.provider || 'openai',
       default: process.env.HERMES_MODEL || office.model.default || 'openai/gpt-oss-120b'
     },
     terminal: {
@@ -143,7 +143,7 @@ function canonicalConfig(agent, office, evolution) {
     cron: {
       allow_agent_scheduling: true,
       model: process.env.HERMES_MODEL || office.model.default || 'openai/gpt-oss-120b',
-      model_provider: process.env.HERMES_MODEL_PROVIDER || office.model.provider || 'ai-gateway',
+      model_provider: process.env.HERMES_MODEL_PROVIDER || office.model.provider || 'openai',
       max_parallel_jobs: seven ? 3 : 1
     }
   };
