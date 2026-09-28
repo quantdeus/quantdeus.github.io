@@ -125,10 +125,10 @@ function autoAgent(text) {
     ['pillar-executor', /столп|pillar|портфел.*задач|execution board|шесть направлен/],
     ['strategic-hub', /стратегическ.*сигнал|strategy signal|приоритет.*портфел|strategic hub/],
     ['control-tower', /github|action|workflow|верцел|vercel|telegram|бот|bot|api|deploy|сайт|app|автоматизац/],
-    ['coordinator', /координ|dispatcher|диспетчер|назнач.*агент|маршрутиз|общ.*статус|что делать дальше/],
+    ['seven-of-nine', /координ|dispatcher|диспетчер|назнач.*агент|маршрутиз|общ.*статус|что делать дальше/],
   ];
   for (const [id, pattern] of routes) if (pattern.test(value) && byId.has(id)) return id;
-  return 'coordinator';
+  return 'seven-of-nine';
 }
 
 function stripCommand(text) {
