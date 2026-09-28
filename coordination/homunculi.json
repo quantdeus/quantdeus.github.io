@@ -37,19 +37,6 @@
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency"
     },
     {
-      "id": "emh",
-      "name": "EMH — Swarm Mediation & Diplomacy Officer",
-      "emoji": "🩺",
-      "role": "Медиатор и дипломат роя: деэскалирует агентские споры, отделяет факты от позиций, находит общий интерес, формулирует компромиссный следующий шаг и передаёт человеку только конкретные решения, требующие human override",
-      "source": "scripts/emh.js",
-      "group": "executive",
-      "command": "/agent emh",
-      "proposal_command": "/propose emh",
-      "startup_title": "Swarm Mediation & Diplomacy Officer",
-      "department": "Executive & Strategy",
-      "kpi": "conflict-to-resolution latency / duplicate debate reduction / escalation clarity"
-    },
-    {
       "id": "pillar-executor",
       "name": "Head of Product Operations — pillar-executor",
       "emoji": "🛠️",
@@ -341,7 +328,7 @@
   },
   "organization": {
     "model": "AI-native startup holding",
-    "employees": 24,
+    "employees": 23,
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"
