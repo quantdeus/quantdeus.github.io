@@ -11,6 +11,8 @@
   "model": {
     "provider": "openai",
     "default": "openai/gpt-oss-120b",
+    "base_url_env": "HERMES_LOCAL_BASE_URL (fallback OPENAI_BASE_URL)",
+    "api_key_env": "HERMES_LOCAL_API_KEY (fallback OPENAI_API_KEY; local inference may use a placeholder)",
     "minimum_context_tokens": 131072,
     "override_env": {
       "provider": "HERMES_MODEL_PROVIDER",

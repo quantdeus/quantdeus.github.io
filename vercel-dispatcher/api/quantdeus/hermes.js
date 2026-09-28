@@ -286,15 +286,18 @@ export default async function handler(req, res) {
     const messages = normalizeMessages(req.body?.messages);
     const prompt = promptFrom(messages, req.body?.metadata || {});
 
-    const vercelOidc = String(req.headers?.['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || '');
-    if (!vercelOidc) throw new Error('vercel_oidc_token_missing');
+    const modelBaseUrl = String(
+      process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL || ''
+    ).trim().replace(/\/+$/, '');
+    if (!modelBaseUrl) throw new Error('hermes_local_model_base_url_missing');
+    const modelApiKey = String(
+      process.env.HERMES_LOCAL_API_KEY || process.env.OPENAI_API_KEY || 'local'
+    );
 
     const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
     const runtimeEnv = {
-      AI_GATEWAY_API_KEY: vercelOidc,
-      VERCEL_OIDC_TOKEN: vercelOidc,
-      OPENAI_API_KEY: vercelOidc,
-      OPENAI_BASE_URL: 'https://ai-gateway.vercel.sh/v1',
+      OPENAI_API_KEY: modelApiKey,
+      OPENAI_BASE_URL: modelBaseUrl,
       HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'openai',
       HERMES_MODEL: MODEL,
       HERMES_TERMINAL_BACKEND: 'local',
@@ -352,7 +355,7 @@ export default async function handler(req, res) {
       try { await sandbox.stop(); } catch {}
     }
     const message = String(error?.message || error);
-    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : /ai_gateway_403|customer_verification_required/.test(message) ? 503 : 500;
+    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : /hermes_local_model_base_url_missing/.test(message) ? 503 : 500;
     return res.status(status).json({
       ok: false,
       error: 'hermes_cloud_pc_failed',
