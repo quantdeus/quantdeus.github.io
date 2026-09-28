@@ -17,14 +17,14 @@ const startupOrg = readJson('coordination/startup-org.json');
 const ids = registry.agents.map(a=>a.id);
 const homIds = hom.agents.map(a=>a.id);
 
-check(ids.length === 23, 'coordination/agents.json', 'expected exactly 23 registered agents');
+check(ids.length === 26, 'coordination/agents.json', 'expected exactly 26 registered agents');
 check(new Set(ids).size === ids.length, 'coordination/agents.json', 'agent ids unique');
 check(new Set(homIds).size === homIds.length, 'coordination/homunculi.json', 'homunculus ids unique');
 check(JSON.stringify([...ids].sort()) === JSON.stringify([...homIds].sort()), 'registries', 'agents.json and homunculi.json contain identical ids');
-check(startupOrg.workforce?.ai_agents === 23, 'coordination/startup-org.json', 'startup org declares 23 AI agents');
+check(startupOrg.workforce?.ai_agents === 26, 'coordination/startup-org.json', 'startup org declares 26 AI agents');
 check(startupOrg.departments?.length === 5, 'coordination/startup-org.json', 'startup org declares 5 departments');
 const orgIds = (startupOrg.departments || []).flatMap(d => d.agents || []);
-check(orgIds.length === 23 && new Set(orgIds).size === 23, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
+check(orgIds.length === 26 && new Set(orgIds).size === 26, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
 check(JSON.stringify([...orgIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/startup-org.json', 'startup org covers the canonical agent registry');
 
 for (const department of startupOrg.departments || []) {
