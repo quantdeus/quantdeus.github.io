@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "runtime": "hermes-agent",
+  "title": "QuantDeus Hermes AI Office",
+  "registry_source": "coordination/agents.json",
+  "profile_strategy": "one-hermes-profile-per-canonical-agent",
+  "profile_id": "agent.id",
+  "canonical_agent_count": 26,
+  "source_of_truth": "github",
+  "github_repository": "quantdeus/quantdeus.github.io",
+  "model": {
+    "provider": "ollama-cloud",
+    "default": "gpt-oss:120b",
+    "minimum_context_tokens": 65536,
+    "override_env": {
+      "provider": "HERMES_MODEL_PROVIDER",
+      "model": "HERMES_MODEL"
+    }
+  },
+  "office": {
+    "board": "quantdeus",
+    "display_name": "QuantDeus AI Office",
+    "dispatcher_profile": "seven-of-nine",
+    "orchestrator_profile": "seven-of-nine",
+    "default_assignee": "seven-of-nine",
+    "auto_decompose": true,
+    "dashboard_lanes_by_profile": true,
+    "review_profiles": [
+      "qa-syntax",
+      "qa-contract",
+      "qa-repair"
+    ],
+    "secretary_profile": "coordinator"
+  },
+  "execution": {
+    "preferred_terminal_backend": "vercel_sandbox",
+    "fallback_terminal_backend": "docker",
+    "max_in_progress": 6,
+    "max_in_progress_per_profile": 1,
+    "human_handoff_for": [
+      "payments",
+      "purchases",
+      "legal commitments",
+      "production-destructive actions",
+      "secrets",
+      "2FA",
+      "CAPTCHA"
+    ]
+  },
+  "state": {
+    "hermes_home": "~/.hermes",
+    "kanban_storage": "SQLite managed by Hermes; never committed",
+    "profile_memory": "isolated per profile; never committed",
+    "secrets": "runtime environment / Hermes .env only; never committed"
+  },
+  "integration_contract": {
+    "github": "canonical project state and auditable artifacts",
+    "hermes": "persistent agent profiles, memory, delegation, Kanban dispatch and office dashboard",
+    "seven_of_nine": "orchestrates and routes work; does not bypass QA or human approval boundaries",
+    "workers": "execute assigned Kanban cards with isolated profile state",
+    "qa": "reviews evidence and requests changes or completion",
+    "rule": "Hermes execution must never invent GitHub mutations; publication claims require observable GitHub evidence"
+  }
+}
