@@ -185,3 +185,24 @@ Rules:
 5. Prefer an isolated terminal backend for autonomous work; the QuantDeus manifest prefers Vercel Sandbox and permits Docker for local testing.
 6. Never commit Hermes `.env`, memory/session databases, Kanban SQLite files, API keys or provider credentials.
 7. Existing Telegram transport remains canonical unless ownership is explicitly migrated; never run two gateways against one bot token.
+
+
+## Hermes Evolution + connected chat
+
+When a Hermes runtime host is configured, QuantDeus chat surfaces route real turns into named Hermes profiles:
+
+`GitHub Command Center / Telegram → Hermes profile → tools/MCP/Kanban/cron → GitHub evidence → reply`.
+
+Runtime secrets:
+- `HERMES_API_URL` — externally reachable HTTPS root of the Hermes API server.
+- `HERMES_API_KEY` — API key for the exposed Hermes profile route.
+- `GITHUB_PERSONAL_ACCESS_TOKEN` — host-only credential consumed by the official GitHub MCP server. Prefer a dedicated GitHub App installation token when available.
+- `GITHUB_TOOLSETS=all` — broad GitHub MCP surface; actual access is still bounded by the credential.
+
+Evolution rules are canonical in `coordination/hermes-evolution.json`.
+
+All profiles may create agent-local skills, cron jobs and reversible MCP connections. Agent-created skills are security-scanned and ledgered; the Curator may consolidate them with backups/rollback. Canonical repository self-improvements use branch/PR + QA evidence.
+
+Playwright MCP is provisioned as `playwright` for every profile using Microsoft's `@playwright/mcp@latest`. Project-local QuantDeus operating skills live under `.hermes/skills/`.
+
+Legitimate QuantDeus project/service-account registration may be automated with browser tooling, but agents stop at CAPTCHA, unavailable verification, 2FA/passkeys, payment, legal commitment or identity verification. Credentials never belong in GitHub artifacts.
