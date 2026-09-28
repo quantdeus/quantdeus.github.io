@@ -1,0 +1,87 @@
+name: QuantDeus Browser Homunculus 🌐
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Approved GitHub Issue containing the browser task manifest
+        required: true
+        type: number
+  issues:
+    types: [opened, edited, reopened, labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: browser-homunculus-\${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  browser:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.body || '', '<!-- qd-browser-task:start -->')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      ISSUE_NUMBER: \${{ inputs.issue_number || github.event.issue.number }}
+      GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Read canonical browser task from GitHub Issue
+        run: |
+          gh issue view "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json number,title,url,body,labels \
+            > browser-issue.json
+
+      - name: Validate governance and manifest before installing a browser
+        run: node scripts/browser-homunculus.js --validate
+
+      - name: Install Vercel agent-browser and Chrome
+        run: |
+          npm install -g agent-browser
+          agent-browser install --with-deps
+
+      - name: Execute bounded browser task
+        continue-on-error: true
+        env:
+          QD_BROWSER_EMAIL: \${{ secrets.QD_BROWSER_EMAIL }}
+          QD_BROWSER_USERNAME: \${{ secrets.QD_BROWSER_USERNAME }}
+          QD_BROWSER_PASSWORD: \${{ secrets.QD_BROWSER_PASSWORD }}
+          QD_BROWSER_PHONE: \${{ secrets.QD_BROWSER_PHONE }}
+          QD_BROWSER_RECOVERY_EMAIL: \${{ secrets.QD_BROWSER_RECOVERY_EMAIL }}
+          AI_GATEWAY_API_KEY: \${{ secrets.AI_GATEWAY_API_KEY }}
+          AI_GATEWAY_MODEL: \${{ vars.AI_GATEWAY_MODEL }}
+        run: node scripts/browser-homunculus.js
+
+      - name: Publish public-safe result to the Issue
+        if: always()
+        run: |
+          if [ -f browser-result.md ]; then
+            gh issue comment "$ISSUE_NUMBER" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body-file browser-result.md
+          fi
+
+      - name: Upload non-secret browser artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-homunculus-\${{ env.ISSUE_NUMBER }}
+          path: |
+            browser-result.md
+            browser-artifacts/
+          if-no-files-found: ignore
+          retention-days: 3
