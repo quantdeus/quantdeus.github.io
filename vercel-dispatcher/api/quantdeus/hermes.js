@@ -1,0 +1,329 @@
+import crypto from 'node:crypto';
+import { Sandbox } from '@vercel/sandbox';
+
+const GITHUB_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
+const GITHUB_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
+const EXPECTED_AUDIENCE = 'quantdeus-vercel-hermes';
+const EXPECTED_REPOSITORY = 'quantdeus/quantdeus.github.io';
+const ALLOWED_EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
+const SANDBOX_NAME = 'quantdeus-hermes-office';
+const WORKDIR = '/vercel/sandbox/quantdeus';
+const REPO_URL = 'https://github.com/quantdeus/quantdeus.github.io.git';
+const MODEL = process.env.HERMES_CLOUD_MODEL || 'openai/gpt-oss-120b';
+const MAX_PROMPT = 90000;
+
+let jwksCache = null;
+let jwksFetchedAt = 0;
+
+function decodeJsonPart(value) {
+  return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+}
+
+async function getJwks() {
+  const now = Date.now();
+  if (jwksCache && now - jwksFetchedAt < 60 * 60 * 1000) return jwksCache;
+  const r = await fetch(GITHUB_JWKS_URL, { headers: { accept: 'application/json' } });
+  if (!r.ok) throw new Error('github_jwks_fetch_failed_' + r.status);
+  const data = await r.json();
+  jwksCache = Array.isArray(data.keys) ? data.keys : [];
+  jwksFetchedAt = now;
+  return jwksCache;
+}
+
+function audienceMatches(aud) {
+  return Array.isArray(aud) ? aud.includes(EXPECTED_AUDIENCE) : aud === EXPECTED_AUDIENCE;
+}
+
+async function verifyGitHubOidc(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) throw new Error('invalid_github_oidc_format');
+
+  const [encodedHeader, encodedPayload, encodedSignature] = parts;
+  const header = decodeJsonPart(encodedHeader);
+  const claims = decodeJsonPart(encodedPayload);
+
+  if (header.alg !== 'RS256' || !header.kid) throw new Error('invalid_github_oidc_header');
+
+  const keys = await getJwks();
+  const jwk = keys.find(key => key.kid === header.kid);
+  if (!jwk) throw new Error('github_oidc_unknown_key');
+
+  const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
+  const validSignature = crypto.verify(
+    'RSA-SHA256',
+    Buffer.from(encodedHeader + '.' + encodedPayload),
+    publicKey,
+    Buffer.from(encodedSignature, 'base64url')
+  );
+  if (!validSignature) throw new Error('github_oidc_bad_signature');
+
+  const now = Math.floor(Date.now() / 1000);
+  if (claims.iss !== GITHUB_OIDC_ISSUER) throw new Error('github_oidc_bad_issuer');
+  if (!audienceMatches(claims.aud)) throw new Error('github_oidc_bad_audience');
+  if (!claims.exp || claims.exp < now - 15) throw new Error('github_oidc_expired');
+  if (claims.nbf && claims.nbf > now + 15) throw new Error('github_oidc_not_yet_valid');
+  if (claims.repository !== EXPECTED_REPOSITORY) throw new Error('github_oidc_wrong_repository');
+  if (!ALLOWED_EVENTS.has(String(claims.event_name || ''))) throw new Error('github_oidc_wrong_event');
+
+  return claims;
+}
+
+function normalizeProfile(value) {
+  const profile = String(value || 'seven-of-nine').trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(profile)) throw new Error('invalid_profile');
+  return profile;
+}
+
+function normalizeMessages(input) {
+  if (!Array.isArray(input) || input.length < 1 || input.length > 24) {
+    throw new Error('messages_must_have_1_to_24_items');
+  }
+  let total = 0;
+  const rows = input.map((message, index) => {
+    const role = String(message?.role || '');
+    const content = String(message?.content || '');
+    if (!['system', 'user', 'assistant'].includes(role)) throw new Error('unsupported_message_role_at_' + index);
+    if (!content || content.length > 20000) throw new Error('invalid_message_content_at_' + index);
+    total += content.length;
+    if (total > MAX_PROMPT) throw new Error('messages_total_too_large');
+    return { role, content };
+  });
+  return rows;
+}
+
+function promptFrom(messages, metadata) {
+  const meta = Object.entries(metadata || {})
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .slice(0, 20)
+    .map(([key, value]) => key + '=' + String(value).slice(0, 1000))
+    .join(' · ');
+
+  const preface = [
+    'You are running inside the persistent QuantDeus Hermes AI Office on Vercel Sandbox.',
+    'GitHub quantdeus/quantdeus.github.io is the canonical project source of truth.',
+    'Use Hermes tools, skills, Kanban, cron, Playwright and MCP connections when materially useful.',
+    'Verify every GitHub mutation before claiming it happened.',
+    'Safe reversible work may proceed autonomously.',
+    'Repository self-improvement must use branch/PR plus QA evidence.',
+    'Never expose credentials. Stop and create a human handoff for CAPTCHA, unavailable email/SMS verification, 2FA/passkeys, payments, legal commitments, identity verification or destructive production actions.',
+    meta ? 'Source metadata: ' + meta : ''
+  ].filter(Boolean).join('\n');
+
+  return [
+    preface,
+    '',
+    ...messages.map(m => '[' + m.role.toUpperCase() + ']\n' + m.content)
+  ].join('\n\n');
+}
+
+async function out(command) {
+  return String(await command.stdout()).trim();
+}
+
+async function err(command) {
+  return String(await command.stderr()).trim();
+}
+
+async function runChecked(sandbox, spec, label) {
+  const result = await sandbox.runCommand(spec);
+  if (result.exitCode !== 0) {
+    const stderr = (await err(result)).slice(0, 4000);
+    const stdout = (await out(result)).slice(0, 2000);
+    throw new Error(label + '_failed_' + result.exitCode + ': ' + (stderr || stdout || 'no output'));
+  }
+  return result;
+}
+
+async function ensureRepo(sandbox) {
+  const exists = await sandbox.runCommand({
+    cmd: 'bash',
+    args: ['-lc', 'test -d "$1/.git"', 'bash', WORKDIR]
+  });
+  if (exists.exitCode !== 0) {
+    await runChecked(sandbox, {
+      cmd: 'git',
+      args: ['clone', '--depth', '1', '--branch', 'main', REPO_URL, WORKDIR],
+      cwd: '/vercel/sandbox'
+    }, 'repo_clone');
+    return;
+  }
+
+  await runChecked(sandbox, {
+    cmd: 'git',
+    args: ['fetch', '--prune', 'origin', 'main'],
+    cwd: WORKDIR
+  }, 'repo_fetch');
+
+  const dirty = await sandbox.runCommand({
+    cmd: 'git',
+    args: ['status', '--porcelain'],
+    cwd: WORKDIR
+  });
+  const dirtyText = await out(dirty);
+  if (!dirtyText) {
+    await runChecked(sandbox, {
+      cmd: 'git',
+      args: ['checkout', '-q', 'main'],
+      cwd: WORKDIR
+    }, 'repo_checkout_main');
+    await runChecked(sandbox, {
+      cmd: 'git',
+      args: ['reset', '--hard', 'origin/main'],
+      cwd: WORKDIR
+    }, 'repo_reset_main');
+  }
+}
+
+async function ensureHermesInstalled(sandbox) {
+  const check = await sandbox.runCommand({
+    cmd: 'bash',
+    args: ['-lc', 'test -x "$HOME/.local/bin/hermes" && "$HOME/.local/bin/hermes" --version >/dev/null 2>&1']
+  });
+  if (check.exitCode === 0) return;
+
+  await runChecked(sandbox, {
+    cmd: 'bash',
+    args: ['-lc', 'python3 -m pip install --user -U "hermes-agent[vercel]"'],
+  }, 'hermes_install');
+}
+
+async function bootstrapFingerprint(sandbox) {
+  const result = await runChecked(sandbox, {
+    cmd: 'bash',
+    args: ['-lc', 'sha256sum scripts/hermes-office-bootstrap.js coordination/agents.json coordination/hermes-office.json coordination/hermes-evolution.json | sha256sum | cut -d" " -f1'],
+    cwd: WORKDIR
+  }, 'bootstrap_fingerprint');
+  return out(result);
+}
+
+async function ensureBootstrap(sandbox, runtimeEnv) {
+  const fingerprint = await bootstrapFingerprint(sandbox);
+  const markerPath = '/vercel/sandbox/.quantdeus-hermes-bootstrap';
+  const marker = await sandbox.runCommand({
+    cmd: 'bash',
+    args: ['-lc', 'cat "$1" 2>/dev/null || true', 'bash', markerPath]
+  });
+  if ((await out(marker)) === fingerprint) return;
+
+  await runChecked(sandbox, {
+    cmd: 'node',
+    args: ['scripts/hermes-office-bootstrap.js'],
+    cwd: WORKDIR,
+    env: runtimeEnv
+  }, 'hermes_bootstrap');
+
+  await runChecked(sandbox, {
+    cmd: 'bash',
+    args: ['-lc', 'printf "%s\\n" "$1" > "$2"', 'bash', fingerprint, markerPath]
+  }, 'bootstrap_marker');
+}
+
+async function runHermes(sandbox, profile, prompt, runtimeEnv) {
+  const result = await sandbox.runCommand({
+    cmd: 'bash',
+    args: [
+      '-lc',
+      'exec flock -w 240 /vercel/sandbox/.quantdeus-hermes.lock "$HOME/.local/bin/hermes" "$@"',
+      'hermes',
+      '-p',
+      profile,
+      '-z',
+      prompt
+    ],
+    cwd: WORKDIR,
+    env: runtimeEnv
+  });
+
+  const stdout = await out(result);
+  const stderr = await err(result);
+  if (result.exitCode !== 0) {
+    throw new Error('hermes_run_failed_' + result.exitCode + ': ' + (stderr || stdout || 'no output').slice(0, 4000));
+  }
+  if (!stdout) throw new Error('hermes_empty_response');
+  return stdout.slice(0, 30000);
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+  }
+
+  let sandbox = null;
+  try {
+    const auth = String(req.headers?.authorization || '');
+    if (!auth.startsWith('Bearer ')) throw new Error('github_oidc_missing');
+    const claims = await verifyGitHubOidc(auth.slice(7));
+
+    const profile = normalizeProfile(req.body?.profile);
+    const messages = normalizeMessages(req.body?.messages);
+    const prompt = promptFrom(messages, req.body?.metadata || {});
+
+    const vercelOidc = String(req.headers?.['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || '');
+    if (!vercelOidc) throw new Error('vercel_oidc_token_missing');
+
+    const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
+    const runtimeEnv = {
+      AI_GATEWAY_API_KEY: vercelOidc,
+      VERCEL_OIDC_TOKEN: vercelOidc,
+      HERMES_MODEL_PROVIDER: 'ai-gateway',
+      HERMES_MODEL: MODEL,
+      HERMES_TERMINAL_BACKEND: 'local',
+      GITHUB_TOOLSETS: 'all'
+    };
+    if (githubToken) {
+      runtimeEnv.GITHUB_TOKEN = githubToken;
+      runtimeEnv.GH_TOKEN = githubToken;
+      runtimeEnv.GITHUB_PERSONAL_ACCESS_TOKEN = githubToken;
+      runtimeEnv.MCP_GITHUB_API_KEY = githubToken;
+    }
+
+    sandbox = await Sandbox.getOrCreate({
+      name: SANDBOX_NAME,
+      image: 'vercel/sandbox/universal',
+      resources: { vcpus: 2 },
+      timeout: 15 * 60 * 1000,
+      persistent: true,
+      snapshotExpiration: 30 * 24 * 60 * 60 * 1000,
+      keepLastSnapshots: { count: 2 },
+      resume: true,
+      tags: { app: 'quantdeus', runtime: 'hermes-office' }
+    });
+
+    await ensureRepo(sandbox);
+    await ensureHermesInstalled(sandbox);
+    await ensureBootstrap(sandbox, runtimeEnv);
+    const text = await runHermes(sandbox, profile, prompt, runtimeEnv);
+
+    await sandbox.stop();
+
+    return res.status(200).json({
+      ok: true,
+      provider: 'quantdeus-hermes-vercel-sandbox',
+      model: MODEL,
+      profile,
+      text,
+      cloud_pc: {
+        name: SANDBOX_NAME,
+        persistent: true
+      },
+      github_run: {
+        actor: claims.actor || null,
+        workflow: claims.workflow || null,
+        event: claims.event_name || null,
+        repository: claims.repository
+      }
+    });
+  } catch (error) {
+    console.error('QuantDeus Hermes Cloud PC error:', error);
+    if (sandbox) {
+      try { await sandbox.stop(); } catch {}
+    }
+    const message = String(error?.message || error);
+    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : 500;
+    return res.status(status).json({
+      ok: false,
+      error: 'hermes_cloud_pc_failed',
+      detail: message.slice(0, 2000)
+    });
+  }
+}
