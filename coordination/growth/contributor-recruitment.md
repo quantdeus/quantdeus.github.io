@@ -46,7 +46,7 @@ The department optimizes for **qualified contributors and useful first contribut
 
 ## Telegram invitation contract
 
-Agents and Grok should use the following route for qualified people:
+Agents and Vercel Swarm Dispatcher should use the following route for qualified people:
 
 `public/opt-in lead → match to concrete Issue → prepare personalized invite → Zapier MCP Telegram action → QuantDeus Telegram → onboarding → first contribution`
 
