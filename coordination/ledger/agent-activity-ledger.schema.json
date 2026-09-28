@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus Agent Activity Ledger",
+  "task": "#129",
+  "task_key": "agent-activity-ledger-v1",
+  "source_of_truth": "quantdeus/quantdeus.github.io",
+  "purpose": "Record one event per meaningful agent action so issue comments cannot masquerade as progress.",
+  "required_fields": [
+    "timestamp",
+    "agent_id",
+    "issue",
+    "action_type",
+    "verification_status",
+    "outcome"
+  ],
+  "action_types": [
+    "task_creation",
+    "research",
+    "implementation",
+    "verification",
+    "done"
+  ],
+  "rules": {
+    "agent_id_must_exist_in": "coordination/agents.json",
+    "implementation_requires_artifact": true,
+    "verification_requires_artifact": true,
+    "done_requires_verified_acceptance": true,
+    "no_production_site_change": true
+  },
+  "events": [
+    {
+      "timestamp": "2026-09-28T06:18:00Z",
+      "agent_id": "coordinator",
+      "issue": 129,
+      "action_type": "implementation",
+      "artifact": "coordination/ledger/agent-activity-ledger.schema.json",
+      "verification_status": "pending-review",
+      "outcome": "Ledger schema and first seed event created on branch coord/agent-activity-ledger-v1"
+    }
+  ]
+}
