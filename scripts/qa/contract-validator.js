@@ -103,7 +103,7 @@ const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml']);\nconst frequentPollingWorkflows = new Set(['telegram-bot.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -111,7 +111,11 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     const parts = cron.trim().split(/\s+/);
     check(parts.length===5, name, 'cron has 5 fields: '+cron);
     if (parts.length===5) {
-      check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
+      if (frequentPollingWorkflows.has(name)) {
+        check(parts[0] === '*/5' && parts[1] === '*', name, 'Telegram polling workflow runs at the approved 5-minute cadence: '+cron);
+      } else {
+        check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
+      }
     }
   }
   if (scheduledMissionWorkflows.has(name)) {
