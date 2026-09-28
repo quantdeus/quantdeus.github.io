@@ -78,12 +78,6 @@ const provider = process.env.HERMES_MODEL_PROVIDER || office.model.provider;
 const model = process.env.HERMES_MODEL || office.model.default;
 const terminalBackend = process.env.HERMES_TERMINAL_BACKEND || office.execution.preferred_terminal_backend;
 
-if (terminalBackend === 'vercel_sandbox') {
-  for (const key of ['VERCEL_TOKEN', 'VERCEL_PROJECT_ID', 'VERCEL_TEAM_ID']) {
-    if (!process.env[key]) fail(key + ' is required when HERMES_TERMINAL_BACKEND=vercel_sandbox.');
-  }
-}
-
 console.log('[hermes-office] profiles=' + agents.length + ' provider=' + provider + ' model=' + model + ' terminal=' + terminalBackend);
 
 for (const agent of agents) {
@@ -114,14 +108,17 @@ for (const agent of agents) {
   config(profile, 'curator.backup.enabled', true, { force: true });
 
   run(['-p', profile, 'skills', 'trust', repoRoot], { allowFailure: true });
-  ensureMcp(profile, 'playwright', ['--command', 'npx', '--args', '-y', '@playwright/mcp@latest']);
 
-  if (process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
-    process.env.GITHUB_TOOLSETS = process.env.GITHUB_TOOLSETS || 'all';
-    ensureMcp(profile, 'github', ['--command', 'docker', '--args', 'run', '-i', '--rm', '-e', 'GITHUB_PERSONAL_ACCESS_TOKEN', '-e', 'GITHUB_TOOLSETS', 'ghcr.io/github/github-mcp-server']);
-  } else {
-    console.warn('[hermes-office] GITHUB_PERSONAL_ACCESS_TOKEN missing; GitHub MCP skipped for ' + profile);
-  }
+  // Configure first-party MCPs through the sanctioned config path. This avoids
+  // interactive discovery/install flows and keeps transient credentials out of config.
+  config(profile, 'mcp_servers.playwright.command', 'npx', { force: true });
+  config(profile, 'mcp_servers.playwright.args', JSON.stringify(['-y', '@playwright/mcp@latest']), { force: true });
+  config(profile, 'mcp_servers.playwright.connect_timeout', 90, { force: true });
+
+  config(profile, 'mcp_servers.github.url', 'https://api.githubcopilot.com/mcp/', { force: true });
+  config(profile, 'mcp_servers.github.headers.Authorization', 'Bearer ${MCP_GITHUB_API_KEY}', { force: true });
+  config(profile, 'mcp_servers.github.connect_timeout', 90, { force: true });
+  config(profile, 'mcp_servers.github.enabled', true, { force: true });
 
   const hermesHome = process.env.HERMES_HOME || path.join(os.homedir(), '.hermes');
   const profileHome = path.join(hermesHome, 'profiles', profile);
@@ -174,13 +171,13 @@ run(['-p', seven, 'tools', 'enable', 'kanban']);
 run(['-p', seven, 'tools', 'enable', 'connections']);
 run(['-p', seven, 'tools', 'enable', 'cronjob']);
 
+// The canonical cloud path is one-shot Hermes inside a persistent Vercel Sandbox.
+ // A long-running Hermes API server is optional and no longer required for chat routing.
 if (process.env.HERMES_API_KEY) {
   config(seven, 'gateway.api_server.enabled', true, { force: true });
   config(seven, 'gateway.api_server.host', process.env.HERMES_API_HOST || '127.0.0.1', { force: true });
   config(seven, 'gateway.api_server.port', process.env.HERMES_API_PORT || '8642', { force: true });
   config(seven, 'gateway.api_server.key', process.env.HERMES_API_KEY, { force: true });
-} else {
-  console.warn('[hermes-office] HERMES_API_KEY missing; remote chat bridge API is not enabled.');
 }
 
 run([
