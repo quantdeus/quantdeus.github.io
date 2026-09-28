@@ -162,3 +162,26 @@ All 26 agents may challenge each other's work. Material findings must converge t
 Canonical protocol: `coordination/swarm-review-protocol.md`.
 
 Post-merge P1/P2 findings become bounded repair Issues instead of being left as dead comments on already-merged PRs. Comment volume is not progress; verified artifacts are.
+
+
+## Hermes AI Office
+
+Hermes Agent is the optional persistent office runtime for all 26 canonical QuantDeus agents.
+
+Canonical contract:
+- manifest: `coordination/hermes-office.json`
+- bootstrap: `scripts/hermes-office-bootstrap.js`
+- validation: `scripts/qa/hermes-office-validator.js`
+- guide: `docs/hermes-office.md`
+
+Runtime model:
+`Human CEO → Seven of Nine (Hermes orchestrator) → shared QuantDeus Kanban → isolated agent profiles → QA → GitHub evidence`.
+
+Rules:
+1. One Hermes profile per canonical `coordination/agents.json` id. Do not make multiple agents share one Hermes profile/home.
+2. Seven of Nine owns the Hermes Kanban dispatcher/orchestrator role; the Swarm Secretary remains record/routing support.
+3. GitHub remains source of truth. Hermes memory, sessions and Kanban state are execution context, not proof of a GitHub mutation.
+4. Default model is GPT-OSS 120B; provider/model may be overridden at runtime without changing canonical agent identity.
+5. Prefer an isolated terminal backend for autonomous work; the QuantDeus manifest prefers Vercel Sandbox and permits Docker for local testing.
+6. Never commit Hermes `.env`, memory/session databases, Kanban SQLite files, API keys or provider credentials.
+7. Existing Telegram transport remains canonical unless ownership is explicitly migrated; never run two gateways against one bot token.
