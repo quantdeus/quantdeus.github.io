@@ -1,5 +1,9 @@
 const REPO = "quantdeus/quantdeus.github.io";
 const ISSUE = 154;
+const DOCTRINE_VERSION = "2026.09-post-scarcity-v3";
+const MANIFEST_ID = "neon-horizon-v3";
+const MANIFEST_NAME = "Манифест Неонового Горизонта — QuantDeus v3.0";
+const MANIFEST_ARCHIVE = "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf";
 
 function authorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -68,6 +72,12 @@ export default async function handler(req, res) {
       started_at: startedAt,
       source_of_truth: REPO,
       dispatcher_issue: ISSUE,
+      doctrine: {
+        version: DOCTRINE_VERSION,
+        manifest_id: MANIFEST_ID,
+        manifest_name: MANIFEST_NAME,
+        manifest_archive: MANIFEST_ARCHIVE
+      },
       repository: {
         default_branch: repo.default_branch,
         pushed_at: repo.pushed_at
