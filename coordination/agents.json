@@ -24,7 +24,8 @@
       "group": "executive",
       "startup_title": "QuantDeus Coordinator / AI Chief of Staff",
       "department": "Executive & Strategy",
-      "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency"
+      "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency",
+      "persona": "coordination/seven-of-nine-persona.md"
     },
     {
       "id": "emh",
