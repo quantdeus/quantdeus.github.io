@@ -143,3 +143,10 @@ Inference is keyless inside Vercel: the function passes its short-lived Vercel O
 GitHub access is also short-lived. The calling GitHub Actions run passes its repository-scoped `GITHUB_TOKEN` to the Sandbox only for that Hermes turn, and the official remote GitHub MCP reads it from `MCP_GITHUB_API_KEY`. No long-lived GitHub token is written into the repository or persistent Hermes configuration.
 
 The direct `HERMES_API_URL/HERMES_API_KEY` mode remains an optional override for private deployments, but it is not required by QuantDeus production.
+
+
+## OpenRouter GPT-OSS 120B Free
+
+QuantDeus production inference defaults to `openai/gpt-oss-120b:free` through OpenRouter. The OpenRouter key is supplied by the current GitHub Actions job and forwarded to the Vercel Sandbox only for that Hermes turn. It is not written into the repository, profile `.env`, `config.yaml`, snapshots or logs.
+
+Vercel AI Gateway remains a fallback path only; the current QuantDeus Vercel account may require billing verification for AI Gateway requests, so it is not the default office inference provider.
