@@ -39,11 +39,13 @@
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
   - `06:27 UTC — QuantDeus Coordinator`
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
-  - `06:42 UTC — QuantDeus Contributor Growth`\n  - `06:47 UTC — QuantDeus QA Triad`
+  - `06:42 UTC — QuantDeus Contributor Growth`
+  - `06:47 UTC — QuantDeus QA Triad`
 - cron_cadence_rule: `staggered once per day; event triggers remain independent`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
-- cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`\n- contributor_growth_rule: `daily Cron maintains one active recruitment sprint and concrete contributor opportunities; invitations are personalized and never mass-sent automatically`
+- cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
+- contributor_growth_rule: `daily Cron maintains one active recruitment sprint and concrete contributor opportunities; invitations are personalized and never mass-sent automatically`
 - privileged_action_rule: `production publication, spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval`
 - zapier_active_zap: `QuantDeus 2-Step GPT Bridge`
 - zapier_active_zap_state: `on / configured`
