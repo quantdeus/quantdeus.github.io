@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   issues: write
+  models: read
 
 concurrency:
   group: qd-site-agent-${{ github.event.issue.number }}-${{ github.event.comment.id }}
@@ -20,13 +21,14 @@ jobs:
       github.event.comment.user.type != 'Bot' &&
       !contains(github.event.comment.body, '<!-- qd-agent-reply -->')
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Route comment to real QuantDeus agent
+      - name: Route comment to live QuantDeus LLM agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QD_LLM_MODEL: openai/gpt-4.1
         run: node scripts/site-agent-reply.js
