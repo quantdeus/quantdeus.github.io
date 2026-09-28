@@ -96,3 +96,35 @@ Do not run a second Hermes Telegram gateway against the existing QuantDeus bot t
 node scripts/qa/hermes-office-validator.js
 node --check scripts/hermes-office-bootstrap.js
 ```
+
+
+## Connected chat + Evolution
+
+The repository includes `scripts/hermes-office-client.js`. When GitHub Actions receives `HERMES_API_URL` and `HERMES_API_KEY`, ordinary Command Center and Telegram agent turns are sent to the actual named Hermes profile. If the remote office is unavailable, the existing repo-grounded path remains the fallback.
+
+The Hermes host exposes its authenticated OpenAI-compatible API. The bridge calls:
+
+`/p/<profile>/v1/chat/completions`
+
+The host should be reachable over protected HTTPS. Every profile keeps isolated Hermes state; Seven remains the office orchestrator and can delegate persistent work through Kanban.
+
+### GitHub MCP
+
+Bootstrap adds the official `github/github-mcp-server` to every profile when `GITHUB_PERSONAL_ACCESS_TOKEN` exists. The token value is not committed; the Docker MCP process inherits it from the Hermes host environment. The default contract requests the full GitHub MCP toolset, while the credential scopes remain the actual authority boundary.
+
+### Playwright
+
+Bootstrap adds Microsoft's `@playwright/mcp@latest` to every profile. Use it for deterministic accessibility-tree browser interaction, testing and legitimate project-service account setup.
+
+### Evolution
+
+Each profile enables skills, browser, cron, code execution, delegation and connection management. Agent-created skills are security-scanned, writes remain autonomous, and the mutation ledger is enabled. Curator is configured for a daily idle review with consolidation/backups.
+
+Seven also receives a daily `QuantDeus Evolution Review` cron. It may make one bounded reversible improvement per run, including an Issue/PR or agent-local skill improvement, provided it verifies the external mutation.
+
+Project-local skills:
+- `quantdeus-autonomy`
+- `quantdeus-playwright-ops`
+- `quantdeus-connections-evolution`
+
+Full policy: `coordination/hermes-evolution.json`.
