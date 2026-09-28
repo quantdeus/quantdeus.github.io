@@ -289,20 +289,20 @@ export default async function handler(req, res) {
     const modelBaseUrl = String(
       process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL || ''
     ).trim().replace(/\/+$/, '');
-    if (!modelBaseUrl) throw new Error('hermes_local_model_base_url_missing');
     const modelApiKey = String(
-      process.env.HERMES_LOCAL_API_KEY || process.env.OPENAI_API_KEY || 'local'
+      process.env.HERMES_LOCAL_API_KEY || process.env.OPENAI_API_KEY || ''
     );
 
     const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
     const runtimeEnv = {
-      OPENAI_API_KEY: modelApiKey,
-      OPENAI_BASE_URL: modelBaseUrl,
       HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'openai',
       HERMES_MODEL: MODEL,
       HERMES_TERMINAL_BACKEND: 'local',
       GITHUB_TOOLSETS: 'all'
     };
+    if (modelBaseUrl) runtimeEnv.OPENAI_BASE_URL = modelBaseUrl;
+    if (modelApiKey) runtimeEnv.OPENAI_API_KEY = modelApiKey;
+
     if (githubToken) {
       runtimeEnv.GITHUB_TOKEN = githubToken;
       runtimeEnv.GH_TOKEN = githubToken;
@@ -355,7 +355,7 @@ export default async function handler(req, res) {
       try { await sandbox.stop(); } catch {}
     }
     const message = String(error?.message || error);
-    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : /hermes_local_model_base_url_missing/.test(message) ? 503 : 500;
+    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : 500;
     return res.status(status).json({
       ok: false,
       error: 'hermes_cloud_pc_failed',
