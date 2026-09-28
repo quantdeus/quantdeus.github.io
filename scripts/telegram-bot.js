@@ -19,8 +19,8 @@ if (!repo || !githubToken) {
 }
 
 if (!telegramToken) {
-  console.log('Telegram bot token is not configured; nothing to poll.');
-  process.exit(0);
+  console.error('TELEGRAM_BOT_TOKEN is not available to this workflow. Add it as a repository Actions secret.');
+  process.exit(1);
 }
 
 const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
