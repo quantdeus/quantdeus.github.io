@@ -28,6 +28,8 @@ jobs:
         run: node scripts/mission-alignment.js
 
       - name: 🩺 Run all-agent monitor
+        id: monitor
+        continue-on-error: true
         run: node scripts/agent-monitor.js
 
       - name: 🔎 QA Syntax Validator
@@ -42,6 +44,7 @@ jobs:
 
       - name: 🛠️ QA Repair Coordinator
         env:
+          MONITOR_OUTCOME: ${{ steps.monitor.outcome }}
           SYNTAX_OUTCOME: ${{ steps.syntax.outcome }}
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
           QA_CREATE_ISSUE: ${{ github.event_name != 'pull_request' && '1' || '0' }}
@@ -56,4 +59,5 @@ jobs:
           path: |
             /tmp/quantdeus-qa-*.json
             /tmp/quantdeus-mission-alignment.json
+            /tmp/quantdeus-agent-health.json
           if-no-files-found: error
