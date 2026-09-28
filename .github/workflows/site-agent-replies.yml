@@ -5,8 +5,12 @@ on:
     types: [created]
 
 permissions:
-  contents: read
+  actions: write
+  checks: read
+  contents: write
   issues: write
+  pull-requests: write
+  statuses: write
   id-token: write
 
 concurrency:
@@ -35,6 +39,4 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           QD_LLM_PROVIDER: auto
           QD_LLM_MODEL: openrouter/free
-          HERMES_API_URL: ${{ secrets.HERMES_API_URL }}
-          HERMES_API_KEY: ${{ secrets.HERMES_API_KEY }}
         run: node scripts/site-agent-reply.js
