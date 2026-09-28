@@ -144,6 +144,44 @@ async function askVercel({ profile, messages, metadata, signal }) {
   };
 }
 
+async function tick({ timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+  if (!oidcConfigured()) throw new Error('GITHUB_OIDC_UNAVAILABLE');
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const oidc = await getGitHubOidcToken();
+    const url = process.env.HERMES_VERCEL_URL || DEFAULT_VERCEL_URL;
+    const headers = {
+      authorization: 'Bearer ' + oidc,
+      'content-type': 'application/json',
+      accept: 'application/json'
+    };
+    if (process.env.GITHUB_TOKEN) {
+      headers['x-quantdeus-github-token'] = process.env.GITHUB_TOKEN;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ mode: 'cron_tick' }),
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error('Hermes cron bridge HTTP ' + response.status);
+
+    const data = await response.json();
+    if (!data?.ok || data.mode !== 'cron_tick') throw new Error('Hermes cron bridge returned an invalid result');
+    return {
+      mode: data.mode,
+      profiles_checked: data.profiles_checked,
+      profiles_succeeded: data.profiles_succeeded,
+      profiles_failed: data.profiles_failed
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function ask({ profile = 'seven-of-nine', messages = [], metadata = {}, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   if (!configured()) return null;
 
@@ -159,4 +197,4 @@ async function ask({ profile = 'seven-of-nine', messages = [], metadata = {}, ti
   }
 }
 
-module.exports = { configured, ask };
+module.exports = { configured, ask, tick };
