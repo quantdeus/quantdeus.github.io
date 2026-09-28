@@ -2,6 +2,14 @@
 
 Dedicated Vercel runtime for QuantDeus Issue #154.
 
+## Canonical manifesto
+
+Active charter: **Манифест Неонового Горизонта — QuantDeus v3.0**  
+Archive: `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf`  
+Machine ID: `neon-horizon-v3`
+
+The dispatcher must read GitHub as source of truth and inherit the manifesto through the canonical doctrine and agent registries.
+
 ## Project root
 
 When importing `quantdeus/quantdeus.github.io` into Vercel, set:
