@@ -47,7 +47,8 @@ const routeSource = fs.readFileSync('vercel-dispatcher/api/quantdeus/hermes.js',
 if (!clientSource.includes('quantdeus-vercel-hermes')) throw new Error('Hermes client must request dedicated GitHub OIDC audience');
 if (!routeSource.includes("Sandbox.getOrCreate")) throw new Error('Hermes route must use persistent Vercel Sandbox');
 if (!routeSource.includes("openai/gpt-oss-120b")) throw new Error('Hermes cloud route must default to GPT-OSS 120B');
-if (!routeSource.includes('process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL')) throw new Error('Hermes route must use the configured local OpenAI-compatible endpoint');
+if (!routeSource.includes('process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL')) throw new Error('Hermes route must allow the configured local OpenAI-compatible endpoint');
+if (!routeSource.includes('if (modelBaseUrl) runtimeEnv.OPENAI_BASE_URL = modelBaseUrl;')) throw new Error('Hermes route must preserve the Sandbox profile endpoint when no Vercel override is set');
 if (routeSource.includes('https://ai-gateway.vercel.sh/v1')) throw new Error('Hermes local model route must not force Vercel AI Gateway');
 if (!routeSource.includes("x-quantdeus-github-token")) throw new Error('Hermes route must accept ephemeral repo token handoff');
 console.log('Hermes Cloud PC contract OK: keyless OIDC + persistent Sandbox + GPT-OSS');
