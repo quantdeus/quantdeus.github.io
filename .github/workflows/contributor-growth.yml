@@ -1,0 +1,41 @@
+name: QuantDeus Contributor Growth 📣
+
+on:
+  schedule:
+    - cron: '42 6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/contributor-growth.js'
+      - 'coordination/growth/contributor-recruitment.md'
+      - 'coordination/agents.json'
+      - 'coordination/homunculi.json'
+      - 'coordination/civilization-doctrine.json'
+      - '.github/workflows/contributor-growth.yml'
+
+concurrency:
+  group: quantdeus-contributor-growth
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  growth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate shared mission
+        run: node scripts/mission-alignment.js
+      - name: Advance contributor-growth loop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/contributor-growth.js
