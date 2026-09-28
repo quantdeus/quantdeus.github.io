@@ -39,3 +39,21 @@ jobs:
           node-version: '24'
       - name: ⚒️ Run second execution crew
         run: node scripts/octet/task-handler.js
+
+  validate:
+    needs: execute
+    if: needs.execute.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      EXECUTION_BRANCH: squad-b/issue-${{ github.event.issue.number || inputs.issue_number }}-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: 🦀 Dispatch immutable validation gates
+        run: |
+          gh workflow run static-smoke.yml --ref "$EXECUTION_BRANCH"
+          gh workflow run qa-triad.yml --ref "$EXECUTION_BRANCH"
+          echo "Dispatched validation for $EXECUTION_BRANCH"

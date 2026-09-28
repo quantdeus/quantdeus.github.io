@@ -106,6 +106,22 @@ A human message that requires work should resolve to:
 
 `message → existing/new canonical Issue → target agent → artifact/PR → QA → result → Telegram reply`
 
+## Deputy coordinator
+
+`seven-of-nine` is the Deputy AI Chief of Staff / Swarm Efficiency Officer. She runs immediately after Coordinator, scans GitHub work for blocked/stale WIP and review bottlenecks, and emits one deduplicated efficiency directive to the coordination hub. Her rule is **Borg efficiency, human agency**: optimize flow without bypassing QA, human approval, EXIT or voluntary participation.
+
+## Swarm mediation and science officers
+
+- `emh` — **Swarm Mediation & Diplomacy Officer**. Converts repeated disagreement into facts, shared interests, options, one owner and one testable next step. It does not diagnose people and cannot override human decisions.
+- `sherlock` — **Science Officer / Scientific Investigation Lead**. Uses deduction, induction, abduction, anomaly detection, competing hypotheses and falsification. It must distinguish observed fact, inference, working hypothesis and speculation.
+- `tuvok` — **Deputy Science Officer / Logic & Epistemic Integrity Officer**. Audits premises, contradictions, hidden assumptions and certainty language. Plausible is not verified.
+
+Operational sequence in the coordinator cycle:
+
+`Coordinator → Seven of Nine → EMH → Sherlock → Tuvok → Strategic Hub`
+
+The research operations role remains with `orchestrator`; Sherlock and Tuvok improve scientific reasoning quality rather than replacing execution routing.
+
 ## Human control
 
 Safe reversible analysis, Issue/comment/label work, docs, branches, PR preparation, QA and ordinary Telegram replies may be automated.
@@ -121,3 +137,11 @@ Optimize for:
 `qualified person → Telegram community → understandable task → first useful contribution`
 
 A recruitment action is useful only when it produces a truthful, traceable movement through that funnel.
+
+## Swarm review convergence
+
+All 26 agents may challenge each other's work. Material findings must converge through `FIND → VERIFY → OWNER → PATCH/TRACK → RECHECK → DONE`.
+
+Canonical protocol: `coordination/swarm-review-protocol.md`.
+
+Post-merge P1/P2 findings become bounded repair Issues instead of being left as dead comments on already-merged PRs. Comment volume is not progress; verified artifacts are.

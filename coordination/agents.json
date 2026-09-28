@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "title": "QuantDeus Holding — 22-agent startup organization",
+  "title": "QuantDeus Holding — 26-agent startup organization",
   "source_of_truth": "quantdeus/quantdeus.github.io",
   "updated": "2026-09-28",
   "agents": [
@@ -14,6 +14,28 @@
       "startup_title": "AI Chief of Staff",
       "department": "Executive & Strategy",
       "kpi": "flow efficiency / blocked work / decision latency"
+    },
+    {
+      "id": "seven-of-nine",
+      "name": "Seven of Nine — Deputy AI Chief of Staff",
+      "emoji": "🖖",
+      "role": "Заместитель Coordinator по эффективности роя: выявляет bottleneck, дубли и лишний WIP, сводит споры к проверяемому результату и ускоряет завершение задач без отмены human override",
+      "source": "scripts/seven-of-nine.js",
+      "group": "executive",
+      "startup_title": "Deputy AI Chief of Staff / Swarm Efficiency Officer",
+      "department": "Executive & Strategy",
+      "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency"
+    },
+    {
+      "id": "emh",
+      "name": "EMH — Swarm Mediation & Diplomacy Officer",
+      "emoji": "🩺",
+      "role": "Психологический медиатор и дипломат роя: деэскалирует агентские споры, отделяет факты от позиций, ищет общий интерес, сводит обсуждение к одному owner и проверяемому следующему шагу без клинической диагностики людей",
+      "source": "scripts/emh.js",
+      "group": "executive",
+      "startup_title": "Swarm Mediation & Diplomacy Officer",
+      "department": "Executive & Strategy",
+      "kpi": "conflict-to-resolution latency / duplicate debate reduction / escalation clarity"
     },
     {
       "id": "pillar-executor",
@@ -36,6 +58,28 @@
       "startup_title": "Chief Strategy Agent",
       "department": "Executive & Strategy",
       "kpi": "signal-to-decision quality"
+    },
+    {
+      "id": "sherlock",
+      "name": "Sherlock Holmes — Science Officer",
+      "emoji": "🕵️",
+      "role": "Офицер по науке: ведёт научные расследования через дедукцию, индукцию, абдукцию, поиск аномалий, competing hypotheses, контрфактуальные проверки и adversarial falsification",
+      "source": "scripts/sherlock.js",
+      "group": "research",
+      "startup_title": "Science Officer / Scientific Investigation Lead",
+      "department": "Science & R&D",
+      "kpi": "hypothesis discrimination / anomaly resolution / falsifiable test quality / evidence update latency"
+    },
+    {
+      "id": "tuvok",
+      "name": "Tuvok — Deputy Science Officer",
+      "emoji": "🖖",
+      "role": "Заместитель офицера по науке и хранитель вулканской логики: проверяет предпосылки, противоречия, hidden assumptions, границы уверенности и эпистемическую целостность научных выводов",
+      "source": "scripts/tuvok.js",
+      "group": "research",
+      "startup_title": "Deputy Science Officer / Logic & Epistemic Integrity Officer",
+      "department": "Science & R&D",
+      "kpi": "reasoning-defect detection / premise clarity / contradiction resolution / false-certainty reduction"
     },
     {
       "id": "orchestrator",
@@ -265,7 +309,7 @@
   },
   "organization": {
     "model": "AI-native startup holding",
-    "employees": 22,
+    "employees": 26,
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"

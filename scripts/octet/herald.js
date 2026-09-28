@@ -14,23 +14,22 @@ function main() {
       pr = ghJson(['pr','view',url,'--json','number,url,state,title']);
     } catch (e) {
       const detail = String(e.stderr?.toString() || e.message || e);
-      if (!/not permitted to create or approve pull requests|createPullRequest/i.test(detail)) throw e;
+      if (!/not permitted to create or approve pull requests/i.test(detail)) throw e;
 
       const repo = process.env.GITHUB_REPOSITORY;
       const handoffUrl = `https://github.com/${repo}/compare/main...${branch}?expand=1`;
       editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
       commentIssue(
         state.issue.number,
-        `📣 **PR Herald: execution complete; PR handoff required.**\n\nBranch: \`${branch}\`\nOpen PR: ${handoffUrl}\n\nGitHub Actions policy currently prevents GITHUB_TOKEN from creating pull requests. The branch and execution archive are ready for Control Tower / GitHub connector.`
+        `📣 **PR Herald: execution complete; PR handoff required.**\n\nBranch: \`${branch}\`\nOpen PR: ${handoffUrl}\n\nGitHub Actions policy currently prevents GITHUB_TOKEN from creating pull requests. The branch and execution archive are ready for Control Tower / GitHub connector. Validation is dispatched by the isolated workflow validation job.`
       );
       saveState({ pr:null, handoff:{ url:handoffUrl, reason:'github-actions-pr-policy' }, stage:'review-handoff' });
       console.log(`Herald handed off PR creation: ${handoffUrl}`);
       return;
     }
   }
-
   editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
-  commentIssue(state.issue.number, `📣 **Octet Squad B completed execution.**\n\nPR: ${pr.url}\nBranch: \`${branch}\`\nGuardian: ${state.guardian.verdict}\n\nHuman review/merge is required.`);
+  commentIssue(state.issue.number, `📣 **Octet Squad B completed execution.**\n\nPR: ${pr.url}\nBranch: \`${branch}\`\nGuardian: ${state.guardian.verdict}\nValidation: Static Smoke + QA Triad are dispatched by the isolated workflow validation job.\n\nHuman review/merge is required.`);
   saveState({ pr, stage:'review' });
   console.log(`Herald opened PR ${pr.url}`);
 }

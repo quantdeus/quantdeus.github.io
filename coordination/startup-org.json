@@ -6,7 +6,7 @@
   "mission": "Снижать измеримый дефицит и увеличивать способность людей добровольно созидать: человек сохраняет достоинство, выбор и EXIT; AI снимает рутину и ускоряет проверяемые исследования, прототипы и координацию; каждый успех стремится стать воспроизводимым артефактом и новым автономным узлом.",
   "workforce": {
     "human_leadership": true,
-    "ai_agents": 22,
+    "ai_agents": 26,
     "departments": 5
   },
   "departments": [
@@ -17,6 +17,8 @@
       "mandate": "Strategy, portfolio, operations and technical control.",
       "agents": [
         "coordinator",
+        "seven-of-nine",
+        "emh",
         "pillar-executor",
         "strategic-hub",
         "control-tower"
@@ -28,6 +30,8 @@
       "emoji": "🔬",
       "mandate": "Evidence-first research across energy, governance, space and human capability.",
       "agents": [
+        "sherlock",
+        "tuvok",
         "orchestrator",
         "energy",
         "justice",

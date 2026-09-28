@@ -17,15 +17,31 @@ const startupOrg = readJson('coordination/startup-org.json');
 const ids = registry.agents.map(a=>a.id);
 const homIds = hom.agents.map(a=>a.id);
 
-check(ids.length === 22, 'coordination/agents.json', 'expected exactly 22 registered agents');
+check(ids.length === 26, 'coordination/agents.json', 'expected exactly 26 registered agents');
 check(new Set(ids).size === ids.length, 'coordination/agents.json', 'agent ids unique');
 check(new Set(homIds).size === homIds.length, 'coordination/homunculi.json', 'homunculus ids unique');
 check(JSON.stringify([...ids].sort()) === JSON.stringify([...homIds].sort()), 'registries', 'agents.json and homunculi.json contain identical ids');
-check(startupOrg.workforce?.ai_agents === 22, 'coordination/startup-org.json', 'startup org declares 22 AI agents');
+check(startupOrg.workforce?.ai_agents === 26, 'coordination/startup-org.json', 'startup org declares 26 AI agents');
 check(startupOrg.departments?.length === 5, 'coordination/startup-org.json', 'startup org declares 5 departments');
 const orgIds = (startupOrg.departments || []).flatMap(d => d.agents || []);
-check(orgIds.length === 22 && new Set(orgIds).size === 22, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
+check(orgIds.length === 26 && new Set(orgIds).size === 26, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
 check(JSON.stringify([...orgIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/startup-org.json', 'startup org covers the canonical agent registry');
+
+for (const department of startupOrg.departments || []) {
+  for (const id of department.agents || []) {
+    const agent = registry.agents.find(a => a.id === id);
+    const h = hom.agents.find(a => a.id === id);
+    check(Boolean(agent), id, 'organization member exists in canonical registry');
+    if (agent) {
+      check(agent.group === department.id, id, 'registry group matches startup organization department id');
+      check(agent.department === department.name, id, 'registry department matches startup organization department name');
+    }
+    if (h) {
+      check(h.group === department.id, id, 'homunculi group matches startup organization department id');
+      check(h.department === department.name, id, 'homunculi department matches startup organization department name');
+    }
+  }
+}
 
 for (const agent of registry.agents) {
   const src = path.join(root, agent.source || '');
@@ -40,6 +56,17 @@ for (const agent of registry.agents) {
     check(h.command === '/agent ' + agent.id, agent.id, 'agent command canonical');
     check(h.proposal_command === '/propose ' + agent.id, agent.id, 'proposal command canonical');
   }
+}
+
+const ledgerSchemaPath = path.join(root,'coordination','ledger','agent-activity-ledger.schema.json');
+if (fs.existsSync(ledgerSchemaPath)) {
+  const ledgerSchema = JSON.parse(fs.readFileSync(ledgerSchemaPath,'utf8'));
+  const ledgerAgentIds = ledgerSchema?.$defs?.event?.properties?.agent_id?.enum || [];
+  check(
+    JSON.stringify([...ledgerAgentIds].sort()) === JSON.stringify([...ids].sort()),
+    'coordination/ledger/agent-activity-ledger.schema.json',
+    'ledger agent_id enum matches canonical agent registry'
+  );
 }
 
 const qaIds = ['qa-syntax','qa-contract','qa-repair'];
@@ -76,7 +103,7 @@ const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','qa-triad.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);

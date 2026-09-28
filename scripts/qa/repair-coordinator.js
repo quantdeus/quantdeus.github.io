@@ -1,21 +1,27 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 
+const missionOutcome = process.env.MISSION_OUTCOME || 'unknown';
+const monitorOutcome = process.env.MONITOR_OUTCOME || 'unknown';
 const syntaxOutcome = process.env.SYNTAX_OUTCOME || 'unknown';
 const contractOutcome = process.env.CONTRACT_OUTCOME || 'unknown';
-const failed = syntaxOutcome !== 'success' || contractOutcome !== 'success';
+const failed = missionOutcome !== 'success' || monitorOutcome !== 'success' || syntaxOutcome !== 'success' || contractOutcome !== 'success';
 
 function readReport(p) {
   try { return JSON.parse(fs.readFileSync(p,'utf8')); } catch { return null; }
 }
+const mission = readReport('/tmp/quantdeus-mission-alignment.json');
+const monitor = readReport('/tmp/quantdeus-agent-health.json');
 const syntax = readReport('/tmp/quantdeus-qa-syntax.json');
 const contract = readReport('/tmp/quantdeus-qa-contract.json');
-const failures = [...(syntax?.failures||[]), ...(contract?.failures||[])];
+const failures = [...(mission?.failures||[]), ...(monitor?.failures||[]), ...(syntax?.failures||[]), ...(contract?.failures||[])].map(x => ({ ...x, target: x.target || x.agent || 'unknown' }));
 
 const report = {
   agent:'qa-repair',
   timestamp:new Date().toISOString(),
   status: failed ? 'repair-required' : 'clean',
+  mission_outcome:missionOutcome,
+  monitor_outcome:monitorOutcome,
   syntax_outcome:syntaxOutcome,
   contract_outcome:contractOutcome,
   failures

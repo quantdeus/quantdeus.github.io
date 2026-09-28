@@ -13,13 +13,17 @@
 - active_language: `Russian UI; technical identifiers remain stable`
 - doctrine_version: `2026.09-post-scarcity-v3`
 - doctrine_source: `coordination/civilization-doctrine.json`
-- doctrine_inheritance: `all 22 registered agents`
+- doctrine_inheritance: `all 26 registered agents`
 - canonical_manifest_sources:
   - `Манифест Неонового Горизонта — QuantDeus v2.0 / Dropbox: QuantDeus_Manifest_Neon_Horizon_v2.0.pdf`
   - `Эпидемия Добра — 24-месячный план / Dropbox: QuantDeus_2Y_Epidemiya_Dobra_Cron.pdf`
 - constitutional_motto: `Единство в цели. Свобода в путях. Доказательства в результатах.`
 - constitutional_core: `жизнь и достоинство; безопасность; прозрачность и доверие; творчество/наука; экологическая гармония; постдефицит; IDIC; долгий космический горизонт`
 - exit_rule: `чем сильнее технология влияет на человека/данные/идентичность, тем проще и надёжнее должен быть добровольный EXIT`
+- coordinator_deputy: `seven-of-nine / Deputy AI Chief of Staff / Swarm Efficiency Officer`
+- swarm_diplomat: `emh / Swarm Mediation & Diplomacy Officer`
+- science_officer: `sherlock / Science Officer / Scientific Investigation Lead`
+- deputy_science_officer: `tuvok / Deputy Science Officer / Logic & Epistemic Integrity Officer`
 - human_ai_rule: `люди задают ценности, направление и финальную ответственность; AI-агенты ускоряют исследование, прототипирование, код, координацию и аудит`
 - doctrine_source_streams:
   - `THRIVE I — systems mapping / incentives / human agency`
@@ -39,11 +43,13 @@
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
   - `06:27 UTC — QuantDeus Coordinator`
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
-  - `06:42 UTC — QuantDeus Contributor Growth`\n  - `06:47 UTC — QuantDeus QA Triad`
+  - `06:42 UTC — QuantDeus Contributor Growth`
+  - `06:47 UTC — QuantDeus QA Triad`
 - cron_cadence_rule: `staggered once per day; event triggers remain independent`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
-- cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`\n- contributor_growth_rule: `daily Cron maintains one active recruitment sprint and concrete contributor opportunities; invitations are personalized and never mass-sent automatically`
+- cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
+- contributor_growth_rule: `daily Cron maintains one active recruitment sprint and concrete contributor opportunities; invitations are personalized and never mass-sent automatically`
 - privileged_action_rule: `production publication, spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval`
 - zapier_active_zap: `QuantDeus 2-Step GPT Bridge`
 - zapier_active_zap_state: `on / configured`
@@ -58,4 +64,4 @@
 - culture_rule: `aesthetics shape emotion, interfaces and participation but never upgrade evidence or hide risk/uncertainty`
 - kill_pause_filters: `reach without action; untestable project; founder-bottleneck manual routine; irreplaceable partner; unjustified secrecy; content without value; excessive moonshot spread; pressure/manipulation`
 - legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
-- next_step: `keep Cron, Zapier, GitHub boards and all 22 agents on v3; fail closed on doctrine drift; convert successful outputs into reproducible packages rather than activity reports`
+- next_step: `keep Cron, Zapier, GitHub boards and all 26 agents on v3; fail closed on doctrine drift; convert successful outputs into reproducible packages rather than activity reports`
