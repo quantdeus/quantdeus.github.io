@@ -1,6 +1,6 @@
-# QuantDeus Agents + Grok README
+# QuantDeus Agents + Vercel Swarm Dispatcher README
 
-This file is the operational README for QuantDeus agents, external AI dispatchers such as Grok, and automation runtimes interacting with this repository.
+This file is the operational README for QuantDeus agents, the Vercel Swarm Dispatcher, and automation runtimes interacting with this repository.
 
 ## Source of truth
 
@@ -18,7 +18,7 @@ GitHub stores state. External integrations transport messages.
 
 ## Telegram growth mandate
 
-When a person appears relevant to a real QuantDeus need, Growth agents and Grok should prefer a path that brings them into the QuantDeus Telegram community and then toward a small useful contribution.
+When a person appears relevant to a real QuantDeus need, Growth agents and Vercel Swarm Dispatcher should prefer a path that brings them into the QuantDeus Telegram community and then toward a small useful contribution.
 
 Canonical loop:
 
@@ -29,13 +29,13 @@ Roles:
 - **Synthesis** — package the invitation and explain the task clearly.
 - **Archivist** — maintain onboarding, discoverability and contribution entry points.
 - **Herald** — send personalized outreach/follow-up through approved channels.
-- **Grok / external dispatcher** — coordinate the same loop when connected, using GitHub for state and Zapier MCP for Telegram transport.
+- **Vercel Swarm Dispatcher / external dispatcher** — coordinate the same loop when connected, using GitHub for state and Zapier MCP for Telegram transport.
 
 ## Zapier MCP → Telegram
 
 Preferred transport:
 
-`GitHub task/recruitment state → agent or Grok → Zapier MCP → Telegram`
+`GitHub task/recruitment state → agent or Vercel Swarm Dispatcher → Zapier MCP → Telegram`
 
 When the runtime has Zapier MCP access:
 1. Use the enabled Telegram connection for QuantDeus.
