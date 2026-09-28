@@ -76,7 +76,7 @@ const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','qa-triad.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
