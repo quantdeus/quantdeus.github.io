@@ -5,18 +5,19 @@
   "principle": "maximal reversible autonomy with observable evidence",
   "chat_bridge": {
     "primary_profile": "seven-of-nine",
-    "api_protocol": "Hermes OpenAI-compatible API",
-    "api_url_env": "HERMES_API_URL",
-    "api_key_env": "HERMES_API_KEY",
-    "sources": ["github-command-center", "telegram"],
-    "fallback": "existing QuantDeus repo-grounded runtime when Hermes API is unavailable"
+    "transport": "github-actions-oidc-to-vercel-sandbox",
+    "audience": "quantdeus-vercel-hermes",
+    "endpoint": "https://quantdeus.vercel.app/api/quantdeus/hermes",
+    "sandbox": "quantdeus-hermes-office",
+    "authentication": "keyless GitHub Actions OIDC + Vercel project OIDC",
+    "fallback": "existing QuantDeus repo-grounded runtime when Hermes Cloud PC is unavailable"
   },
   "capabilities": {
     "github": {
       "mode": "official-mcp",
-      "server": "github/github-mcp-server",
+      "server": "https://api.githubcopilot.com/mcp/",
       "toolsets": "all",
-      "credential_env": "GITHUB_PERSONAL_ACCESS_TOKEN",
+      "credential_env": "MCP_GITHUB_API_KEY",
       "allowed": [
         "read repositories",
         "create/update issues",
@@ -25,7 +26,8 @@
         "inspect and run actions",
         "maintain labels and coordination artifacts",
         "make safe reversible repository changes"
-      ]
+      ],
+      "credential_lifetime": "ephemeral per GitHub Actions run"
     },
     "browser": {
       "built_in_hermes_browser": true,
