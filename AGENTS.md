@@ -206,3 +206,15 @@ All profiles may create agent-local skills, cron jobs and reversible MCP connect
 Playwright MCP is provisioned as `playwright` for every profile using Microsoft's `@playwright/mcp@latest`. Project-local QuantDeus operating skills live under `.hermes/skills/`.
 
 Legitimate QuantDeus project/service-account registration may be automated with browser tooling, but agents stop at CAPTCHA, unavailable verification, 2FA/passkeys, payment, legal commitment or identity verification. Credentials never belong in GitHub artifacts.
+
+
+## Hermes Cloud PC production route
+
+The canonical QuantDeus Hermes runtime is a named persistent Vercel Sandbox: `quantdeus-hermes-office`.
+
+Production route:
+`GitHub/Telegram → GitHub Actions OIDC → Vercel /api/quantdeus/hermes → Vercel Sandbox → Hermes profile → MCP/tools → verified GitHub evidence`.
+
+Do not require Replit, a manually maintained VPS, `HERMES_API_URL`, or `HERMES_API_KEY` for the standard production path. The site and Telegram workflows use a dedicated OIDC audience `quantdeus-vercel-hermes`. Vercel supplies the model credential through its short-lived project OIDC token, and GitHub supplies only the current workflow's ephemeral repository token to the official GitHub MCP.
+
+The Sandbox filesystem is persistent; processes are disposable. Each request may resume the named Sandbox, run one bounded Hermes turn, and stop it so the filesystem is snapshotted.

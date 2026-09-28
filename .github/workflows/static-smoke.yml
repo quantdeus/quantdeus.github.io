@@ -36,6 +36,7 @@ jobs:
           node --check scripts/orchestrator.js
           node --check vercel-dispatcher/api/quantdeus/hourly.js
           node --check vercel-dispatcher/api/quantdeus/browser.js
+          node --check vercel-dispatcher/api/quantdeus/hermes.js
 
       - name: Run QA syntax validator
         run: node scripts/qa/syntax-validator.js
@@ -72,12 +73,13 @@ jobs:
           test -f vercel-dispatcher/vercel.json
           test -f vercel-dispatcher/api/quantdeus/hourly.js
           test -f vercel-dispatcher/api/quantdeus/browser.js
+          test -f vercel-dispatcher/api/quantdeus/hermes.js
           test -f scripts/browser-homunculus.js
           test -f .github/workflows/browser-homunculus.yml
           test -f docs/browser-homunculus.md
           if grep -qF '\\$''{{' .github/workflows/browser-homunculus.yml; then echo 'escaped GitHub expression found'; exit 1; fi
           test -f .github/workflows/telegram-bot.yml
-          node -e "JSON.parse(require('fs').readFileSync('vercel-dispatcher/vercel.json','utf8')); JSON.parse(require('fs').readFileSync('vercel-dispatcher/package.json','utf8'))"
+          node -e "const fs=require('fs'); const vc=JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json','utf8')); const p=JSON.parse(fs.readFileSync('vercel-dispatcher/package.json','utf8')); if(!p.dependencies?.['@vercel/sandbox']) throw new Error('missing @vercel/sandbox'); if(!vc.functions?.['api/quantdeus/hermes.js']) throw new Error('missing Hermes maxDuration');"
           grep -q '/coordination/' index.html
           grep -q 'постдефицитного' index.html
           grep -q '26 специализированных ИИ-агентов' README.md

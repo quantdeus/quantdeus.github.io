@@ -12,8 +12,13 @@ on:
       - 'coordination/agents.json'
 
 permissions:
-  contents: read
+  actions: write
+  checks: read
+  contents: write
   issues: write
+  pull-requests: write
+  statuses: write
+  id-token: write
 
 concurrency:
   group: quantdeus-telegram-bot
@@ -48,7 +53,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
-          HERMES_API_URL: ${{ secrets.HERMES_API_URL }}
-          HERMES_API_KEY: ${{ secrets.HERMES_API_KEY }}
           TELEGRAM_ADMIN_USER_IDS: ${{ vars.TELEGRAM_ADMIN_USER_IDS }}
         run: node scripts/telegram-bot.js
