@@ -34,7 +34,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  if (!authorized(req)) {
+  const readOnly = req.method === "GET";
+
+  // GET is a public read-only pulse used by the free Make scheduler.
+  // POST is reserved for the protected execution path.
+  if (!readOnly && !authorized(req)) {
     return res.status(401).json({ ok: false, error: "vercel_cron_auth_failed" });
   }
 
@@ -60,7 +64,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      status: "dispatcher_bootstrap_ready",
+      status: readOnly ? "dispatcher_readonly_pulse" : "dispatcher_bootstrap_ready",
       started_at: startedAt,
       source_of_truth: REPO,
       dispatcher_issue: ISSUE,
@@ -76,8 +80,11 @@ export default async function handler(req, res) {
         html_url: pr.html_url
       })),
       execution: {
+        mode: readOnly ? "read-only" : "protected",
         state: "pending_mcp_execution_adapter",
-        note: "This bootstrap endpoint verifies schedule/auth/source-of-truth access. GitHub project writes remain forbidden through Zapier and must use the approved GitHub execution adapter."
+        note: readOnly
+          ? "Free Make hourly pulse: reads canonical GitHub state only and performs no GitHub writes."
+          : "Protected dispatcher path. GitHub project writes remain forbidden through Zapier/Make and must use the approved GitHub execution adapter."
       }
     });
   } catch (error) {
