@@ -14,7 +14,7 @@ function main() {
       pr = ghJson(['pr','view',url,'--json','number,url,state,title']);
     } catch (e) {
       const detail = String(e.stderr?.toString() || e.message || e);
-      if (!/not permitted to create or approve pull requests|createPullRequest/i.test(detail)) throw e;
+      if (!/not permitted to create or approve pull requests/i.test(detail)) throw e;
 
       const repo = process.env.GITHUB_REPOSITORY;
       const handoffUrl = `https://github.com/${repo}/compare/main...${branch}?expand=1`;
