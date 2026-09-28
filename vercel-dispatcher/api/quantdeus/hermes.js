@@ -249,6 +249,12 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
       'hermes',
       '-p',
       profile,
+      '--provider',
+      'ai-gateway',
+      '-m',
+      MODEL,
+      '-t',
+      profile === 'seven-of-nine' ? 'all,kanban' : 'all',
       '-z',
       prompt
     ],
