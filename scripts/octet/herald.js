@@ -1,13 +1,5 @@
 const { loadState, saveState, gh, ghJson, editIssueLabels, commentIssue } = require('./lib');
 
-function dispatchValidation(branch) {
-  // PRs created with GITHUB_TOKEN do not reliably emit downstream pull_request workflows.
-  // Explicit workflow_dispatch runs attach validation to the execution branch head.
-  gh(['workflow','run','static-smoke.yml','--ref',branch]);
-  gh(['workflow','run','qa-triad.yml','--ref',branch]);
-  saveState({ validation:{ dispatched:true, workflows:['static-smoke.yml','qa-triad.yml'] } });
-}
-
 function main() {
   const state = loadState();
   const branch = state.execution.branch;
@@ -26,21 +18,18 @@ function main() {
 
       const repo = process.env.GITHUB_REPOSITORY;
       const handoffUrl = `https://github.com/${repo}/compare/main...${branch}?expand=1`;
-      dispatchValidation(branch);
       editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
       commentIssue(
         state.issue.number,
-        `📣 **PR Herald: execution complete; PR handoff required.**\n\nBranch: \`${branch}\`\nOpen PR: ${handoffUrl}\n\nGitHub Actions policy currently prevents GITHUB_TOKEN from creating pull requests. The branch and execution archive are ready for Control Tower / GitHub connector. Validation was dispatched explicitly for this branch.`
+        `📣 **PR Herald: execution complete; PR handoff required.**\n\nBranch: \`${branch}\`\nOpen PR: ${handoffUrl}\n\nGitHub Actions policy currently prevents GITHUB_TOKEN from creating pull requests. The branch and execution archive are ready for Control Tower / GitHub connector. Validation is dispatched by the isolated workflow validation job.`
       );
       saveState({ pr:null, handoff:{ url:handoffUrl, reason:'github-actions-pr-policy' }, stage:'review-handoff' });
       console.log(`Herald handed off PR creation: ${handoffUrl}`);
       return;
     }
   }
-
-  dispatchValidation(branch);
   editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
-  commentIssue(state.issue.number, `📣 **Octet Squad B completed execution.**\n\nPR: ${pr.url}\nBranch: \`${branch}\`\nGuardian: ${state.guardian.verdict}\nValidation: Static Smoke + QA Triad dispatched.\n\nHuman review/merge is required.`);
+  commentIssue(state.issue.number, `📣 **Octet Squad B completed execution.**\n\nPR: ${pr.url}\nBranch: \`${branch}\`\nGuardian: ${state.guardian.verdict}\nValidation: Static Smoke + QA Triad are dispatched by the isolated workflow validation job.\n\nHuman review/merge is required.`);
   saveState({ pr, stage:'review' });
   console.log(`Herald opened PR ${pr.url}`);
 }
