@@ -63,6 +63,7 @@ function ensureLabels() {
     ['governance:passed','8250df','Proposal passed vote and admin promotion'],
     ['governance:rejected','d1242f','Proposal rejected or closed by governance'],
     ['agent:coordinator','55d8ff','Target: QuantDeus Coordinator'],
+    ['agent:seven-of-nine','55d8ff','Target: Seven of Nine / Deputy Coordinator'],
     ['agent:pillar-executor','55d8ff','Target: Six-Pillar Executor'],
     ['agent:strategic-hub','55d8ff','Target: Strategic Navigation Hub'],
     ['agent:orchestrator','55d8ff','Target: Research Orchestrator'],
