@@ -2,7 +2,7 @@
   "schema_version": 2,
   "title": "QuantDeus Holding — AI workforce governance registry",
   "source_of_truth": "coordination/agents.json",
-  "updated": "2026-09-27",
+  "updated": "2026-09-28",
   "governance": {
     "participant_direct_task_control": false,
     "participant_path": "proposal -> community vote -> admin promote",
@@ -92,14 +92,14 @@
       "id": "unity",
       "name": "Head of Partnerships & Community Growth — unity",
       "emoji": "🌍",
-      "role": "Развивает партнёрства, сообщества, коллаборации и внешний контур добровольного участия",
+      "role": "Лидирует contributor acquisition: ищет релевантных разработчиков, исследователей и создателей, квалифицирует кандидатов, ведёт партнёрства и превращает интерес в первый полезный вклад",
       "source": "scripts/pillar_03_unity.js",
       "group": "growth-marketing",
       "command": "/agent unity",
       "proposal_command": "/propose unity",
       "startup_title": "Head of Partnerships & Community Growth",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "qualified partnerships / active contributors"
+      "kpi": "qualified contributor leads / first-PR conversion / active contributors"
     },
     {
       "id": "space",
@@ -131,14 +131,14 @@
       "id": "synthesis",
       "name": "Brand & Creative Director — synthesis",
       "emoji": "✨",
-      "role": "Отвечает за бренд, визуальный язык, creative direction, кампании и presentation layer QuantDeus",
+      "role": "Упаковывает QuantDeus для новых участников: contributor-facing кампании, визуальные материалы, понятные приглашения и страницы входа в проект",
       "source": "scripts/pillar_06_synthesis.js",
       "group": "growth-marketing",
       "command": "/agent synthesis",
       "proposal_command": "/propose synthesis",
       "startup_title": "Brand & Creative Director",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "brand consistency / campaign assets"
+      "kpi": "contributor campaign conversion / brand consistency"
     },
     {
       "id": "control-tower",
@@ -235,27 +235,27 @@
       "id": "archivist",
       "name": "SEO & Content Operations Lead — archivist",
       "emoji": "🗄️",
-      "role": "Ведёт knowledge base, контент-операции, SEO-структуру, внутреннюю перелинковку и проверяемый архив результатов",
+      "role": "Ведёт SEO, discoverability, каталог contributor opportunities, onboarding-документацию и внутреннюю перелинковку к задачам для первого вклада",
       "source": "scripts/octet/archivist.js",
       "group": "growth-marketing",
       "command": "/agent archivist",
       "proposal_command": "/propose archivist",
       "startup_title": "SEO & Content Operations Lead",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "indexed knowledge / organic discoverability"
+      "kpi": "organic contributor discovery / onboarding completion"
     },
     {
       "id": "herald",
       "name": "PR & Communications Manager — herald",
       "emoji": "📣",
-      "role": "Готовит release communications, PR handoff, публичные summaries и коммуникацию результатов",
+      "role": "Ведёт PR и contributor outreach: персональные приглашения, follow-up, release communications и передачу заинтересованных людей в onboarding без массового спама",
       "source": "scripts/octet/herald.js",
       "group": "growth-marketing",
       "command": "/agent herald",
       "proposal_command": "/propose herald",
       "startup_title": "PR & Communications Manager",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "clear releases / communication latency"
+      "kpi": "qualified invitations / response rate / first-PR conversion"
     },
     {
       "id": "qa-syntax",
