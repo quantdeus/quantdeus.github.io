@@ -16,8 +16,8 @@ const comment = event.comment;
 if (!issue || !comment || issue.pull_request) process.exit(0);
 
 const roomMap = {
-  112: { key: 'general', defaultAgent: 'coordinator' },
-  113: { key: 'agents', defaultAgent: 'coordinator' },
+  112: { key: 'general', defaultAgent: 'seven-of-nine' },
+  113: { key: 'agents', defaultAgent: 'seven-of-nine' },
   114: { key: 'warp', defaultAgent: 'space' },
   115: { key: 'build', defaultAgent: 'control-tower' },
 };
