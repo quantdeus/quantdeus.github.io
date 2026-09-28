@@ -25,4 +25,4 @@ Current canonical frontend:
 - Telegram Mini App
 - https://quantdeus.github.io/quantdeus-core-pulse/
 - GitHub Pages hosting
-- Make as automation/backend gateway only
+- GitHub Actions as the active automation layer

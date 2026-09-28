@@ -195,9 +195,11 @@ async function notifyExternal(text) {
   if (process.env.QUANTDEUS_GENERIC_WEBHOOK) {
     jobs.push(postJson(process.env.QUANTDEUS_GENERIC_WEBHOOK, { text, source: 'quantdeus-coordinator', repository: repo }));
   }
-  if (process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN && process.env.QUANTDEUS_TELEGRAM_CHAT_ID) {
-    const url = `https://api.telegram.org/bot${process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN}/sendMessage`;
-    jobs.push(postJson(url, { chat_id: process.env.QUANTDEUS_TELEGRAM_CHAT_ID, text, disable_web_page_preview: true }));
+  const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
+  const telegramChatId = process.env.TELEGRAM_CHAT_ID || process.env.QUANTDEUS_TELEGRAM_CHAT_ID;
+  if (telegramBotToken && telegramChatId) {
+    const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
+    jobs.push(postJson(url, { chat_id: telegramChatId, text, disable_web_page_preview: true }));
   }
   if (!jobs.length) return;
   const results = await Promise.allSettled(jobs);

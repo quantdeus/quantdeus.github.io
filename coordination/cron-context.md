@@ -39,6 +39,8 @@
 - phase_gates: `M1-6 Synchronization → M7-12 Renaissance → M13-18 Warp Threshold → M19-24 Federation; no gate advance without evidence`
 - future_fund_rule: `fund only testable outcomes with falsifier/failure condition and a resulting verifiable/open artifact after reserves and obligations`
 - shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
+- telegram_transport: `GitHub Actions → Telegram Bot API`
+- telegram_polling: `*/5 * * * * / .github/workflows/telegram-bot.yml / direct getUpdates + sendMessage`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
 - vercel_swarm_dispatcher: `hourly target / 0 * * * * / /api/quantdeus/hourly / tracked by Issue #154`
 - vercel_swarm_status: `pending deployment verification; do not claim DONE until Vercel Cron + Agent Run/runtime logs + GitHub smoke artifact exist`
@@ -48,16 +50,13 @@
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:42 UTC — QuantDeus Contributor Growth`
   - `06:47 UTC — QuantDeus QA Triad`
-- cron_cadence_rule: `Vercel dispatcher hourly; existing GitHub health/QA/research workflows remain staggered daily unless their own workflow says otherwise`
+  - `every 5 minutes — QuantDeus Telegram GitHub Bot`
+- cron_cadence_rule: `Telegram bot polling every 5 minutes; Vercel dispatcher hourly target; health/QA/research workflows remain staggered daily unless their own workflow says otherwise`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
 - contributor_growth_rule: `daily Cron maintains one active recruitment sprint and concrete contributor opportunities; invitations are personalized and never mass-sent automatically`
 - privileged_action_rule: `production publication, spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval`
-- zapier_active_zap: `QuantDeus 2-Step GPT Bridge`
-- zapier_active_zap_state: `on / configured`
-- zapier_canonical_skill: `Telegram transport only; Vercel Swarm Dispatcher owns reasoning/dispatch`
-- zapier_role: `Telegram moderation/replies transport only; never GitHub write/fallback, never create/run Zaps or Zapier Agents for QuantDeus execution`
 - github_role: `source of truth for doctrine, registries, task state, QA, execution and public Pages`
 - coordination_model: `GitHub Issues [SIGNAL]/[STRATEGY]/[TASK] + opt-in /take + Squad B for approved reversible execution`
 - media_rule: `verified success can become a content/education/replication package; media never upgrades evidence grade and participation remains voluntary`
@@ -67,4 +66,4 @@
 - culture_rule: `aesthetics shape emotion, interfaces and participation but never upgrade evidence or hide risk/uncertainty`
 - kill_pause_filters: `reach without action; untestable project; founder-bottleneck manual routine; irreplaceable partner; unjustified secrecy; content without value; excessive moonshot spread; pressure/manipulation`
 - legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
-- next_step: `deploy and verify Issue #154: hourly Vercel Swarm Dispatcher → GitHub MCP → agents/people → artifact → QA → GitHub → Zapier MCP Telegram; keep Zapier out of GitHub execution`
+- next_step: `verify GitHub Actions Telegram Bot → agent routing → GitHub task/proposal → QA → direct Telegram Bot API reply; keep GitHub as source of truth`

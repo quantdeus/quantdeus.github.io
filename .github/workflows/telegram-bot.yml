@@ -1,0 +1,43 @@
+name: QuantDeus Telegram GitHub Bot 🤖
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: quantdeus-telegram-bot
+  cancel-in-progress: false
+
+jobs:
+  telegram:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Restore Telegram polling offset
+        uses: actions/cache@v4
+        with:
+          path: .telegram-state
+          key: qd-telegram-state-${{ github.run_id }}
+          restore-keys: |
+            qd-telegram-state-
+
+      - name: Poll Telegram and route to QuantDeus roles
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_USER_IDS: ${{ vars.TELEGRAM_ADMIN_USER_IDS }}
+        run: node scripts/telegram-bot.js

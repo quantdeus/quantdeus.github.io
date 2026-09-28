@@ -17,7 +17,7 @@ const requiredPrinciples = [
   'prototype-before-scale',
   'space-capability-must-also-create-earthside-value'
 ];
-const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml'];
+const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml'];
 
 const failures = [];
 const checks = [];
@@ -63,7 +63,7 @@ for(const name of scheduledWorkflows){
 
 check(cronContext.includes('canonical_repo: `quantdeus/quantdeus.github.io`'),'cron-context','canonical repository current');
 check(cronContext.includes('doctrine_version: `'+doctrine.version+'`'),'cron-context','cron context doctrine version current');
-check(cronContext.includes('QuantDeus 2-Step GPT Bridge'),'cron-context','Zapier bridge recorded');
+check(cronContext.includes('telegram_transport: `GitHub Actions → Telegram Bot API`'),'cron-context','GitHub-native Telegram transport recorded');
 check(cronContext.includes('Манифест Неонового Горизонта'),'cron-context','Neon Horizon manifest recorded');
 check(cronContext.includes('Эпидемия Добра'),'cron-context','Epidemic of Good recorded');
 

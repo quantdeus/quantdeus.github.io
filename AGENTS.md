@@ -29,32 +29,22 @@ Roles:
 - **Synthesis** — package the invitation and explain the task clearly.
 - **Archivist** — maintain onboarding, discoverability and contribution entry points.
 - **Herald** — send personalized outreach/follow-up through approved channels.
-- **Vercel Swarm Dispatcher / external dispatcher** — coordinate the same loop when connected, using GitHub for state and Zapier MCP for Telegram transport.
+- **GitHub Actions Telegram Bot / external dispatcher** — coordinate the same loop using GitHub for state and Telegram Bot API for transport.
 
-## Zapier MCP → Telegram
+## GitHub Actions → Telegram Bot API
 
-Preferred transport:
+Canonical transport:
 
-`GitHub task/recruitment state → agent or Vercel Swarm Dispatcher → Zapier MCP → Telegram`
+`GitHub task/recruitment state → GitHub Actions Telegram Bot → Telegram Bot API → Telegram`
 
-When the runtime has Zapier MCP access:
-1. Use the enabled Telegram connection for QuantDeus.
-2. Use the native Telegram send-message action exposed by Zapier MCP.
-3. If a join link is required, read it from runtime configuration such as `QUANTDEUS_TELEGRAM_INVITE_URL`.
-4. Never hardcode or commit a private/rotating Telegram invite URL.
-5. Send a short personalized invitation.
-6. Record a public-safe status back in GitHub.
-
-A good invitation contains:
-- why this person is relevant based on their public work or prior interaction;
-- one concrete QuantDeus Issue/task;
-- one sentence explaining why the match is useful;
-- a clear invitation to continue in the QuantDeus Telegram chat;
-- one small optional next step.
-
-Example structure:
-
-`Saw your public work on <topic>. QuantDeus has <Issue/task> where that experience is directly relevant. If you're interested, join the QuantDeus Telegram chat via the configured invite and we can route you to a small first contribution. No obligation.`
+Runtime rules:
+1. Read the bot token only from Actions secrets (`TELEGRAM_BOT_TOKEN`; legacy alias supported).
+2. Never commit tokens, chat IDs that should remain private, or raw Telegram user IDs.
+3. Use direct Bot API calls for replies and approved invitations.
+4. Route incoming Telegram text to the canonical agent registry; explicit `/agent <id>` overrides automatic routing.
+5. Record project work in GitHub Issues/PRs; Telegram remains the conversation surface.
+6. If a join link is required, read it from runtime configuration such as `QUANTDEUS_TELEGRAM_INVITE_URL`.
+7. Record only public-safe delivery state back in GitHub.
 
 ## Delivery truthfulness
 
@@ -70,7 +60,7 @@ Use explicit states:
 - `declined`
 - `blocked`
 
-If Zapier MCP, Telegram, the target conversation or the invite URL is unavailable:
+If GitHub Actions, Telegram Bot API, the target conversation or the invite URL is unavailable:
 - record `blocked` or create a handoff;
 - state exactly what is missing;
 - do not fabricate delivery.

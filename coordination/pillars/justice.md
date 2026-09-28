@@ -47,7 +47,7 @@ Safe, reversible repository coordination can be executed by the GitHub connector
 
 **Reversibility:** high. Changes are isolated on a branch/draft PR. Closing tasks/issues does not delete history.
 
-**Cost:** GitHub repository/API operations only; no paid Make/API execution was triggered.
+**Cost:** GitHub repository/API operations only; no paid third-party automation execution was triggered.
 
 **Human approval gate:** merge to `main` is intentionally withheld because the repository's Pages workflow deploys on every main push.
 

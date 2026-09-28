@@ -12,4 +12,4 @@ Current canonical frontend and public surface:
 
 Current repository references use the `QuantDeus` GitHub identity. Warp research: `QuantDeus/Warp-buble`.
 
-GitHub remains the durable source of truth for agent decisions, research, tasks, verification, and provenance. Make remains the automation/backend gateway. Wix references below are historical only and must not be treated as current runtime instructions.
+GitHub remains the durable source of truth for agent decisions, research, tasks, verification, provenance and active automation through GitHub Actions. Wix references below are historical only and must not be treated as current runtime instructions.
