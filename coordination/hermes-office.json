@@ -60,5 +60,13 @@
     "workers": "execute assigned Kanban cards with isolated profile state",
     "qa": "reviews evidence and requests changes or completion",
     "rule": "Hermes execution must never invent GitHub mutations; publication claims require observable GitHub evidence"
+  },
+  "evolution": {
+    "manifest": "coordination/hermes-evolution.json",
+    "chat_bridge": "Hermes API server via HERMES_API_URL/HERMES_API_KEY",
+    "github_mcp": "official github/github-mcp-server",
+    "playwright_mcp": "@playwright/mcp@latest",
+    "project_skills": ".hermes/skills",
+    "self_improvement": "skill_manage + background curator + daily evolution cron"
   }
 }

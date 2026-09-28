@@ -1,4 +1,5 @@
 const fs = require('fs');
+const hermesOffice = require('./hermes-office-client');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -343,11 +344,38 @@ async function handleMessage(message) {
       await send(chatId, 'Не знаю такой роли. /agents покажет канонические ID.', replyId);
       return;
     }
-    await send(chatId, advisory(agentId, stripCommand(text)), replyId);
+    const query = stripCommand(text);
+    if (hermesOffice.configured()) {
+      try {
+        const result = await hermesOffice.ask({
+          profile: agentId,
+          messages: [{ role: 'user', content: query }],
+          metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo }
+        });
+        await send(chatId, result.text, replyId);
+        return;
+      } catch (error) {
+        console.error('Hermes Office /agent fallback:', error.message || error);
+      }
+    }
+    await send(chatId, advisory(agentId, query), replyId);
     return;
   }
 
   const agentId = autoAgent(text);
+  if (hermesOffice.configured()) {
+    try {
+      const result = await hermesOffice.ask({
+        profile: agentId,
+        messages: [{ role: 'user', content: text }],
+        metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo }
+      });
+      await send(chatId, result.text, replyId);
+      return;
+    } catch (error) {
+      console.error('Hermes Office auto-route fallback:', error.message || error);
+    }
+  }
   await send(chatId, '🔀 Авто-роль: ' + agentId + '\n\n' + advisory(agentId, text), replyId);
 }
 
