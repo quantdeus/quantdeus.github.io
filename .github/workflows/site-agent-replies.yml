@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   issues: write
-  models: read
 
 concurrency:
   group: qd-site-agent-${{ github.event.issue.number }}-${{ github.event.comment.id }}
@@ -30,5 +29,7 @@ jobs:
       - name: Route comment to live QuantDeus LLM agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          QD_LLM_MODEL: openai/gpt-4.1
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_LLM_PROVIDER: openrouter
+          QD_LLM_MODEL: openrouter/free
         run: node scripts/site-agent-reply.js
