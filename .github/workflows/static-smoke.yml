@@ -26,6 +26,8 @@ jobs:
           node --check scripts/tuvok.js
           node --check scripts/governance-gate.js
           node --check scripts/site-agent-reply.js
+          node --check scripts/hermes-office-bootstrap.js
+          node --check scripts/qa/hermes-office-validator.js
           node --check scripts/telegram-bot.js
           node --check scripts/browser-homunculus.js
           node --check scripts/pillar-executor.js
@@ -40,6 +42,9 @@ jobs:
       - name: Run QA contract validator
         run: node scripts/qa/contract-validator.js
 
+      - name: Validate Hermes AI Office contract
+        run: node scripts/qa/hermes-office-validator.js
+
       - name: Validate production routes
         run: |
           test -f index.html
@@ -48,6 +53,10 @@ jobs:
           test -f coordination.html
           test -f coordination/agents.json
           test -f coordination/homunculi.json
+          test -f coordination/hermes-office.json
+          test -f docs/hermes-office.md
+          test -f scripts/hermes-office-bootstrap.js
+          test -f scripts/qa/hermes-office-validator.js
           test -f coordination/startup-org.json
           test -f robots.txt
           test -f sitemap.xml
