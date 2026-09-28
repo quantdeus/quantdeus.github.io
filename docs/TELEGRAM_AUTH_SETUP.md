@@ -9,11 +9,11 @@ QuantDeus uses two Telegram surfaces:
 
 Create the repository Actions secret:
 
-- `QUANTDEUS_TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_BOT_TOKEN` (legacy `QUANTDEUS_TELEGRAM_BOT_TOKEN` is also accepted by workflows)
 
 Do not commit or paste the token into repository files.
 
-After the secret exists, run the workflow **Set Telegram Mini App URL** manually. It validates `getMe`, applies `setChatMenuButton`, then verifies the resulting menu URL.
+After the secret exists, run the workflow **Set Telegram Mini App URL** manually. The scheduled **QuantDeus Telegram GitHub Bot** workflow uses the same secret for direct Bot API polling and replies. It validates `getMe`, applies `setChatMenuButton`, then verifies the resulting menu URL.
 
 ## BotFather Login Widget
 
