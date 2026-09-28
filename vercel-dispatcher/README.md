@@ -23,7 +23,7 @@ The endpoint is fail-closed and requires:
 ## Required environment variables
 
 - `CRON_SECRET` — required.
-- `QUANTDEUS_GITHUB_TOKEN` — optional for public read bootstrap; required later for approved authenticated GitHub REST fallback. Do not route GitHub writes through Zapier.
+- `QUANTDEUS_GITHUB_TOKEN` — optional for public read bootstrap; required later for approved authenticated GitHub REST fallback.
 
 ## Current bootstrap behavior
 
@@ -49,8 +49,6 @@ Preferred when the Vercel plan supports hourly Cron:
 }
 ```
 
-On Vercel Hobby, native Cron cannot run hourly. Do not bypass the repository's daily GitHub cron policy just to emulate an hourly Vercel schedule. Keep the endpoint deployable and mark hourly scheduling blocked until the Vercel plan/runtime supports the requested cadence or an explicitly approved scheduler is chosen.
+If the active Vercel plan cannot provide the requested hourly cadence, keep the endpoint deployable and mark hourly scheduling blocked until the runtime supports it. Telegram transport remains independent in GitHub Actions.
 
-## Hard boundary
-
-Zapier MCP remains Telegram-only. Never use Zapier to write GitHub state or as a GitHub fallback.
+## Telegram boundary\n\nTelegram transport is owned by the GitHub Actions bot and direct Telegram Bot API. The Vercel dispatcher does not need a separate messaging bridge.\n
