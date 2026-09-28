@@ -27,6 +27,7 @@ jobs:
           node --check scripts/governance-gate.js
           node --check scripts/site-agent-reply.js
           node --check scripts/hermes-office-bootstrap.js
+          node --check scripts/hermes-office-client.js
           node --check scripts/qa/hermes-office-validator.js
           node --check scripts/telegram-bot.js
           node --check scripts/browser-homunculus.js
@@ -54,6 +55,10 @@ jobs:
           test -f coordination/agents.json
           test -f coordination/homunculi.json
           test -f coordination/hermes-office.json
+          test -f coordination/hermes-evolution.json
+          test -f .hermes/skills/quantdeus-autonomy/SKILL.md
+          test -f .hermes/skills/quantdeus-playwright-ops/SKILL.md
+          test -f .hermes/skills/quantdeus-connections-evolution/SKILL.md
           test -f docs/hermes-office.md
           test -f scripts/hermes-office-bootstrap.js
           test -f scripts/qa/hermes-office-validator.js
