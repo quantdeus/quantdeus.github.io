@@ -296,8 +296,34 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
   if (result.exitCode !== 0) {
     throw new Error('hermes_run_failed_' + result.exitCode + ': ' + (stderr || stdout || 'no output').slice(0, 4000));
   }
-  if (!stdout) throw new Error('hermes_empty_response');
   return stdout.slice(0, 30000);
+}
+
+async function runModelFallback(prompt, baseUrl, apiKey, model) {
+  const root = String(baseUrl || '').trim().replace(/\/+$/, '');
+  const endpoint = root.endsWith('/v1') ? root + '/chat/completions' : root + '/v1/chat/completions';
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + apiKey,
+      'content-type': 'application/json',
+      accept: 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.45,
+      max_tokens: 900
+    })
+  });
+  const raw = await response.text();
+  if (!response.ok) throw new Error('model_fallback_failed_' + response.status + ': ' + raw.slice(0, 1200));
+  let data;
+  try { data = JSON.parse(raw); }
+  catch { throw new Error('model_fallback_non_json: ' + raw.slice(0, 400)); }
+  const text = String(data?.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('model_fallback_empty_response');
+  return text.slice(0, 30000);
 }
 
 async function runHermesCronTicks(sandbox, runtimeEnv, paths) {
@@ -402,7 +428,23 @@ export default async function handler(req, res) {
     }
 
     await configureLocalModel(sandbox, profile, runtimeEnv, paths);
-    const text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
+    let text = '';
+    let executionMode = 'hermes-agent';
+    try {
+      text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
+      if (!text && modelBaseUrl && modelApiKey) {
+        executionMode = 'mistral-direct-fallback';
+        text = await runModelFallback(prompt, modelBaseUrl, modelApiKey, MODEL);
+      }
+    } catch (error) {
+      if (!modelBaseUrl || !modelApiKey || !/^hermes_(?:empty_response|run_failed_)/.test(String(error?.message || error))) {
+        throw error;
+      }
+      console.warn('Hermes returned no answer; using configured model fallback:', String(error?.message || error).slice(0, 300));
+      executionMode = 'mistral-direct-fallback';
+      text = await runModelFallback(prompt, modelBaseUrl, modelApiKey, MODEL);
+    }
+    if (!text) throw new Error('hermes_empty_response');
 
     await sandbox.stop();
 
@@ -412,6 +454,7 @@ export default async function handler(req, res) {
       provider: 'quantdeus-hermes-vercel-sandbox',
       model: MODEL,
       profile,
+      execution_mode: executionMode,
       text,
       cloud_pc: {
         name: SANDBOX_NAME,

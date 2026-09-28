@@ -140,7 +140,7 @@ async function askVercel({ profile, messages, metadata, signal }) {
     model: data.model || profile,
     profile: data.profile || profile,
     raw: data,
-    runtime: 'vercel-sandbox'
+    runtime: data.execution_mode || 'vercel-sandbox'
   };
 }
 

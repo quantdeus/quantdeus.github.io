@@ -547,7 +547,7 @@ async function buildReply(agentId, query) {
         }
       });
       if (result) {
-        activeProvider = 'hermes-office';
+        activeProvider = result.runtime === 'mistral-direct-fallback' ? 'mistral-direct-fallback' : 'hermes-office';
         activeModel = result.model || agent.id;
         return { text: result.text, llm: true, agent, action: 'hermes_office' };
       }
@@ -566,7 +566,7 @@ async function buildReply(agentId, query) {
 
 async function postReply(result) {
   const footer = result.llm
-    ? '\n\n_🤖 LLM: ' + (activeProvider === 'hermes-office' ? 'Hermes AI Office' : activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : activeProvider === 'openrouter' ? 'OpenRouter' : activeProvider === 'pollinations-anonymous' ? 'Pollinations anonymous' : 'Vercel OIDC Bridge') + ' · ' + activeModel + ' · repo-grounded_'
+    ? '\n\n_🤖 LLM: ' + (activeProvider === 'hermes-office' ? 'Hermes AI Office' : activeProvider === 'mistral-direct-fallback' ? 'Mistral direct fallback (Hermes unavailable)' : activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : activeProvider === 'openrouter' ? 'OpenRouter' : activeProvider === 'pollinations-anonymous' ? 'Pollinations anonymous' : 'Vercel OIDC Bridge') + ' · ' + activeModel + ' · repo-grounded_'
     : '';
   const r = await fetch('https://api.github.com/repos/' + repo + '/issues/' + issue.number + '/comments', {
     method: 'POST',
