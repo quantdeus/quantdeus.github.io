@@ -128,3 +128,18 @@ Project-local skills:
 - `quantdeus-connections-evolution`
 
 Full policy: `coordination/hermes-evolution.json`.
+
+
+## Canonical cloud host: Vercel Sandbox
+
+The production office no longer requires a separately managed Hermes server or Replit/VPS. The canonical route is:
+
+`GitHub Command Center / Telegram → GitHub Actions OIDC → quantdeus.vercel.app/api/quantdeus/hermes → persistent Vercel Sandbox quantdeus-hermes-office → named Hermes profile → GitHub MCP / Playwright / skills / cron`.
+
+The Sandbox is a persistent cloud PC. Its filesystem is snapshotted when the session stops, so Hermes profile memory, skills, Kanban state and configuration survive between chat turns. Processes do not need to stay alive: every request resumes the sandbox, refreshes the repository, runs a one-shot `hermes -p <profile> -z ...`, then stops/snapshots the VM.
+
+Inference is keyless inside Vercel: the function passes its short-lived Vercel OIDC token to Hermes as the Vercel AI Gateway credential. The default model is `openai/gpt-oss-120b`.
+
+GitHub access is also short-lived. The calling GitHub Actions run passes its repository-scoped `GITHUB_TOKEN` to the Sandbox only for that Hermes turn, and the official remote GitHub MCP reads it from `MCP_GITHUB_API_KEY`. No long-lived GitHub token is written into the repository or persistent Hermes configuration.
+
+The direct `HERMES_API_URL/HERMES_API_KEY` mode remains an optional override for private deployments, but it is not required by QuantDeus production.
