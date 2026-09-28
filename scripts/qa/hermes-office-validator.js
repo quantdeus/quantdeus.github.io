@@ -49,6 +49,7 @@ if (!routeSource.includes("Sandbox.getOrCreate")) throw new Error('Hermes route 
 if (!routeSource.includes("openai/gpt-oss-120b")) throw new Error('Hermes cloud route must default to GPT-OSS 120B');
 if (!routeSource.includes("process.env.HERMES_MODEL_PROVIDER || 'custom'")) throw new Error('Hermes route must use the supported custom provider for local GPT-OSS');
 if (!routeSource.includes('config set model.base_url')) throw new Error('Hermes route must persist a configured local endpoint in the profile');
+if (!routeSource.includes('runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl')) throw new Error('Hermes route must pass the configured local URL into profile setup');
 
 if (routeSource.includes('https://ai-gateway.vercel.sh/v1')) throw new Error('Hermes local model route must not force Vercel AI Gateway');
 if (!routeSource.includes("x-quantdeus-github-token")) throw new Error('Hermes route must accept ephemeral repo token handoff');
