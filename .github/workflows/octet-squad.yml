@@ -54,6 +54,6 @@ jobs:
     steps:
       - name: 🦀 Dispatch immutable validation gates
         run: |
-          gh workflow run static-smoke.yml --ref "$EXECUTION_BRANCH"
-          gh workflow run qa-triad.yml --ref "$EXECUTION_BRANCH"
+          gh workflow run static-smoke.yml --repo "$GITHUB_REPOSITORY" --ref "$EXECUTION_BRANCH"
+          gh workflow run qa-triad.yml --repo "$GITHUB_REPOSITORY" --ref "$EXECUTION_BRANCH"
           echo "Dispatched validation for $EXECUTION_BRANCH"
