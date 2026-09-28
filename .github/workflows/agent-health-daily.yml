@@ -2,7 +2,7 @@ name: QuantDeus Daily Agent Health Check 🩺
 
 on:
   schedule:
-    # Once per day at 06:17 UTC. Validates all 22 agents plus the shared post-scarcity v2 mission.
+    # Once per day at 06:17 UTC. Validates all 23 agents plus the shared post-scarcity v2 mission.
     - cron: '17 6 * * *'
   workflow_dispatch:
 
