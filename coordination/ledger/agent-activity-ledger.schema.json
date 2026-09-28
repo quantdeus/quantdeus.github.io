@@ -1,41 +1,182 @@
 {
-  "schema_version": 1,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantdeus.github.io/schemas/agent-activity-ledger.schema.json",
   "title": "QuantDeus Agent Activity Ledger",
-  "task": "#129",
-  "task_key": "agent-activity-ledger-v1",
-  "source_of_truth": "quantdeus/quantdeus.github.io",
-  "purpose": "Record one event per meaningful agent action so issue comments cannot masquerade as progress.",
-  "required_fields": [
-    "timestamp",
-    "agent_id",
-    "issue",
-    "action_type",
-    "verification_status",
-    "outcome"
+  "description": "One event per meaningful agent action. Comments alone are not progress.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "events"
   ],
-  "action_types": [
-    "task_creation",
-    "research",
-    "implementation",
-    "verification",
-    "done"
-  ],
-  "rules": {
-    "agent_id_must_exist_in": "coordination/agents.json",
-    "implementation_requires_artifact": true,
-    "verification_requires_artifact": true,
-    "done_requires_verified_acceptance": true,
-    "no_production_site_change": true
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "task": {
+      "type": "string"
+    },
+    "task_key": {
+      "type": "string"
+    },
+    "source_of_truth": {
+      "const": "quantdeus/quantdeus.github.io"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    }
   },
-  "events": [
+  "$defs": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timestamp",
+        "agent_id",
+        "issue",
+        "action_type",
+        "verification_status",
+        "outcome"
+      ],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "agent_id": {
+          "type": "string",
+          "enum": [
+            "coordinator",
+            "pillar-executor",
+            "strategic-hub",
+            "orchestrator",
+            "energy",
+            "justice",
+            "unity",
+            "space",
+            "potential",
+            "synthesis",
+            "control-tower",
+            "scout",
+            "verifier",
+            "analyst",
+            "strategist",
+            "guardian",
+            "tasksmith",
+            "archivist",
+            "herald",
+            "qa-syntax",
+            "qa-contract",
+            "qa-repair"
+          ]
+        },
+        "issue": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "action_type": {
+          "type": "string",
+          "enum": [
+            "task_creation",
+            "research",
+            "implementation",
+            "verification",
+            "done"
+          ]
+        },
+        "artifact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 7
+        },
+        "pr": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "pending-review",
+            "verified",
+            "failed",
+            "blocked",
+            "not-required"
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "action_type": {
+                "enum": [
+                  "implementation",
+                  "verification"
+                ]
+              }
+            },
+            "required": [
+              "action_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "artifact"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action_type": {
+                "const": "done"
+              }
+            },
+            "required": [
+              "action_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "verification_status": {
+                "const": "verified"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "examples": [
     {
-      "timestamp": "2026-09-28T06:18:00Z",
-      "agent_id": "coordinator",
-      "issue": 129,
-      "action_type": "implementation",
-      "artifact": "coordination/ledger/agent-activity-ledger.schema.json",
-      "verification_status": "pending-review",
-      "outcome": "Ledger schema and first seed event created on branch coord/agent-activity-ledger-v1"
+      "schema_version": 1,
+      "task": "#129",
+      "task_key": "agent-activity-ledger-v1",
+      "source_of_truth": "quantdeus/quantdeus.github.io",
+      "events": [
+        {
+          "timestamp": "2026-09-28T06:18:00Z",
+          "agent_id": "coordinator",
+          "issue": 129,
+          "action_type": "implementation",
+          "artifact": "coordination/ledger/agent-activity-ledger.schema.json",
+          "verification_status": "pending-review",
+          "outcome": "Ledger schema created for review."
+        }
+      ]
     }
   ]
 }
