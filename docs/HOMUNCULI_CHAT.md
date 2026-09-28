@@ -8,7 +8,8 @@ This surface is a chat/governance twin for the **real QuantDeus agents** registe
 
 The UI mirrors the actual repository workers and their source files:
 
-- QuantDeus Coordinator → `scripts/coordinator.js`
+- Swarm Secretary / Coordination Clerk → `scripts/coordinator.js`
+- Seven of Nine / QuantDeus Coordinator → `scripts/seven-of-nine.js`
 - Six-Pillar Executor → `scripts/pillar-executor.js`
 - Strategic Navigation Hub → `scripts/strategic-hub.js`
 - Research Orchestrator → `scripts/orchestrator.js`
