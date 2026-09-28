@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: 🌐 Validate shared post-scarcity mission
+        id: mission
+        continue-on-error: true
         run: node scripts/mission-alignment.js
 
       - name: 🩺 Run all-agent monitor
@@ -44,6 +46,7 @@ jobs:
 
       - name: 🛠️ QA Repair Coordinator
         env:
+          MISSION_OUTCOME: ${{ steps.mission.outcome }}
           MONITOR_OUTCOME: ${{ steps.monitor.outcome }}
           SYNTAX_OUTCOME: ${{ steps.syntax.outcome }}
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
