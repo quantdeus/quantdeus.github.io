@@ -52,11 +52,11 @@ Active tasks older than 72 hours are marked `coord:stale` and `coord:human` so s
 
 For contributor growth, the preferred external route is:
 
-`GitHub recruitment state → Grok/Growth agent → Zapier MCP → Telegram → person joins QuantDeus chat → first contribution`
+`GitHub recruitment state → Vercel Swarm Dispatcher/Growth agent → Zapier MCP → Telegram → person joins QuantDeus chat → first contribution`
 
 GitHub remains the canonical record of the opportunity and task. Zapier MCP is only the transport layer.
 
-Agent/Grok behavior:
+Agent/Vercel Swarm Dispatcher behavior:
 - match a qualified person to a concrete open Issue before outreach;
 - prepare a short personalized invite;
 - send through the configured Telegram action in Zapier MCP when the recipient/target is reachable through a public or opt-in Telegram path;
