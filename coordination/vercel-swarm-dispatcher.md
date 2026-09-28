@@ -115,7 +115,7 @@ Do not launch recruitment automatically.
 Recruitment is allowed only when:
 - the human request is about recruitment;
 - an Issue explicitly requires recruitment;
-- Coordinator assigns recruitment;
+- Seven of Nine, as QuantDeus Coordinator, assigns recruitment;
 - the scheduled run itself has recruitment as its explicit goal.
 
 No private-data scraping, mass unsolicited outreach, hidden profiling or pressure.
