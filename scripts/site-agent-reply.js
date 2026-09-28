@@ -134,6 +134,60 @@ async function buildReply(agentId, query) {
   const proposals = issues.filter(i => !i.pull_request && String(i.title || '').startsWith('[PROPOSAL]'));
   const context = localContext(agent.id);
 
+  if (agent.id === 'emh') {
+    const tasks = issues.filter(i => !i.pull_request && labelsOf(i).includes('coord:task'));
+    const blockedTasks = tasks.filter(i => labelsOf(i).includes('coord:blocked'));
+    const stance = blockedTasks.length
+      ? 'Отделить технический blocker от решения человека и эскалировать только конкретный вопрос.'
+      : 'Перевести disagreement в FACTS → INTERESTS → OPTIONS → OWNER → NEXT STEP.';
+    return [
+      agent.emoji + ' **' + agent.name + '**',
+      '',
+      query ? 'Запрос: ' + escMd(query) : 'Медиационный скан роя.',
+      '',
+      'Blocked задач: **' + blockedTasks.length + '**.',
+      '**Mediation:** ' + stance,
+      'KPI: ' + agent.kpi + '.',
+      '',
+      '_Я медиирую коммуникацию роя, не ставлю людям диагнозов и не отменяю human override._',
+    ].join('\n');
+  }
+
+  if (agent.id === 'sherlock') {
+    const researchLabels = ['pillar-01-energy','pillar-02-justice','pillar-04-space','pillar-05-potential'];
+    const cases = issues.filter(i => !i.pull_request && labelsOf(i).some(l => researchLabels.includes(l)));
+    const blockedCase = cases.find(i => labelsOf(i).includes('coord:blocked')) || cases[0];
+    return [
+      agent.emoji + ' **' + agent.name + '**',
+      '',
+      query ? 'Запрос: ' + escMd(query) : 'Научное расследование.',
+      '',
+      blockedCase ? 'Текущий case: #' + blockedCase.number + ' — ' + blockedCase.title : 'Открытых research-cases не найдено.',
+      '**Method:** observation → hypotheses → predictions → evidence → falsification → update.',
+      '**Reasoning:** deduction + induction + abduction + anomaly detection.',
+      'KPI: ' + agent.kpi + '.',
+      '',
+      '_Наблюдаемый факт, вывод, рабочая гипотеза и спекуляция всегда разделяются._',
+    ].join('\n');
+  }
+
+  if (agent.id === 'tuvok') {
+    const researchLabels = ['pillar-01-energy','pillar-02-justice','pillar-04-space','pillar-05-potential'];
+    const cases = issues.filter(i => !i.pull_request && labelsOf(i).some(l => researchLabels.includes(l)));
+    const blockedCase = cases.find(i => labelsOf(i).includes('coord:blocked')) || cases[0];
+    return [
+      agent.emoji + ' **' + agent.name + '**',
+      '',
+      query ? 'Запрос: ' + escMd(query) : 'Логическая проверка научного контура.',
+      '',
+      blockedCase ? 'Текущий case: #' + blockedCase.number + ' — ' + blockedCase.title : 'Открытых research-cases не найдено.',
+      '**Protocol:** PREMISES → LOGIC CHECK → ASSUMPTIONS → CONSISTENCY → UNCERTAINTY → VERDICT / REVISION.',
+      'KPI: ' + agent.kpi + '.',
+      '',
+      '_Plausible is not verified. Элегантный вывод не заменяет доказательство._',
+    ].join('\n');
+  }
+
   if (agent.id === 'seven-of-nine') {
     const tasks = issues.filter(i => !i.pull_request && labelsOf(i).includes('coord:task'));
     const ready = tasks.filter(i => labelsOf(i).includes('coord:ready')).length;
