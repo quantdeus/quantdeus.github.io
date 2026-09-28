@@ -21,7 +21,8 @@
 - constitutional_motto: `Единство в цели. Свобода в путях. Доказательства в результатах.`
 - constitutional_core: `жизнь и достоинство; безопасность; прозрачность и доверие; творчество/наука; экологическая гармония; постдефицит; IDIC; долгий космический горизонт`
 - exit_rule: `чем сильнее технология влияет на человека/данные/идентичность, тем проще и надёжнее должен быть добровольный EXIT`
-- coordinator_deputy: `seven-of-nine / Deputy AI Chief of Staff / Swarm Efficiency Officer`
+- coordinator: `seven-of-nine / QuantDeus Coordinator / AI Chief of Staff`
+- swarm_secretary: `coordinator / Swarm Secretary / Coordination Clerk`
 - swarm_diplomat: `emh / Swarm Mediation & Diplomacy Officer`
 - science_officer: `sherlock / Science Officer / Scientific Investigation Lead`
 - deputy_science_officer: `tuvok / Deputy Science Officer / Logic & Epistemic Integrity Officer`
