@@ -27,6 +27,22 @@ const orgIds = (startupOrg.departments || []).flatMap(d => d.agents || []);
 check(orgIds.length === 22 && new Set(orgIds).size === 22, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
 check(JSON.stringify([...orgIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/startup-org.json', 'startup org covers the canonical agent registry');
 
+for (const department of startupOrg.departments || []) {
+  for (const id of department.agents || []) {
+    const agent = registry.agents.find(a => a.id === id);
+    const h = hom.agents.find(a => a.id === id);
+    check(Boolean(agent), id, 'organization member exists in canonical registry');
+    if (agent) {
+      check(agent.group === department.id, id, 'registry group matches startup organization department id');
+      check(agent.department === department.name, id, 'registry department matches startup organization department name');
+    }
+    if (h) {
+      check(h.group === department.id, id, 'homunculi group matches startup organization department id');
+      check(h.department === department.name, id, 'homunculi department matches startup organization department name');
+    }
+  }
+}
+
 for (const agent of registry.agents) {
   const src = path.join(root, agent.source || '');
   check(Boolean(agent.id && agent.name && agent.role && agent.source && agent.group), agent.id || 'unknown', 'required metadata present');
