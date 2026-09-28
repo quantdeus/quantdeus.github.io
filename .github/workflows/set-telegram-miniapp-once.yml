@@ -19,11 +19,11 @@ jobs:
       - name: Check Telegram configuration
         id: telegram
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
           if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Telegram bot not bound::Add repository secret QUANTDEUS_TELEGRAM_BOT_TOKEN, then run this workflow manually."
+            echo "::notice title=Telegram bot not bound::Add repository secret TELEGRAM_BOT_TOKEN (legacy QUANTDEUS_TELEGRAM_BOT_TOKEN is also supported), then run this workflow manually."
             exit 0
           fi
           echo "configured=true" >> "$GITHUB_OUTPUT"
@@ -32,7 +32,7 @@ jobs:
       - name: Bind QuantDeus Mini App menu
         if: steps.telegram.outputs.configured == 'true'
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
           set -euo pipefail
           response=$(curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setChatMenuButton"             -H 'Content-Type: application/json'             --data '{"menu_button":{"type":"web_app","text":"QuantDeus","web_app":{"url":"https://quantdeus.github.io/telegram/"}}}')
@@ -41,7 +41,7 @@ jobs:
       - name: Verify Telegram menu
         if: steps.telegram.outputs.configured == 'true'
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
           set -euo pipefail
           curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getChatMenuButton"             | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok") is True, d.get("description","getChatMenuButton failed"); b=d.get("result",{}); url=((b.get("web_app") or {}).get("url")); assert url=="https://quantdeus.github.io/telegram/", "unexpected menu URL: "+str(url); print("Verified:", b.get("text"), url)'
@@ -49,7 +49,7 @@ jobs:
       - name: Publish public Telegram Login config
         if: steps.telegram.outputs.configured == 'true'
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
         run: |
           set -euo pipefail
           curl -sS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe" > /tmp/qd-getme.json
