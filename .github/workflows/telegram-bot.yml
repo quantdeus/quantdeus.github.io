@@ -47,6 +47,6 @@ jobs:
       - name: Poll Telegram and route to QuantDeus roles
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
           TELEGRAM_ADMIN_USER_IDS: ${{ vars.TELEGRAM_ADMIN_USER_IDS }}
         run: node scripts/telegram-bot.js
