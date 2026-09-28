@@ -106,6 +106,10 @@ A human message that requires work should resolve to:
 
 `message → existing/new canonical Issue → target agent → artifact/PR → QA → result → Telegram reply`
 
+## Deputy coordinator
+
+`seven-of-nine` is the Deputy AI Chief of Staff / Swarm Efficiency Officer. She runs immediately after Coordinator, scans GitHub work for blocked/stale WIP and review bottlenecks, and emits one deduplicated efficiency directive to the coordination hub. Her rule is **Borg efficiency, human agency**: optimize flow without bypassing QA, human approval, EXIT or voluntary participation.
+
 ## Human control
 
 Safe reversible analysis, Issue/comment/label work, docs, branches, PR preparation, QA and ordinary Telegram replies may be automated.
@@ -124,7 +128,7 @@ A recruitment action is useful only when it produces a truthful, traceable movem
 
 ## Swarm review convergence
 
-All 22 agents may challenge each other's work. Material findings must converge through `FIND → VERIFY → OWNER → PATCH/TRACK → RECHECK → DONE`.
+All 23 agents may challenge each other's work. Material findings must converge through `FIND → VERIFY → OWNER → PATCH/TRACK → RECHECK → DONE`.
 
 Canonical protocol: `coordination/swarm-review-protocol.md`.
 
