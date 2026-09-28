@@ -8,7 +8,7 @@ const STATE_PATH = path.join(RUN_DIR, 'state.json');
 const ALLOWED_OPS = new Set(['create', 'replace', 'append']);
 const DENY_PATTERNS = [
   /^\.git(?:\/|$)/,
-  /^\.env(?:\.|$)/,
+  /(^|\/)\.env(?:[^\/]*)(?:$|\/)/,
   /(^|\/)(?:id_rsa|id_ed25519|credentials?|secrets?)(?:\.|\/|$)/i,
   /\.pem$/i,
   /\.p12$/i,
