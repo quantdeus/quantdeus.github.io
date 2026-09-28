@@ -301,8 +301,11 @@ async function postReply(result) {
 })().catch(async err => {
   console.error(err.stack || err.message || err);
   try {
+    const missingKey = String(err.message || err).includes('OPENROUTER_API_KEY');
     await postReply({
-      text: err.message.includes('OPENROUTER_API_KEY')\n        ? '⚠️ **Живой LLM-режим установлен, но не подключён ключ провайдера.**\\n\\nДобавьте repository secret `OPENROUTER_API_KEY`. Скриптовый ответ намеренно отключён.'\n        : '⚠️ **LLM-контур агента временно не ответил.**\\n\\nOpenRouter вернул ошибку, поэтому я не подменяю живой ответ заготовленным скриптом. Проверьте workflow `QuantDeus Site Agent Replies`.',
+      text: missingKey
+        ? '⚠️ **Живой LLM-режим установлен, но не подключён ключ провайдера.**\n\nДобавьте repository secret `OPENROUTER_API_KEY`. Скриптовый ответ намеренно отключён.'
+        : '⚠️ **LLM-контур агента временно не ответил.**\n\nOpenRouter вернул ошибку, поэтому я не подменяю живой ответ заготовленным скриптом. Проверьте workflow `QuantDeus Site Agent Replies`.',
       llm: false,
       agent: { id: pickAgent(body) }
     });
