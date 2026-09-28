@@ -21,7 +21,7 @@
       "proposal_command": "/propose coordinator",
       "startup_title": "Swarm Secretary / Coordination Clerk",
       "department": "Executive & Strategy",
-      "kpi": "flow efficiency / blocked work / decision latency"
+      "kpi": "state freshness / routing hygiene / record accuracy"
     },
     {
       "id": "seven-of-nine",
