@@ -18,7 +18,6 @@
       "agents": [
         "coordinator",
         "seven-of-nine",
-        "emh",
         "pillar-executor",
         "strategic-hub",
         "control-tower"
