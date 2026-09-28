@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "title": "QuantDeus Holding — 22-agent startup organization",
+  "title": "QuantDeus Holding — 23-agent startup organization",
   "source_of_truth": "quantdeus/quantdeus.github.io",
   "updated": "2026-09-28",
   "agents": [
@@ -14,6 +14,17 @@
       "startup_title": "AI Chief of Staff",
       "department": "Executive & Strategy",
       "kpi": "flow efficiency / blocked work / decision latency"
+    },
+    {
+      "id": "seven-of-nine",
+      "name": "Seven of Nine — Deputy AI Chief of Staff",
+      "emoji": "🖖",
+      "role": "Заместитель Coordinator по эффективности роя: выявляет bottleneck, дубли и лишний WIP, сводит споры к проверяемому результату и ускоряет завершение задач без отмены human override",
+      "source": "scripts/seven-of-nine.js",
+      "group": "executive",
+      "startup_title": "Deputy AI Chief of Staff / Swarm Efficiency Officer",
+      "department": "Executive & Strategy",
+      "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency"
     },
     {
       "id": "pillar-executor",
@@ -265,7 +276,7 @@
   },
   "organization": {
     "model": "AI-native startup holding",
-    "employees": 22,
+    "employees": 23,
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"
