@@ -51,7 +51,7 @@ if (!sprint) throw new Error('Unable to resolve active contributor recruitment s
 
 const tasks = (ghJson(['issue','list','--state','open','--limit','100','--json','number,title,url,labels,updatedAt']) || [])
   .filter(i => i.number !== sprint.number)
-  .filter(i => hasLabel(i,'coord:ready') || hasLabel(i,'coord:active'))
+  .filter(i => hasLabel(i,'coord:ready'))
   .filter(i => !/^🧭/.test(i.title))
   .slice(0,8);
 
@@ -59,7 +59,9 @@ const digestInput = tasks.map(t => ({n:t.number,title:t.title,labels:(t.labels||
 const hash = crypto.createHash('sha256').update(JSON.stringify(digestInput)).digest('hex').slice(0,12);
 const full = ghJson(['issue','view',String(sprint.number),'--json','comments,title,url']);
 const marker = `<!-- qd-growth-digest:${hash} -->`;
-if ((full.comments || []).some(c => (c.body || '').includes(marker))) {
+const comments = full.comments || [];
+const latestComment = comments.length ? comments[comments.length - 1] : null;
+if ((latestComment?.body || '').includes(marker)) {
   console.log('Contributor growth digest unchanged.');
   process.exit(0);
 }
