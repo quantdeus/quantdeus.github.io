@@ -121,3 +121,11 @@ Optimize for:
 `qualified person → Telegram community → understandable task → first useful contribution`
 
 A recruitment action is useful only when it produces a truthful, traceable movement through that funnel.
+
+## Swarm review convergence
+
+All 22 agents may challenge each other's work. Material findings must converge through `FIND → VERIFY → OWNER → PATCH/TRACK → RECHECK → DONE`.
+
+Canonical protocol: `coordination/swarm-review-protocol.md`.
+
+Post-merge P1/P2 findings become bounded repair Issues instead of being left as dead comments on already-merged PRs. Comment volume is not progress; verified artifacts are.
