@@ -1,6 +1,6 @@
 # QuantDeus Swarm Review Protocol
 
-Purpose: keep all 23 agents free to challenge each other while converging on verified results.
+Purpose: keep all 26 agents free to challenge each other while converging on verified results.
 
 ## Core rule
 
