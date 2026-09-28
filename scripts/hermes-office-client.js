@@ -114,6 +114,9 @@ async function askVercel({ profile, messages, metadata, signal }) {
   if (process.env.GITHUB_TOKEN) {
     headers['x-quantdeus-github-token'] = process.env.GITHUB_TOKEN;
   }
+  if (process.env.OPENROUTER_API_KEY) {
+    headers['x-quantdeus-openrouter-key'] = process.env.OPENROUTER_API_KEY;
+  }
 
   const response = await fetch(url, {
     method: 'POST',
