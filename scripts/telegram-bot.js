@@ -93,20 +93,39 @@ function autoAgent(text) {
   const value = String(text || '').toLowerCase();
 
   const routes = [
+    // Product/engineering specialists first: their terms can overlap with Control Tower.
+    ['qa-syntax', /syntax|синтакс|lint|eslint|парсинг|parse error|json error|валидност.*json/],
+    ['qa-contract', /contract validator|контракт.*агент|инвариант|schema|схем[аы]|compliance|совместимост.*реестр/],
+    ['qa-repair', /\bqa\b|smoke|регресс|сломал|сломано|repair|почин.*тест|ошибка проверки|validator/],
+    ['guardian', /security|секрет|secret|token|токен|permission|права|oauth|уязвим|privileged|безопасност.*код/],
+    ['tasksmith', /реализ|implement|напис.*код|кодир|patch|фикс|fix|refactor|рефактор|commit|коммит/],
+    ['verifier', /acceptance|критери.*при[её]м|requirements|требован|проверь.*тз|верифиц.*задач/],
+    ['analyst', /impact|blast radius|dependency|зависимост|архитектурн.*влиян|risk analysis|анализ.*изменен/],
+    ['strategist', /architecture|архитектур|план реализац|solution design|стратег.*реализац|roadmap.*тех/],
+    ['scout', /discovery|развед|контекст.*продукт|исслед.*репо|repo scout|найди.*в.*репо/],
+
+    // Research and public pillars.
     ['space', /\bwarp\b|варп|космос|space|propulsion|двигател|isru|марс|луна|orbit/],
     ['energy', /энерг|energy|fusion|термояд|battery|аккумулятор|grid|электрич/],
     ['potential', /здоров|health|biohack|долголет|education|образован|accessibility|human potential/],
-    ['justice', /privacy|приват|governance|управлен|этик|justice|справедлив|safety|безопасност/],
-    ['herald', /\bpr\b|пресс|media|медиа|релиз|outreach|коммуникац/],
-    ['archivist', /seo|документац|docs|каталог|discoverability|индексац/],
-    ['unity', /маркетинг|marketing|community|сообществ|recruit|набор|партн[её]р|contributor/],
-    ['synthesis', /бренд|brand|дизайн|design|визуал|контент|creative|музык|эстетик/],
-    ['qa-repair', /\bqa\b|тест|test|smoke|сломал|сломано|ошибка проверки|validator/],
-    ['control-tower', /github|action|workflow|верцел|vercel|telegram|бот|bot|api|deploy|код|code|bug|баг|сайт|app/],
-    ['emh', /конфликт|спор|медиац|mediat|diplom/],
-    ['tuvok', /логик|logic|противореч|assumption|эпистем/],
-    ['sherlock', /исслед|research|science|наук|гипотез|hypothesis|evidence|доказатель/],
-    ['seven-of-nine', /bottleneck|узк.*мест|приоритет|backlog|эффективност|wip/],
+    ['justice', /privacy|приват|governance|этик|justice|справедлив|resource governance|алгоритмич.*справедлив/],
+    ['orchestrator', /research pipeline|evidence pipeline|r&d|ниокр|исследовательск.*операц|оркестр.*исслед/],
+    ['sherlock', /расслед|research|science|наук|гипотез|hypothesis|evidence|доказатель|аномал/],
+    ['tuvok', /логик|logic|противореч|assumption|эпистем|premise|предпосыл/],
+
+    // Growth / communications.
+    ['herald', /\bpr\b|пресс|media|медиа|релиз|outreach|коммуникац|публикац/],
+    ['archivist', /seo|документац|docs|каталог|discoverability|индексац|онбординг.*док/],
+    ['unity', /маркетинг|marketing|community|сообществ|recruit|набор|партн[её]р|contributor|коллаборац/],
+    ['synthesis', /бренд|brand|дизайн|design|визуал|контент|creative|музык|эстетик|кампан/],
+
+    // Executive / orchestration.
+    ['emh', /конфликт|спор|медиац|mediat|diplom|деэскал/],
+    ['seven-of-nine', /bottleneck|узк.*мест|приоритет|backlog|эффективност|wip|дубли.*задач/],
+    ['pillar-executor', /столп|pillar|портфел.*задач|execution board|шесть направлен/],
+    ['strategic-hub', /стратегическ.*сигнал|strategy signal|приоритет.*портфел|strategic hub/],
+    ['control-tower', /github|action|workflow|верцел|vercel|telegram|бот|bot|api|deploy|сайт|app|автоматизац/],
+    ['coordinator', /координ|dispatcher|диспетчер|назнач.*агент|маршрутиз|общ.*статус|что делать дальше/],
   ];
   for (const [id, pattern] of routes) if (pattern.test(value) && byId.has(id)) return id;
   return 'coordinator';
