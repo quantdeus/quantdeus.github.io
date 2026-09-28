@@ -11,7 +11,7 @@ const officePath = path.join(repoRoot, 'coordination', 'hermes-office.json');
 const evolutionPath = path.join(repoRoot, 'coordination', 'hermes-evolution.json');
 const projectSkillsPath = path.join(repoRoot, '.hermes', 'skills');
 
-const BOOTSTRAP_SCHEMA = 3;
+const BOOTSTRAP_SCHEMA = 4;
 
 function fail(message) {
   console.error('[hermes-office] ' + message);
@@ -86,7 +86,12 @@ function soulFor(agent) {
 
 function canonicalConfig(agent, office, evolution) {
   const seven = agent.id === 'seven-of-nine';
-  const toolsets = seven ? ['hermes-cli', 'kanban'] : ['hermes-cli'];
+  const toolsets = seven ? ['hermes-cli', 'kanban', 'connections'] : ['hermes-cli', 'connections'];
+
+  const modelBaseUrl = process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL;
+  const modelKeyEnv = process.env.HERMES_LOCAL_API_KEY
+    ? 'HERMES_LOCAL_API_KEY'
+    : (process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' : null);
 
   const cfg = {
     quantdeus: {
@@ -97,7 +102,9 @@ function canonicalConfig(agent, office, evolution) {
     },
     model: {
       provider: process.env.HERMES_MODEL_PROVIDER || office.model.provider || 'custom',
-      default: process.env.HERMES_MODEL || office.model.default || 'openai/gpt-oss-120b'
+      default: process.env.HERMES_MODEL || office.model.default || 'openai/gpt-oss-120b',
+      ...(modelBaseUrl ? { base_url: modelBaseUrl } : {}),
+      ...(modelKeyEnv ? { key_env: modelKeyEnv } : {})
     },
     terminal: {
       backend: process.env.HERMES_TERMINAL_BACKEND || 'local',
