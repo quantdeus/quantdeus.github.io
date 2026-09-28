@@ -31,10 +31,8 @@ function run(args, options = {}) {
   return r;
 }
 
-function config(profile, key, value, options = {}) {
-  const args = ['-p', profile, 'config', 'set', key, String(value)];
-  if (options.force) args.push('--force');
-  run(args);
+function config(profile, key, value) {
+  run(['-p', profile, 'config', 'set', key, String(value)]);
 }
 
 function enableToolset(profile, name) {
