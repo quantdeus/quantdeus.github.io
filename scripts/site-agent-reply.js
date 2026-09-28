@@ -1,4 +1,5 @@
 const fs = require('fs');
+const hermesOffice = require('./hermes-office-client');
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -147,8 +148,8 @@ function commandReply() {
 
 function isCreateIssueRequest(text) {
   const value = String(text || '').trim();
-  return /^(?:пожалуйста\s+)?(?:создай|создать|открой|открыть|заведи|завести)\s+(?:новый\s+)?(?:github\s+)?(?:issue|ишью|задачу|тикет)\b/i.test(value)
-    || /^(?:create|open)\s+(?:a\s+)?(?:new\s+)?(?:github\s+)?issue\b/i.test(value);
+  return /\b(?:пожалуйста\s+)?(?:создай|создать|открой|открыть|заведи|завести)\s+(?:новый\s+)?(?:github\s+)?(?:issue|ишью|задачу|тикет)\b/i.test(value)
+    || /\b(?:create|open)\s+(?:a\s+)?(?:new\s+)?(?:github\s+)?issue\b/i.test(value);
 }
 
 function extractJsonObject(text) {
@@ -534,13 +535,36 @@ async function buildReply(agentId, query) {
     { role: 'user', content: normalizedQuery },
   ];
 
+  if (hermesOffice.configured()) {
+    try {
+      const result = await hermesOffice.ask({
+        profile: agent.id,
+        messages,
+        metadata: {
+          source: 'github-command-center',
+          repository: repo,
+          room: room.key,
+          thread: issue.number,
+          source_url: comment.html_url || ''
+        }
+      });
+      if (result) {
+        activeProvider = 'hermes-office';
+        activeModel = result.model || agent.id;
+        return { text: result.text, llm: true, agent, action: 'hermes_office' };
+      }
+    } catch (error) {
+      console.error('Hermes Office fallback:', error.message || error);
+    }
+  }
+
   const text = await callModel(messages);
   return { text, llm: true, agent };
 }
 
 async function postReply(result) {
   const footer = result.llm
-    ? '\n\n_🤖 LLM: ' + (activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : activeProvider === 'openrouter' ? 'OpenRouter' : activeProvider === 'pollinations-anonymous' ? 'Pollinations anonymous' : 'Vercel OIDC Bridge') + ' · ' + activeModel + ' · repo-grounded_'
+    ? '\n\n_🤖 LLM: ' + (activeProvider === 'hermes-office' ? 'Hermes AI Office' : activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : activeProvider === 'openrouter' ? 'OpenRouter' : activeProvider === 'pollinations-anonymous' ? 'Pollinations anonymous' : 'Vercel OIDC Bridge') + ' · ' + activeModel + ' · repo-grounded_'
     : '';
   const r = await fetch('https://api.github.com/repos/' + repo + '/issues/' + issue.number + '/comments', {
     method: 'POST',
