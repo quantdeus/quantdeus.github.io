@@ -60,8 +60,8 @@ const hash = crypto.createHash('sha256').update(JSON.stringify(digestInput)).dig
 const full = ghJson(['issue','view',String(sprint.number),'--json','comments,title,url']);
 const marker = `<!-- qd-growth-digest:${hash} -->`;
 const comments = full.comments || [];
-const latestComment = comments.length ? comments[comments.length - 1] : null;
-if ((latestComment?.body || '').includes(marker)) {
+const latestDigest = [...comments].reverse().find(c => (c.body || '').includes('<!-- qd-growth-digest:'));
+if ((latestDigest?.body || '').includes(marker)) {
   console.log('Contributor growth digest unchanged.');
   process.exit(0);
 }
