@@ -191,6 +191,7 @@ function main() {
       AGENT_BROWSER_CONTENT_BOUNDARIES: '1',
       AGENT_BROWSER_IDLE_TIMEOUT_MS: '300000'
     };
+    if (!env.AI_GATEWAY_MODEL) delete env.AI_GATEWAY_MODEL;
 
     fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
     runAB(['open', validated.url], env);
