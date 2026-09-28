@@ -18,7 +18,13 @@ function main() {
 
       const repo = process.env.GITHUB_REPOSITORY;
       const handoffUrl = `https://github.com/${repo}/compare/main...${branch}?expand=1`;
-      editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
+      // PRs created with GITHUB_TOKEN do not reliably emit downstream pull_request workflows.
+  // Dispatch the two canonical validators explicitly against the execution branch.
+  gh(['workflow','run','static-smoke.yml','--ref',branch]);
+  gh(['workflow','run','qa-triad.yml','--ref',branch]);
+  saveState({ validation:{ dispatched:true, workflows:['static-smoke.yml','qa-triad.yml'] } });
+
+  editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
       commentIssue(
         state.issue.number,
         `📣 **PR Herald: execution complete; PR handoff required.**\n\nBranch: \`${branch}\`\nOpen PR: ${handoffUrl}\n\nGitHub Actions policy currently prevents GITHUB_TOKEN from creating pull requests. The branch and execution archive are ready for Control Tower / GitHub connector.`
