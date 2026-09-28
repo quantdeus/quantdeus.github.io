@@ -240,6 +240,35 @@ async function ensureBootstrap(sandbox, runtimeEnv, paths) {
   }, 'bootstrap_marker');
 }
 
+async function configureLocalModel(sandbox, profile, runtimeEnv, paths) {
+  const baseUrl = String(runtimeEnv.HERMES_LOCAL_BASE_URL || runtimeEnv.OPENAI_BASE_URL || '').trim();
+  const apiKey = String(runtimeEnv.HERMES_LOCAL_API_KEY || runtimeEnv.OPENAI_API_KEY || '');
+  if (!baseUrl && !apiKey) return;
+
+  if (baseUrl) {
+    await runChecked(sandbox, {
+      cmd: 'bash',
+      args: ['-lc', '"$HOME/.local/bin/hermes" -p "$1" config set model.base_url "$2"', 'bash', profile, baseUrl],
+      cwd: paths.workdir,
+      env: runtimeEnv
+    }, 'hermes_local_base_url_config');
+  }
+  if (apiKey) {
+    await runChecked(sandbox, {
+      cmd: 'bash',
+      args: ['-lc', '"$HOME/.local/bin/hermes" -p "$1" config set model.key_env HERMES_LOCAL_API_KEY', 'bash', profile],
+      cwd: paths.workdir,
+      env: runtimeEnv
+    }, 'hermes_local_key_config');
+  }
+  await runChecked(sandbox, {
+    cmd: 'bash',
+    args: ['-lc', '"$HOME/.local/bin/hermes" -p "$1" config set model.provider custom', 'bash', profile],
+    cwd: paths.workdir,
+    env: runtimeEnv
+  }, 'hermes_local_provider_config');
+}
+
 async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
   const result = await sandbox.runCommand({
     cmd: 'bash',
@@ -295,14 +324,13 @@ export default async function handler(req, res) {
 
     const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
     const runtimeEnv = {
-      HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'openai',
+      HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'custom',
       HERMES_MODEL: MODEL,
       HERMES_TERMINAL_BACKEND: 'local',
       GITHUB_TOOLSETS: 'all'
     };
-    if (modelBaseUrl) runtimeEnv.OPENAI_BASE_URL = modelBaseUrl;
-    if (modelApiKey) runtimeEnv.OPENAI_API_KEY = modelApiKey;
-
+    if (modelBaseUrl) runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl;
+    if (modelApiKey) runtimeEnv.HERMES_LOCAL_API_KEY = modelApiKey;
     if (githubToken) {
       runtimeEnv.GITHUB_TOKEN = githubToken;
       runtimeEnv.GH_TOKEN = githubToken;
@@ -326,6 +354,7 @@ export default async function handler(req, res) {
     await ensureRepo(sandbox, paths);
     await ensureHermesInstalled(sandbox);
     await ensureBootstrap(sandbox, runtimeEnv, paths);
+    await configureLocalModel(sandbox, profile, runtimeEnv, paths);
     const text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
 
     await sandbox.stop();

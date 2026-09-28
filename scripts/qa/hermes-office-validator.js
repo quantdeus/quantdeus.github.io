@@ -15,7 +15,7 @@ if (office.office.orchestrator_profile !== 'seven-of-nine') throw new Error('Sev
 if (office.source_of_truth !== 'github') throw new Error('GitHub must remain source of truth');
 if (!String(office.model.default || '').toLowerCase().includes('gpt-oss')) throw new Error('Hermes office default model must be GPT-OSS');
 if ((office.model.minimum_context_tokens || 0) < 65536) throw new Error('Hermes requires >=64K context');
-if (office.model.provider !== 'openai') throw new Error('Hermes CLI provider must be OpenAI-compatible');
+if (office.model.provider !== 'custom') throw new Error('Hermes local model provider must be custom');
 if (office.execution.hosting !== 'vercel-persistent-sandbox') throw new Error('Hermes office must run on persistent Vercel Sandbox');
 if (office.execution.preferred_terminal_backend !== 'local') throw new Error('Hermes terminal must be local inside the Vercel cloud PC');
 if (!fs.existsSync('vercel-dispatcher/api/quantdeus/hermes.js')) throw new Error('Missing Vercel Hermes Cloud PC endpoint');
@@ -47,8 +47,10 @@ const routeSource = fs.readFileSync('vercel-dispatcher/api/quantdeus/hermes.js',
 if (!clientSource.includes('quantdeus-vercel-hermes')) throw new Error('Hermes client must request dedicated GitHub OIDC audience');
 if (!routeSource.includes("Sandbox.getOrCreate")) throw new Error('Hermes route must use persistent Vercel Sandbox');
 if (!routeSource.includes("openai/gpt-oss-120b")) throw new Error('Hermes cloud route must default to GPT-OSS 120B');
-if (!routeSource.includes('process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL')) throw new Error('Hermes route must allow the configured local OpenAI-compatible endpoint');
-if (!routeSource.includes('if (modelBaseUrl) runtimeEnv.OPENAI_BASE_URL = modelBaseUrl;')) throw new Error('Hermes route must preserve the Sandbox profile endpoint when no Vercel override is set');
+if (!routeSource.includes("process.env.HERMES_MODEL_PROVIDER || 'custom'")) throw new Error('Hermes route must use the supported custom provider for local GPT-OSS');
+if (!routeSource.includes('config set model.base_url')) throw new Error('Hermes route must persist a configured local endpoint in the profile');
+if (!routeSource.includes('runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl')) throw new Error('Hermes route must pass the configured local URL into profile setup');
+
 if (routeSource.includes('https://ai-gateway.vercel.sh/v1')) throw new Error('Hermes local model route must not force Vercel AI Gateway');
 if (!routeSource.includes("x-quantdeus-github-token")) throw new Error('Hermes route must accept ephemeral repo token handoff');
 console.log('Hermes Cloud PC contract OK: keyless OIDC + persistent Sandbox + GPT-OSS');
