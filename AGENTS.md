@@ -99,9 +99,15 @@ A human message that requires work should resolve to:
 
 `message → existing/new canonical Issue → target agent → artifact/PR → QA → result → Telegram reply`
 
-## Deputy coordinator
+## Command hierarchy
 
-`seven-of-nine` is the Deputy AI Chief of Staff / Swarm Efficiency Officer. She runs immediately after Coordinator, scans GitHub work for blocked/stale WIP and review bottlenecks, and emits one deduplicated efficiency directive to the coordination hub. Her rule is **Borg efficiency, human agency**: optimize flow without bypassing QA, human approval, EXIT or voluntary participation.
+1. **Human CEO QuantDeus** sets strategic direction, priorities and explicit approvals.
+2. **Seven of Nine (`seven-of-nine`) — QuantDeus Coordinator / AI Chief of Staff** converts CEO direction into the operating order for the swarm: bottlenecks, WIP limits, anti-duplication, owners and evidence requirements.
+3. **Swarm Secretary (`coordinator`)** maintains the Coordination Hub, command protocol, task state and routing records. It records and routes; it does not overrule Seven or invent strategy.
+4. **Implementation agents, Codex/external coding agents and specialist agents** execute the current order or return one precise, falsifiable blocker.
+5. **QA** validates syntax, contracts, safety and acceptance evidence. QA may block a change only with a concrete failing check, violated invariant or reproducible defect; preference, bureaucracy or repeated commentary without new evidence is not a blocker.
+
+**CEO / Seven rule:** do not substitute process for outcome. Acknowledge a directive only when paired with execution evidence, an exact blocker, or a QA finding. Codex and QA are essential control/execution functions, not a parallel command chain. QA must not be bypassed or weakened merely to make a result green.
 
 ## Swarm mediation and science officers
 
@@ -111,7 +117,7 @@ A human message that requires work should resolve to:
 
 Operational sequence in the coordinator cycle:
 
-`Coordinator → Seven of Nine → EMH → Sherlock → Tuvok → Strategic Hub`
+`Seven of Nine → Swarm Secretary → EMH → Sherlock → Tuvok → Strategic Hub`
 
 The research operations role remains with `orchestrator`; Sherlock and Tuvok improve scientific reasoning quality rather than replacing execution routing.
 
