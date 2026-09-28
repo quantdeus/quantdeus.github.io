@@ -9,8 +9,8 @@
   "source_of_truth": "github",
   "github_repository": "quantdeus/quantdeus.github.io",
   "model": {
-    "provider": "ai-gateway",
-    "default": "openai/gpt-oss-120b",
+    "provider": "openrouter",
+    "default": "openai/gpt-oss-120b:free",
     "minimum_context_tokens": 131072,
     "override_env": {
       "provider": "HERMES_MODEL_PROVIDER",
@@ -47,7 +47,8 @@
       "CAPTCHA"
     ],
     "hosting": "vercel-persistent-sandbox",
-    "sandbox_name": "quantdeus-hermes-office"
+    "sandbox_name": "quantdeus-hermes-office",
+    "inference": "OpenRouter GPT-OSS 120B free when OPENROUTER_API_KEY is supplied by the calling GitHub Actions run; Vercel AI Gateway is fallback only"
   },
   "state": {
     "hermes_home": "~/.hermes",
