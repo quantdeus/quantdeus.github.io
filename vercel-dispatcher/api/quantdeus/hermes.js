@@ -7,8 +7,6 @@ const EXPECTED_AUDIENCE = 'quantdeus-vercel-hermes';
 const EXPECTED_REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ALLOWED_EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX_NAME = 'quantdeus-hermes-office';
-const SANDBOX_HOME = '/home/vercel-sandbox';
-const WORKDIR = SANDBOX_HOME + '/quantdeus';
 const REPO_URL = 'https://github.com/quantdeus/quantdeus.github.io.git';
 const MODEL = process.env.HERMES_CLOUD_MODEL || 'openai/gpt-oss-120b';
 const MAX_PROMPT = 90000;
@@ -135,16 +133,39 @@ async function runChecked(sandbox, spec, label) {
   return result;
 }
 
-async function ensureRepo(sandbox) {
+async function resolveSandboxPaths(sandbox) {
+  const probe = await runChecked(sandbox, {
+    cmd: 'bash',
+    args: ['-lc', 'printf "%s\\n%s\\n" "$PWD" "$HOME"']
+  }, 'sandbox_path_probe');
+
+  const lines = (await out(probe)).split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const pwd = lines[0] || '/tmp';
+  const homeCandidate = lines[1] || pwd;
+  const home = homeCandidate.startsWith('/') ? homeCandidate : pwd;
+  const workdir = home.replace(/\/+$/, '') + '/quantdeus';
+
+  const verify = await sandbox.runCommand({
+    cmd: 'bash',
+    args: ['-lc', 'test -d "$1" && test -w "$1"', 'bash', home]
+  });
+  if (verify.exitCode !== 0) {
+    throw new Error('sandbox_home_not_writable:' + home);
+  }
+
+  return { pwd, home, workdir };
+}
+
+async function ensureRepo(sandbox, paths) {
   const exists = await sandbox.runCommand({
     cmd: 'bash',
-    args: ['-lc', 'test -d "$1/.git"', 'bash', WORKDIR]
+    args: ['-lc', 'test -d "$1/.git"', 'bash', paths.workdir]
   });
   if (exists.exitCode !== 0) {
     await runChecked(sandbox, {
       cmd: 'git',
-      args: ['clone', '--depth', '1', '--branch', 'main', REPO_URL, WORKDIR],
-      cwd: SANDBOX_HOME
+      args: ['clone', '--depth', '1', '--branch', 'main', REPO_URL, paths.workdir],
+      cwd: paths.home
     }, 'repo_clone');
     return;
   }
@@ -152,25 +173,25 @@ async function ensureRepo(sandbox) {
   await runChecked(sandbox, {
     cmd: 'git',
     args: ['fetch', '--prune', 'origin', 'main'],
-    cwd: WORKDIR
+    cwd: paths.workdir
   }, 'repo_fetch');
 
   const dirty = await sandbox.runCommand({
     cmd: 'git',
     args: ['status', '--porcelain'],
-    cwd: WORKDIR
+    cwd: paths.workdir
   });
   const dirtyText = await out(dirty);
   if (!dirtyText) {
     await runChecked(sandbox, {
       cmd: 'git',
       args: ['checkout', '-q', 'main'],
-      cwd: WORKDIR
+      cwd: paths.workdir
     }, 'repo_checkout_main');
     await runChecked(sandbox, {
       cmd: 'git',
       args: ['reset', '--hard', 'origin/main'],
-      cwd: WORKDIR
+      cwd: paths.workdir
     }, 'repo_reset_main');
   }
 }
@@ -188,18 +209,18 @@ async function ensureHermesInstalled(sandbox) {
   }, 'hermes_install');
 }
 
-async function bootstrapFingerprint(sandbox) {
+async function bootstrapFingerprint(sandbox, paths) {
   const result = await runChecked(sandbox, {
     cmd: 'bash',
     args: ['-lc', 'sha256sum scripts/hermes-office-bootstrap.js coordination/agents.json coordination/hermes-office.json coordination/hermes-evolution.json | sha256sum | cut -d" " -f1'],
-    cwd: WORKDIR
+    cwd: paths.workdir
   }, 'bootstrap_fingerprint');
   return out(result);
 }
 
-async function ensureBootstrap(sandbox, runtimeEnv) {
-  const fingerprint = await bootstrapFingerprint(sandbox);
-  const markerPath = SANDBOX_HOME + '/.quantdeus-hermes-bootstrap';
+async function ensureBootstrap(sandbox, runtimeEnv, paths) {
+  const fingerprint = await bootstrapFingerprint(sandbox, paths);
+  const markerPath = paths.home + '/.quantdeus-hermes-bootstrap';
   const marker = await sandbox.runCommand({
     cmd: 'bash',
     args: ['-lc', 'cat "$1" 2>/dev/null || true', 'bash', markerPath]
@@ -209,7 +230,7 @@ async function ensureBootstrap(sandbox, runtimeEnv) {
   await runChecked(sandbox, {
     cmd: 'node',
     args: ['scripts/hermes-office-bootstrap.js'],
-    cwd: WORKDIR,
+    cwd: paths.workdir,
     env: runtimeEnv
   }, 'hermes_bootstrap');
 
@@ -219,7 +240,7 @@ async function ensureBootstrap(sandbox, runtimeEnv) {
   }, 'bootstrap_marker');
 }
 
-async function runHermes(sandbox, profile, prompt, runtimeEnv) {
+async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
   const result = await sandbox.runCommand({
     cmd: 'bash',
     args: [
@@ -231,7 +252,7 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv) {
       '-z',
       prompt
     ],
-    cwd: WORKDIR,
+    cwd: paths.workdir,
     env: runtimeEnv
   });
 
@@ -290,10 +311,11 @@ export default async function handler(req, res) {
       tags: { app: 'quantdeus', runtime: 'hermes-office' }
     });
 
-    await ensureRepo(sandbox);
+    const paths = await resolveSandboxPaths(sandbox);
+    await ensureRepo(sandbox, paths);
     await ensureHermesInstalled(sandbox);
-    await ensureBootstrap(sandbox, runtimeEnv);
-    const text = await runHermes(sandbox, profile, prompt, runtimeEnv);
+    await ensureBootstrap(sandbox, runtimeEnv, paths);
+    const text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
 
     await sandbox.stop();
 
@@ -305,7 +327,9 @@ export default async function handler(req, res) {
       text,
       cloud_pc: {
         name: SANDBOX_NAME,
-        persistent: true
+        persistent: true,
+        home: paths.home,
+        workdir: paths.workdir
       },
       github_run: {
         actor: claims.actor || null,
