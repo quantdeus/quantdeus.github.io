@@ -1,0 +1,38 @@
+name: Borg Council Full Smoke 🖖🩺🔬
+
+on:
+  push:
+    branches: [agent-review-discipline-v1]
+    paths:
+      - '.github/workflows/borg-council-full-smoke.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  council:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: 🖖 Seven — efficiency scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUANTDEUS_COORDINATION_HUB_ISSUE: '9'
+        run: node scripts/seven-of-nine.js
+      - name: 🕵️ Sherlock — investigation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sherlock-smoke.js
+      - name: 🖖 Tuvok — logic audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/tuvok-smoke.js
+      - name: 🩺 EMH — mediation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/emh-smoke.js
