@@ -95,7 +95,7 @@ export default async function handler(req, res) {
     const claims = await verifyGitHubOidc(auth.slice(7));
 
     const messages = normalizeMessages(req.body?.messages);
-    const vercelOidc = process.env.VERCEL_OIDC_TOKEN;
+    const vercelOidc = req.headers?.['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN;
     if (!vercelOidc) throw new Error('vercel_oidc_token_missing');
 
     const gateway = await fetch(GATEWAY_URL, {
