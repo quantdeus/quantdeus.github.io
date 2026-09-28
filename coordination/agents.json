@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "title": "QuantDeus Holding — 24-agent startup organization",
+  "title": "QuantDeus Holding — 23-agent startup organization",
   "source_of_truth": "quantdeus/quantdeus.github.io",
   "updated": "2026-09-28",
   "agents": [
@@ -25,17 +25,6 @@
       "startup_title": "Deputy AI Chief of Staff / Swarm Efficiency Officer",
       "department": "Executive & Strategy",
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency"
-    },
-    {
-      "id": "emh",
-      "name": "EMH — Swarm Mediation & Diplomacy Officer",
-      "emoji": "🩺",
-      "role": "Медиатор и дипломат роя: деэскалирует агентские споры, отделяет факты от позиций, находит общий интерес, формулирует компромиссный следующий шаг и передаёт человеку только конкретные решения, требующие human override",
-      "source": "scripts/emh.js",
-      "group": "executive",
-      "startup_title": "Swarm Mediation & Diplomacy Officer",
-      "department": "Executive & Strategy",
-      "kpi": "conflict-to-resolution latency / duplicate debate reduction / escalation clarity"
     },
     {
       "id": "pillar-executor",
@@ -287,7 +276,7 @@
   },
   "organization": {
     "model": "AI-native startup holding",
-    "employees": 24,
+    "employees": 23,
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"
