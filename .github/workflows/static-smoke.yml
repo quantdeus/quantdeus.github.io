@@ -43,6 +43,7 @@ jobs:
       - name: Validate production routes
         run: |
           test -f index.html
+          test -f store/index.html
           test -f telegram/index.html
           test -f coordination/index.html
           test -f coordination.html
@@ -64,6 +65,8 @@ jobs:
           if grep -qF '\\$''{{' .github/workflows/browser-homunculus.yml; then echo 'escaped GitHub expression found'; exit 1; fi
           test -f .github/workflows/telegram-bot.yml
           node -e "JSON.parse(require('fs').readFileSync('vercel-dispatcher/vercel.json','utf8')); JSON.parse(require('fs').readFileSync('vercel-dispatcher/package.json','utf8'))"
+          grep -q '/store/' index.html
+          grep -q '/forum/' store/index.html
           grep -q '/coordination/' index.html
           grep -q 'постдефицитного' index.html
           grep -q '26 специализированных ИИ-агентов' README.md
@@ -85,7 +88,7 @@ jobs:
         run: |
           node - <<'NODE'
           const fs=require('fs');
-          const pages=['index.html','site/index.html','telegram/index.html','homunculi/index.html','coordination/index.html'];
+          const pages=['index.html','site/index.html','store/index.html','telegram/index.html','homunculi/index.html','coordination/index.html'];
           for(const page of pages){
             const html=fs.readFileSync(page,'utf8');
             const scripts=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)]
