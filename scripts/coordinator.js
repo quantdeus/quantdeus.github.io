@@ -193,7 +193,7 @@ async function notifyExternal(text) {
     jobs.push(postJson(process.env.QUANTDEUS_SLACK_WEBHOOK, { text }));
   }
   if (process.env.QUANTDEUS_GENERIC_WEBHOOK) {
-    jobs.push(postJson(process.env.QUANTDEUS_GENERIC_WEBHOOK, { text, source: 'quantdeus-coordinator', repository: repo }));
+    jobs.push(postJson(process.env.QUANTDEUS_GENERIC_WEBHOOK, { text, source: 'quantdeus-swarm-secretary', repository: repo }));
   }
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
   const telegramChatId = process.env.TELEGRAM_CHAT_ID || process.env.QUANTDEUS_TELEGRAM_CHAT_ID;
@@ -270,7 +270,7 @@ async function refreshHub() {
 
 - Version: **${doctrine.version}**
 - Objective: ${doctrine.objective}
-- Rule: ${doctrine.operating_rule}\n\n## Состояние\n\n- 🟢 Ready: **${stats.ready}**\n- 🟡 Active: **${stats.active}**\n- 🚧 Blocked: **${stats.blocked}**\n- 🕸️ Stale (72h+): **${stats.stale}**\n\n## Команды участника\n\n- \`/take\` — взять свободную задачу\n- \`/release\` — освободить её\n- \`/block причина\` — отметить препятствие и запросить помощь\n- \`/ready\` — вернуть в очередь\n- \`/done\` — завершить задачу\n\nНовая координационная задача создаётся с префиксом **[TASK]**. Система никому не назначает работу без явного \`/take\`.\n\n## Активные задачи\n\n| Issue | Статус | Направление | Владелец | Задача |\n|---|---|---|---|---|\n${rows}\n\n## Внешние каналы\n\nПри наличии секретов репозитория диспетчер может отправлять изменившийся digest в Discord, Slack, Telegram или generic webhook. Без настроенного секрета наружу ничего не отправляется.\n\n_Last coordinator update: ${new Date().toISOString()}_\n\n<!-- coord-digest:${hash} -->\n`;
+- Rule: ${doctrine.operating_rule}\n\n## Состояние\n\n- 🟢 Ready: **${stats.ready}**\n- 🟡 Active: **${stats.active}**\n- 🚧 Blocked: **${stats.blocked}**\n- 🕸️ Stale (72h+): **${stats.stale}**\n\n## Команды участника\n\n- \`/take\` — взять свободную задачу\n- \`/release\` — освободить её\n- \`/block причина\` — отметить препятствие и запросить помощь\n- \`/ready\` — вернуть в очередь\n- \`/done\` — завершить задачу\n\nНовая координационная задача создаётся с префиксом **[TASK]**. Система никому не назначает работу без явного \`/take\`.\n\n## Активные задачи\n\n| Issue | Статус | Направление | Владелец | Задача |\n|---|---|---|---|---|\n${rows}\n\n## Внешние каналы\n\nПри наличии секретов репозитория диспетчер может отправлять изменившийся digest в Discord, Slack, Telegram или generic webhook. Без настроенного секрета наружу ничего не отправляется.\n\n_Last swarm secretary update: ${new Date().toISOString()}_\n\n<!-- coord-digest:${hash} -->\n`;
 
   fs.writeFileSync('/tmp/quantdeus-coordination-hub.md', body);
   if (hub) {
