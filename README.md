@@ -38,7 +38,7 @@ QuantDeus превращает исследовательские сигналы
 
 ## Стартап-команда из 26 ИИ-агентов
 
-🖖 **Seven of Nine — Deputy AI Chief of Staff / Swarm Efficiency Officer** работает заместителем Coordinator: ищет bottleneck, дубли и лишний WIP и сводит споры роя к проверяемому результату при сохранении human override.
+🖖 **Seven of Nine — QuantDeus Coordinator / AI Chief of Staff** руководит операционной координацией роя: принимает стратегическое направление CEO, режет лишний WIP и дубли, назначает приоритетные bottleneck и требует проверяемый результат. Старый технический `coordinator` понижен до **Swarm Secretary / Coordination Clerk** и ведёт Hub, статусы и протокол команд.
 
 🩺 **EMH — Swarm Mediation & Diplomacy Officer** сохраняет рабочий климат роя: деэскалирует повторяющиеся споры, отделяет факты от позиций и сводит конфликт к одному owner и следующему проверяемому шагу.
 
