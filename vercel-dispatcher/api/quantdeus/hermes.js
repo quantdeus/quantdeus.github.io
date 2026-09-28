@@ -322,6 +322,9 @@ export default async function handler(req, res) {
       process.env.HERMES_LOCAL_API_KEY || process.env.OPENAI_API_KEY || ''
     );
 
+    if (modelBaseUrl) runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl;
+    if (modelApiKey) runtimeEnv.HERMES_LOCAL_API_KEY = modelApiKey;
+
     const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
     const runtimeEnv = {
       HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'custom',
