@@ -40,7 +40,15 @@
       "cronjob_manage": true,
       "agents_may_create_cron": true,
       "cron_runs_may_not_recursively_create_cron": true,
-      "default_evolution_review": "daily"
+      "default_evolution_review": "daily",
+      "scheduler": {
+        "provider": "github-actions-pulse",
+        "workflow": ".github/workflows/hermes-office-cron.yml",
+        "cadence": "*/15 * * * *",
+        "action": "hermes cron tick for every canonical profile",
+        "authentication": "GitHub OIDC schedule/workflow_dispatch",
+        "scale_to_zero_compatible": true
+      }
     },
     "self_improvement": {
       "skill_manage": true,

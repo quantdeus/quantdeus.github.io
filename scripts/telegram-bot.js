@@ -333,6 +333,36 @@ async function handleMessage(message) {
       await send(chatId, 'Прямой /task доступен только Telegram admin. Используй /propose для обычного предложения.', replyId);
       return;
     }
+    if (hermesOffice.configured()) {
+      try {
+        const result = await hermesOffice.ask({
+          profile: agentId,
+          messages: [{
+            role: 'user',
+            content: [
+              'Telegram admin has explicitly authorized this QuantDeus task.',
+              'Create one GitHub Issue for the task using the Hermes GitHub MCP.',
+              'Use labels governance:passed, coord:task, coord:ready, and agent:' + agentId + ' when they exist.',
+              'Check for a duplicate first, then return the verified Issue number and URL.',
+              'Task: ' + task
+            ].join('\n')
+          }],
+          metadata: {
+            source: 'telegram-admin-task',
+            chat_id: chatId,
+            message_id: replyId,
+            username: username || 'unknown',
+            repository: repo,
+            authorized_by_chat_admin: true
+          }
+        });
+        await send(chatId, result.text, replyId);
+        return;
+      } catch (error) {
+        console.error('Hermes Office /task fallback:', error.message || error);
+      }
+    }
+
     const url = createAdminTask(agentId, task, username);
     await send(chatId, `🚀 Task отправлен гомункулу ${agentId}:\n${url}`, replyId);
     return;
