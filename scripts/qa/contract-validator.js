@@ -58,6 +58,17 @@ for (const agent of registry.agents) {
   }
 }
 
+const ledgerSchemaPath = path.join(root,'coordination','ledger','agent-activity-ledger.schema.json');
+if (fs.existsSync(ledgerSchemaPath)) {
+  const ledgerSchema = JSON.parse(fs.readFileSync(ledgerSchemaPath,'utf8'));
+  const ledgerAgentIds = ledgerSchema?.$defs?.event?.properties?.agent_id?.enum || [];
+  check(
+    JSON.stringify([...ledgerAgentIds].sort()) === JSON.stringify([...ids].sort()),
+    'coordination/ledger/agent-activity-ledger.schema.json',
+    'ledger agent_id enum matches canonical agent registry'
+  );
+}
+
 const qaIds = ['qa-syntax','qa-contract','qa-repair'];
 for (const id of qaIds) check(ids.includes(id), id, 'QA triad registered');
 
