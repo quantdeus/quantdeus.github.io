@@ -449,36 +449,7 @@ async function callVercelOidcBridge(messages) {
   return String(data.text).trim();
 }
 
-async function callModel(messages) {
-  if (!aiGatewayKey && !openRouterKey) {
-    try {
-      return await callPollinationsAnonymous(messages);
-    } catch (pollinationsError) {
-      console.error('Pollinations fallback failed:', pollinationsError.message || pollinationsError);
-      return callVercelOidcBridge(messages);
-    }
-  }
-
-  let url;
-  let key;
-  let providerLabel;
-
-  if (aiGatewayKey && (requestedProvider === 'auto' || requestedProvider === 'vercel-ai-gateway')) {
-    url = 'https://ai-gateway.vercel.sh/v1/chat/completions';
-    key = aiGatewayKey;
-    providerLabel = 'Vercel AI Gateway';
-    activeProvider = 'vercel-ai-gateway';
-    activeModel = aiGatewayModel;
-  } else if (openRouterKey && (requestedProvider === 'auto' || requestedProvider === 'openrouter')) {
-    url = 'https://openrouter.ai/api/v1/chat/completions';
-    key = openRouterKey;
-    providerLabel = 'OpenRouter';
-    activeProvider = 'openrouter';
-    activeModel = openRouterModel;
-  } else {
-    return callVercelOidcBridge(messages);
-  }
-
+async function callProvider(url, key, providerLabel, model, messages) {
   const headers = {
     authorization: 'Bearer ' + key,
     'content-type': 'application/json',
@@ -493,7 +464,7 @@ async function callModel(messages) {
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: activeModel,
+      model,
       messages,
       temperature: 0.45,
       max_tokens: 900,
@@ -512,6 +483,50 @@ async function callModel(messages) {
     throw new Error(providerLabel + ' returned an empty response');
   }
   return String(text).trim();
+}
+
+async function callModel(messages) {
+  if (requestedProvider === 'vercel-ai-gateway' && aiGatewayKey) {
+    activeProvider = 'vercel-ai-gateway';
+    activeModel = aiGatewayModel;
+    return callProvider('https://ai-gateway.vercel.sh/v1/chat/completions', aiGatewayKey, 'Vercel AI Gateway', aiGatewayModel, messages);
+  }
+
+  if (requestedProvider === 'openrouter' && openRouterKey) {
+    activeProvider = 'openrouter';
+    activeModel = openRouterModel;
+    return callProvider('https://openrouter.ai/api/v1/chat/completions', openRouterKey, 'OpenRouter', openRouterModel, messages);
+  }
+
+  if (requestedProvider === 'auto') {
+    if (aiGatewayKey) {
+      try {
+        activeProvider = 'vercel-ai-gateway';
+        activeModel = aiGatewayModel;
+        return await callProvider('https://ai-gateway.vercel.sh/v1/chat/completions', aiGatewayKey, 'Vercel AI Gateway', aiGatewayModel, messages);
+      } catch (error) {
+        console.error('Vercel AI Gateway fallback failed:', error.message || error);
+      }
+    }
+
+    if (openRouterKey) {
+      try {
+        activeProvider = 'openrouter';
+        activeModel = openRouterModel;
+        return await callProvider('https://openrouter.ai/api/v1/chat/completions', openRouterKey, 'OpenRouter', openRouterModel, messages);
+      } catch (error) {
+        console.error('OpenRouter fallback failed:', error.message || error);
+      }
+    }
+
+    try {
+      return await callPollinationsAnonymous(messages);
+    } catch (pollinationsError) {
+      console.error('Pollinations fallback failed:', pollinationsError.message || pollinationsError);
+    }
+  }
+
+  return callVercelOidcBridge(messages);
 }
 
 async function buildReply(agentId, query) {
