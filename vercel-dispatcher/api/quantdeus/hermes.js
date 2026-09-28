@@ -250,11 +250,11 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
       '-p',
       profile,
       '--provider',
-      'ai-gateway',
+      runtimeEnv.HERMES_MODEL_PROVIDER,
       '-m',
       MODEL,
       '-t',
-      profile === 'seven-of-nine' ? 'all,kanban' : 'all',
+      'all',
       '-z',
       prompt
     ],
@@ -293,7 +293,9 @@ export default async function handler(req, res) {
     const runtimeEnv = {
       AI_GATEWAY_API_KEY: vercelOidc,
       VERCEL_OIDC_TOKEN: vercelOidc,
-      HERMES_MODEL_PROVIDER: 'ai-gateway',
+      OPENAI_API_KEY: vercelOidc,
+      OPENAI_BASE_URL: 'https://ai-gateway.vercel.sh/v1',
+      HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'openai',
       HERMES_MODEL: MODEL,
       HERMES_TERMINAL_BACKEND: 'local',
       GITHUB_TOOLSETS: 'all'
@@ -350,7 +352,7 @@ export default async function handler(req, res) {
       try { await sandbox.stop(); } catch {}
     }
     const message = String(error?.message || error);
-    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : 500;
+    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : /ai_gateway_403|customer_verification_required/.test(message) ? 503 : 500;
     return res.status(status).json({
       ok: false,
       error: 'hermes_cloud_pc_failed',

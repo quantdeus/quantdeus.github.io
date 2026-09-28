@@ -15,7 +15,7 @@ if (office.office.orchestrator_profile !== 'seven-of-nine') throw new Error('Sev
 if (office.source_of_truth !== 'github') throw new Error('GitHub must remain source of truth');
 if (!String(office.model.default || '').toLowerCase().includes('gpt-oss')) throw new Error('Hermes office default model must be GPT-OSS');
 if ((office.model.minimum_context_tokens || 0) < 65536) throw new Error('Hermes requires >=64K context');
-if (office.model.provider !== 'ai-gateway') throw new Error('Hermes cloud model provider must be Vercel AI Gateway');
+if (office.model.provider !== 'openai') throw new Error('Hermes CLI provider must be OpenAI-compatible for Vercel AI Gateway');
 if (office.execution.hosting !== 'vercel-persistent-sandbox') throw new Error('Hermes office must run on persistent Vercel Sandbox');
 if (office.execution.preferred_terminal_backend !== 'local') throw new Error('Hermes terminal must be local inside the Vercel cloud PC');
 if (!fs.existsSync('vercel-dispatcher/api/quantdeus/hermes.js')) throw new Error('Missing Vercel Hermes Cloud PC endpoint');

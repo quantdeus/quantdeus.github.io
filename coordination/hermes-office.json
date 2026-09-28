@@ -9,7 +9,7 @@
   "source_of_truth": "github",
   "github_repository": "quantdeus/quantdeus.github.io",
   "model": {
-    "provider": "ai-gateway",
+    "provider": "openai",
     "default": "openai/gpt-oss-120b",
     "minimum_context_tokens": 131072,
     "override_env": {
