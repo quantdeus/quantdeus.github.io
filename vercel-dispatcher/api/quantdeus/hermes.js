@@ -8,7 +8,8 @@ const EXPECTED_REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ALLOWED_EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX_NAME = 'quantdeus-hermes-office';
 const REPO_URL = 'https://github.com/quantdeus/quantdeus.github.io.git';
-const MODEL = process.env.HERMES_CLOUD_MODEL || 'openai/gpt-oss-120b';
+const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-oss-120b:free';
+const DEFAULT_AI_GATEWAY_MODEL = 'openai/gpt-oss-120b';
 const MAX_PROMPT = 90000;
 
 let jwksCache = null;
@@ -250,9 +251,9 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
       '-p',
       profile,
       '--provider',
-      'ai-gateway',
+      runtimeEnv.HERMES_MODEL_PROVIDER,
       '-m',
-      MODEL,
+      runtimeEnv.HERMES_MODEL,
       '-t',
       profile === 'seven-of-nine' ? 'all,kanban' : 'all',
       '-z',
@@ -290,14 +291,18 @@ export default async function handler(req, res) {
     if (!vercelOidc) throw new Error('vercel_oidc_token_missing');
 
     const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
+    const openRouterKey = String(req.headers?.['x-quantdeus-openrouter-key'] || '');
     const runtimeEnv = {
-      AI_GATEWAY_API_KEY: vercelOidc,
       VERCEL_OIDC_TOKEN: vercelOidc,
-      HERMES_MODEL_PROVIDER: 'ai-gateway',
-      HERMES_MODEL: MODEL,
+      HERMES_MODEL_PROVIDER: openRouterKey ? 'openrouter' : 'ai-gateway',
+      HERMES_MODEL: openRouterKey
+        ? (process.env.HERMES_CLOUD_MODEL || DEFAULT_OPENROUTER_MODEL)
+        : (process.env.HERMES_CLOUD_MODEL || DEFAULT_AI_GATEWAY_MODEL),
       HERMES_TERMINAL_BACKEND: 'local',
       GITHUB_TOOLSETS: 'all'
     };
+    if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
+    else runtimeEnv.AI_GATEWAY_API_KEY = vercelOidc;
     if (githubToken) {
       runtimeEnv.GITHUB_TOKEN = githubToken;
       runtimeEnv.GH_TOKEN = githubToken;
@@ -328,7 +333,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       provider: 'quantdeus-hermes-vercel-sandbox',
-      model: MODEL,
+      model: runtimeEnv.HERMES_MODEL,
+      inference_provider: runtimeEnv.HERMES_MODEL_PROVIDER,
       profile,
       text,
       cloud_pc: {
