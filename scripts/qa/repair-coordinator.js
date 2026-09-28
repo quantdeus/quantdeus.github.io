@@ -14,7 +14,7 @@ const mission = readReport('/tmp/quantdeus-mission-alignment.json');
 const monitor = readReport('/tmp/quantdeus-agent-health.json');
 const syntax = readReport('/tmp/quantdeus-qa-syntax.json');
 const contract = readReport('/tmp/quantdeus-qa-contract.json');
-const failures = [...(mission?.failures||[]), ...(monitor?.failures||[]), ...(syntax?.failures||[]), ...(contract?.failures||[])];
+const failures = [...(mission?.failures||[]), ...(monitor?.failures||[]), ...(syntax?.failures||[]), ...(contract?.failures||[])].map(x => ({ ...x, target: x.target || x.agent || 'unknown' }));
 
 const report = {
   agent:'qa-repair',
