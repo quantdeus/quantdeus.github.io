@@ -1,4 +1,4 @@
-name: QuantDeus Swarm Secretary 🗂️
+name: QuantDeus Coordinator Cycle 🖖
 
 on:
   schedule:
@@ -34,7 +34,7 @@ jobs:
       - name: Validate post-scarcity civilization doctrine
         run: node -e "const d=require('./scripts/doctrine').loadDoctrine(); console.log('Doctrine', d.version)"
 
-      - name: Coordinate contributors and refresh hubs
+      - name: Run Seven-first swarm coordination cycle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QUANTDEUS_DISCORD_WEBHOOK: ${{ secrets.QUANTDEUS_DISCORD_WEBHOOK }}
@@ -45,8 +45,8 @@ jobs:
           QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
         run: |
           node scripts/governance-gate.js
-          node scripts/coordinator.js
           node scripts/seven-of-nine.js
+          node scripts/coordinator.js
           node scripts/emh.js
           node scripts/sherlock.js
           node scripts/tuvok.js
