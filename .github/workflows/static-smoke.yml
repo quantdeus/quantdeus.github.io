@@ -21,6 +21,9 @@ jobs:
         run: |
           node --check scripts/coordinator.js
           node --check scripts/seven-of-nine.js
+          node --check scripts/emh.js
+          node --check scripts/sherlock.js
+          node --check scripts/tuvok.js
           node --check scripts/governance-gate.js
           node --check scripts/site-agent-reply.js
           node --check scripts/pillar-executor.js
@@ -49,7 +52,7 @@ jobs:
           test -f wordpress/blueprint.json
           grep -q '/coordination/' index.html
           grep -q 'постдефицитного' index.html
-          grep -q '23 специализированных ИИ-агента' README.md
+          grep -q '26 специализированных ИИ-агентов' README.md
           grep -q 'sitemap.xml' robots.txt
           grep -q '/coordination/' telegram/index.html
 
@@ -87,7 +90,7 @@ jobs:
           if(!Array.isArray(data.agents) || data.agents.length < 11) throw new Error('real agent registry must contain the QuantDeus runtime agents');
           const ids=data.agents.map(a=>a.id);
           if(new Set(ids).size!==ids.length) throw new Error('duplicate agent ids');
-          const expected=['coordinator','seven-of-nine','pillar-executor','strategic-hub','orchestrator','energy','justice','unity','space','potential','synthesis','control-tower'];
+          const expected=['coordinator','seven-of-nine','emh','pillar-executor','strategic-hub','sherlock','tuvok','orchestrator','energy','justice','unity','space','potential','synthesis','control-tower'];
           for(const id of expected) if(!ids.includes(id)) throw new Error('missing homunculus '+id);
           console.log('homunculi:',ids.join(', '));
           NODE
