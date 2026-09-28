@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "title": "QuantDeus Holding Startup Organization",
-  "updated": "2026-09-27",
+  "updated": "2026-09-28",
   "model": "Founder-led AI-native holding",
   "mission": "Снижать измеримый дефицит и увеличивать способность людей добровольно созидать: человек сохраняет достоинство, выбор и EXIT; AI снимает рутину и ускоряет проверяемые исследования, прототипы и координацию; каждый успех стремится стать воспроизводимым артефактом и новым автономным узлом.",
   "workforce": {
@@ -39,7 +39,7 @@
       "id": "growth-marketing",
       "name": "Growth, Marketing & Partnerships",
       "emoji": "📣",
-      "mandate": "Brand, SEO, content, PR, community and strategic partnerships.",
+      "mandate": "Contributor acquisition, brand, SEO, content, PR, community growth and strategic partnerships. Convert verified QuantDeus work into clear, voluntary paths to a first contribution and sustained participation.",
       "agents": [
         "unity",
         "synthesis",
@@ -78,7 +78,7 @@
     "Strategy prioritizes bottlenecks using QuantDeus doctrine plus THRIVE I/II, The Venus Project, Реновация Земли and Рубежи науки as attributed inputs rather than automatic proof.",
     "Product & Engineering builds the smallest reversible prototype and preserves user EXIT/portability where applicable.",
     "QA and Red Team block evidence, safety, doctrine and contract drift and coordinate repair or kill/pause decisions.",
-    "Growth, Media & Partnerships convert verified results into education, culture, voluntary participation and replication packages rather than optimizing reach alone.",
+    "Growth, Marketing & Partnerships convert verified results into contributor acquisition, education, culture, voluntary participation and replication packages; optimize for qualified contributors and first useful contributions rather than reach alone.",
     "Capital, bounties and grants require explicit success/failure criteria, human approval for spending and an observable artifact.",
     "Every successful cycle asks whether the result can become a reusable template, automation or autonomous node."
   ],
