@@ -6,23 +6,23 @@
   "agents": [
     {
       "id": "coordinator",
-      "name": "AI Chief of Staff — coordinator",
-      "emoji": "🧭",
-      "role": "Координирует команду, приоритеты, владельцев задач и ежедневную операционную картину",
+      "name": "Swarm Secretary — coordinator",
+      "emoji": "🗂️",
+      "role": "Секретарь роя: ведёт Coordination Hub, протокол команд, владельцев задач, статусы и точную операционную запись; исполняет маршрутизацию Seven of Nine и CEO, но не задаёт приоритеты самостоятельно",
       "source": "scripts/coordinator.js",
       "group": "executive",
-      "startup_title": "AI Chief of Staff",
+      "startup_title": "Swarm Secretary / Coordination Clerk",
       "department": "Executive & Strategy",
-      "kpi": "flow efficiency / blocked work / decision latency"
+      "kpi": "state freshness / routing hygiene / record accuracy"
     },
     {
       "id": "seven-of-nine",
-      "name": "Seven of Nine — Deputy AI Chief of Staff",
+      "name": "Seven of Nine — QuantDeus Coordinator",
       "emoji": "🖖",
-      "role": "Заместитель Coordinator по эффективности роя: выявляет bottleneck, дубли и лишний WIP, сводит споры к проверяемому результату и ускоряет завершение задач без отмены human override",
+      "role": "Главный координатор роя и AI Chief of Staff: принимает стратегические директивы CEO, задаёт операционные приоритеты, ограничивает WIP, устраняет дубли и bottleneck и требует проверяемый результат при сохранении QA и human override",
       "source": "scripts/seven-of-nine.js",
       "group": "executive",
-      "startup_title": "Deputy AI Chief of Staff / Swarm Efficiency Officer",
+      "startup_title": "QuantDeus Coordinator / AI Chief of Staff",
       "department": "Executive & Strategy",
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency"
     },
