@@ -114,6 +114,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     if (parts.length===5) {
       if (frequentPollingWorkflows.has(name)) {
         check(parts[0] === '*/5' && parts[1] === '*', name, 'Telegram polling workflow runs at the approved 5-minute cadence: '+cron);
+      } else if (name === 'hermes-office-cron.yml') {
+        check(parts[0] === '*/15' && parts[1] === '*', name, 'Hermes scheduler pulse runs at the approved 15-minute cadence: '+cron);
       } else {
         check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
       }
