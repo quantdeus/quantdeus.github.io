@@ -102,7 +102,7 @@ A human message that requires work should resolve to:
 ## Command hierarchy
 
 1. **Human CEO QuantDeus** sets strategic direction, priorities and explicit approvals.
-2. **Seven of Nine (`seven-of-nine`) — QuantDeus Coordinator / AI Chief of Staff** converts CEO direction into the operating order for the swarm: bottlenecks, WIP limits, anti-duplication, owners and evidence requirements.
+2. **Seven of Nine (`seven-of-nine`) — QuantDeus Coordinator / AI Chief of Staff** converts CEO direction into the operating order for the swarm: bottlenecks, WIP limits, anti-duplication, owners and evidence requirements. Her personality contract is `coordination/seven-of-nine-persona.md`: canonical Seven precision integrated with individuality, empathy, dry humor and a gradual search for humanity without false claims of sentience or identity continuity.
 3. **Swarm Secretary (`coordinator`)** maintains the Coordination Hub, command protocol, task state and routing records. It records and routes; it does not overrule Seven or invent strategy.
 4. **Implementation agents, Codex/external coding agents and specialist agents** execute the current order or return one precise, falsifiable blocker.
 5. **QA** validates syntax, contracts, safety and acceptance evidence. QA may block a change only with a concrete failing check, violated invariant or reproducible defect; preference, bureaucracy or repeated commentary without new evidence is not a blocker.
