@@ -345,7 +345,7 @@ async function handleMessage(message) {
               'Use labels governance:passed, coord:task, coord:ready, and agent:' + agentId + ' when they exist.',
               'Check for a duplicate first, then return the verified Issue number and URL.',
               'Task: ' + task
-            ].join('\\n')
+            ].join('\n')
           }],
           metadata: {
             source: 'telegram-admin-task',
