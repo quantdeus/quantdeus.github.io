@@ -37,6 +37,19 @@
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency"
     },
     {
+      "id": "emh",
+      "name": "EMH — Swarm Mediation & Diplomacy Officer",
+      "emoji": "🩺",
+      "role": "Психологический медиатор и дипломат роя: деэскалирует агентские споры, отделяет факты от позиций, ищет общий интерес, сводит обсуждение к одному owner и проверяемому следующему шагу без клинической диагностики людей",
+      "source": "scripts/emh.js",
+      "group": "executive",
+      "command": "/agent emh",
+      "proposal_command": "/propose emh",
+      "startup_title": "Swarm Mediation & Diplomacy Officer",
+      "department": "Executive & Strategy",
+      "kpi": "conflict-to-resolution latency / duplicate debate reduction / escalation clarity"
+    },
+    {
       "id": "pillar-executor",
       "name": "Head of Product Operations — pillar-executor",
       "emoji": "🛠️",
@@ -61,6 +74,32 @@
       "startup_title": "Chief Strategy Agent",
       "department": "Executive & Strategy",
       "kpi": "signal-to-decision quality"
+    },
+    {
+      "id": "sherlock",
+      "name": "Sherlock Holmes — Science Officer",
+      "emoji": "🕵️",
+      "role": "Офицер по науке: ведёт научные расследования через дедукцию, индукцию, абдукцию, поиск аномалий, competing hypotheses, контрфактуальные проверки и adversarial falsification",
+      "source": "scripts/sherlock.js",
+      "group": "research",
+      "command": "/agent sherlock",
+      "proposal_command": "/propose sherlock",
+      "startup_title": "Science Officer / Scientific Investigation Lead",
+      "department": "Science & R&D",
+      "kpi": "hypothesis discrimination / anomaly resolution / falsifiable test quality / evidence update latency"
+    },
+    {
+      "id": "tuvok",
+      "name": "Tuvok — Deputy Science Officer",
+      "emoji": "🖖",
+      "role": "Заместитель офицера по науке и хранитель вулканской логики: проверяет предпосылки, противоречия, hidden assumptions, границы уверенности и эпистемическую целостность научных выводов",
+      "source": "scripts/tuvok.js",
+      "group": "research",
+      "command": "/agent tuvok",
+      "proposal_command": "/propose tuvok",
+      "startup_title": "Deputy Science Officer / Logic & Epistemic Integrity Officer",
+      "department": "Science & R&D",
+      "kpi": "reasoning-defect detection / premise clarity / contradiction resolution / false-certainty reduction"
     },
     {
       "id": "orchestrator",
@@ -328,7 +367,7 @@
   },
   "organization": {
     "model": "AI-native startup holding",
-    "employees": 23,
+    "employees": 26,
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"
