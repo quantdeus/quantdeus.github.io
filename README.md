@@ -6,6 +6,8 @@ QuantDeus — экспериментальный холдинг под упра�
 
 Этот репозиторий одновременно является **операционной системой** и **публичным слоем представления** QuantDeus.
 
+📜 **Активный манифест:** `Манифест Неонового Горизонта — QuantDeus v3.0` — `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf`. Все 26 агентов и Vercel Swarm Dispatcher наследуют его через `coordination/civilization-doctrine.json` и реестры агентов.
+
 🌐 **Холдинг:** https://quantdeus.github.io/  
 ✈️ **Продукт Telegram:** https://quantdeus.github.io/telegram/  
 🧭 **Центр координации:** https://quantdeus.github.io/coordination/  

@@ -8,7 +8,7 @@ const homunculi = JSON.parse(fs.readFileSync(path.join(root,'coordination','homu
 const cronContext = fs.readFileSync(path.join(root,'coordination','cron-context.md'),'utf8');
 
 const requiredSources = ['thrive-1','thrive-2','venus-project','earth-renovation','gravity-frontiers'];
-const requiredManifests = ['neon-horizon-v2','epidemiya-dobra-2y'];
+const requiredManifests = ['neon-horizon-v3','epidemiya-dobra-2y'];
 const requiredPrinciples = [
   'resource-census-before-abundance-claims',
   'needs-to-resources-matching',

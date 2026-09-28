@@ -186,11 +186,11 @@
   ],
   "manifest_sources": [
     {
-      "id": "neon-horizon-v2",
-      "name": "Манифест Неонового Горизонта — QuantDeus v2.0",
-      "canonical_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v2.0.pdf",
-      "source_modified": "2026-09-12T11:06:18Z",
-      "role": "constitutional-charter",
+      "id": "neon-horizon-v3",
+      "name": "Манифест Неонового Горизонта — QuantDeus v3.0",
+      "canonical_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf",
+      "source_modified": "2026-09-28T11:17:51Z",
+      "role": "canonical-constitutional-charter",
       "preserves": [
         "eight-creative-society-pillars",
         "human-first-ai-partnership",
@@ -198,8 +198,13 @@
         "exit-rights-and-data-portability",
         "bounty-and-resource-contract-economy",
         "energy-space-bio-ai-eco-programs",
-        "long-horizon-civilization"
-      ]
+        "long-horizon-civilization",
+        "post-scarcity-resource-economy",
+        "evidence-gates-and-reversible-prototypes",
+        "epidemic-of-good-acceleration",
+        "synthwave-frutiger-aero-cultural-layer"
+      ],
+      "supersedes": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v2.0.pdf"
     },
     {
       "id": "epidemiya-dobra-2y",
