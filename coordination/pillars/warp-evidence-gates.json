@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "checked_commit_sha": "418d48cd34ea766f6e696faaca475700512ec8c7",
+  "candidate": "QuantDeus Warp-buble checkpoint",
+  "note": "Machine-readable companion to coordination/pillars/space.md. UNKNOWN is intentional unless candidate-specific evidence supports PASS or FAIL.",
+  "gates": {
+    "geometry": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Explicit candidate metric/geometry with parameters and provenance is still required."
+    },
+    "eom": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Candidate-specific equations of motion plus reproducible evaluation are required."
+    },
+    "residual": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Numerical or symbolic residual report with tolerance is required."
+    },
+    "nec": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Observer-robust all-frame certificate for the candidate is required."
+    },
+    "energy": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Candidate stress-energy / integrated energy with units, domain and provenance is required."
+    },
+    "curvature_tidal": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Curvature invariants and tidal bounds over the relevant domain are required."
+    },
+    "horizon": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Horizon or trapped-surface analysis for candidate and target velocity is required."
+    },
+    "causality": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Global/local causal-structure and chronology checks are required."
+    },
+    "stability": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Candidate-specific linear/nonlinear stability result is required."
+    },
+    "eft": {
+      "status": "UNKNOWN",
+      "evidence": [
+        "coordination/pillars/space.md"
+      ],
+      "note": "Cutoff/derivative-expansion analysis within the controlled regime is required."
+    }
+  }
+}
