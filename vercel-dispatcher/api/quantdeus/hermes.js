@@ -300,6 +300,22 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
   return stdout.slice(0, 30000);
 }
 
+async function runHermesCronTicks(sandbox, runtimeEnv, paths) {
+  const result = await runChecked(sandbox, {
+    cmd: 'node',
+    args: ['scripts/hermes-office-cron.js'],
+    cwd: paths.workdir,
+    env: runtimeEnv
+  }, 'hermes_cron_tick');
+
+  const raw = await out(result);
+  let summary;
+  try { summary = JSON.parse(raw); }
+  catch { throw new Error('hermes_cron_tick_invalid_summary'); }
+  if (!summary?.ok) throw new Error('hermes_cron_tick_failed');
+  return summary;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'method_not_allowed' });
@@ -310,10 +326,16 @@ export default async function handler(req, res) {
     const auth = String(req.headers?.authorization || '');
     if (!auth.startsWith('Bearer ')) throw new Error('github_oidc_missing');
     const claims = await verifyGitHubOidc(auth.slice(7));
+    const mode = String(req.body?.mode || 'chat');
+    if (!['chat', 'cron_tick'].includes(mode)) throw new Error('unsupported_hermes_mode');
+    const cronTick = mode === 'cron_tick';
+    if (cronTick && !['schedule', 'workflow_dispatch'].includes(String(claims.event_name || ''))) {
+      throw new Error('hermes_cron_wrong_event');
+    }
 
-    const profile = normalizeProfile(req.body?.profile);
-    const messages = normalizeMessages(req.body?.messages);
-    const prompt = promptFrom(messages, req.body?.metadata || {});
+    const profile = cronTick ? null : normalizeProfile(req.body?.profile);
+    const messages = cronTick ? [] : normalizeMessages(req.body?.messages);
+    const prompt = cronTick ? '' : promptFrom(messages, req.body?.metadata || {});
 
     const modelBaseUrl = String(
       process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL || ''
@@ -354,6 +376,31 @@ export default async function handler(req, res) {
     await ensureRepo(sandbox, paths);
     await ensureHermesInstalled(sandbox);
     await ensureBootstrap(sandbox, runtimeEnv, paths);
+    if (cronTick) {
+      const summary = await runHermesCronTicks(sandbox, runtimeEnv, paths);
+      await sandbox.stop();
+      return res.status(200).json({
+        ok: true,
+        mode: 'cron_tick',
+        provider: 'quantdeus-hermes-vercel-sandbox',
+        profiles_checked: summary.profiles_checked,
+        profiles_succeeded: summary.profiles_succeeded,
+        profiles_failed: summary.profiles_failed,
+        cloud_pc: {
+          name: SANDBOX_NAME,
+          persistent: true,
+          home: paths.home,
+          workdir: paths.workdir
+        },
+        github_run: {
+          actor: claims.actor || null,
+          workflow: claims.workflow || null,
+          event: claims.event_name || null,
+          repository: claims.repository
+        }
+      });
+    }
+
     await configureLocalModel(sandbox, profile, runtimeEnv, paths);
     const text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
 
@@ -361,6 +408,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
+      mode: 'chat',
       provider: 'quantdeus-hermes-vercel-sandbox',
       model: MODEL,
       profile,
