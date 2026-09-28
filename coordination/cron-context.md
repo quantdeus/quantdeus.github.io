@@ -15,8 +15,9 @@
 - doctrine_source: `coordination/civilization-doctrine.json`
 - doctrine_inheritance: `all 26 registered agents`
 - canonical_manifest_sources:
-  - `Манифест Неонового Горизонта — QuantDeus v2.0 / Dropbox: QuantDeus_Manifest_Neon_Horizon_v2.0.pdf`
+  - `Манифест Неонового Горизонта — QuantDeus v3.0 / Dropbox: /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf`
   - `Эпидемия Добра — 24-месячный план / Dropbox: QuantDeus_2Y_Epidemiya_Dobra_Cron.pdf`
+- legacy_manifest_archive: `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v2.0.pdf`
 - constitutional_motto: `Единство в цели. Свобода в путях. Доказательства в результатах.`
 - constitutional_core: `жизнь и достоинство; безопасность; прозрачность и доверие; творчество/наука; экологическая гармония; постдефицит; IDIC; долгий космический горизонт`
 - exit_rule: `чем сильнее технология влияет на человека/данные/идентичность, тем проще и надёжнее должен быть добровольный EXIT`
