@@ -112,6 +112,24 @@ Operational sequence in the coordinator cycle:
 
 The research operations role remains with `orchestrator`; Sherlock and Tuvok improve scientific reasoning quality rather than replacing execution routing.
 
+## Browser Homunculus
+
+`Browser Homunculus` is a bounded web-execution worker owned by `control-tower`; it is not a 27th canonical registry agent.
+
+Canonical route:
+
+`Vercel dispatcher → approved GitHub Issue → Browser Homunculus Action → agent-browser/Chrome → Issue result`
+
+Rules:
+1. GitHub remains source of truth; Vercel queues tasks but does not invent completion.
+2. Browser targets are restricted by an explicit allowed-domain list.
+3. Credentials come only from GitHub Actions Secrets via approved secret slots; never place passwords/tokens in Issues.
+4. Stop for CAPTCHA, anti-bot challenges, 2FA, passkeys, SMS/email verification, payments, purchases or irreversible commitments; create a human handoff instead of bypassing the gate.
+5. Do not store screenshots after secret credentials are entered.
+6. Natural-language browser control requires Vercel AI Gateway; deterministic structured steps work without an LLM.
+
+Implementation: `scripts/browser-homunculus.js`, `.github/workflows/browser-homunculus.yml`, `vercel-dispatcher/api/quantdeus/browser.js`.
+
 ## Human control
 
 Safe reversible analysis, Issue/comment/label work, docs, branches, PR preparation, QA and ordinary Telegram replies may be automated.

@@ -27,10 +27,12 @@ jobs:
           node --check scripts/governance-gate.js
           node --check scripts/site-agent-reply.js
           node --check scripts/telegram-bot.js
+          node --check scripts/browser-homunculus.js
           node --check scripts/pillar-executor.js
           node --check scripts/strategic-hub.js
           node --check scripts/orchestrator.js
           node --check vercel-dispatcher/api/quantdeus/hourly.js
+          node --check vercel-dispatcher/api/quantdeus/browser.js
 
       - name: Run QA syntax validator
         run: node scripts/qa/syntax-validator.js
@@ -55,6 +57,10 @@ jobs:
           test -f vercel-dispatcher/package.json
           test -f vercel-dispatcher/vercel.json
           test -f vercel-dispatcher/api/quantdeus/hourly.js
+          test -f vercel-dispatcher/api/quantdeus/browser.js
+          test -f scripts/browser-homunculus.js
+          test -f .github/workflows/browser-homunculus.yml
+          test -f docs/browser-homunculus.md
           test -f .github/workflows/telegram-bot.yml
           node -e "JSON.parse(require('fs').readFileSync('vercel-dispatcher/vercel.json','utf8')); JSON.parse(require('fs').readFileSync('vercel-dispatcher/package.json','utf8'))"
           grep -q '/coordination/' index.html

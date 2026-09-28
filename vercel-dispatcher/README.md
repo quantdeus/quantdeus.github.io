@@ -52,3 +52,17 @@ Preferred when the Vercel plan supports hourly Cron:
 If the active Vercel plan cannot provide the requested hourly cadence, keep the endpoint deployable and mark hourly scheduling blocked until the runtime supports it. Telegram transport remains independent in GitHub Actions.
 
 ## Telegram boundary\n\nTelegram transport is owned by the GitHub Actions bot and direct Telegram Bot API. The Vercel dispatcher does not need a separate messaging bridge.\n
+## Browser execution queue
+
+`POST /api/quantdeus/browser` queues a governance-approved Browser Homunculus task as a GitHub Issue. The actual Chrome session runs in GitHub Actions through `vercel-labs/agent-browser`; GitHub remains the source of truth.
+
+Authentication uses `BROWSER_DISPATCH_SECRET`, falling back to `CRON_SECRET` when a dedicated browser secret is not configured.
+
+Additional optional environment variables:
+
+- `BROWSER_DISPATCH_SECRET` — dedicated bearer secret for the browser queue endpoint.
+- `QUANTDEUS_GITHUB_TOKEN` — must be able to create Issues for browser queueing.
+
+Browser credentials are **not** sent through Vercel. Put them in GitHub Actions Secrets (`QD_BROWSER_EMAIL`, `QD_BROWSER_USERNAME`, `QD_BROWSER_PASSWORD`, etc.) and reference only the secret slot name in the task manifest.
+
+See `docs/browser-homunculus.md`.
