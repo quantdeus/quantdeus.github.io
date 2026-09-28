@@ -7,7 +7,8 @@ const EXPECTED_AUDIENCE = 'quantdeus-vercel-hermes';
 const EXPECTED_REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ALLOWED_EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX_NAME = 'quantdeus-hermes-office';
-const WORKDIR = '/vercel/sandbox/quantdeus';
+const SANDBOX_HOME = '/home/vercel-sandbox';
+const WORKDIR = SANDBOX_HOME + '/quantdeus';
 const REPO_URL = 'https://github.com/quantdeus/quantdeus.github.io.git';
 const MODEL = process.env.HERMES_CLOUD_MODEL || 'openai/gpt-oss-120b';
 const MAX_PROMPT = 90000;
@@ -143,7 +144,7 @@ async function ensureRepo(sandbox) {
     await runChecked(sandbox, {
       cmd: 'git',
       args: ['clone', '--depth', '1', '--branch', 'main', REPO_URL, WORKDIR],
-      cwd: '/vercel/sandbox'
+      cwd: SANDBOX_HOME
     }, 'repo_clone');
     return;
   }
@@ -198,7 +199,7 @@ async function bootstrapFingerprint(sandbox) {
 
 async function ensureBootstrap(sandbox, runtimeEnv) {
   const fingerprint = await bootstrapFingerprint(sandbox);
-  const markerPath = '/vercel/sandbox/.quantdeus-hermes-bootstrap';
+  const markerPath = SANDBOX_HOME + '/.quantdeus-hermes-bootstrap';
   const marker = await sandbox.runCommand({
     cmd: 'bash',
     args: ['-lc', 'cat "$1" 2>/dev/null || true', 'bash', markerPath]
@@ -223,7 +224,7 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv) {
     cmd: 'bash',
     args: [
       '-lc',
-      'exec flock -w 240 /vercel/sandbox/.quantdeus-hermes.lock "$HOME/.local/bin/hermes" "$@"',
+      'exec flock -w 240 "$HOME/.quantdeus-hermes.lock" "$HOME/.local/bin/hermes" "$@"',
       'hermes',
       '-p',
       profile,
