@@ -11,19 +11,6 @@
   },
   "agents": [
     {
-      "id": "coordinator",
-      "name": "Swarm Secretary — coordinator",
-      "emoji": "🗂️",
-      "role": "Секретарь роя: ведёт Coordination Hub, протокол команд, владельцев задач, статусы и точную операционную запись; исполняет маршрутизацию Seven of Nine и CEO, но не задаёт приоритеты самостоятельно",
-      "source": "scripts/coordinator.js",
-      "group": "executive",
-      "command": "/agent coordinator",
-      "proposal_command": "/propose coordinator",
-      "startup_title": "Swarm Secretary / Coordination Clerk",
-      "department": "Executive & Strategy",
-      "kpi": "state freshness / routing hygiene / record accuracy"
-    },
-    {
       "id": "seven-of-nine",
       "name": "Seven of Nine — QuantDeus Coordinator",
       "emoji": "🖖",
@@ -36,6 +23,19 @@
       "department": "Executive & Strategy",
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency",
       "persona": "coordination/seven-of-nine-persona.md"
+    },
+    {
+      "id": "coordinator",
+      "name": "Swarm Secretary — coordinator",
+      "emoji": "🗂️",
+      "role": "Секретарь роя: ведёт Coordination Hub, протокол команд, владельцев задач, статусы и точную операционную запись; исполняет маршрутизацию Seven of Nine и CEO, но не задаёт приоритеты самостоятельно",
+      "source": "scripts/coordinator.js",
+      "group": "executive",
+      "command": "/agent coordinator",
+      "proposal_command": "/propose coordinator",
+      "startup_title": "Swarm Secretary / Coordination Clerk",
+      "department": "Executive & Strategy",
+      "kpi": "state freshness / routing hygiene / record accuracy"
     },
     {
       "id": "emh",
