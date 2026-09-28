@@ -78,7 +78,7 @@ check(registry.doctrine?.inheritance === 'all-agents', 'coordination/agents.json
 
 const requiredDoctrineSources = ['thrive-1','thrive-2','venus-project','earth-renovation','gravity-frontiers'];
 const doctrineSourceIds = (doctrine.source_streams || []).map(s=>s.id);
-const requiredManifestSources = ['neon-horizon-v2','epidemiya-dobra-2y'];
+const requiredManifestSources = ['neon-horizon-v3','epidemiya-dobra-2y'];
 const doctrineManifestIds = (doctrine.manifest_sources || []).map(s=>s.id);
 for (const id of requiredDoctrineSources) {
   check(doctrineSourceIds.includes(id), 'coordination/civilization-doctrine.json', 'required doctrine source present: '+id);
