@@ -42,18 +42,20 @@
 - future_fund_rule: `fund only testable outcomes with falsifier/failure condition and a resulting verifiable/open artifact after reserves and obligations`
 - shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
 - telegram_transport: `GitHub Actions → Telegram Bot API`
-- telegram_polling: `*/5 * * * * / .github/workflows/telegram-bot.yml / direct getUpdates + sendMessage`
+- telegram_ingress: `GitHub Actions Telegram Bot; transport details and trigger mode are defined by .github/workflows/telegram-bot.yml; do not assume periodic getUpdates polling`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
-- vercel_swarm_dispatcher: `hourly target / 0 * * * * / /api/quantdeus/hourly / tracked by Issue #154`
+- vercel_swarm_dispatcher: `hourly target / 0 * * * * / /api/quantdeus/hourly / configuration and deployed cadence unverified / tracked by Issue #154`
 - vercel_swarm_status: `pending deployment verification; do not claim DONE until Vercel Cron + Agent Run/runtime logs + GitHub smoke artifact exist`
 - scheduled_workflows:
+  - `Telegram GitHub Bot: trigger/cadence follows .github/workflows/telegram-bot.yml; no 5-minute polling assumption`
+  - `Vercel Swarm Dispatcher: hourly target; deployment and cadence require runtime verification`
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
   - `06:27 UTC — QuantDeus Swarm Secretary`
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:42 UTC — QuantDeus Contributor Growth`
   - `06:47 UTC — QuantDeus QA Triad`
   - `every 5 minutes — QuantDeus Telegram GitHub Bot`
-- cron_cadence_rule: `Telegram bot polling every 5 minutes; Vercel dispatcher hourly target; health/QA/research workflows remain staggered daily unless their own workflow says otherwise`
+- cron_cadence_rule: `Telegram Bot cadence is defined by its GitHub Actions trigger; Vercel dispatcher has an hourly target but remains unverified until deployment/runtime evidence exists; health/QA/research workflows remain staggered daily unless their own workflow says otherwise`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
