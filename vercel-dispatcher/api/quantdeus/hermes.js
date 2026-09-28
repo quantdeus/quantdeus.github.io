@@ -300,7 +300,7 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths) {
 }
 
 async function runModelFallback(prompt, baseUrl, apiKey, model) {
-  const root = String(baseUrl || '').trim().replace(/\\/+$/, '');
+  const root = String(baseUrl || '').trim().replace(/\/+$/, '');
   const endpoint = root.endsWith('/v1') ? root + '/chat/completions' : root + '/v1/chat/completions';
   const response = await fetch(endpoint, {
     method: 'POST',
