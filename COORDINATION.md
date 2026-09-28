@@ -48,21 +48,22 @@ The coordinator runs every hour and also reacts to Issue and Issue-comment event
 
 Active tasks older than 72 hours are marked `coord:stale` and `coord:human` so stalled work becomes visible.
 
-## Telegram recruitment through Zapier MCP
+## Telegram through GitHub Actions
 
-For contributor growth, the preferred external route is:
+Canonical route:
 
-`GitHub recruitment state → Vercel Swarm Dispatcher/Growth agent → Zapier MCP → Telegram → person joins QuantDeus chat → first contribution`
+`Telegram → GitHub Actions polling → agent routing → GitHub Issues/PRs → QA → GitHub → Telegram Bot API reply`
 
-GitHub remains the canonical record of the opportunity and task. Zapier MCP is only the transport layer.
+The scheduled workflow `.github/workflows/telegram-bot.yml` polls the Telegram Bot API directly and routes ordinary text to the 26-agent registry. Explicit `/agent <id>` selects a role; `/propose <id> <idea>` creates a governance proposal; Telegram chat admins may use `/task <id> <task>` for direct approved work.
 
-Agent/Vercel Swarm Dispatcher behavior:
+The polling offset is stored only in an ephemeral GitHub Actions cache. Raw Telegram user IDs are not committed to the repository.
+
+For contributor growth:
 - match a qualified person to a concrete open Issue before outreach;
 - prepare a short personalized invite;
-- send through the configured Telegram action in Zapier MCP when the recipient/target is reachable through a public or opt-in Telegram path;
-- include the runtime-provided QuantDeus Telegram invite URL when needed;
-- write back only a public-safe status, never the private message body or unnecessary personal details;
-- if delivery is unavailable, create a handoff/blocker instead of pretending success;
+- send through the configured QuantDeus Telegram bot only when the target is public/opt-in;
+- include the runtime-provided invite URL when needed;
+- write back only public-safe status, never unnecessary private message content;
 - no bulk unsolicited messaging or repeated pressure after decline/no-response.
 
 ## External channels
@@ -72,7 +73,7 @@ External notifications are opt-in. Configure any of these repository Actions sec
 - `QUANTDEUS_DISCORD_WEBHOOK`
 - `QUANTDEUS_SLACK_WEBHOOK`
 - `QUANTDEUS_GENERIC_WEBHOOK`
-- `QUANTDEUS_TELEGRAM_BOT_TOKEN` together with `QUANTDEUS_TELEGRAM_CHAT_ID`
+- `TELEGRAM_BOT_TOKEN` for the GitHub-native bot; `QUANTDEUS_TELEGRAM_CHAT_ID` remains optional for coordinator digests
 
 When configured, the coordinator sends a compact digest only when the task-state digest changes. If no external secret is configured, no message leaves GitHub.
 
