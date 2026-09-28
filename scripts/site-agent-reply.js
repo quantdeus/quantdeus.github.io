@@ -8,8 +8,8 @@ const openRouterModel = process.env.QD_LLM_MODEL || 'openrouter/free';
 const openRouterKey = process.env.OPENROUTER_API_KEY;
 const aiGatewayKey = process.env.AI_GATEWAY_API_KEY;
 const aiGatewayModel = process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini';
-const activeProvider = aiGatewayKey ? 'vercel-ai-gateway' : (openRouterKey ? 'openrouter' : requestedProvider);
-const activeModel = activeProvider === 'vercel-ai-gateway' ? aiGatewayModel : openRouterModel;
+let activeProvider = aiGatewayKey ? 'vercel-ai-gateway' : (openRouterKey ? 'openrouter' : 'vercel-oidc-bridge');
+let activeModel = activeProvider === 'vercel-ai-gateway' ? aiGatewayModel : (activeProvider === 'openrouter' ? openRouterModel : 'openai/gpt-5.4-mini');
 
 if (!repo || !token || !eventPath || !fs.existsSync(eventPath)) {
   console.error('Missing GitHub runtime context');
@@ -120,7 +120,7 @@ function commandReply() {
     return [
       '🖖 **QuantDeus web agents online**',
       '',
-      'Обычные сообщения теперь обрабатываются реальной LLM через GitHub Models.',
+      'Обычные сообщения обрабатываются живой LLM через защищённый Vercel AI Gateway/OIDC-контур.',
       '',
       'Команды:',
       '- `/agents` — список агентов',
@@ -216,7 +216,61 @@ async function buildSnapshot(agent) {
   };
 }
 
+async function getGitHubOidcToken() {
+  const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+  const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+  if (!requestUrl || !requestToken) {
+    throw new Error('GITHUB_OIDC_UNAVAILABLE: workflow needs id-token: write');
+  }
+
+  const separator = requestUrl.includes('?') ? '&' : '?';
+  const r = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent('quantdeus-vercel-llm'), {
+    headers: {
+      authorization: 'Bearer ' + requestToken,
+      accept: 'application/json'
+    }
+  });
+  const raw = await r.text();
+  if (!r.ok) throw new Error('GitHub OIDC ' + r.status + ': ' + raw.slice(0, 500));
+
+  const data = JSON.parse(raw);
+  if (!data?.value) throw new Error('GitHub OIDC returned no token');
+  return data.value;
+}
+
+async function callVercelOidcBridge(messages) {
+  const oidc = await getGitHubOidcToken();
+  const r = await fetch('https://quantdeus.vercel.app/api/quantdeus/llm', {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + oidc,
+      'content-type': 'application/json',
+      accept: 'application/json'
+    },
+    body: JSON.stringify({ messages })
+  });
+
+  const raw = await r.text();
+  if (!r.ok) throw new Error('Vercel LLM bridge ' + r.status + ': ' + raw.slice(0, 1000));
+
+  let data;
+  try { data = JSON.parse(raw); }
+  catch { throw new Error('Vercel LLM bridge returned non-JSON: ' + raw.slice(0, 300)); }
+
+  if (!data?.text || !String(data.text).trim()) {
+    throw new Error('Vercel LLM bridge returned an empty response');
+  }
+
+  activeProvider = 'vercel-oidc-bridge';
+  activeModel = data.model || activeModel;
+  return String(data.text).trim();
+}
+
 async function callModel(messages) {
+  if (!aiGatewayKey && !openRouterKey) {
+    return callVercelOidcBridge(messages);
+  }
+
   let url;
   let key;
   let providerLabel;
@@ -225,12 +279,16 @@ async function callModel(messages) {
     url = 'https://ai-gateway.vercel.sh/v1/chat/completions';
     key = aiGatewayKey;
     providerLabel = 'Vercel AI Gateway';
+    activeProvider = 'vercel-ai-gateway';
+    activeModel = aiGatewayModel;
   } else if (openRouterKey && (requestedProvider === 'auto' || requestedProvider === 'openrouter')) {
     url = 'https://openrouter.ai/api/v1/chat/completions';
     key = openRouterKey;
     providerLabel = 'OpenRouter';
+    activeProvider = 'openrouter';
+    activeModel = openRouterModel;
   } else {
-    throw new Error('NO_LLM_CREDENTIALS: configure AI_GATEWAY_API_KEY or OPENROUTER_API_KEY');
+    return callVercelOidcBridge(messages);
   }
 
   const headers = {
@@ -258,11 +316,8 @@ async function callModel(messages) {
   if (!r.ok) throw new Error(providerLabel + ' ' + r.status + ': ' + raw.slice(0, 1000));
 
   let data;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    throw new Error(providerLabel + ' returned non-JSON: ' + raw.slice(0, 300));
-  }
+  try { data = JSON.parse(raw); }
+  catch { throw new Error(providerLabel + ' returned non-JSON: ' + raw.slice(0, 300)); }
 
   const text = data?.choices?.[0]?.message?.content;
   if (!text || !String(text).trim()) {
@@ -294,7 +349,7 @@ async function buildReply(agentId, query) {
 
 async function postReply(result) {
   const footer = result.llm
-    ? '\n\n_🤖 LLM: ' + (activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : 'OpenRouter') + ' · ' + activeModel + ' · repo-grounded_'
+    ? '\n\n_🤖 LLM: ' + (activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : activeProvider === 'openrouter' ? 'OpenRouter' : 'Vercel OIDC Bridge') + ' · ' + activeModel + ' · repo-grounded_'
     : '';
   const r = await fetch('https://api.github.com/repos/' + repo + '/issues/' + issue.number + '/comments', {
     method: 'POST',
@@ -318,11 +373,8 @@ async function postReply(result) {
 })().catch(async err => {
   console.error(err.stack || err.message || err);
   try {
-    const missingKey = String(err.message || err).includes('NO_LLM_CREDENTIALS');
     await postReply({
-      text: missingKey
-        ? '⚠️ **Живой LLM-режим установлен, но ни один LLM credential пока не подключён.**\n\nНужен один repository secret: `AI_GATEWAY_API_KEY` или `OPENROUTER_API_KEY`. Скриптовый ответ намеренно отключён.'
-        : '⚠️ **LLM-контур агента временно не ответил.**\n\nПровайдер вернул ошибку, поэтому я не подменяю живой ответ заготовленным скриптом. Проверьте workflow `QuantDeus Site Agent Replies`.',
+      text: '⚠️ **Живой LLM-контур не ответил.**\n\nСкриптовая реплика намеренно отключена: вместо фальшивого ответа смотри ошибку workflow `QuantDeus Site Agent Replies`.',
       llm: false,
       agent: { id: pickAgent(body) }
     });
