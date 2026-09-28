@@ -9,9 +9,9 @@
   "source_of_truth": "github",
   "github_repository": "quantdeus/quantdeus.github.io",
   "model": {
-    "provider": "ollama-cloud",
-    "default": "gpt-oss:120b",
-    "minimum_context_tokens": 65536,
+    "provider": "ai-gateway",
+    "default": "openai/gpt-oss-120b",
+    "minimum_context_tokens": 131072,
     "override_env": {
       "provider": "HERMES_MODEL_PROVIDER",
       "model": "HERMES_MODEL"
@@ -33,8 +33,8 @@
     "secretary_profile": "coordinator"
   },
   "execution": {
-    "preferred_terminal_backend": "vercel_sandbox",
-    "fallback_terminal_backend": "docker",
+    "preferred_terminal_backend": "local",
+    "fallback_terminal_backend": "local",
     "max_in_progress": 6,
     "max_in_progress_per_profile": 1,
     "human_handoff_for": [
@@ -45,7 +45,9 @@
       "secrets",
       "2FA",
       "CAPTCHA"
-    ]
+    ],
+    "hosting": "vercel-persistent-sandbox",
+    "sandbox_name": "quantdeus-hermes-office"
   },
   "state": {
     "hermes_home": "~/.hermes",
@@ -63,8 +65,8 @@
   },
   "evolution": {
     "manifest": "coordination/hermes-evolution.json",
-    "chat_bridge": "Hermes API server via HERMES_API_URL/HERMES_API_KEY",
-    "github_mcp": "official github/github-mcp-server",
+    "chat_bridge": "GitHub Actions OIDC -> quantdeus.vercel.app/api/quantdeus/hermes -> persistent Vercel Sandbox",
+    "github_mcp": "official remote GitHub MCP over https://api.githubcopilot.com/mcp/",
     "playwright_mcp": "@playwright/mcp@latest",
     "project_skills": ".hermes/skills",
     "self_improvement": "skill_manage + background curator + daily evolution cron"
