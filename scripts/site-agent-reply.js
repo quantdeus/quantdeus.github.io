@@ -55,16 +55,21 @@ function stripAgentPrefix(text) {
     .trim();
 }
 
-async function gh(path) {
+async function gh(path, options = {}) {
   const r = await fetch('https://api.github.com/repos/' + repo + path, {
+    ...options,
     headers: {
       accept: 'application/vnd.github+json',
       authorization: 'Bearer ' + token,
       'x-github-api-version': '2026-03-10',
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      ...(options.headers || {}),
     },
   });
-  if (!r.ok) throw new Error('GitHub ' + r.status + ' ' + await r.text());
-  return r.json();
+  const raw = await r.text();
+  if (!r.ok) throw new Error('GitHub ' + r.status + ' ' + raw.slice(0, 1500));
+  if (!raw) return {};
+  return JSON.parse(raw);
 }
 
 function labelsOf(i) {
@@ -126,6 +131,7 @@ function commandReply() {
       '- `/agents` — список агентов',
       '- `/agent <id> <вопрос>` — обратиться к конкретному агенту',
       '- `@<id> <вопрос>` — короткая форма',
+      '- `создай issue <описание>` — создать GitHub Issue через LLM + GitHub API',
       '',
       'Комнаты: #general / #agents / #warp / #build'
     ].join('\n');
@@ -136,6 +142,124 @@ function commandReply() {
   }
 
   return null;
+}
+
+
+function isCreateIssueRequest(text) {
+  const value = String(text || '').trim();
+  return /^(?:пожалуйста\s+)?(?:создай|создать|открой|открыть|заведи|завести)\s+(?:новый\s+)?(?:github\s+)?(?:issue|ишью|задачу|тикет)\b/i.test(value)
+    || /^(?:create|open)\s+(?:a\s+)?(?:new\s+)?(?:github\s+)?issue\b/i.test(value);
+}
+
+function extractJsonObject(text) {
+  const raw = String(text || '').trim();
+  const unfenced = raw
+    .replace(/^\`\`\`(?:json)?\s*/i, '')
+    .replace(/\s*\`\`\`$/i, '');
+  const start = unfenced.indexOf('{');
+  const end = unfenced.lastIndexOf('}');
+  if (start < 0 || end <= start) throw new Error('issue_draft_json_missing');
+  return JSON.parse(unfenced.slice(start, end + 1));
+}
+
+function normalizeTitle(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+}
+
+function normalizeForDuplicate(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-zа-яё0-9]+/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function createIssueFromRequest(agent, query, snapshot) {
+  const [labelRows, openRows] = await Promise.all([
+    gh('/labels?per_page=100'),
+    gh('/issues?state=open&per_page=100')
+  ]);
+
+  const availableLabels = (labelRows || []).map(label => label.name).filter(Boolean);
+  const prompt = [
+    'You prepare a GitHub Issue draft for QuantDeus.',
+    'Return ONLY valid JSON. No markdown fences, no commentary.',
+    'Schema: {"title":"...","body":"...","labels":["..."]}',
+    'The title must be concise and actionable, max 100 characters.',
+    'The body must describe goal, context, concrete acceptance criteria, and avoid inventing facts.',
+    'Choose 0-5 labels ONLY from this exact allowed list:',
+    JSON.stringify(availableLabels),
+    'Prefer coord:task + coord:ready when available for executable work.',
+    'Prefer an existing priority label only when clearly justified by the user request.',
+    'Do not include secrets, phone numbers, credentials, tokens, or private data.',
+    'Agent identity: ' + agent.name + ' (' + agent.id + ').',
+    'Repository snapshot:',
+    JSON.stringify(snapshot, null, 2)
+  ].join('\n');
+
+  const rawDraft = await callModel([
+    { role: 'system', content: prompt },
+    { role: 'user', content: query }
+  ]);
+  const draft = extractJsonObject(rawDraft);
+  const title = normalizeTitle(draft.title);
+  if (!title) throw new Error('issue_draft_title_missing');
+
+  const requestedLabels = Array.isArray(draft.labels) ? draft.labels.map(String) : [];
+  const labels = requestedLabels.filter(label => availableLabels.includes(label)).slice(0, 5);
+  const bodyText = String(draft.body || '').trim().slice(0, 20000);
+  if (!bodyText) throw new Error('issue_draft_body_missing');
+
+  const existing = (openRows || [])
+    .filter(row => !row.pull_request)
+    .find(row => normalizeForDuplicate(row.title) === normalizeForDuplicate(title));
+
+  if (existing) {
+    return {
+      text: '♻️ **Новый Issue не создаю — нашёл точный дубликат.**\n\n#' + existing.number + ' — [' + existing.title + '](' + existing.html_url + ')',
+      llm: true,
+      agent,
+      action: 'issue_duplicate'
+    };
+  }
+
+  const sourceUrl = comment.html_url || ('https://github.com/' + repo + '/issues/' + issue.number);
+  const auditBody = [
+    bodyText,
+    '',
+    '---',
+    'Created by QuantDeus site agent **' + agent.id + '** after an explicit human create-issue request.',
+    'Source chat: ' + sourceUrl
+  ].join('\n');
+
+  const created = await gh('/issues', {
+    method: 'POST',
+    body: JSON.stringify({
+      title,
+      body: auditBody,
+      labels
+    })
+  });
+
+  if (!created?.number || !created?.html_url) throw new Error('github_issue_creation_missing_response');
+
+  return {
+    text: [
+      '✅ **Issue создан реально через GitHub API.**',
+      '',
+      '#' + created.number + ' — [' + created.title + '](' + created.html_url + ')',
+      labels.length ? 'Labels: ' + labels.map(label => '`' + label + '`').join(' · ') : 'Labels: без меток',
+      '',
+      '_Execution: Seven → LLM draft → duplicate check → GitHub Issues API_'
+    ].join('\n'),
+    llm: true,
+    agent,
+    action: 'issue_created',
+    createdIssue: created
+  };
 }
 
 async function threadHistory() {
@@ -393,16 +517,21 @@ async function buildReply(agentId, query) {
   const command = commandReply();
   if (command) return { text: command, llm: false, agent };
 
+  const normalizedQuery = query || body;
   const [history, snapshot] = await Promise.all([
     threadHistory(),
     buildSnapshot(agent),
   ]);
 
+  if (isCreateIssueRequest(normalizedQuery)) {
+    return createIssueFromRequest(agent, normalizedQuery, snapshot);
+  }
+
   const context = localContext(agent.id);
   const messages = [
     { role: 'system', content: buildSystemPrompt(agent, context, snapshot) },
     ...history,
-    { role: 'user', content: query || body },
+    { role: 'user', content: normalizedQuery },
   ];
 
   const text = await callModel(messages);
