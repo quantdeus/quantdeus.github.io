@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "name": "QuantDeus Hermes Evolution",
+  "office_manifest": "coordination/hermes-office.json",
+  "principle": "maximal reversible autonomy with observable evidence",
+  "chat_bridge": {
+    "primary_profile": "seven-of-nine",
+    "api_protocol": "Hermes OpenAI-compatible API",
+    "api_url_env": "HERMES_API_URL",
+    "api_key_env": "HERMES_API_KEY",
+    "sources": ["github-command-center", "telegram"],
+    "fallback": "existing QuantDeus repo-grounded runtime when Hermes API is unavailable"
+  },
+  "capabilities": {
+    "github": {
+      "mode": "official-mcp",
+      "server": "github/github-mcp-server",
+      "toolsets": "all",
+      "credential_env": "GITHUB_PERSONAL_ACCESS_TOKEN",
+      "allowed": [
+        "read repositories",
+        "create/update issues",
+        "create branches and pull requests",
+        "review and comment",
+        "inspect and run actions",
+        "maintain labels and coordination artifacts",
+        "make safe reversible repository changes"
+      ]
+    },
+    "browser": {
+      "built_in_hermes_browser": true,
+      "playwright_mcp": true,
+      "playwright_package": "@playwright/mcp@latest",
+      "browser_vault": true,
+      "account_registration": "allowed for legitimate QuantDeus project-service accounts until a human-verification or commitment gate"
+    },
+    "automation": {
+      "cronjob_manage": true,
+      "agents_may_create_cron": true,
+      "cron_runs_may_not_recursively_create_cron": true,
+      "default_evolution_review": "daily"
+    },
+    "self_improvement": {
+      "skill_manage": true,
+      "skills_write_approval": false,
+      "guard_agent_created": true,
+      "skills_ledger": true,
+      "creation_nudge_interval": 10,
+      "curator": {
+        "enabled": true,
+        "interval_hours": 24,
+        "min_idle_hours": 1,
+        "consolidate": true,
+        "backup": true
+      },
+      "mcp_discovery": true,
+      "connections_toolset": true,
+      "catalog_install_without_human": true,
+      "custom_mcp_rule": "inspect provenance and scope first; if it can mutate external systems or needs new credentials, create an auditable setup/handoff instead of fabricating access"
+    }
+  },
+  "self_modification": {
+    "profile_memory_and_skills": "autonomous",
+    "profile_tool_and_mcp_configuration": "autonomous when reversible and credentials already exist",
+    "canonical_repo_changes": "branch-or-pr plus QA evidence",
+    "guardrail_changes": "must not be silently weakened by an agent",
+    "identity_and_command_hierarchy": "canonical coordination files remain authoritative"
+  },
+  "account_registration": {
+    "allowed_use": "project accounts required for an active QuantDeus task",
+    "identity": "use a truthful QuantDeus project/service identity; no impersonation or bulk account farming",
+    "credentials": "store only in approved runtime secret storage or browser vault, never Issues/PRs",
+    "stop_and_handoff": [
+      "CAPTCHA or anti-bot challenge",
+      "email or SMS verification not already available to the runtime",
+      "2FA or passkey",
+      "payment or purchase",
+      "legal terms requiring a human commitment",
+      "government or identity verification"
+    ],
+    "audit": "record only public-safe result/status and link it to a canonical task"
+  },
+  "human_gates": [
+    "payments and purchases",
+    "legal commitments",
+    "secrets or credential disclosure",
+    "irreversible destructive production actions",
+    "CAPTCHA/2FA/passkeys/SMS-email verification",
+    "sensitive external outreach or promises of employment/equity/payment"
+  ]
+}
