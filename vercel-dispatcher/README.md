@@ -49,7 +49,7 @@ Preferred when the Vercel plan supports hourly Cron:
 }
 ```
 
-On Vercel Hobby, native Cron cannot run hourly. In that case keep the runtime on Vercel and trigger this protected endpoint hourly from the canonical GitHub Actions scheduler. The execution still happens in the Vercel function; GitHub only supplies the clock.
+On Vercel Hobby, native Cron cannot run hourly. Do not bypass the repository's daily GitHub cron policy just to emulate an hourly Vercel schedule. Keep the endpoint deployable and mark hourly scheduling blocked until the Vercel plan/runtime supports the requested cadence or an explicitly approved scheduler is chosen.
 
 ## Hard boundary
 
