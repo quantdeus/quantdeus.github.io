@@ -88,7 +88,7 @@
   ],
   "charter": {
     "doctrine_version": "2026.09-post-scarcity-v3",
-    "manifesto": "Неоновый горизонт v2.0 + Эпидемия Добра",
+    "manifesto": "Неоновый горизонт v3.0 + Эпидемия Добра",
     "motto": "Единство в цели. Свобода в путях. Доказательства в результатах.",
     "eight_pillars": [
       "human-life-and-dignity-first",
@@ -120,6 +120,7 @@
       "synthwave": "ночной космический исследовательский слой",
       "frutiger_aero": "дневной экологический постдефицитный слой",
       "rule": "aesthetics support culture and participation; evidence remains independent"
-    }
+    },
+    "manifest_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf"
   }
 }
