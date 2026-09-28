@@ -3,7 +3,9 @@ const fs = require('fs');
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
 const eventPath = process.env.GITHUB_EVENT_PATH;
-const model = process.env.QD_LLM_MODEL || 'openai/gpt-4.1';
+const provider = process.env.QD_LLM_PROVIDER || 'openrouter';
+const model = process.env.QD_LLM_MODEL || 'openrouter/free';
+const openRouterKey = process.env.OPENROUTER_API_KEY;
 
 if (!repo || !token || !eventPath || !fs.existsSync(eventPath)) {
   console.error('Missing GitHub runtime context');
@@ -211,12 +213,21 @@ async function buildSnapshot(agent) {
 }
 
 async function callModel(messages) {
-  const r = await fetch('https://models.github.ai/inference/chat/completions', {
+  if (provider !== 'openrouter') {
+    throw new Error('Unsupported LLM provider: ' + provider);
+  }
+  if (!openRouterKey) {
+    throw new Error('OPENROUTER_API_KEY is not configured');
+  }
+
+  const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      authorization: 'Bearer ' + token,
+      authorization: 'Bearer ' + openRouterKey,
       'content-type': 'application/json',
       accept: 'application/json',
+      'HTTP-Referer': 'https://quantdeus.github.io/coordination.html',
+      'X-Title': 'QuantDeus Site Agents',
     },
     body: JSON.stringify({
       model,
@@ -227,11 +238,19 @@ async function callModel(messages) {
   });
 
   const raw = await r.text();
-  if (!r.ok) throw new Error('GitHub Models ' + r.status + ': ' + raw.slice(0, 1000));
+  if (!r.ok) throw new Error('OpenRouter ' + r.status + ': ' + raw.slice(0, 1000));
 
-  const data = JSON.parse(raw);
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    throw new Error('OpenRouter returned non-JSON: ' + raw.slice(0, 300));
+  }
+
   const text = data?.choices?.[0]?.message?.content;
-  if (!text || !String(text).trim()) throw new Error('GitHub Models returned an empty response');
+  if (!text || !String(text).trim()) {
+    throw new Error('OpenRouter returned an empty response');
+  }
   return String(text).trim();
 }
 
@@ -258,7 +277,7 @@ async function buildReply(agentId, query) {
 
 async function postReply(result) {
   const footer = result.llm
-    ? '\n\n_🤖 LLM: GitHub Models · ' + model + ' · repo-grounded_'
+    ? '\n\n_🤖 LLM: OpenRouter · ' + model + ' · repo-grounded_'
     : '';
   const r = await fetch('https://api.github.com/repos/' + repo + '/issues/' + issue.number + '/comments', {
     method: 'POST',
@@ -283,7 +302,7 @@ async function postReply(result) {
   console.error(err.stack || err.message || err);
   try {
     await postReply({
-      text: '⚠️ **LLM-контур агента временно не ответил.**\n\nGitHub Models вернул ошибку, поэтому я не подменяю живой ответ заготовленным скриптом. Проверьте workflow `QuantDeus Site Agent Replies`.',
+      text: err.message.includes('OPENROUTER_API_KEY')\n        ? '⚠️ **Живой LLM-режим установлен, но не подключён ключ провайдера.**\\n\\nДобавьте repository secret `OPENROUTER_API_KEY`. Скриптовый ответ намеренно отключён.'\n        : '⚠️ **LLM-контур агента временно не ответил.**\\n\\nOpenRouter вернул ошибку, поэтому я не подменяю живой ответ заготовленным скриптом. Проверьте workflow `QuantDeus Site Agent Replies`.',
       llm: false,
       agent: { id: pickAgent(body) }
     });
