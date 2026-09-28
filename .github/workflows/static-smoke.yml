@@ -61,6 +61,7 @@ jobs:
           test -f scripts/browser-homunculus.js
           test -f .github/workflows/browser-homunculus.yml
           test -f docs/browser-homunculus.md
+          if grep -qF '\\$''{{' .github/workflows/browser-homunculus.yml; then echo 'escaped GitHub expression found'; exit 1; fi
           test -f .github/workflows/telegram-bot.yml
           node -e "JSON.parse(require('fs').readFileSync('vercel-dispatcher/vercel.json','utf8')); JSON.parse(require('fs').readFileSync('vercel-dispatcher/package.json','utf8'))"
           grep -q '/coordination/' index.html
