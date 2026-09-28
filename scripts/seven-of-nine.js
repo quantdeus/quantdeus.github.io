@@ -69,7 +69,7 @@ if (blocked.length) {
 const snapshot = {
   agent:'seven-of-nine',
   timestamp:new Date().toISOString(),
-  role:'Deputy AI Chief of Staff / Swarm Efficiency Officer',
+  role:'QuantDeus Coordinator / AI Chief of Staff',
   tasks:{total:tasks.length,ready:ready.length,active:active.length,blocked:blocked.length,stale_active:staleActive.length},
   open_non_draft_prs:reviewQueue.length,
   primary,
@@ -93,7 +93,7 @@ if ((previous?.body || '').includes(marker)) {
 }
 
 const body = [
-  '🖖 **Seven of Nine — Deputy AI Chief of Staff**',
+  '🖖 **Seven of Nine — QuantDeus Coordinator / AI Chief of Staff**',
   '',
   '**Swarm efficiency scan**',
   `- ready: **${ready.length}**`,
