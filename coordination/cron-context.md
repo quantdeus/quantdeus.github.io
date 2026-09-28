@@ -48,7 +48,7 @@
 - vercel_swarm_status: `pending deployment verification; do not claim DONE until Vercel Cron + Agent Run/runtime logs + GitHub smoke artifact exist`
 - scheduled_workflows:
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
-  - `06:27 UTC — QuantDeus Coordinator`
+  - `06:27 UTC — QuantDeus Swarm Secretary`
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:42 UTC — QuantDeus Contributor Growth`
   - `06:47 UTC — QuantDeus QA Triad`
