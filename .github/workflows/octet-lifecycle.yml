@@ -1,0 +1,23 @@
+name: QuantDeus Octet Squad B Lifecycle ✅
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  complete:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'squad-b/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Complete linked Squad B issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/octet/pr-lifecycle.js
