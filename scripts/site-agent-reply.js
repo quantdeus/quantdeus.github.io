@@ -8,8 +8,8 @@ const openRouterModel = process.env.QD_LLM_MODEL || 'openrouter/free';
 const openRouterKey = process.env.OPENROUTER_API_KEY;
 const aiGatewayKey = process.env.AI_GATEWAY_API_KEY;
 const aiGatewayModel = process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini';
-let activeProvider = aiGatewayKey ? 'vercel-ai-gateway' : (openRouterKey ? 'openrouter' : 'vercel-oidc-bridge');
-let activeModel = activeProvider === 'vercel-ai-gateway' ? aiGatewayModel : (activeProvider === 'openrouter' ? openRouterModel : 'openai/gpt-5.4-mini');
+let activeProvider = aiGatewayKey ? 'vercel-ai-gateway' : (openRouterKey ? 'openrouter' : 'pollinations-anonymous');
+let activeModel = activeProvider === 'vercel-ai-gateway' ? aiGatewayModel : (activeProvider === 'openrouter' ? openRouterModel : 'openai-fast');
 
 if (!repo || !token || !eventPath || !fs.existsSync(eventPath)) {
   console.error('Missing GitHub runtime context');
@@ -216,6 +216,61 @@ async function buildSnapshot(agent) {
   };
 }
 
+async function callPollinationsAnonymous(messages) {
+  const endpoints = [
+    'https://text.pollinations.ai/openai',
+    'https://text.pollinations.ai/openai/chat/completions'
+  ];
+
+  let lastError = null;
+  for (const url of endpoints) {
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'openai-fast',
+          messages,
+          temperature: 0.45,
+          max_tokens: 900,
+          private: true,
+          referrer: 'QuantDeus'
+        })
+      });
+
+      const raw = await r.text();
+      if (!r.ok) {
+        lastError = new Error('Pollinations ' + r.status + ': ' + raw.slice(0, 800));
+        continue;
+      }
+
+      let data;
+      try { data = JSON.parse(raw); }
+      catch {
+        lastError = new Error('Pollinations returned non-JSON: ' + raw.slice(0, 300));
+        continue;
+      }
+
+      const text = data?.choices?.[0]?.message?.content;
+      if (!text || !String(text).trim()) {
+        lastError = new Error('Pollinations returned an empty response');
+        continue;
+      }
+
+      activeProvider = 'pollinations-anonymous';
+      activeModel = data?.model || 'openai-fast';
+      return String(text).trim();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('Pollinations anonymous inference failed');
+}
+
 async function getGitHubOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
   const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
@@ -268,7 +323,12 @@ async function callVercelOidcBridge(messages) {
 
 async function callModel(messages) {
   if (!aiGatewayKey && !openRouterKey) {
-    return callVercelOidcBridge(messages);
+    try {
+      return await callPollinationsAnonymous(messages);
+    } catch (pollinationsError) {
+      console.error('Pollinations fallback failed:', pollinationsError.message || pollinationsError);
+      return callVercelOidcBridge(messages);
+    }
   }
 
   let url;
@@ -349,7 +409,7 @@ async function buildReply(agentId, query) {
 
 async function postReply(result) {
   const footer = result.llm
-    ? '\n\n_🤖 LLM: ' + (activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : activeProvider === 'openrouter' ? 'OpenRouter' : 'Vercel OIDC Bridge') + ' · ' + activeModel + ' · repo-grounded_'
+    ? '\n\n_🤖 LLM: ' + (activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : activeProvider === 'openrouter' ? 'OpenRouter' : activeProvider === 'pollinations-anonymous' ? 'Pollinations anonymous' : 'Vercel OIDC Bridge') + ' · ' + activeModel + ' · repo-grounded_'
     : '';
   const r = await fetch('https://api.github.com/repos/' + repo + '/issues/' + issue.number + '/comments', {
     method: 'POST',
