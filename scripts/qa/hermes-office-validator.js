@@ -5,6 +5,7 @@ const fs = require('fs');
 
 const agents = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
 const office = JSON.parse(fs.readFileSync('coordination/hermes-office.json', 'utf8'));
+const evolution = JSON.parse(fs.readFileSync('coordination/hermes-evolution.json', 'utf8'));
 
 if (office.runtime !== 'hermes-agent') throw new Error('Hermes office runtime must be hermes-agent');
 if (office.registry_source !== 'coordination/agents.json') throw new Error('Hermes office must derive profiles from agents.json');
@@ -25,3 +26,14 @@ for (const required of ['seven-of-nine', 'coordinator', 'qa-syntax', 'qa-contrac
 }
 
 console.log('Hermes Office contract OK:', ids.length, 'profiles, model=' + office.model.default);
+
+if (evolution.chat_bridge.primary_profile !== 'seven-of-nine') throw new Error('Hermes Evolution chat bridge must route through Seven');
+if (evolution.capabilities.github.mode !== 'official-mcp') throw new Error('Official GitHub MCP contract missing');
+if (!evolution.capabilities.browser.playwright_mcp) throw new Error('Playwright MCP must be enabled');
+if (!evolution.capabilities.automation.agents_may_create_cron) throw new Error('Hermes agents must be allowed to create cron jobs');
+if (!evolution.capabilities.self_improvement.skill_manage) throw new Error('Hermes skill self-improvement must be enabled');
+if (!evolution.capabilities.self_improvement.guard_agent_created) throw new Error('Agent-created skills must be security-scanned');
+for (const file of ['scripts/hermes-office-client.js','.hermes/skills/quantdeus-autonomy/SKILL.md','.hermes/skills/quantdeus-playwright-ops/SKILL.md','.hermes/skills/quantdeus-connections-evolution/SKILL.md']) {
+  if (!fs.existsSync(file)) throw new Error('Missing Hermes Evolution artifact: ' + file);
+}
+console.log('Hermes Evolution contract OK: chat bridge + GitHub MCP + Playwright + cron + skills');
