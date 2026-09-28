@@ -3,9 +3,13 @@ const fs = require('fs');
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
 const eventPath = process.env.GITHUB_EVENT_PATH;
-const provider = process.env.QD_LLM_PROVIDER || 'openrouter';
-const model = process.env.QD_LLM_MODEL || 'openrouter/free';
+const requestedProvider = process.env.QD_LLM_PROVIDER || 'auto';
+const openRouterModel = process.env.QD_LLM_MODEL || 'openrouter/free';
 const openRouterKey = process.env.OPENROUTER_API_KEY;
+const aiGatewayKey = process.env.AI_GATEWAY_API_KEY;
+const aiGatewayModel = process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini';
+const activeProvider = aiGatewayKey ? 'vercel-ai-gateway' : (openRouterKey ? 'openrouter' : requestedProvider);
+const activeModel = activeProvider === 'vercel-ai-gateway' ? aiGatewayModel : openRouterModel;
 
 if (!repo || !token || !eventPath || !fs.existsSync(eventPath)) {
   console.error('Missing GitHub runtime context');
@@ -213,24 +217,37 @@ async function buildSnapshot(agent) {
 }
 
 async function callModel(messages) {
-  if (provider !== 'openrouter') {
-    throw new Error('Unsupported LLM provider: ' + provider);
-  }
-  if (!openRouterKey) {
-    throw new Error('OPENROUTER_API_KEY is not configured');
+  let url;
+  let key;
+  let providerLabel;
+
+  if (aiGatewayKey && (requestedProvider === 'auto' || requestedProvider === 'vercel-ai-gateway')) {
+    url = 'https://ai-gateway.vercel.sh/v1/chat/completions';
+    key = aiGatewayKey;
+    providerLabel = 'Vercel AI Gateway';
+  } else if (openRouterKey && (requestedProvider === 'auto' || requestedProvider === 'openrouter')) {
+    url = 'https://openrouter.ai/api/v1/chat/completions';
+    key = openRouterKey;
+    providerLabel = 'OpenRouter';
+  } else {
+    throw new Error('NO_LLM_CREDENTIALS: configure AI_GATEWAY_API_KEY or OPENROUTER_API_KEY');
   }
 
-  const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const headers = {
+    authorization: 'Bearer ' + key,
+    'content-type': 'application/json',
+    accept: 'application/json',
+  };
+  if (providerLabel === 'OpenRouter') {
+    headers['HTTP-Referer'] = 'https://quantdeus.github.io/coordination.html';
+    headers['X-Title'] = 'QuantDeus Site Agents';
+  }
+
+  const r = await fetch(url, {
     method: 'POST',
-    headers: {
-      authorization: 'Bearer ' + openRouterKey,
-      'content-type': 'application/json',
-      accept: 'application/json',
-      'HTTP-Referer': 'https://quantdeus.github.io/coordination.html',
-      'X-Title': 'QuantDeus Site Agents',
-    },
+    headers,
     body: JSON.stringify({
-      model,
+      model: activeModel,
       messages,
       temperature: 0.45,
       max_tokens: 900,
@@ -238,18 +255,18 @@ async function callModel(messages) {
   });
 
   const raw = await r.text();
-  if (!r.ok) throw new Error('OpenRouter ' + r.status + ': ' + raw.slice(0, 1000));
+  if (!r.ok) throw new Error(providerLabel + ' ' + r.status + ': ' + raw.slice(0, 1000));
 
   let data;
   try {
     data = JSON.parse(raw);
   } catch {
-    throw new Error('OpenRouter returned non-JSON: ' + raw.slice(0, 300));
+    throw new Error(providerLabel + ' returned non-JSON: ' + raw.slice(0, 300));
   }
 
   const text = data?.choices?.[0]?.message?.content;
   if (!text || !String(text).trim()) {
-    throw new Error('OpenRouter returned an empty response');
+    throw new Error(providerLabel + ' returned an empty response');
   }
   return String(text).trim();
 }
@@ -277,7 +294,7 @@ async function buildReply(agentId, query) {
 
 async function postReply(result) {
   const footer = result.llm
-    ? '\n\n_🤖 LLM: OpenRouter · ' + model + ' · repo-grounded_'
+    ? '\n\n_🤖 LLM: ' + (activeProvider === 'vercel-ai-gateway' ? 'Vercel AI Gateway' : 'OpenRouter') + ' · ' + activeModel + ' · repo-grounded_'
     : '';
   const r = await fetch('https://api.github.com/repos/' + repo + '/issues/' + issue.number + '/comments', {
     method: 'POST',
@@ -301,11 +318,11 @@ async function postReply(result) {
 })().catch(async err => {
   console.error(err.stack || err.message || err);
   try {
-    const missingKey = String(err.message || err).includes('OPENROUTER_API_KEY');
+    const missingKey = String(err.message || err).includes('NO_LLM_CREDENTIALS');
     await postReply({
       text: missingKey
-        ? '⚠️ **Живой LLM-режим установлен, но не подключён ключ провайдера.**\n\nДобавьте repository secret `OPENROUTER_API_KEY`. Скриптовый ответ намеренно отключён.'
-        : '⚠️ **LLM-контур агента временно не ответил.**\n\nOpenRouter вернул ошибку, поэтому я не подменяю живой ответ заготовленным скриптом. Проверьте workflow `QuantDeus Site Agent Replies`.',
+        ? '⚠️ **Живой LLM-режим установлен, но ни один LLM credential пока не подключён.**\n\nНужен один repository secret: `AI_GATEWAY_API_KEY` или `OPENROUTER_API_KEY`. Скриптовый ответ намеренно отключён.'
+        : '⚠️ **LLM-контур агента временно не ответил.**\n\nПровайдер вернул ошибку, поэтому я не подменяю живой ответ заготовленным скриптом. Проверьте workflow `QuantDeus Site Agent Replies`.',
       llm: false,
       agent: { id: pickAgent(body) }
     });
