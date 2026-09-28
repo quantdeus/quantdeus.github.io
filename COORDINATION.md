@@ -10,7 +10,7 @@ The old Pulse headline reports are legacy history. The replacement workflow does
 
 Production publication, spending, secrets, irreversible actions and sensitive outreach still require explicit human approval.
 
-QuantDeus Coordinator turns **governance-approved** GitHub Issues into an opt-in human coordination layer. The governance gate runs before the Coordinator.
+The **Swarm Secretary** runtime (`scripts/coordinator.js`) turns **governance-approved** GitHub Issues into an opt-in human coordination layer and maintains state. **Seven of Nine** is the QuantDeus Coordinator and sets operational priority; the governance gate runs before the Secretary runtime.
 
 ## Governance: proposal before task
 
