@@ -134,6 +134,30 @@ async function buildReply(agentId, query) {
   const proposals = issues.filter(i => !i.pull_request && String(i.title || '').startsWith('[PROPOSAL]'));
   const context = localContext(agent.id);
 
+  if (agent.id === 'seven-of-nine') {
+    const tasks = issues.filter(i => !i.pull_request && labelsOf(i).includes('coord:task'));
+    const ready = tasks.filter(i => labelsOf(i).includes('coord:ready')).length;
+    const active = tasks.filter(i => labelsOf(i).includes('coord:active')).length;
+    const blockedTasks = tasks.filter(i => labelsOf(i).includes('coord:blocked'));
+    const blocked = blockedTasks.length;
+    const directive = blocked
+      ? 'Первый приоритет: снять блокер у #' + blockedTasks[0].number + ' — ' + blockedTasks[0].title
+      : ready > Math.max(6, active * 2 + 2)
+        ? 'Ready backlog слишком велик: завершать начатое и брать только 1–3 приоритетные задачи.'
+        : 'Поток выглядит сбалансированным: сохранять ограниченный WIP и доводить споры до PATCH/TRACK/RECHECK.';
+    return [
+      agent.emoji + ' **' + agent.name + '**',
+      '',
+      query ? 'Запрос: ' + escMd(query) : 'Операционный скан роя.',
+      '',
+      'Рой: 🟢 ' + ready + ' ready · 🟡 ' + active + ' active · 🚧 ' + blocked + ' blocked.',
+      '**Directive:** ' + directive,
+      'KPI: ' + agent.kpi + '.',
+      '',
+      '_Borg efficiency, human agency: я ускоряю рой, но не отменяю human override, QA и добровольный EXIT._',
+    ].join('\n');
+  }
+
   if (agent.id === 'coordinator') {
     const tasks = issues.filter(i => !i.pull_request && labelsOf(i).includes('coord:task'));
     const ready = tasks.filter(i => labelsOf(i).includes('coord:ready')).length;
