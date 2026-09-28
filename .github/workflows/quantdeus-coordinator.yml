@@ -46,4 +46,5 @@ jobs:
         run: |
           node scripts/governance-gate.js
           node scripts/coordinator.js
+          node scripts/seven-of-nine.js
           node scripts/strategic-hub.js
