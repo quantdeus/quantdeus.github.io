@@ -413,7 +413,7 @@ export default async function handler(req, res) {
     const config = {
       models: modelConfig,
       memory: { search: { enabled: false } },
-      tools: trustedOffice ? trustedTools : publicTools,
+      tools: trustedOffice ? { ...trustedTools, toolSearch: false } : publicTools,
       ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
       agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
     };
