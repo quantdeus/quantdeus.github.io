@@ -276,7 +276,7 @@
       "bio": "качество и продолжительность человеческой жизни: open research mapping, профилактические/реабилитационные исследования и bounties без неподтверждённых медицинских обещаний",
       "eco": "восстановление среды и локальная устойчивость: data maps, малые измеримые пилоты и восстановительные проекты"
     },
-    "note": "Шесть execution lenses — действующая архитектура 22 агентов; пять manifest programs — долгосрочные программные контуры. Они дополняют, а не заменяют друг друга."
+    "note": "Шесть execution lenses — действующая архитектура 26 агентов; пять manifest programs — долгосрочные программные контуры. Они дополняют, а не заменяют друг друга."
   },
   "action_economy": {
     "principle": "меньше обещаний, больше проверяемых модулей",
@@ -436,5 +436,18 @@
       "visual-language-must-not-obscure-risk-or-uncertainty",
       "user-choice-and-exit-remain-visible"
     ]
+  },
+  "adaptive_manifest": {
+    "version": "living-v1",
+    "source": "coordination/manifesto-living.md",
+    "update_workflow": ".github/workflows/news-manifest-cycle.yml",
+    "purpose": "Evidence-backed adaptive operational layer derived from current world/Russia/science/technology/economic/community signals without silently rewriting the constitutional core.",
+    "constitutional_core_locked": true,
+    "update_contract": "dated sources + uncertainty + PR + QA; political/civic material remains neutral and non-electoral"
+  },
+  "agent_cron": {
+    "registry": "coordination/agent-cron-map.json",
+    "policy": "Every one of the 26 registered agents has an explicit role-driven cron owner; specialized cycles may run more frequently than daily.",
+    "orchestration": "Seven of Nine selects at most one bounded priority action every two hours from Actions, PRs, Issues, public community evidence and manifesto commitments."
   }
 }

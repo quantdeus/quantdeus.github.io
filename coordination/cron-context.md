@@ -1,6 +1,6 @@
 # QuantDeus Daily Context Checkpoint
 
-- date: 2026-09-28
+- date: 2026-09-29
 - canonical_repo: `quantdeus/quantdeus.github.io`
 - canonical_branch: `main`
 - canonical_url: `https://quantdeus.github.io/`
@@ -17,6 +17,9 @@
 - canonical_manifest_sources:
   - `Манифест Неонового Горизонта — QuantDeus v3.0 / Dropbox: /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf`
   - `Эпидемия Добра — 24-месячный план / Dropbox: QuantDeus_2Y_Epidemiya_Dobra_Cron.pdf`
+- adaptive_manifest: `coordination/manifesto-living.md / living-v1 / updated from evidence-backed world + Russia + science/technology/economic/community signals`
+- agent_cron_registry: `coordination/agent-cron-map.json / all 26 registered agents`
+- growth_platform_registry: `coordination/growth/platform-playbook.json / owned surfaces autopublish after QA; external platforms draft until authorized connector/account exists`
 - legacy_manifest_archive: `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v2.0.pdf`
 - constitutional_motto: `Единство в цели. Свобода в путях. Доказательства в результатах.`
 - constitutional_core: `жизнь и достоинство; безопасность; прозрачность и доверие; творчество/наука; экологическая гармония; постдефицит; IDIC; долгий космический горизонт`
@@ -58,12 +61,18 @@
   - `hourly at minute 0 — QuantDeus Hourly OpenClaw Swarm`
   - `00:17/06:17/12:17/18:17 UTC — QuantDeus QA Self-Heal / site lane`
   - `03:47/09:47/15:47/21:47 UTC — QuantDeus QA Self-Heal / Actions lane`
-- cron_cadence_rule: `Telegram bot polling every 5 minutes; GitHub Actions triggers the Vercel OpenClaw swarm hourly; bounded QA self-heal runs in staggered six-hour site/Actions lanes; health/research workflows remain staggered daily unless their own workflow says otherwise`
+  - `23 minutes past 00-14 UTC — QuantDeus Agent Role Cron / one scheduled specialist per hour`
+  - `every 2 hours at :11 — Seven Priority Cycle / Actions + PRs + Issues + public community + manifesto`
+  - `every 6 hours at :41 — News → Living Manifest / world + Russia + science/technology/economics`
+  - `every 4 hours at :53 — Growth + Site Cycle / unity → synthesis → archivist → herald → tasksmith → control-tower`
+- cron_cadence_rule: `Telegram bot polling every 5 minutes; OpenClaw swarm hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
-- contributor_growth_rule: `daily Cron maintains one active recruitment sprint and concrete contributor opportunities; invitations are personalized and never mass-sent automatically`
-- privileged_action_rule: `production publication, spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval; standing CEO approval applies only to bounded QA self-heal PRs whose head starts qa/self-heal/ and whose QA Triad + Static Smoke checks are green`
+- contributor_growth_rule: `growth/site cron continuously converts verified artifacts into platform-native content, SEO and contributor opportunities; no fake engagement, no mass unsolicited DMs, and external posting requires an authorized account/connector`
+- news_manifest_rule: `fresh world/Russia/science/technology/economic signals update only the living manifesto layer via dated evidence; constitutional core remains locked; political/civic material remains neutral and non-electoral`
+- seven_priority_rule: `every two hours Seven may create/update one Issue, open one automation/seven/* PR, or dispatch one allowlisted safe workflow based on production health, human/community blockers, manifesto commitments and stale high-value work`
+- privileged_action_rule: `spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval; standing CEO approval covers bounded QA self-heal PRs, living-manifest-only automation/manifest-update/* PRs, and safe public content/SEO automation/site-refresh/* PRs only after independent QA Triad + Static Smoke are green and path guards pass`
 - github_role: `source of truth for doctrine, registries, task state, QA, execution and public Pages`
 - coordination_model: `GitHub Issues [SIGNAL]/[STRATEGY]/[TASK] + opt-in /take + Squad B for approved reversible execution`
 - media_rule: `verified success can become a content/education/replication package; media never upgrades evidence grade and participation remains voluntary`

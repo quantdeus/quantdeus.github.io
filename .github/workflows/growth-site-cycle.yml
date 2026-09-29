@@ -1,0 +1,109 @@
+name: QuantDeus Growth + Site Cycle 📣🌐
+
+on:
+  schedule:
+    - cron: '53 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      agent_id:
+        description: Optional one of unity,synthesis,archivist,herald,tasksmith,control-tower
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-growth-site-cycle-${{ inputs.agent_id || github.event.schedule || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  growth-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+      - name: Run rotating growth/site specialist
+        id: cycle
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_AGENT_ID: ${{ inputs.agent_id }}
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const office=require('./scripts/openclaw-office-client');
+          const registry=JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));
+          const byId=new Map(registry.agents.map(a=>[a.id,a]));
+          const rotation={0:'unity',4:'synthesis',8:'archivist',12:'herald',16:'tasksmith',20:'control-tower'};
+          const allowed=new Set(Object.values(rotation));
+          const manual=String(process.env.INPUT_AGENT_ID||'').trim();
+          const hour=new Date().getUTCHours();
+          const agentId=manual||rotation[hour];
+          if(!allowed.has(agentId)) throw new Error('Invalid growth/site agent');
+          const agent=byId.get(agentId);
+          function parse(text){
+            const raw=String(text||'').trim();
+            try{return JSON.parse(raw)}catch{}
+            const m=raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if(m)return JSON.parse(m[1].trim());
+            throw new Error('Growth/site response must be strict JSON');
+          }
+          (async()=>{
+            const result=await office.ask({
+              profile:agentId,
+              trusted:true,
+              messages:[{role:'user',content:[
+                'QuantDeus growth + site autonomous cycle.',
+                'Agent: '+agentId+' — '+agent.role,
+                'Read coordination/manifesto-living.md, coordination/growth/platform-playbook.json, contributor recruitment contract, open Issues/PRs and the current public site.',
+                'Use Playwright to inspect https://quantdeus.github.io/ and relevant routes when site work is appropriate.',
+                '',
+                'Goal: improve truthful discovery, contributor conversion, useful public content, SEO, onboarding and site quality.',
+                'For multi-platform promotion, prepare platform-native packages tied to real artifacts. Automatic third-party posting is allowed only when a specific authorized connector/account path exists; otherwise create/update a public-safe campaign artifact or Issue for later publication.',
+                'Never mass-DM strangers, fake likes/followers/contributors, impersonate people, scrape private contacts, or manufacture engagement.',
+                'Political/civic topics must remain neutral/informational and must not be used for voter targeting, party/candidate promotion or outrage bait.',
+                '',
+                'You may create at most one branch+PR or one Issue. Site/content PR branch must start automation/site-refresh/.',
+                'Mark autopublish=true ONLY if every changed file is public site/content/SEO/growth documentation and the change is safe to publish after independent QA + Static Smoke. Code, workflows, security, payments, auth, governance, doctrine-core or integrations must use autopublish=false.',
+                'Verify any mutation exists.',
+                '',
+                'Return ONLY strict JSON:',
+                '{"action":"none","reason":"..."}',
+                'or {"action":"issue","issue_number":123,"summary":"..."}',
+                'or {"action":"pr","pr_number":123,"branch":"automation/site-refresh/...","autopublish":true,"summary":"..."}'
+              ].join('\n')}],
+              metadata:{source:'quantdeus-growth-site-cycle',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,hour_utc:hour}
+            });
+            if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Growth/site cycle lacks trusted tools');
+            const d=parse(result.text);
+            if(!['none','issue','pr'].includes(d.action)) throw new Error('Unsupported growth/site action');
+            if(d.action==='pr'){
+              if(!String(d.branch||'').startsWith('automation/site-refresh/')) throw new Error('Site PR outside allowed prefix');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'pr_number='+Number(d.pr_number)+'\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'branch='+String(d.branch)+'\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'autopublish='+(d.autopublish===true?'true':'false')+'\n');
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
+            console.log(JSON.stringify({agent:agentId,model:result.model,decision:d},null,2));
+          })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          NODE
+      - name: Guarded auto-publish safe site/content PR
+        if: steps.cycle.outputs.action == 'pr' && steps.cycle.outputs.autopublish == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.cycle.outputs.pr_number }}
+          AUTO_MERGE_MODE: site
+          EXPECTED_BRANCH_PREFIX: automation/site-refresh/
+        run: node scripts/guarded-automerge.js

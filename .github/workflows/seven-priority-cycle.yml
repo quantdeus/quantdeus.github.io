@@ -1,0 +1,117 @@
+name: QuantDeus Seven Priority Cycle 🖖
+
+on:
+  schedule:
+    - cron: '11 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-seven-priority-cycle
+  cancel-in-progress: false
+
+jobs:
+  seven:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+      - name: Capture public community and execution state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/qd-seven
+          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 60 --json number,title,labels,updatedAt,author,url > /tmp/qd-seven/issues.json
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 40 --json number,title,headRefName,updatedAt,author,url,statusCheckRollup > /tmp/qd-seven/prs.json
+          gh run list --repo "$GITHUB_REPOSITORY" --limit 40 --json databaseId,workflowName,status,conclusion,createdAt,headSha,url > /tmp/qd-seven/actions.json
+          gh api "repos/$GITHUB_REPOSITORY/contributors?per_page=30" > /tmp/qd-seven/contributors.json
+      - name: Let Seven choose one priority action
+        id: seven
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const office=require('./scripts/openclaw-office-client');
+          const read=p=>{try{return fs.readFileSync(p,'utf8').slice(0,40000)}catch{return ''}};
+          function parse(text){
+            const raw=String(text||'').trim();
+            try{return JSON.parse(raw)}catch{}
+            const m=raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if(m)return JSON.parse(m[1].trim());
+            throw new Error('Seven decision must be strict JSON');
+          }
+          (async()=>{
+            const result=await office.ask({
+              profile:'seven-of-nine',
+              trusted:true,
+              messages:[{role:'user',content:[
+                'Seven of Nine priority cycle for QuantDeus.',
+                'Before acting, read the canonical doctrine, the living manifesto, agent cron map, contributor-growth contract and fresh main.',
+                'Use this public execution/community snapshot:',
+                'ISSUES='+read('/tmp/qd-seven/issues.json'),
+                'PRS='+read('/tmp/qd-seven/prs.json'),
+                'ACTIONS='+read('/tmp/qd-seven/actions.json'),
+                'CONTRIBUTORS='+read('/tmp/qd-seven/contributors.json'),
+                '',
+                'Priority order: (1) broken production/Actions/security, (2) blocked human contributors and community needs, (3) active manifesto commitments and measured outcomes, (4) stale/high-value PRs or execution gaps, (5) growth/site opportunities backed by real artifacts.',
+                'Choose at most ONE action. You may create/update one Issue or create one branch+PR via GitHub MCP. PR branch must start automation/seven/.',
+                'Alternatively request ONE safe workflow dispatch from this allowlist: qa-triad.yml, static-smoke.yml, qa-self-heal.yml, contributor-growth.yml, quantdeus-pulse.yml, agent-role-cron.yml, news-manifest-cycle.yml, growth-site-cycle.yml.',
+                'Do not merge PRs, weaken guardrails, expose secrets, spend money, mass-message people or manufacture urgency/community activity.',
+                'Political/civic signals can affect neutral research and operational risk analysis but never become party/candidate endorsement, voter targeting or persuasion.',
+                '',
+                'Return ONLY strict JSON:',
+                '{"action":"none","reason":"..."}',
+                'or {"action":"dispatch","workflow":"qa-triad.yml","inputs":{},"reason":"..."}',
+                'or {"action":"issue","issue_number":123,"reason":"..."}',
+                'or {"action":"pr","pr_number":123,"branch":"automation/seven/...","reason":"..."}'
+              ].join('\n')}],
+              metadata:{source:'quantdeus-seven-priority-cycle',repository:process.env.GITHUB_REPOSITORY}
+            });
+            if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Seven cycle lacks trusted OpenClaw tools');
+            const d=parse(result.text);
+            if(!['none','dispatch','issue','pr'].includes(d.action)) throw new Error('Unsupported Seven action');
+            if(d.action==='pr'&&!String(d.branch||'').startsWith('automation/seven/')) throw new Error('Seven PR outside automation/seven/*');
+            if(d.action==='dispatch'){
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'workflow='+String(d.workflow||'')+'\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'inputs='+Buffer.from(JSON.stringify(d.inputs||{})).toString('base64')+'\n');
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
+            console.log(JSON.stringify({model:result.model,decision:d},null,2));
+          })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          NODE
+      - name: Dispatch Seven-selected safe workflow
+        if: steps.seven.outputs.action == 'dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW: ${{ steps.seven.outputs.workflow }}
+          INPUTS_B64: ${{ steps.seven.outputs.inputs }}
+        run: |
+          node <<'NODE'
+          const {execFileSync}=require('child_process');
+          const allowed=new Set(['qa-triad.yml','static-smoke.yml','qa-self-heal.yml','contributor-growth.yml','quantdeus-pulse.yml','agent-role-cron.yml','news-manifest-cycle.yml','growth-site-cycle.yml']);
+          const workflow=String(process.env.WORKFLOW||'');
+          if(!allowed.has(workflow)) throw new Error('Workflow not in Seven dispatch allowlist');
+          const inputs=JSON.parse(Buffer.from(process.env.INPUTS_B64||'e30=','base64').toString('utf8'));
+          const args=['workflow','run',workflow,'--repo',process.env.GITHUB_REPOSITORY,'--ref','main'];
+          for(const [k,v] of Object.entries(inputs)){
+            if(workflow==='qa-self-heal.yml' && k==='lane' && ['full','site','actions'].includes(String(v))) args.push('-f',k+'='+v);
+            else if(workflow==='agent-role-cron.yml' && k==='agent_id' && /^[a-z0-9-]+$/.test(String(v))) args.push('-f',k+'='+v);
+            else if(Object.keys(inputs).length) throw new Error('Unsupported workflow input');
+          }
+          execFileSync('gh',args,{stdio:'inherit',env:{...process.env,GH_TOKEN:process.env.GH_TOKEN}});
+          NODE

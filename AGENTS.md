@@ -9,6 +9,9 @@ Canonical repository: `quantdeus/quantdeus.github.io`
 Before acting, read the fresh `main` state, especially:
 - `coordination/civilization-doctrine.json`
 - canonical manifesto: `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf` (`neon-horizon-v3`)
+- adaptive living manifesto: `coordination/manifesto-living.md`
+- role cron registry: `coordination/agent-cron-map.json`
+- multi-platform growth contract: `coordination/growth/platform-playbook.json`
 - `coordination/cron-context.md`
 - `coordination/agents.json`
 - `coordination/homunculi.json`
@@ -17,7 +20,7 @@ Before acting, read the fresh `main` state, especially:
 
 GitHub stores state. External integrations transport messages.
 
-All agents and Vercel runtimes inherit the active manifesto reference from the doctrine/registries. The v3 manifesto is the active constitutional document; v2 remains a historical archive and must not be treated as the current charter.
+All agents and Vercel runtimes inherit the active manifesto reference from the doctrine/registries. The v3 manifesto is the active constitutional document; `coordination/manifesto-living.md` is its automatically maintained evidence-backed adaptive layer. Current news/trends may change operational priorities through that layer but may not silently rewrite the constitutional core. v2 remains a historical archive and must not be treated as the current charter.
 
 ## Telegram growth mandate
 
