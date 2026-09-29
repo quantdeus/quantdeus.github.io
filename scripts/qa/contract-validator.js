@@ -167,7 +167,7 @@ check(telegramSetupSource.includes('quantdeus-vercel-telegram'), 'scripts/telegr
 check(fs.existsSync(telegramBridgePath), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Vercel Telegram webhook bridge exists');
 if (fs.existsSync(telegramBridgePath)) {
   const telegramBridge = fs.readFileSync(telegramBridgePath,'utf8');
-  check(telegramBridge.includes('x-telegram-bot-api-secret-token') && telegramBridge.includes("TELEGRAM_CIDRS") && telegramBridge.includes("getVercelOidcToken") && telegramBridge.includes("method: 'sendMessage'"), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram webhook verifies secret/IP source and can answer directly through a homunculus LLM');
+  check(telegramBridge.includes('x-telegram-bot-api-secret-token') && telegramBridge.includes("TELEGRAM_CIDRS") && telegramBridge.includes("generateText") && telegramBridge.includes("method: 'sendMessage'"), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram webhook verifies secret/IP source and answers directly through the Vercel AI SDK homunculus lane');
 }
 
 const coordinatorSource = fs.readFileSync(path.join(root,'scripts/coordinator.js'),'utf8');
