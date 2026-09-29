@@ -28,7 +28,7 @@ async function getGitHubOidcToken() {
   return data.value;
 }
 
-function normalizedMessages(messages, metadata) {
+function normalizedMessages(messages, metadata, trusted = false) {
   const meta = Object.entries(metadata || {})
     .filter(([, value]) => value !== undefined && value !== null && value !== '')
     .map(([key, value]) => key + '=' + String(value))
@@ -36,16 +36,22 @@ function normalizedMessages(messages, metadata) {
   const system = [
     'You are running inside the QuantDeus OpenClaw Office.',
     'GitHub quantdeus/quantdeus.github.io is the canonical project source of truth.',
-    'This route runs OpenClaw with tools disabled. Do not claim that you inspected or changed live GitHub, Vercel, Telegram, browser, cron, or MCP state.',
-    'Answer from the supplied prompt and repository context only. State clearly when a requested external action still needs an execution path.',
-    'Route repository changes through PR and QA when an execution path is available.',
+    trusted
+      ? 'This is the trusted QuantDeus Admin Office lane. Use the available GitHub MCP, workspace filesystem and Playwright MCP when they materially help.'
+      : 'This route runs OpenClaw with tools disabled. Do not claim that you inspected or changed live GitHub, Vercel, Telegram, browser, cron, or MCP state.',
+    trusted
+      ? 'GitHub mutations must be reversible and auditable: prefer Issue/branch/PR plus QA evidence; do not push directly to main or weaken guardrails.'
+      : 'Answer from the supplied prompt and repository context only. State clearly when a requested external action still needs an execution path.',
+    trusted
+      ? 'For browser work, stop for CAPTCHA, 2FA/passkeys, unavailable verification, payment, legal commitment, identity verification or destructive production actions.'
+      : 'Route repository changes through PR and QA when an execution path is available.',
     'Do not expose secrets. Stop for payment/legal/identity-verification/CAPTCHA/2FA/passkey gates and create a human handoff.',
     meta ? 'Source metadata: ' + meta : ''
   ].filter(Boolean).join('\n');
   return [{ role: 'system', content: system }, ...(messages || [])];
 }
 
-async function ask({ profile, messages, metadata, timeoutMs = DEFAULT_TIMEOUT_MS }) {
+async function ask({ profile, messages, metadata, trusted = false, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   if (!configured()) throw new Error('OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE');
   const oidc = await getGitHubOidcToken();
   const controller = new AbortController();
@@ -60,7 +66,12 @@ async function ask({ profile, messages, metadata, timeoutMs = DEFAULT_TIMEOUT_MS
     const response = await fetch(process.env.OPENCLAW_VERCEL_URL || DEFAULT_VERCEL_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ profile, messages: normalizedMessages(messages, metadata), metadata }),
+      body: JSON.stringify({
+        profile,
+        messages: normalizedMessages(messages, metadata, trusted),
+        metadata,
+        execution_mode: trusted ? 'trusted-office' : 'chat'
+      }),
       signal: controller.signal
     });
     const raw = await response.text();
