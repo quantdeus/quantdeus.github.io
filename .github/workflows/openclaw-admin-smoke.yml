@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify trusted OpenClaw GitHub and Playwright MCP lane
+      - name: Verify trusted OpenClaw GitHub MCP lane
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -36,17 +36,33 @@ jobs:
               trusted: true,
               messages: [{
                 role: 'user',
-                content: [
-                  'This is a read-only smoke. Do not mutate GitHub.',
-                  'Use GitHub MCP once to list branches for quantdeus/quantdeus.github.io and confirm main exists.',
-                  'Then use Playwright MCP with browser_navigate to open https://example.com and read the page title.',
-                  'Do not use browser_run_code_unsafe. Avoid extra searches or retries.',
-                  'Reply exactly: OPENCLAW_ADMIN_TOOLS_OK'
-                ].join(' ')
+                content: 'Read-only smoke. Call github__list_branches exactly once for quantdeus/quantdeus.github.io. Do not call Playwright and do not mutate GitHub. Confirm main exists, then reply exactly OPENCLAW_GITHUB_MCP_OK.'
               }],
-              metadata: { source: 'openclaw-admin-smoke', repository: process.env.GITHUB_REPOSITORY }
+              metadata: { source: 'openclaw-admin-smoke', phase: 'github', repository: process.env.GITHUB_REPOSITORY }
             });
-            if (result.text.trim() !== 'OPENCLAW_ADMIN_TOOLS_OK') throw new Error('Unexpected admin smoke response: ' + result.text.slice(0, 600));
+            if (result.text.trim() !== 'OPENCLAW_GITHUB_MCP_OK') throw new Error('Unexpected GitHub MCP smoke response: ' + result.text.slice(0, 800));
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
+            console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, smoke: result.text }));
+          })().catch(error => { console.error(error.message || error); process.exit(1); });
+          NODE
+
+      - name: Verify trusted OpenClaw Playwright MCP lane
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+          (async () => {
+            const result = await office.ask({
+              profile: 'seven-of-nine',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: 'Read-only browser smoke. Do not call GitHub. Call playwright__browser_navigate exactly once with https://example.com and then playwright__browser_snapshot exactly once. Do not use evaluate or run-code tools. Confirm Example Domain is visible, then reply exactly OPENCLAW_PLAYWRIGHT_MCP_OK.'
+              }],
+              metadata: { source: 'openclaw-admin-smoke', phase: 'playwright', repository: process.env.GITHUB_REPOSITORY }
+            });
+            if (result.text.trim() !== 'OPENCLAW_PLAYWRIGHT_MCP_OK') throw new Error('Unexpected Playwright MCP smoke response: ' + result.text.slice(0, 800));
             if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
             console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, smoke: result.text }));
           })().catch(error => { console.error(error.message || error); process.exit(1); });
