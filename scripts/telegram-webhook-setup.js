@@ -39,6 +39,8 @@ async function main() {
     bot_username: data.bot?.username || null,
     can_read_all_group_messages: data.bot?.can_read_all_group_messages ?? null,
     auth_mode: data.auth_mode || null,
+    llm_smoke_ok: data.llm_smoke?.ok ?? null,
+    llm_smoke_preview: data.llm_smoke?.preview || null,
     url: data.webhook?.url || null,
     pending_update_count: data.webhook?.pending_update_count ?? null,
     last_error_message: data.webhook?.last_error_message || null

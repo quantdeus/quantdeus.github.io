@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { getVercelOidcToken } from '@vercel/oidc';
+import { generateText } from 'ai';
 
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -8,7 +8,7 @@ const AUDIENCE = 'quantdeus-vercel-telegram';
 const DEFAULT_WEBHOOK_URL = 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 const REGISTRY_URL = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/coordination/agents.json';
 const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
-const GATEWAY_MODELS = ['inclusionai/ling-3.0-flash-sante-free', 'openai/gpt-oss-120b'];
+const GATEWAY_MODELS = ['inclusionai/ling-3.0-flash-sante-free', 'inclusionai/ling-3.1-flash-free', 'openai/gpt-oss-120b'];
 let jwksCache = [];
 let jwksAt = 0;
 let registryCache = null;
@@ -140,9 +140,17 @@ async function setupWebhook(req, res) {
 
   await telegram(botToken, 'setWebhook', webhookPayload);
   const info = await telegram(botToken, 'getWebhookInfo');
+  const llmProbe = await chatCompletion(
+    'You are a health check for the QuantDeus Telegram homunculus runtime. Return a short plain-text success marker.',
+    'Reply with exactly TELEGRAM_LLM_OK'
+  );
 
   return res.status(200).json({
     ok: true,
+    llm_smoke: {
+      ok: Boolean(llmProbe),
+      preview: String(llmProbe || '').slice(0, 120)
+    },
     bot: {
       id: me.id,
       username: me.username || null,
@@ -242,42 +250,27 @@ function cleanModelText(value) {
 }
 
 async function chatCompletion(system, user) {
-  let oidc = '';
-  try { oidc = await getVercelOidcToken(); } catch {}
-
-  if (oidc) {
-    for (const model of GATEWAY_MODELS) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-      try {
-        const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            authorization: 'Bearer ' + oidc,
-            'content-type': 'application/json',
-            accept: 'application/json'
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: 'system', content: system },
-              { role: 'user', content: user }
-            ],
-            temperature: 0.45,
-            max_tokens: 900
-          }),
-          signal: controller.signal
-        });
-        const data = await response.json().catch(() => ({}));
-        const text = cleanModelText(data?.choices?.[0]?.message?.content);
-        if (response.ok && text) return text;
-      } catch {}
-      finally { clearTimeout(timer); }
+  for (const model of GATEWAY_MODELS) {
+    try {
+      const result = await generateText({
+        model,
+        system,
+        prompt: user,
+        temperature: 0.45
+      });
+      const output = cleanModelText(result?.text);
+      if (output) {
+        console.info(`[telegram-llm] provider=vercel-ai-sdk model=${model} status=ok chars=${output.length}`);
+        return output;
+      }
+      console.warn(`[telegram-llm] provider=vercel-ai-sdk model=${model} status=empty`);
+    } catch (error) {
+      console.warn(`[telegram-llm] provider=vercel-ai-sdk model=${model} status=error detail=${String(error?.message || error).slice(0, 500)}`);
     }
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), 25000);
   try {
     const response = await fetch('https://text.pollinations.ai/openai/chat/completions', {
       method: 'POST',
@@ -297,11 +290,20 @@ async function chatCompletion(system, user) {
       }),
       signal: controller.signal
     });
-    const data = await response.json().catch(() => ({}));
-    const text = cleanModelText(data?.choices?.[0]?.message?.content);
-    if (response.ok && text) return text;
-  } catch {}
-  finally { clearTimeout(timer); }
+    const raw = await response.text();
+    let data = {};
+    try { data = JSON.parse(raw); } catch {}
+    const output = cleanModelText(data?.choices?.[0]?.message?.content);
+    if (response.ok && output) {
+      console.info(`[telegram-llm] provider=pollinations model=openai-fast status=ok chars=${output.length}`);
+      return output;
+    }
+    console.warn(`[telegram-llm] provider=pollinations model=openai-fast status=${response.status} detail=${raw.slice(0, 500)}`);
+  } catch (error) {
+    console.warn(`[telegram-llm] provider=pollinations model=openai-fast status=error detail=${String(error?.message || error).slice(0, 500)}`);
+  } finally {
+    clearTimeout(timer);
+  }
 
   return '';
 }
