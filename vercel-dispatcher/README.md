@@ -31,7 +31,7 @@ The endpoint is fail-closed and requires:
 ## Required environment variables
 
 - `CRON_SECRET` — required.
-- `QUANTDEUS_GITHUB_TOKEN` — optional for public read bootstrap; required later for approved authenticated GitHub REST fallback.
+- `QUANTDEUS_GITHUB_TOKEN` — required for the Telegram webhook bridge and approved authenticated GitHub REST fallback.
 
 ## Current bootstrap behavior
 
