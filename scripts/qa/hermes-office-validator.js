@@ -72,7 +72,7 @@ if (!bootstrapSource.includes("['hermes-cli', 'connections']")) throw new Error(
 if (!bootstrapSource.includes("['hermes-cli', 'kanban', 'connections']")) throw new Error('Seven must keep Kanban and receive the connections toolset');
 if (!bootstrapSource.includes('const BOOTSTRAP_SCHEMA = 6')) throw new Error('Hermes bootstrap schema must refresh every profile with the updated toolsets');
 if (!bootstrapSource.includes('fallback_providers: fallbackProviders')) throw new Error('Hermes profile must declare its native provider fallback chain');
-if (!routeSource.includes('runtimeEnv.AI_GATEWAY_API_KEY = await getVercelOidcToken()')) throw new Error('Hermes native AI Gateway fallback requires ephemeral Vercel OIDC credentials');
+if (!routeSource.includes("req.headers?.['x-vercel-oidc-token']") || !routeSource.includes('runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken') || !routeSource.includes('runVercelAIGatewayFallback(messages, vercelOidcToken)')) throw new Error('Hermes native AI Gateway fallback must reuse the ephemeral Vercel request OIDC token');
 if (!bootstrapSource.includes("provider: 'ai-gateway'")) throw new Error('Hermes native fallback must include Vercel AI Gateway');
 if (!bootstrapSource.includes("provider: 'openrouter'")) throw new Error('Hermes profile must preserve OpenRouter fallback policy');
 if (routeSource.includes('hermes_fallback_config_write_failed')) throw new Error('Hermes route must not rewrite YAML profile config as JSON');
