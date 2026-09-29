@@ -189,6 +189,13 @@ if (fs.existsSync(telegramBridgePath)) {
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'Telegram live-news lane requires fresh source grounding and fails closed instead of hallucinating current events'
   );
+  check(
+    telegramBridge.includes('TELEGRAM_ROLE_OK') &&
+    telegramBridge.includes("const llmProbe = roleProbeHealthy ? 'TELEGRAM_LLM_OK' : ''") &&
+    !telegramBridge.includes('const llmProbe = await chatCompletion('),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Telegram webhook setup uses one role-aware LLM probe to avoid anonymous-provider burst throttling'
+  );
 }
 
 const coordinatorSource = fs.readFileSync(path.join(root,'scripts/coordinator.js'),'utf8');
