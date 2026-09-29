@@ -1,8 +1,6 @@
-name: QuantDeus Hermes Office Cron Pulse
+name: Legacy Hermes Office Manual Cron Pulse
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -29,7 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Tick saved Hermes cron jobs for all 26 profiles
+      - name: Manual legacy tick for saved Hermes cron jobs across all 26 profiles
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/hermes-office-cron-client.js
