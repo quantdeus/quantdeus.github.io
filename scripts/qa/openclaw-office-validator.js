@@ -12,7 +12,12 @@ for (const [ok, message] of [
   [route.includes("const AUDIENCE = 'quantdeus-vercel-openclaw'"), 'dedicated GitHub OIDC audience'],
   [route.includes('Sandbox.getOrCreate') && route.includes("runtime: 'openclaw-office'"), 'persistent Vercel Sandbox runtime'],
   [route.includes("openclaw@2026.9.6"), 'pinned OpenClaw install'],
-  [route.includes("tools: { deny: ['*'] }"), 'deny all OpenClaw tools in chat route'],
+  [route.includes("const publicTools = { deny: ['*'] }"), 'public OpenClaw chat remains no-tools'],
+  [route.includes("allow: ['group:fs', 'group:plugins', 'bundle-mcp']") && route.includes("deny: ['group:runtime', 'group:automation', 'group:messaging', 'group:nodes']"), 'trusted office gets bounded filesystem and MCP tools without shell'],
+  [route.includes("https://api.githubcopilot.com/mcp/") && route.includes("@playwright/mcp@latest"), 'trusted office wires GitHub and Playwright MCP'],
+  [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot'), 'trusted tools are gated to approved GitHub workflows'],
+  [client.includes("execution_mode: trusted ? 'trusted-office' : 'chat'") && client.includes('trusted = false'), 'client can request trusted office explicitly'],
+  [telegram.includes('trusted: true') && telegram.includes('telegram-admin-task'), 'Telegram admin task lane invokes trusted office only after admin gate'],
   [route.includes("id: localKeyEnv") && route.includes('runtimeEnv[localKeyEnv] = localKey'), 'model key stays env-backed and out of persisted config'],
   [route.includes("providerDefs['quantdeus-pollinations']") && route.includes("'quantdeus-pollinations/openai-fast'"), 'keyless Pollinations proxy uses a non-conflicting custom provider id'],
   [route.includes('quantdeus-config-') && route.includes('ephemeralFiles = [configPath, promptPath]'), 'request config is isolated and cleaned up'],
@@ -28,4 +33,4 @@ for (const [ok, message] of [
   if (!ok) throw new Error(`OpenClaw Office contract failed: ${message}`);
 }
 
-console.log('OpenClaw Office contract OK: pinned runtime, isolated exec state, custom proxy fallback, OIDC, no tools, ephemeral cleanup, site and Telegram clients.');
+console.log('OpenClaw Office contract OK: public no-tools chat plus workflow-gated Admin Office with GitHub/Playwright MCP, isolated state and ephemeral secrets.');
