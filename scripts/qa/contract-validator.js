@@ -103,7 +103,7 @@ const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml']);
 const frequentPollingWorkflows = new Set(['telegram-bot.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
@@ -116,6 +116,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
         check(parts[0] === '*/5' && parts[1] === '*', name, 'Telegram polling workflow runs at the approved 5-minute cadence: '+cron);
       } else if (name === 'hermes-office-cron.yml') {
         check(parts[0] === '*/15' && parts[1] === '*', name, 'Hermes scheduler pulse runs at the approved 15-minute cadence: '+cron);
+      } else if (name === 'quantdeus-hourly-openclaw.yml') {
+        check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
       } else {
         check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
       }
