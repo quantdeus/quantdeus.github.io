@@ -9,6 +9,7 @@ const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
+const MISTRAL_MODEL = process.env.OPENCLAW_MISTRAL_MODEL || 'mistral-small-latest';
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 const VERCEL_GATEWAY_MODELS = [...new Set((process.env.OPENCLAW_VERCEL_GATEWAY_MODELS || ['inclusionai/ling-3.0-flash-sante-free', 'openai/gpt-oss-120b'].join(',')).split(',').map(v => v.trim()).filter(Boolean))].slice(0, 3);
 let jwksCache = [];
@@ -279,6 +280,16 @@ export default async function handler(req, res) {
       };
       modelCandidates.push(`openrouter/${OPENROUTER_MODEL}`);
     }
+    const mistralKey = process.env.MISTRAL_API_KEY ? String(process.env.MISTRAL_API_KEY) : '';
+    if (mistralKey && localKeyEnv !== 'MISTRAL_API_KEY') {
+      providerDefs['quantdeus-mistral'] = {
+        baseUrl: 'https://api.mistral.ai/v1',
+        api: 'openai-completions',
+        apiKey: { source: 'env', provider: 'default', id: 'MISTRAL_API_KEY' },
+        models: [{ id: MISTRAL_MODEL, name: MISTRAL_MODEL, input: ['text'], contextWindow: 32768, maxTokens: 8192 }]
+      };
+      modelCandidates.push(`quantdeus-mistral/${MISTRAL_MODEL}`);
+    }
 
     // Keyless emergency inference remains INSIDE OpenClaw: the agent runtime,
     // state, prompt handling and execution contract are still OpenClaw.
@@ -323,6 +334,14 @@ export default async function handler(req, res) {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         key: openRouterKey,
         model: OPENROUTER_MODEL
+      });
+    }
+    if (mistralKey && localKeyEnv !== 'MISTRAL_API_KEY') {
+      probeCandidates.push({
+        ref: `quantdeus-mistral/${MISTRAL_MODEL}`,
+        endpoint: 'https://api.mistral.ai/v1/chat/completions',
+        key: mistralKey,
+        model: MISTRAL_MODEL
       });
     }
     for (const pollinationsModel of pollinationsModels) {
@@ -478,6 +497,7 @@ export default async function handler(req, res) {
     if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
     if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
+    if (mistralKey) runtimeEnv.MISTRAL_API_KEY = mistralKey;
     runtimeEnv.POLLINATIONS_API_KEY = 'anonymous';
     runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
@@ -493,7 +513,8 @@ export default async function handler(req, res) {
       has_vercel_oidc: Boolean(vercelOidcToken),
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
-      has_openrouter_key: Boolean(openRouterKey)
+      has_openrouter_key: Boolean(openRouterKey),
+      has_independent_mistral_key: Boolean(mistralKey && localKeyEnv !== 'MISTRAL_API_KEY')
     }));
     if (!healthyRef) {
       return res.status(503).json({

@@ -14,6 +14,8 @@ permissions:
   issues: write
 
 concurrency:
+  # GitHub retains pending runs in one FIFO lane instead of replacing them
+  # across per-Issue concurrency groups during comment bursts.
   group: quantdeus-coordinator
   cancel-in-progress: false
 

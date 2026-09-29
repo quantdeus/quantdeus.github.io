@@ -32,6 +32,7 @@ for (const [ok, message] of [
   [route.includes('quantdeus-config-') && route.includes('ephemeralFiles = [configPath, promptPath]'), 'request config is isolated and cleaned up'],
   [!route.includes("'--state-dir', statePath"), 'agent exec uses OpenClaw temporary state isolation'],
   [route.includes("'openai/gpt-oss-120b:free'") && route.includes('process.env.HERMES_LOCAL_API_KEY') && route.includes('process.env.MISTRAL_API_KEY'), 'existing Vercel OpenRouter and Mistral model credentials are supported'],
+  [route.includes("baseUrl: 'https://api.mistral.ai/v1'") && route.includes('quantdeus-mistral/${MISTRAL_MODEL}') && route.includes("endpoint: 'https://api.mistral.ai/v1/chat/completions'") && route.includes('has_independent_mistral_key'), 'independent Mistral route is probed for sequential tool compatibility and reported without exposing credentials'],
   [route.includes("cmd: 'rm'") && route.includes('finally'), 'ephemeral credential/prompt cleanup'],
   [client.includes('quantdeus-vercel-openclaw') && client.includes('/api/quantdeus/openclaw'), 'client wired to OpenClaw endpoint'],
   [site.includes("require('./openclaw-office-client')") && site.includes('openclaw-office'), 'GitHub site agent wired to OpenClaw'],
