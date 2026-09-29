@@ -9,9 +9,6 @@
     },
     "api/**/*.js": {
       "maxDuration": 60
-    },
-    "api/quantdeus/telegram.js": {
-      "maxDuration": 300
     }
   }
 }
