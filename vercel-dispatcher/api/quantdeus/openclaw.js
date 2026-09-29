@@ -6,7 +6,7 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
-const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
+const EVENTS = new Set(['issue_comment', 'workflow_run', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
@@ -49,8 +49,25 @@ async function checked(sandbox, args, label) {
 function trustedOfficeRequest(req, claims) {
   if (req.body?.execution_mode !== 'trusted-office') return false;
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  const eventName = String(claims.event_name || '');
+  const metadata = req.body?.metadata || {};
+
   const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|seven-priority-cycle|news-manifest-cycle|growth-site-cycle|openclaw-evolution)\.yml(?:@|$)/.test(workflowRef);
-  return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
+  if (trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(eventName)) return true;
+
+  const siteOwnerAction =
+    /\.github\/workflows\/site-agent-replies\.yml(?:@|$)/.test(workflowRef) &&
+    eventName === 'issue_comment' &&
+    metadata.source === 'github-command-center' &&
+    metadata.admin_authorized === true &&
+    String(metadata.actor_login || '').toLowerCase() === String(claims.actor || '').toLowerCase();
+
+  const qaFailureRepair =
+    /\.github\/workflows\/qa-self-heal\.yml(?:@|$)/.test(workflowRef) &&
+    eventName === 'workflow_run' &&
+    metadata.source === 'quantdeus-qa-self-heal';
+
+  return siteOwnerAction || qaFailureRepair;
 }
 
 function hourlyOfficeRequest(req, claims) {
