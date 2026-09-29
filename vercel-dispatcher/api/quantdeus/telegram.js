@@ -144,12 +144,22 @@ async function setupWebhook(req, res) {
     'You are a health check for the QuantDeus Telegram homunculus runtime. Return a short plain-text success marker.',
     'Reply with exactly TELEGRAM_LLM_OK'
   );
+  const roleProbe = await homunculusReply({
+    text: 'Бро проверь состояние QuantDeus и коротко скажи, что сейчас важно проверить в автоматизации.',
+    message_id: 1,
+    from: { id: 1, username: 'telegram-smoke', is_bot: false },
+    chat: { id: 1, type: 'private' }
+  });
 
   return res.status(200).json({
     ok: true,
     llm_smoke: {
       ok: Boolean(llmProbe),
       preview: String(llmProbe || '').slice(0, 120)
+    },
+    role_smoke: {
+      ok: Boolean(roleProbe) && !String(roleProbe).includes('LLM-канал сейчас не дал ответ'),
+      preview: String(roleProbe || '').slice(0, 260)
     },
     bot: {
       id: me.id,
@@ -249,6 +259,79 @@ function cleanModelText(value) {
   return text.replace(/^["']|["']$/g, '').trim().slice(0, 3600);
 }
 
+async function pollinationsFallback(system, user) {
+  const compactPrompt = [
+    String(system || '').slice(0, 1200),
+    '',
+    'USER:',
+    String(user || '').slice(0, 1800)
+  ].join('\n').slice(0, 3200);
+
+  const runWithTimeout = async (label, fn) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 9000);
+    try {
+      const output = cleanModelText(await fn(controller.signal));
+      if (!output) throw new Error('empty_output');
+      console.info(`[telegram-llm] provider=${label} status=ok chars=${output.length}`);
+      return output;
+    } catch (error) {
+      console.warn(`[telegram-llm] provider=${label} status=error detail=${String(error?.message || error).slice(0, 300)}`);
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const candidates = [
+    runWithTimeout('pollinations-chat-openai-fast', async signal => {
+      const response = await fetch('https://text.pollinations.ai/openai/chat/completions', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer anonymous',
+          'content-type': 'application/json',
+          accept: 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'openai-fast',
+          messages: [
+            { role: 'system', content: String(system || '').slice(0, 1600) },
+            { role: 'user', content: String(user || '').slice(0, 3000) }
+          ],
+          temperature: 0.45,
+          max_tokens: 700
+        }),
+        signal
+      });
+      const raw = await response.text();
+      if (!response.ok) throw new Error(`http_${response.status}: ${raw.slice(0, 200)}`);
+      let data = {};
+      try { data = JSON.parse(raw); } catch {}
+      return data?.choices?.[0]?.message?.content || '';
+    }),
+    runWithTimeout('pollinations-text-openai-fast', async signal => {
+      const url = 'https://text.pollinations.ai/' + encodeURIComponent(compactPrompt) + '?model=openai-fast';
+      const response = await fetch(url, { method: 'GET', headers: { accept: 'text/plain' }, signal });
+      const raw = await response.text();
+      if (!response.ok) throw new Error(`http_${response.status}: ${raw.slice(0, 200)}`);
+      return raw;
+    }),
+    runWithTimeout('pollinations-gen-gpt4o-mini', async signal => {
+      const url = 'https://gen.pollinations.ai/text/' + encodeURIComponent(compactPrompt) + '?model=openai/gpt-4o-mini';
+      const response = await fetch(url, { method: 'GET', headers: { accept: 'text/plain' }, signal });
+      const raw = await response.text();
+      if (!response.ok) throw new Error(`http_${response.status}: ${raw.slice(0, 200)}`);
+      return raw;
+    })
+  ];
+
+  try {
+    return await Promise.any(candidates);
+  } catch {
+    return '';
+  }
+}
+
 async function chatCompletion(system, user) {
   for (const model of GATEWAY_MODELS) {
     try {
@@ -269,43 +352,7 @@ async function chatCompletion(system, user) {
     }
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25000);
-  try {
-    const response = await fetch('https://text.pollinations.ai/openai/chat/completions', {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer anonymous',
-        'content-type': 'application/json',
-        accept: 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'openai-fast',
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ],
-        temperature: 0.45,
-        max_tokens: 900
-      }),
-      signal: controller.signal
-    });
-    const raw = await response.text();
-    let data = {};
-    try { data = JSON.parse(raw); } catch {}
-    const output = cleanModelText(data?.choices?.[0]?.message?.content);
-    if (response.ok && output) {
-      console.info(`[telegram-llm] provider=pollinations model=openai-fast status=ok chars=${output.length}`);
-      return output;
-    }
-    console.warn(`[telegram-llm] provider=pollinations model=openai-fast status=${response.status} detail=${raw.slice(0, 500)}`);
-  } catch (error) {
-    console.warn(`[telegram-llm] provider=pollinations model=openai-fast status=error detail=${String(error?.message || error).slice(0, 500)}`);
-  } finally {
-    clearTimeout(timer);
-  }
-
-  return '';
+  return pollinationsFallback(system, user);
 }
 
 async function homunculusReply(message) {

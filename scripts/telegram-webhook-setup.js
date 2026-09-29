@@ -41,6 +41,8 @@ async function main() {
     auth_mode: data.auth_mode || null,
     llm_smoke_ok: data.llm_smoke?.ok ?? null,
     llm_smoke_preview: data.llm_smoke?.preview || null,
+    role_smoke_ok: data.role_smoke?.ok ?? null,
+    role_smoke_preview: data.role_smoke?.preview || null,
     url: data.webhook?.url || null,
     pending_update_count: data.webhook?.pending_update_count ?? null,
     last_error_message: data.webhook?.last_error_message || null
