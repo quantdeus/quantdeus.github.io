@@ -53,10 +53,30 @@ function trustedOfficeRequest(req, claims) {
   return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
 }
 
-async function probeChatCandidate(candidate) {
+async function probeChatCandidate(candidate, requireTools = false) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
   try {
+    const body = requireTools ? {
+      model: candidate.model,
+      messages: [{ role: 'user', content: 'Call the quantdeus_probe_ping tool exactly once.' }],
+      temperature: 0,
+      max_tokens: 64,
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'quantdeus_probe_ping',
+          description: 'Capability probe. Call this tool exactly once.',
+          parameters: { type: 'object', properties: {}, additionalProperties: false }
+        }
+      }],
+      tool_choice: 'required'
+    } : {
+      model: candidate.model,
+      messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
+      temperature: 0,
+      max_tokens: 8
+    };
     const response = await fetch(candidate.endpoint, {
       method: 'POST',
       headers: {
@@ -64,20 +84,24 @@ async function probeChatCandidate(candidate) {
         'content-type': 'application/json',
         accept: 'application/json'
       },
-      body: JSON.stringify({
-        model: candidate.model,
-        messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
-        temperature: 0,
-        max_tokens: 8
-      }),
+      body: JSON.stringify(body),
       signal: controller.signal
     });
     const raw = await response.text();
+    let data = null;
+    try { data = JSON.parse(raw); } catch {}
+    const toolCalls = data?.choices?.[0]?.message?.tool_calls;
+    const validToolCall = Array.isArray(toolCalls) && toolCalls.some(call =>
+      call?.type === 'function' &&
+      call?.function?.name === 'quantdeus_probe_ping' &&
+      typeof call?.function?.arguments === 'string'
+    );
+    const ok = response.ok && (!requireTools || validToolCall);
     return {
       ref: candidate.ref,
-      ok: response.ok,
+      ok,
       status: response.status,
-      detail: response.ok ? 'ok' : raw.slice(0, 300)
+      detail: ok ? (requireTools ? 'tool_call_ok' : 'ok') : (response.ok ? 'missing_or_malformed_tool_call' : raw.slice(0, 300))
     };
   } catch (error) {
     return {
@@ -146,13 +170,19 @@ export default async function handler(req, res) {
 
     // Keyless emergency inference remains INSIDE OpenClaw: the agent runtime,
     // state, prompt handling and execution contract are still OpenClaw.
+    // Trusted Office prefers models that reliably emit OpenAI-compatible tool_calls.
+    const pollinationsModels = trustedOffice
+      ? ['openai', 'qwen-coder', 'openai-fast']
+      : ['openai-fast', 'openai'];
     providerDefs['quantdeus-pollinations'] = {
       baseUrl: 'https://text.pollinations.ai/openai',
       api: 'openai-completions',
       apiKey: { source: 'env', provider: 'default', id: 'POLLINATIONS_API_KEY' },
-      models: [{ id: 'openai-fast', name: 'openai-fast', input: ['text'], contextWindow: 32768, maxTokens: 4096 }]
+      models: pollinationsModels.map(id => ({ id, name: id, input: ['text'], contextWindow: 131072, maxTokens: 8192 }))
     };
-    modelCandidates.push('quantdeus-pollinations/openai-fast');
+    for (const pollinationsModel of pollinationsModels) {
+      modelCandidates.push(`quantdeus-pollinations/${pollinationsModel}`);
+    }
     const probeCandidates = [];
     if (vercelOidcToken) {
       for (const gatewayModel of VERCEL_GATEWAY_MODELS) {
@@ -183,17 +213,19 @@ export default async function handler(req, res) {
         model: OPENROUTER_MODEL
       });
     }
-    probeCandidates.push({
-      ref: 'quantdeus-pollinations/openai-fast',
-      endpoint: 'https://text.pollinations.ai/openai/chat/completions',
-      key: 'anonymous',
-      model: 'openai-fast'
-    });
+    for (const pollinationsModel of pollinationsModels) {
+      probeCandidates.push({
+        ref: `quantdeus-pollinations/${pollinationsModel}`,
+        endpoint: 'https://text.pollinations.ai/openai/chat/completions',
+        key: 'anonymous',
+        model: pollinationsModel
+      });
+    }
 
     const probeResults = [];
     let healthyRef = null;
     for (const candidate of probeCandidates) {
-      const probe = await probeChatCandidate(candidate);
+      const probe = await probeChatCandidate(candidate, trustedOffice);
       probeResults.push(probe);
       if (probe.ok) {
         healthyRef = candidate.ref;
