@@ -6,7 +6,7 @@ const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
-const SANDBOX = 'quantdeus-openclaw-office';
+const SANDBOX = `quantdeus-openclaw-${crypto.randomUUID()}`;
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
 let jwksCache = [];
 let jwksAt = 0;
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     const configPath = `${home}/.openclaw/quantdeus-smoke.json`;
     const promptPath = `${home}/.openclaw/quantdeus-prompt.txt`;
     ephemeralFiles = [configPath, promptPath];
-    const statePath = `${home}/.openclaw/quantdeus-state`;
+    const statePath = `${home}/.openclaw/quantdeus-state-${crypto.randomUUID()}`;
     for (const dir of [`${home}/.openclaw`, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
     const config = {
       models: modelConfig,
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
     const runtimeKeyEnv = openRouterKey ? 'OPENROUTER_API_KEY' : localKeyEnv;
     const runtimeKey = openRouterKey || localKey;
-    const run = await sandbox.runCommand({ cmd: 'openclaw', args: ['agent', 'exec', '--config', configPath, '--state-dir', statePath, '--cwd', workdir, '--model', model, '--timeout', '240', '--json', '--message-file', promptPath], cwd: workdir, env: { [runtimeKeyEnv]: runtimeKey } });
+    const run = await sandbox.runCommand({ cmd: 'openclaw', args: ['agent', 'exec', '--config', configPath, '--cwd', workdir, '--model', model, '--timeout', '240', '--json', '--message-file', promptPath], cwd: workdir, env: { [runtimeKeyEnv]: runtimeKey, OPENCLAW_STATE_DIR: statePath, OPENCLAW_CONFIG_PATH: configPath } });
     const raw = await text(run);
     await sandbox.runCommand({ cmd: 'rm', args: ['-f', configPath, promptPath] });
     if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: ${raw.slice(-1800)}`);
