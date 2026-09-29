@@ -4,6 +4,9 @@
     "api/quantdeus/hermes.js": {
       "maxDuration": 300
     },
+    "api/quantdeus/openclaw.js": {
+      "maxDuration": 300
+    },
     "api/**/*.js": {
       "maxDuration": 60
     }
