@@ -115,7 +115,6 @@ for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governan
 
 const workflowDir = path.join(root,'.github','workflows');
 const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml']);
-const frequentPollingWorkflows = new Set(['telegram-bot.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -123,9 +122,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     const parts = cron.trim().split(/\s+/);
     check(parts.length===5, name, 'cron has 5 fields: '+cron);
     if (parts.length===5) {
-      if (frequentPollingWorkflows.has(name)) {
-        check(parts[0] === '*/5' && parts[1] === '*', name, 'Telegram polling workflow runs at the approved 5-minute cadence: '+cron);
-      } else if (name === 'quantdeus-hourly-openclaw.yml') {
+      if (name === 'quantdeus-hourly-openclaw.yml') {
         check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
       } else if (name === 'qa-self-heal.yml') {
         const approvedQaSelfHeal =
@@ -156,6 +153,21 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   if (scheduledMissionWorkflows.has(name)) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
   }
+}
+
+const telegramWorkflow = fs.readFileSync(path.join(root,'.github','workflows','telegram-bot.yml'),'utf8');
+const telegramSource = fs.readFileSync(path.join(root,'scripts','telegram-bot.js'),'utf8');
+const telegramSetupSource = fs.readFileSync(path.join(root,'scripts','telegram-webhook-setup.js'),'utf8');
+const telegramBridgePath = path.join(root,'vercel-dispatcher','api','quantdeus','telegram.js');
+check(!/^\s*schedule\s*:/m.test(telegramWorkflow), 'telegram-bot.yml', 'Telegram ingress is webhook-driven and has no polling cron');
+check(telegramWorkflow.includes('telegram_update_b64') && telegramWorkflow.includes('scripts/telegram-webhook-setup.js'), 'telegram-bot.yml', 'Telegram workflow accepts webhook-dispatched updates and can configure the webhook');
+check(!telegramSource.includes("getUpdates") && !telegramSource.includes("deleteWebhook"), 'scripts/telegram-bot.js', 'Telegram bot never polls or deletes the production webhook');
+check(telegramSource.includes('TELEGRAM_UPDATE_B64'), 'scripts/telegram-bot.js', 'Telegram bot consumes one dispatched webhook update');
+check(telegramSetupSource.includes('quantdeus-vercel-telegram'), 'scripts/telegram-webhook-setup.js', 'Webhook setup uses dedicated GitHub OIDC audience');
+check(fs.existsSync(telegramBridgePath), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Vercel Telegram webhook bridge exists');
+if (fs.existsSync(telegramBridgePath)) {
+  const telegramBridge = fs.readFileSync(telegramBridgePath,'utf8');
+  check(telegramBridge.includes('x-telegram-bot-api-secret-token') && telegramBridge.includes('QUANTDEUS_GITHUB_TOKEN'), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram webhook verifies Telegram secret and dispatches through authenticated GitHub API');
 }
 
 const coordinatorSource = fs.readFileSync(path.join(root,'scripts/coordinator.js'),'utf8');

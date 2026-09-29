@@ -1,14 +1,23 @@
 name: QuantDeus Telegram GitHub Bot 🤖
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
+    inputs:
+      telegram_update_b64:
+        description: Base64url-encoded Telegram Update JSON from the Vercel webhook bridge
+        required: false
+        type: string
+      telegram_update_id:
+        description: Telegram update_id for audit/concurrency
+        required: false
+        type: string
   push:
     branches: [main]
     paths:
       - '.github/workflows/telegram-bot.yml'
       - 'scripts/telegram-bot.js'
+      - 'scripts/telegram-webhook-setup.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
       - 'coordination/agents.json'
 
 permissions:
@@ -21,13 +30,13 @@ permissions:
   id-token: write
 
 concurrency:
-  group: quantdeus-telegram-bot
+  group: quantdeus-telegram-${{ inputs.telegram_update_id || github.run_id }}
   cancel-in-progress: false
 
 jobs:
   telegram:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
 
@@ -38,20 +47,18 @@ jobs:
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Prepare Telegram polling state
-        run: mkdir -p .telegram-state
+      - name: Ensure Telegram webhook points at Vercel
+        if: ${{ inputs.telegram_update_b64 == '' }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
+        run: node scripts/telegram-webhook-setup.js
 
-      - name: Restore Telegram polling offset
-        uses: actions/cache@v4
-        with:
-          path: .telegram-state
-          key: qd-telegram-state-${{ github.run_id }}
-          restore-keys: |
-            qd-telegram-state-
-
-      - name: Poll Telegram and route to QuantDeus roles
+      - name: Route Telegram update to QuantDeus homunculi
+        if: ${{ inputs.telegram_update_b64 != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
           TELEGRAM_ADMIN_USER_IDS: ${{ vars.TELEGRAM_ADMIN_USER_IDS }}
+          TELEGRAM_UPDATE_B64: ${{ inputs.telegram_update_b64 }}
+          TELEGRAM_UPDATE_ID: ${{ inputs.telegram_update_id }}
         run: node scripts/telegram-bot.js
