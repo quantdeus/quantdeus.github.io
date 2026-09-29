@@ -9,6 +9,7 @@ const vercel = JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json', 'utf8
 const adminSmokeWorkflow = fs.readFileSync('.github/workflows/openclaw-admin-smoke.yml', 'utf8');
 const siteWorkflow = fs.readFileSync('.github/workflows/site-agent-replies.yml', 'utf8');
 const qaSelfHealWorkflow = fs.readFileSync('.github/workflows/qa-self-heal.yml', 'utf8');
+const qaFailureRadarWorkflow = fs.readFileSync('.github/workflows/qa-failure-radar.yml', 'utf8');
 const evolutionWorkflow = fs.readFileSync('.github/workflows/openclaw-evolution.yml', 'utf8');
 const evolutionSkill = fs.readFileSync('.openclaw/skills/quantdeus-self-evolution/SKILL.md', 'utf8');
 const evolutionPolicy = JSON.parse(fs.readFileSync('coordination/openclaw-evolution.json', 'utf8'));
@@ -27,7 +28,6 @@ for (const [ok, message] of [
   [route.includes('function hourlyOfficeRequest') && route.includes('hourly_read_only: hourlyOffice') && route.includes('github_write: !hourlyOffice && !smokePhase'), 'hourly OpenClaw lane is externally marked and enforced read-only'],
   [route.includes("include: smokePhase === 'playwright'") && route.includes("? ['browser_navigate']") && route.includes("['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']"), 'Playwright MCP exposes one-tool smoke surface plus scoped navigation, snapshot, find and close tools'],
   [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot') && route.includes('site-agent-replies') && route.includes("eventName === 'issue_comment'") && route.includes('metadata.admin_authorized === true'), 'trusted tools are workflow-gated and owner/admin site actions require signed issue-comment metadata'],
-  [route.includes("eventName === 'workflow_run'") && route.includes("metadata.source === 'quantdeus-qa-self-heal'"), 'failed-main QA workflow_run can enter trusted repair only through qa-self-heal'],
   [route.includes('.openclaw/skills/quantdeus-self-evolution/SKILL.md') && route.includes('OPENCLAW SELF-EVOLUTION SKILL FROM FRESH MAIN') && route.includes('effectivePrompt'), 'trusted OpenClaw loads the fresh repository self-evolution skill into execution context'],
   [evolutionPolicy.status === 'active' && evolutionPolicy.branch_prefix === 'automation/openclaw-evolution/' && evolutionPolicy.policy?.core_auto_merge === false, 'self-evolution policy is active, branch-scoped and forbids core auto-merge'],
   [evolutionWorkflow.includes("cron: '31 2 * * *'") && evolutionWorkflow.includes('node scripts/mission-alignment.js') && evolutionWorkflow.includes('automation/openclaw-evolution/') && evolutionWorkflow.includes('tier') && evolutionWorkflow.includes('openclaw-skill'), 'daily evolution workflow is mission-guarded and separates skill/core tiers'],
@@ -51,7 +51,7 @@ for (const [ok, message] of [
   [client.includes('quantdeus-vercel-openclaw') && client.includes('/api/quantdeus/openclaw'), 'client wired to OpenClaw endpoint'],
   [site.includes("require('./openclaw-office-client')") && site.includes('trusted: trustedAction') && site.includes('admin_authorized: trustedAction'), 'GitHub site agent promotes only owner/admin repository actions to trusted OpenClaw'],
   [siteWorkflow.includes('QUANTDEUS_ADMIN_GITHUB_USERS') && siteWorkflow.includes('issue_comment:'), 'site agent workflow passes the repository admin allowlist on comment turns'],
-  [qaSelfHealWorkflow.includes('workflow_run:') && qaSelfHealWorkflow.includes('QuantDeus QA Triad') && qaSelfHealWorkflow.includes('QuantDeus Static Smoke') && qaSelfHealWorkflow.includes('Verify claimed repair PR exists'), 'QA self-heal reacts to failed main gates and verifies claimed repair artifacts'],
+  [qaSelfHealWorkflow.includes('trigger_run_id:') && qaSelfHealWorkflow.includes('Verify claimed repair PR exists') && qaFailureRadarWorkflow.includes('trigger_run_id') && qaFailureRadarWorkflow.includes('qa-self-heal.yml'), 'QA failure radar hands concrete failed-run evidence to self-heal, which verifies claimed repair artifacts'],
   [telegram.includes("require('./openclaw-office-client')") && telegram.includes('createAdminTask(agentId, task, username)'), 'Telegram chat migrated and admin task path retained'],
   [vercel.functions['api/quantdeus/openclaw.js']?.maxDuration === 300, 'OpenClaw function has adequate timeout']
 ]) {
