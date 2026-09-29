@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "version": "openclaw-evolution-v1",
+  "status": "active",
+  "updated": "2026-09-29",
+  "workflow": ".github/workflows/openclaw-evolution.yml",
+  "cadence": "31 2 * * *",
+  "branch_prefix": "automation/openclaw-evolution/",
+  "skill": ".openclaw/skills/quantdeus-self-evolution/SKILL.md",
+  "policy": {
+    "loop": [
+      "observe",
+      "diagnose",
+      "hypothesize",
+      "bounded-change",
+      "validate",
+      "compare",
+      "keep-or-revert"
+    ],
+    "max_prs_per_cycle": 1,
+    "max_changed_files": 4,
+    "evidence_required": true,
+    "direct_main_write": false,
+    "core_auto_merge": false
+  },
+  "auto_merge_paths": [
+    ".openclaw/skills/quantdeus-self-evolution/SKILL.md",
+    "coordination/openclaw-evolution.json",
+    "docs/openclaw-evolution.md"
+  ],
+  "core_review_paths": [
+    "vercel-dispatcher/api/quantdeus/openclaw.js",
+    "scripts/openclaw-office-client.js",
+    "scripts/qa/openclaw-office-validator.js",
+    ".github/workflows/openclaw-evolution.yml",
+    ".github/workflows/openclaw-admin-smoke.yml",
+    ".github/workflows/openclaw-smoke.yml"
+  ],
+  "protected_invariants": [
+    "github-oidc-authentication",
+    "trusted-workflow-gating",
+    "public-no-tools",
+    "mcp-deny-lists",
+    "secret-isolation",
+    "branch-pr-auditability",
+    "qa-and-static-smoke",
+    "mission-alignment",
+    "human-approval-for-privileged-actions"
+  ],
+  "metrics": [
+    "workflow-success-rate",
+    "trusted-mcp-tool-success",
+    "model-failover-reliability",
+    "doctor-lint-findings",
+    "mean-recovery-time",
+    "failure-recurrence",
+    "tool-call-efficiency",
+    "observable-latency"
+  ],
+  "history": [
+    {
+      "date": "2026-09-29",
+      "type": "bootstrap",
+      "hypothesis": "A repository-backed, prompt-injected evolution skill plus a daily evidence loop can improve OpenClaw behavior without allowing core self-merge.",
+      "status": "pending-production-validation"
+    }
+  ]
+}
