@@ -13,7 +13,10 @@ for (const [ok, message] of [
   [route.includes('Sandbox.getOrCreate') && route.includes("runtime: 'openclaw-office'"), 'persistent Vercel Sandbox runtime'],
   [route.includes("openclaw@2026.9.6"), 'pinned OpenClaw install'],
   [route.includes("tools: { deny: ['*'] }"), 'deny all OpenClaw tools in chat route'],
-  [route.includes("id: localKeyEnv") && route.includes('runtimeKeyEnv'), 'model key stays env-backed and out of persisted config'],
+  [route.includes("id: localKeyEnv") && route.includes('runtimeEnv[localKeyEnv] = localKey'), 'model key stays env-backed and out of persisted config'],
+  [route.includes("providerDefs['quantdeus-pollinations']") && route.includes("'quantdeus-pollinations/openai-fast'"), 'keyless Pollinations proxy uses a non-conflicting custom provider id'],
+  [route.includes('quantdeus-config-') && route.includes('ephemeralFiles = [configPath, promptPath]'), 'request config is isolated and cleaned up'],
+  [!route.includes("'--state-dir', statePath"), 'agent exec uses OpenClaw temporary state isolation'],
   [route.includes("'openai/gpt-oss-120b:free'") && route.includes('process.env.HERMES_LOCAL_API_KEY') && route.includes('process.env.MISTRAL_API_KEY'), 'existing Vercel OpenRouter and Mistral model credentials are supported'],
   [route.includes("cmd: 'rm'") && route.includes('finally'), 'ephemeral credential/prompt cleanup'],
   [client.includes('quantdeus-vercel-openclaw') && client.includes('/api/quantdeus/openclaw'), 'client wired to OpenClaw endpoint'],
@@ -25,4 +28,4 @@ for (const [ok, message] of [
   if (!ok) throw new Error(`OpenClaw Office contract failed: ${message}`);
 }
 
-console.log('OpenClaw Office contract OK: pinned runtime, OIDC, OpenRouter GPT-OSS, no tools, ephemeral cleanup, site and Telegram clients.');
+console.log('OpenClaw Office contract OK: pinned runtime, isolated exec state, custom proxy fallback, OIDC, no tools, ephemeral cleanup, site and Telegram clients.');
