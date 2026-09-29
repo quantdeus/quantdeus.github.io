@@ -35,7 +35,7 @@ console.log('Hermes Office contract OK:', ids.length, 'profiles, model=' + offic
 if (evolution.chat_bridge.primary_profile !== 'seven-of-nine') throw new Error('Hermes Evolution chat bridge must route through Seven');
 if (evolution.capabilities.github.mode !== 'official-mcp') throw new Error('Official GitHub MCP contract missing');
 if (!evolution.capabilities.browser.playwright_mcp) throw new Error('Playwright MCP must be enabled');
-if (!evolution.capabilities.automation.agents_may_create_cron) throw new Error('Hermes agents must be allowed to create cron jobs');
+if (evolution.capabilities.automation.agents_may_create_cron) throw new Error('Legacy Hermes agents must not create unattended cron jobs');
 if (!evolution.capabilities.self_improvement.skill_manage) throw new Error('Hermes skill self-improvement must be enabled');
 if (!evolution.capabilities.self_improvement.guard_agent_created) throw new Error('Agent-created skills must be security-scanned');
 for (const file of ['scripts/hermes-office-client.js','.hermes/skills/quantdeus-autonomy/SKILL.md','.hermes/skills/quantdeus-playwright-ops/SKILL.md','.hermes/skills/quantdeus-connections-evolution/SKILL.md']) {
@@ -132,12 +132,13 @@ const cronClient = fs.readFileSync('scripts/hermes-office-client.js','utf8');
 const cronWorkflow = fs.readFileSync('.github/workflows/hermes-office-cron.yml','utf8');
 if (!cronSource.includes("['-p', profile, 'cron', 'tick']")) throw new Error('Cron pulse must tick Hermes scheduler for every profile');
 if (!cronClient.includes("mode: 'cron_tick'")) throw new Error('Cron client must call the authenticated Hermes cron mode');
-if (!cronWorkflow.includes("cron: '*/15 * * * *'")) throw new Error('Hermes cron pulse must run every 15 minutes');
+if (/^\s*schedule\s*:/m.test(cronWorkflow)) throw new Error('Legacy Hermes cron pulse must not have an automatic schedule');
+if (!/^\s*workflow_dispatch\s*:/m.test(cronWorkflow)) throw new Error('Legacy Hermes cron pulse must remain manual-only');
 if (!cronWorkflow.includes('  id-token: write')) throw new Error('Hermes cron workflow requires GitHub OIDC token permission');
 const route = fs.readFileSync('vercel-dispatcher/api/quantdeus/hermes.js','utf8');
 if (!route.includes("mode === 'cron_tick'")) throw new Error('Vercel Hermes route must expose cron tick mode');
-if (!route.includes("!['schedule', 'workflow_dispatch'].includes(String(claims.event_name || ''))")) {
-  throw new Error('Cron mode must be limited to authenticated schedule/manual workflow events');
+if (!route.includes("String(claims.event_name || '') !== 'workflow_dispatch'")) {
+  throw new Error('Legacy Hermes cron mode must be limited to authenticated manual workflow events');
 }
 if (!route.includes("runHermesCronTicks(sandbox, runtimeEnv, paths)")) throw new Error('Vercel Hermes route must execute saved cron jobs');
 
@@ -153,4 +154,4 @@ const directTaskFallback = telegramBot.indexOf("const url = createAdminTask(agen
 if (adminTaskStart < 0 || hermesTaskCall < adminTaskStart || directTaskFallback < hermesTaskCall) {
   throw new Error('Telegram admin tasks must route through Hermes before the direct fallback');
 }
-console.log('Hermes Evolution live contract OK: all-profile MCP connections + authenticated 15-minute cron pulse + chat mutations');
+console.log('Hermes Evolution live contract OK: all-profile MCP connections + manual-only legacy cron fallback + chat mutations');

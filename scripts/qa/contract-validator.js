@@ -114,14 +114,16 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     if (parts.length===5) {
       if (frequentPollingWorkflows.has(name)) {
         check(parts[0] === '*/5' && parts[1] === '*', name, 'Telegram polling workflow runs at the approved 5-minute cadence: '+cron);
-      } else if (name === 'hermes-office-cron.yml') {
-        check(parts[0] === '*/15' && parts[1] === '*', name, 'Hermes scheduler pulse runs at the approved 15-minute cadence: '+cron);
       } else if (name === 'quantdeus-hourly-openclaw.yml') {
         check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
       } else {
         check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
       }
     }
+  }
+  if (name === 'hermes-office-cron.yml') {
+    check(!/^\s*schedule\s*:/m.test(text), name, 'legacy Hermes fleet pulse has no automatic schedule');
+    check(/^\s*workflow_dispatch\s*:/m.test(text), name, 'legacy Hermes fleet pulse remains manual-only');
   }
   if (scheduledMissionWorkflows.has(name)) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
