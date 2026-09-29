@@ -48,7 +48,7 @@ The canonical execution cadence is GitHub Actions `.github/workflows/quantdeus-h
 
 `0 * * * *`
 
-GitHub provides the schedule and OIDC identity; the actual agent runtime remains the Vercel-hosted OpenClaw Office. The trusted lane lets Seven of Nine read the current queue and perform at most one bounded, reversible GitHub MCP step per tick.
+GitHub provides the schedule and OIDC identity; the actual agent runtime remains the Vercel-hosted OpenClaw Office. In the unattended hourly lane, GitHub MCP is enforced read-only. Seven of Nine returns one structured decision, and the workflow may publish at most one guarded comment to an open `coord:active` or `coord:ready` Issue. Code/branch/PR mutations remain outside this unattended lane until a separately constrained credential/executor exists.
 
 The legacy `/api/quantdeus/hourly` endpoint remains a read/bootstrap surface and must not be mistaken for the execution adapter.
 
