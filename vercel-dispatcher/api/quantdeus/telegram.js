@@ -144,12 +144,22 @@ async function setupWebhook(req, res) {
     'You are a health check for the QuantDeus Telegram homunculus runtime. Return a short plain-text success marker.',
     'Reply with exactly TELEGRAM_LLM_OK'
   );
+  const roleProbe = await homunculusReply({
+    text: 'Бро проверь состояние QuantDeus и коротко скажи, что сейчас важно проверить в автоматизации.',
+    message_id: 1,
+    from: { id: 1, username: 'telegram-smoke', is_bot: false },
+    chat: { id: 1, type: 'private' }
+  });
 
   return res.status(200).json({
     ok: true,
     llm_smoke: {
       ok: Boolean(llmProbe),
       preview: String(llmProbe || '').slice(0, 120)
+    },
+    role_smoke: {
+      ok: Boolean(roleProbe) && !String(roleProbe).includes('LLM-канал сейчас не дал ответ'),
+      preview: String(roleProbe || '').slice(0, 260)
     },
     bot: {
       id: me.id,
