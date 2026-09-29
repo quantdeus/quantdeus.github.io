@@ -335,6 +335,20 @@ async function handleMessage(message) {
     }
     const url = createAdminTask(agentId, task, username);
     await send(chatId, `🚀 Task отправлен гомункулу ${agentId}:\n${url}`, replyId);
+    if (openclawOffice.configured()) {
+      try {
+        const result = await openclawOffice.ask({
+          profile: agentId,
+          trusted: true,
+          messages: [{ role: 'user', content: `Execute this approved QuantDeus admin task. Audit Issue: ${url}\n\n${task}` }],
+          metadata: { source: 'telegram-admin-task', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, audit_issue: url }
+        });
+        await send(chatId, '🦞 OpenClaw Admin Office:\n' + result.text, replyId);
+      } catch (error) {
+        console.error('OpenClaw Admin Office /task:', error.message || error);
+        await send(chatId, '⚠️ Task записан в GitHub, но OpenClaw Admin Office не смог выполнить live-run: ' + String(error.message || error).slice(0, 700), replyId);
+      }
+    }
     return;
   }
 

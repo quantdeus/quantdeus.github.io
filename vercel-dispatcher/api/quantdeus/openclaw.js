@@ -46,6 +46,13 @@ async function checked(sandbox, args, label) {
   return r;
 }
 
+function trustedOfficeRequest(req, claims) {
+  if (req.body?.execution_mode !== 'trusted-office') return false;
+  const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke)\.yml(?:@|$)/.test(workflowRef);
+  return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
+}
+
 async function probeChatCandidate(candidate) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
@@ -90,6 +97,14 @@ export default async function handler(req, res) {
   let ephemeralFiles = [];
   try {
     const claims = await verify(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+    const trustedOffice = trustedOfficeRequest(req, claims);
+    const githubToken = String(req.headers['x-quantdeus-github-token'] || process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
+    if (req.body?.execution_mode === 'trusted-office' && !trustedOffice) {
+      return res.status(403).json({ ok: false, error: 'openclaw_trusted_office_not_authorized' });
+    }
+    if (trustedOffice && !githubToken) {
+      return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
+    }
     const openRouterKey = String(req.headers['x-quantdeus-openrouter-key'] || process.env.OPENROUTER_API_KEY || '');
     let vercelOidcToken = String(req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || '').trim();
     try {
@@ -198,9 +213,24 @@ export default async function handler(req, res) {
     sandbox = await Sandbox.getOrCreate({ name: SANDBOX, image: 'vercel/sandbox/universal', resources: { vcpus: 2 }, timeout: 15 * 60 * 1000, persistent: true, snapshotExpiration: 30 * 24 * 60 * 60 * 1000, keepLastSnapshots: { count: 2 }, resume: true, tags: { app: 'quantdeus', runtime: 'openclaw-office' } });
     const home = await text(await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'printf %s "$HOME"'] }));
     const workdir = `${home}/quantdeus`;
+    const repoDir = `${workdir}/repo`;
     const install = await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'command -v openclaw >/dev/null 2>&1 || npm install --global openclaw@2026.9.6 --allow-scripts=openclaw'] });
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
+    if (trustedOffice) {
+      const gitCheck = await sandbox.runCommand({ cmd: 'test', args: ['-d', `${repoDir}/.git`] });
+      if (gitCheck.exitCode !== 0) {
+        await checked(sandbox, {
+          cmd: 'git',
+          args: ['clone', '--depth', '1', 'https://github.com/quantdeus/quantdeus.github.io.git', repoDir]
+        }, 'openclaw_repo_clone');
+      } else {
+        await checked(sandbox, { cmd: 'git', args: ['-C', repoDir, 'fetch', 'origin', 'main', '--depth', '1'] }, 'openclaw_repo_fetch');
+        await checked(sandbox, { cmd: 'git', args: ['-C', repoDir, 'reset', '--hard', 'origin/main'] }, 'openclaw_repo_reset');
+        await sandbox.runCommand({ cmd: 'git', args: ['-C', repoDir, 'clean', '-fd'] });
+      }
+    }
+    const agentCwd = trustedOffice ? repoDir : workdir;
     const requestId = crypto.randomUUID();
     const requestsDir = `${home}/.openclaw/requests`;
     const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
@@ -208,11 +238,29 @@ export default async function handler(req, res) {
     ephemeralFiles = [configPath, promptPath];
     const statePath = `${home}/.openclaw/quantdeus-state`;
     for (const dir of [`${home}/.openclaw`, requestsDir, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
+    const publicTools = { deny: ['*'] };
+    const trustedTools = {
+      profile: 'full',
+      allow: ['group:fs', 'group:plugins', 'bundle-mcp'],
+      deny: ['group:runtime', 'group:automation', 'group:messaging', 'group:nodes']
+    };
+    const mcpServers = trustedOffice ? {
+      github: {
+        transport: 'http',
+        url: 'https://api.githubcopilot.com/mcp/',
+        headers: { Authorization: 'Bearer ' + githubToken }
+      },
+      playwright: {
+        command: 'npx',
+        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--idle-timeout=300000']
+      }
+    } : {};
     const config = {
       models: modelConfig,
       memory: { search: { enabled: false } },
-      tools: { deny: ['*'] },
-      agents: { defaults: { workspace: workdir, model: { primary: model, fallbacks: fallbackModels } } }
+      tools: trustedOffice ? trustedTools : publicTools,
+      ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
+      agents: { defaults: { workspace: agentCwd, model: { primary: model, fallbacks: fallbackModels } } }
     };
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
     const runtimeEnv = {};
@@ -226,6 +274,9 @@ export default async function handler(req, res) {
       probes: probeResults,
       chosen: model || null,
       fallbacks: fallbackModels,
+      trusted_office: trustedOffice,
+      github_mcp: trustedOffice && Boolean(githubToken),
+      playwright_mcp: trustedOffice,
       has_vercel_oidc: Boolean(vercelOidcToken),
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
@@ -322,8 +373,8 @@ export default async function handler(req, res) {
     const modelArgs = ['--model', model, ...fallbackModels.flatMap(ref => ['--fallback', ref])];
     const run = await sandbox.runCommand({
       cmd: 'flock',
-      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', workdir, ...modelArgs, '--timeout', '180', '--json', '--message-file', promptPath],
-      cwd: workdir,
+      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '180', '--json', '--message-file', promptPath],
+      cwd: agentCwd,
       env: runtimeEnv
     });
     const raw = await text(run);
@@ -332,7 +383,19 @@ export default async function handler(req, res) {
     const result = JSON.parse(raw);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
     await sandbox.stop();
-    return res.status(200).json({ ok: true, provider: 'quantdeus-openclaw-vercel-sandbox', runtime: 'openclaw', model: result.model || model, configured_primary: model, configured_fallbacks: fallbackModels, execution_mode: 'openclaw-agent-exec-no-tools', doctor, text: result.final.trim(), github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository } });
+    return res.status(200).json({
+      ok: true,
+      provider: 'quantdeus-openclaw-vercel-sandbox',
+      runtime: 'openclaw',
+      model: result.model || model,
+      configured_primary: model,
+      configured_fallbacks: fallbackModels,
+      execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-no-tools',
+      tools: trustedOffice ? { filesystem: true, github_mcp: true, playwright_mcp: true, shell: false } : { filesystem: false, github_mcp: false, playwright_mcp: false, shell: false },
+      doctor,
+      text: result.final.trim(),
+      github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository }
+    });
   } catch (error) {
     const message = String(error?.message || error);
     console.error('QuantDeus OpenClaw error:', message);
