@@ -1,0 +1,52 @@
+name: QuantDeus OpenClaw Admin Office Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: qd-openclaw-admin-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify trusted OpenClaw GitHub and Playwright MCP lane
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+          (async () => {
+            const result = await office.ask({
+              profile: 'seven-of-nine',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'This is a read-only smoke. Do not mutate GitHub.',
+                  'Use the GitHub MCP to inspect quantdeus/quantdeus.github.io and confirm the repository name.',
+                  'Then use the Playwright MCP to open https://example.com and confirm the page title.',
+                  'Reply exactly: OPENCLAW_ADMIN_TOOLS_OK'
+                ].join(' ')
+              }],
+              metadata: { source: 'openclaw-admin-smoke', repository: process.env.GITHUB_REPOSITORY }
+            });
+            if (result.text.trim() !== 'OPENCLAW_ADMIN_TOOLS_OK') throw new Error('Unexpected admin smoke response: ' + result.text.slice(0, 600));
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
+            console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, smoke: result.text }));
+          })().catch(error => { console.error(error.message || error); process.exit(1); });
+          NODE
