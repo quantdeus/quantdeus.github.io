@@ -284,7 +284,7 @@ async function pollinationsFallback(system, user) {
   };
 
   const candidates = [
-    runWithTimeout('pollinations-chat-openai-fast', async signal => {
+    runWithTimeout('pollinations-chat-openai', async signal => {
       const response = await fetch('https://text.pollinations.ai/openai/chat/completions', {
         method: 'POST',
         headers: {
@@ -293,7 +293,7 @@ async function pollinationsFallback(system, user) {
           accept: 'application/json'
         },
         body: JSON.stringify({
-          model: 'openai-fast',
+          model: 'openai',
           messages: [
             { role: 'system', content: String(system || '').slice(0, 1600) },
             { role: 'user', content: String(user || '').slice(0, 3000) }
@@ -309,8 +309,8 @@ async function pollinationsFallback(system, user) {
       try { data = JSON.parse(raw); } catch {}
       return data?.choices?.[0]?.message?.content || '';
     }),
-    runWithTimeout('pollinations-text-openai-fast', async signal => {
-      const url = 'https://text.pollinations.ai/' + encodeURIComponent(compactPrompt) + '?model=openai-fast';
+    runWithTimeout('pollinations-text-openai', async signal => {
+      const url = 'https://text.pollinations.ai/' + encodeURIComponent(compactPrompt) + '?model=openai';
       const response = await fetch(url, { method: 'GET', headers: { accept: 'text/plain' }, signal });
       const raw = await response.text();
       if (!response.ok) throw new Error(`http_${response.status}: ${raw.slice(0, 200)}`);
