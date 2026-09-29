@@ -49,7 +49,7 @@
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
-- legacy_hermes_scheduler: `automatic 15-minute Hermes fleet pulse retired; .github/workflows/hermes-office-cron.yml is workflow_dispatch-only fallback; scheduled autonomy belongs to OpenClaw`
+- legacy_hermes_scheduler: `retired; obsolete Hermes cron workflow removed; legacy scripts/routes are archive-only; scheduled autonomy belongs to OpenClaw`
 - qa_self_heal: `bounded autonomous repair: site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
 - openclaw_evolution: `daily 02:31 UTC evidence loop; OpenClaw reads its fresh-main self-evolution skill on trusted runs; Tier A skill/docs/ledger improvements may auto-merge after QA+Smoke; Tier B runtime/auth/MCP/workflow changes remain reviewable PRs`
 - scheduled_workflows:
