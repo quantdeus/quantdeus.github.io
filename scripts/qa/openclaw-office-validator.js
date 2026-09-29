@@ -7,6 +7,7 @@ const site = fs.readFileSync('scripts/site-agent-reply.js', 'utf8');
 const telegram = fs.readFileSync('scripts/telegram-bot.js', 'utf8');
 const vercel = JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json', 'utf8'));
 const smokeWorkflow = fs.readFileSync('.github/workflows/openclaw-smoke.yml', 'utf8');
+const adminSmokeWorkflow = fs.readFileSync('.github/workflows/openclaw-admin-smoke.yml', 'utf8');
 
 for (const [ok, message] of [
   [route.includes("const AUDIENCE = 'quantdeus-vercel-openclaw'"), 'dedicated GitHub OIDC audience'],
@@ -33,6 +34,8 @@ for (const [ok, message] of [
   [!route.includes("'--state-dir', statePath"), 'agent exec uses OpenClaw temporary state isolation'],
   [route.includes("'openai/gpt-oss-120b:free'") && route.includes('process.env.HERMES_LOCAL_API_KEY') && route.includes('process.env.MISTRAL_API_KEY') && route.includes("'https://openrouter.ai/api/v1/chat/completions'"), 'existing OpenRouter and local model credentials are supported as separately probed routes'],
   [!route.includes("baseUrl: 'https://api.mistral.ai/v1'") && !route.includes('has_independent_mistral_key') && route.includes('validated_fallbacks: fallbackModels'), 'no duplicate Mistral fallback is advertised; selected MCP fallbacks are observable'],
+  [route.includes('tool_summary: result.toolSummary || null') && route.includes('assistant_turns: result.assistantTurns ?? null'), 'OpenClaw returns machine-readable tool execution evidence'],
+  [adminSmokeWorkflow.includes("result.raw?.tool_summary") && adminSmokeWorkflow.includes("github__list_branches") && adminSmokeWorkflow.includes("playwright__browser_navigate") && adminSmokeWorkflow.includes("/branches/main"), 'Admin smoke verifies MCP tool traces and independently verifies main branch existence'],
   [route.includes("cmd: 'rm'") && route.includes('finally'), 'ephemeral credential/prompt cleanup'],
   [client.includes('quantdeus-vercel-openclaw') && client.includes('/api/quantdeus/openclaw'), 'client wired to OpenClaw endpoint'],
   [site.includes("require('./openclaw-office-client')") && site.includes('openclaw-office'), 'GitHub site agent wired to OpenClaw'],

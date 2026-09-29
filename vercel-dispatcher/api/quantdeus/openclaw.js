@@ -606,6 +606,8 @@ export default async function handler(req, res) {
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-no-tools',
       tools: trustedOffice ? { filesystem: true, github_mcp: true, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, shell: false } : { filesystem: false, github_mcp: false, github_write: false, playwright_mcp: false, shell: false },
       doctor,
+      tool_summary: result.toolSummary || null,
+      assistant_turns: result.assistantTurns ?? null,
       text: result.final.trim(),
       github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository }
     });
