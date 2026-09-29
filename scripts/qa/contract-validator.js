@@ -114,7 +114,7 @@ const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -129,6 +129,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
           (parts[0] === '17' && parts[1] === '*/6') ||
           (parts[0] === '47' && parts[1] === '3-23/6');
         check(approvedQaSelfHeal, name, 'QA self-heal uses the approved staggered six-hour lanes: '+cron);
+      } else if (name === 'qa-failure-radar.yml') {
+        check(parts[0] === '7' && parts[1] === '*/2', name, 'QA failure radar uses the approved two-hour cadence: '+cron);
       } else if (name === 'agent-role-cron.yml') {
         check(parts[0] === '23' && parts[1] === '0-14', name, 'role cron uses the approved daily hourly window: '+cron);
       } else if (name === 'seven-priority-cycle.yml') {
