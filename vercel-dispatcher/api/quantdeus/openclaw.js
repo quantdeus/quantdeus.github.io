@@ -191,7 +191,7 @@ export default async function handler(req, res) {
       : modelCandidates;
     const model = orderedModels[0];
     const fallbackModels = orderedModels.slice(1);
-    const modelConfig = { mode: 'merge', providers: providerDefs };
+    const modelConfig = { mode: 'replace', providers: providerDefs };
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
     if (!prompt) return res.status(400).json({ ok: false, error: 'messages_required' });
