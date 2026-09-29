@@ -3,6 +3,7 @@ name: QuantDeus OpenClaw Admin Office Smoke
 # production re-smoke after hardened MCP runtime 84c6ffe
 # production re-smoke after Playwright MCP Chrome install dbfe582
 # production re-smoke after sequential two-tool model gate
+# production re-smoke after validated provider fallbacks
 
 # Updating this workflow intentionally retriggers the live trusted-office smoke after a runtime mirror sync.
 
