@@ -2,8 +2,7 @@ name: QuantDeus Hourly OpenClaw Swarm 🐒
 
 on:
   schedule:
-    # TEMP_SCHEDULE_SMOKE
-    - cron: '*/5 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:
