@@ -1,0 +1,89 @@
+name: QuantDeus News → Living Manifest 🌍
+
+on:
+  schedule:
+    - cron: '41 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-news-manifest-cycle
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+      - name: Research and update living manifesto when material
+        id: manifest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const office=require('./scripts/openclaw-office-client');
+          function parse(text){
+            const raw=String(text||'').trim();
+            try{return JSON.parse(raw)}catch{}
+            const m=raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if(m)return JSON.parse(m[1].trim());
+            throw new Error('Manifest cycle response must be strict JSON');
+          }
+          (async()=>{
+            const result=await office.ask({
+              profile:'orchestrator',
+              trusted:true,
+              messages:[{role:'user',content:[
+                'QuantDeus news/trend research cycle. Maintain coordination/manifesto-living.md only when material evidence changes an operational horizon.',
+                'Research fresh public information across: world developments; Russia; science/AI/energy/space/biotech; infrastructure/economics/resources; relevant community/technology trends.',
+                'Use Playwright and public primary/high-quality sources. Prefer at least three independent sources for a material update, or a primary source plus corroboration. Record exact dates and links in the living manifesto.',
+                'Separate fact, trend, inference and QuantDeus implication. Include contradictory evidence and uncertainty.',
+                'For political/civic topics: neutral factual comparison only; no party/candidate endorsement, voter targeting, electoral prediction or persuasive campaigning.',
+                'Do not use fear, war, tragedy or polarization as growth bait.',
+                'If there is no material change, do nothing.',
+                'If there is a material change, create branch automation/manifest-update/<date-or-topic>, update ONLY coordination/manifesto-living.md, and open one PR to main. Do not edit constitutional core or canonical manifesto references automatically.',
+                'Keep the update concise: current signal, evidence links/dates, implication, confidence, and what changed since prior cycle.',
+                'Verify the PR exists.',
+                '',
+                'Return ONLY strict JSON:',
+                '{"action":"none","reason":"no material evidence-backed change"}',
+                'or {"action":"pr","pr_number":123,"branch":"automation/manifest-update/...","summary":"..."}'
+              ].join('\n')}],
+              metadata:{source:'quantdeus-news-manifest-cycle',repository:process.env.GITHUB_REPOSITORY}
+            });
+            if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Manifest cycle lacks trusted tools');
+            const d=parse(result.text);
+            if(!['none','pr'].includes(d.action)) throw new Error('Unsupported manifest action');
+            if(d.action==='pr'){
+              if(!String(d.branch||'').startsWith('automation/manifest-update/')) throw new Error('Manifest PR outside allowed branch');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'pr_number='+Number(d.pr_number)+'\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'branch='+String(d.branch)+'\n');
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
+            console.log(JSON.stringify({model:result.model,decision:d},null,2));
+          })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          NODE
+      - name: Guarded auto-merge living-manifest update
+        if: steps.manifest.outputs.action == 'pr'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.manifest.outputs.pr_number }}
+          AUTO_MERGE_MODE: manifest
+          EXPECTED_BRANCH_PREFIX: automation/manifest-update/
+        run: node scripts/guarded-automerge.js
