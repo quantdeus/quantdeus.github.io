@@ -6,6 +6,12 @@ on:
     - cron: '17 */6 * * *'
     # Actions lane: 03:47 / 09:47 / 15:47 / 21:47 UTC.
     - cron: '47 3-23/6 * * *'
+  workflow_run:
+    workflows:
+      - QuantDeus QA Triad 🦀
+      - QuantDeus Static Smoke
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       lane:
@@ -32,6 +38,7 @@ concurrency:
 
 jobs:
   self-heal:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -98,6 +105,17 @@ jobs:
           })().catch(e => { console.error(e); process.exit(1); });
           NODE
 
+      - name: Capture triggering failure logs
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set +e
+          gh run view "$TRIGGER_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed > /tmp/qd-trigger-failure.log 2>&1
+          exit 0
+
       - name: Run bounded QA repair agent
         id: heal
         env:
@@ -107,6 +125,9 @@ jobs:
           SYNTAX_RC: ${{ steps.localqa.outputs.syntax_rc }}
           CONTRACT_RC: ${{ steps.localqa.outputs.contract_rc }}
           OPENCLAW_RC: ${{ steps.localqa.outputs.openclaw_rc }}
+          TRIGGER_FAILURE: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure' }}
+          TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -142,6 +163,8 @@ jobs:
             openclaw_log: read('/tmp/qd-self-heal-openclaw.log')
           };
           const actionsState = read('/tmp/qd-actions-state.json', 30000);
+          const triggerFailureLog = read('/tmp/qd-trigger-failure.log', 24000);
+          const triggeredFailure = String(process.env.TRIGGER_FAILURE || '') === 'true';
 
           (async () => {
             const result = await office.ask({
@@ -160,17 +183,21 @@ jobs:
                   'Recent main GitHub Actions state:',
                   actionsState,
                   '',
+                  'Triggering failed workflow: ' + String(process.env.TRIGGER_WORKFLOW || 'none') + ' run=' + String(process.env.TRIGGER_RUN_ID || 'none'),
+                  triggerFailureLog || '(no triggering failure log; scheduled/manual cycle)',
+                  '',
                   'Rules:',
                   '1. Diagnose first; do not mutate until the root cause is identified.',
                   '2. Site lane: inspect https://quantdeus.github.io/ and important public routes with Playwright, then inspect the relevant main files.',
                   '3. Actions lane: inspect recent failures plus relevant workflow/scripts on main. Treat transient/cancelled runs as evidence to investigate, not automatic proof of a code defect.',
                   '4. Full lane: cover both scopes, but still make at most one bounded repair.',
-                  '5. If healthy, or no deterministic safe repository repair exists, do not manufacture a change.',
-                  '6. If a repair is needed, use exactly one branch whose name starts qa/self-heal/. Never write directly to main.',
-                  '7. Keep the patch minimal (maximum 6 files) and create exactly one PR to main. Reuse/update an existing open qa/self-heal PR for the same root cause instead of duplicating it.',
-                  '8. Never weaken/bypass QA, branch protection, security checks, authentication, secret handling, or mission guardrails just to make a check green.',
-                  '9. Never expose/change secrets, spend money, register accounts, perform outreach, or make unrelated product/content edits.',
-                  '10. The workflow will merge only after independent QA Triad + Static Smoke checks are green.',
+                  '5. A deterministic repository defect MUST produce a real repair branch + PR. Do not answer with advice, pretend actions, or action=none when local validators or the triggering main workflow are failing.',
+                  '6. action=issue is allowed only when the blocker is genuinely external/non-repository (secret, provider outage, payment, permissions, human-only gate) and must create a real Issue with evidence.',
+                  '7. If a repair is needed, use exactly one branch whose name starts qa/self-heal/. Never write directly to main.',
+                  '8. Keep the patch minimal (maximum 6 files) and create exactly one PR to main. Reuse/update an existing open qa/self-heal PR for the same root cause instead of duplicating it.',
+                  '9. Never weaken/bypass QA, branch protection, security checks, authentication, secret handling, or mission guardrails just to make a check green.',
+                  '10. Never expose/change secrets, spend money, register accounts, perform outreach, or make unrelated product/content edits.',
+                  '11. The workflow independently verifies the claimed PR and merges only after fresh QA Triad + Static Smoke SUCCESS checks.',
                   '',
                   'Return ONLY strict JSON:',
                   '{"action":"none","reason":"verified healthy or concrete blocker"}',
@@ -191,6 +218,14 @@ jobs:
             }
             const decision = parseDecision(result.text);
             if (!['none','pr','issue'].includes(decision.action)) throw new Error('Unsupported self-heal action');
+            const deterministicFailure =
+              triggeredFailure ||
+              localState.syntax_rc !== 0 ||
+              localState.contract_rc !== 0 ||
+              localState.openclaw_rc !== 0;
+            if (decision.action === 'none' && deterministicFailure) {
+              throw new Error('QA self-heal refused to repair or escalate a deterministic failure');
+            }
             if (decision.action === 'pr') {
               const pr = Number(decision.pr_number);
               const branch = String(decision.branch || '');
@@ -199,12 +234,18 @@ jobs:
               fs.appendFileSync(process.env.GITHUB_OUTPUT, 'pr_number=' + pr + '\n');
               fs.appendFileSync(process.env.GITHUB_OUTPUT, 'branch=' + branch + '\n');
             }
+            if (decision.action === 'issue') {
+              const issue = Number(decision.issue_number);
+              if (!Number.isInteger(issue) || issue <= 0) throw new Error('Invalid escalation Issue number');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'issue_number=' + issue + '\n');
+            }
             fs.appendFileSync(process.env.GITHUB_OUTPUT, 'action=' + decision.action + '\n');
             fs.writeFileSync('/tmp/qd-self-heal-result.json', JSON.stringify({
               timestamp: new Date().toISOString(),
               lane,
               runtime: result.runtime,
               model: result.model,
+              tool_summary: result.raw?.tool_summary || null,
               decision
             }, null, 2));
             console.log(JSON.stringify({lane, decision}, null, 2));
@@ -213,6 +254,28 @@ jobs:
             process.exit(1);
           });
           NODE
+
+      - name: Verify claimed repair PR exists
+        if: steps.heal.outputs.action == 'pr'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.heal.outputs.pr_number }}
+          EXPECTED_BRANCH: ${{ steps.heal.outputs.branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          meta="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,baseRefName,headRefName)"
+          test "$(jq -r .state <<<"$meta")" = "OPEN"
+          test "$(jq -r .baseRefName <<<"$meta")" = "main"
+          test "$(jq -r .headRefName <<<"$meta")" = "$EXPECTED_BRANCH"
+          [[ "$EXPECTED_BRANCH" == qa/self-heal/* ]]
+
+      - name: Verify claimed escalation Issue exists
+        if: steps.heal.outputs.action == 'issue'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ steps.heal.outputs.issue_number }}
+        run: gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json number,state,title >/dev/null
 
       - name: Guarded merge after independent green checks
         if: steps.heal.outputs.action == 'pr'
@@ -239,9 +302,9 @@ jobs:
           green=0
           for attempt in $(seq 1 24); do
             checks="$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs" --jq '.check_runs | map({name,status,conclusion,html_url})')"
-            qa_ok="$(jq '[.[] | select(.name=="qa" and .status=="completed" and (.conclusion=="success" or .conclusion=="neutral" or .conclusion=="skipped"))] | length' <<<"$checks")"
-            smoke_ok="$(jq '[.[] | select(.name=="smoke" and .status=="completed" and (.conclusion=="success" or .conclusion=="neutral" or .conclusion=="skipped"))] | length' <<<"$checks")"
-            hard_fail="$(jq '[.[] | select((.name=="qa" or .name=="smoke") and .status=="completed" and (.conclusion!="success" and .conclusion!="neutral" and .conclusion!="skipped"))] | length' <<<"$checks")"
+            qa_ok="$(jq '[.[] | select(.name=="qa" and .status=="completed" and .conclusion=="success")] | length' <<<"$checks")"
+            smoke_ok="$(jq '[.[] | select(.name=="smoke" and .status=="completed" and .conclusion=="success")] | length' <<<"$checks")"
+            hard_fail="$(jq '[.[] | select((.name=="qa" or .name=="smoke") and .status=="completed" and .conclusion!="success")] | length' <<<"$checks")"
 
             if [ "$hard_fail" -gt 0 ]; then
               echo "Critical QA check failed; leaving repair PR open."
@@ -272,5 +335,6 @@ jobs:
           path: |
             /tmp/qd-self-heal-*.log
             /tmp/qd-actions-state.json
+            /tmp/qd-trigger-failure.log
             /tmp/qd-self-heal-result.json
           if-no-files-found: warn
