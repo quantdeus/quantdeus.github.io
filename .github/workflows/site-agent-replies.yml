@@ -34,6 +34,7 @@ jobs:
       - name: Route comment to live QuantDeus LLM agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           AI_GATEWAY_MODEL: ${{ vars.AI_GATEWAY_MODEL }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
