@@ -363,16 +363,25 @@ export default async function handler(req, res) {
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
     if (trustedOffice && !smokePhase) {
-      const gitCheck = await sandbox.runCommand({ cmd: 'test', args: ['-d', `${repoDir}/.git`] });
-      if (gitCheck.exitCode !== 0) {
-        await checked(sandbox, {
-          cmd: 'git',
-          args: ['clone', '--depth', '1', 'https://github.com/quantdeus/quantdeus.github.io.git', repoDir]
-        }, 'openclaw_repo_clone');
-      } else {
-        await checked(sandbox, { cmd: 'git', args: ['-C', repoDir, 'fetch', 'origin', 'main', '--depth', '1'] }, 'openclaw_repo_fetch');
-        await checked(sandbox, { cmd: 'git', args: ['-C', repoDir, 'reset', '--hard', 'origin/main'] }, 'openclaw_repo_reset');
-        await sandbox.runCommand({ cmd: 'git', args: ['-C', repoDir, 'clean', '-fd'] });
+      const repoSyncLock = `${workdir}/.quantdeus-repo-sync.lock`;
+      const syncScript = [
+        'set -euo pipefail',
+        'repo="$1"',
+        'if [ ! -d "$repo/.git" ]; then',
+        '  rm -rf "$repo"',
+        '  git clone --depth 1 https://github.com/quantdeus/quantdeus.github.io.git "$repo"',
+        'else',
+        '  git -C "$repo" fetch origin main --depth 1',
+        '  git -C "$repo" reset --hard origin/main',
+        '  git -C "$repo" clean -fd',
+        'fi'
+      ].join('\n');
+      const repoSync = await sandbox.runCommand({
+        cmd: 'flock',
+        args: ['-w', '60', repoSyncLock, 'bash', '-lc', syncScript, 'repo-sync', repoDir]
+      });
+      if (repoSync.exitCode !== 0) {
+        throw new Error(`openclaw_repo_sync_failed: ${((await repoSync.stderr()) || (await repoSync.stdout())).slice(-1600)}`);
       }
     }
     const agentCwd = trustedOffice && !smokePhase ? repoDir : workdir;
