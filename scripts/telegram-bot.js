@@ -1,12 +1,10 @@
 const fs = require('fs');
 const openclawOffice = require('./openclaw-office-client');
-const path = require('path');
 const { execFileSync } = require('child_process');
 
 const repo = process.env.GITHUB_REPOSITORY;
 const githubToken = process.env.GITHUB_TOKEN;
 const telegramToken = process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
-const statePath = process.env.TELEGRAM_STATE_PATH || '.telegram-state/offset';
 const adminIds = new Set(
   String(process.env.TELEGRAM_ADMIN_USER_IDS || '')
     .split(',')
@@ -393,50 +391,38 @@ async function handleMessage(message) {
   await send(chatId, '🔀 Авто-роль: ' + agentId + '\n\n' + advisory(agentId, text), replyId);
 }
 
-function readOffset() {
-  try {
-    const value = Number(fs.readFileSync(statePath, 'utf8').trim());
-    return Number.isFinite(value) && value > 0 ? value : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function writeOffset(value) {
-  fs.mkdirSync(path.dirname(statePath), { recursive: true });
-  fs.writeFileSync(statePath, String(value) + '\n');
+function decodeWebhookUpdate() {
+  const encoded = String(process.env.TELEGRAM_UPDATE_B64 || '').trim();
+  const rawJson = String(process.env.TELEGRAM_UPDATE_JSON || '').trim();
+  if (!encoded && !rawJson) throw new Error('TELEGRAM_UPDATE_B64 or TELEGRAM_UPDATE_JSON is required');
+  const raw = rawJson || Buffer.from(encoded, 'base64url').toString('utf8');
+  const update = JSON.parse(raw);
+  if (!Number.isInteger(update.update_id)) throw new Error('telegram update_id is required');
+  if (!update.message) return { update, message: null };
+  return { update, message: update.message };
 }
 
 async function main() {
-  // GitHub Actions polling is now the canonical Telegram transport.
-  // Removing a legacy webhook is idempotent and prevents getUpdates conflicts.
-  await telegram('deleteWebhook', { drop_pending_updates: false });
-
-  const offset = readOffset();
-  const updates = await telegram('getUpdates', offset
-    ? { offset, limit: 100, timeout: 0, allowed_updates: ['message'] }
-    : { offset: -25, limit: 25, timeout: 0, allowed_updates: ['message'] }
-  );
-
-  let nextOffset = offset;
-  const firstRunCutoff = Math.floor(Date.now() / 1000) - 15 * 60;
-
-  for (const update of updates) {
-    nextOffset = Math.max(nextOffset, Number(update.update_id || 0) + 1);
-    const message = update.message;
-    if (!offset && message?.date && message.date < firstRunCutoff) continue;
-    try {
-      await handleMessage(message);
-    } catch (error) {
-      console.error('message handling failed:', error.stack || error.message || error);
-      if (message?.chat?.id) {
-        await send(message.chat.id, '⚠️ QuantDeus bot: не удалось завершить этот маршрут. GitHub Actions сохранил ошибку в run log.', message.message_id).catch(() => {});
-      }
-    }
+  const { update, message } = decodeWebhookUpdate();
+  if (!message) {
+    console.log(`Telegram webhook update ignored: update_id=${update.update_id}, reason=no_message`);
+    return;
   }
 
-  if (nextOffset > 0) writeOffset(nextOffset);
-  console.log(`Telegram poll complete: updates=${updates.length}, next_offset=${nextOffset || 0}`);
+  try {
+    await handleMessage(message);
+    console.log(`Telegram webhook handled: update_id=${update.update_id}, chat_id=${message.chat?.id || 'unknown'}, message_id=${message.message_id || 'unknown'}`);
+  } catch (error) {
+    console.error('message handling failed:', error.stack || error.message || error);
+    if (message?.chat?.id) {
+      await send(
+        message.chat.id,
+        '⚠️ QuantDeus bot: не удалось завершить этот маршрут. GitHub Actions сохранил ошибку в run log.',
+        message.message_id
+      ).catch(() => {});
+    }
+    throw error;
+  }
 }
 
 main().catch(error => {
