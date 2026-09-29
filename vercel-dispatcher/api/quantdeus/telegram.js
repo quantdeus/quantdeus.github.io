@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { generateText } from 'ai';
+import { getVercelOidcToken } from '@vercel/oidc';
 
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -495,6 +496,50 @@ async function chatCompletion(system, user) {
   return pollinationsFallback(system, user);
 }
 
+async function openClawInternalReply(agentId, system, user) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45000);
+  try {
+    const oidc = await getVercelOidcToken({ audience: 'quantdeus-internal-openclaw' });
+    if (!oidc) throw new Error('vercel_oidc_missing');
+    const response = await fetch('https://quantdeus.vercel.app/api/quantdeus/openclaw', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + oidc,
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({
+        profile: agentId,
+        execution_mode: 'chat',
+        metadata: {
+          source: 'telegram-internal',
+          agent_id: agentId
+        },
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user }
+        ]
+      }),
+      signal: controller.signal
+    });
+    const raw = await response.text();
+    let data = {};
+    try { data = JSON.parse(raw); } catch {}
+    const output = cleanModelText(data?.text);
+    if (!response.ok || !output) {
+      throw new Error(`openclaw_internal_${response.status}: ${raw.slice(0, 500)}`);
+    }
+    console.info(`[telegram-llm] provider=openclaw-internal model=${data.model || 'unknown'} status=ok chars=${output.length}`);
+    return output;
+  } catch (error) {
+    console.warn(`[telegram-llm] provider=openclaw-internal status=error detail=${String(error?.message || error).slice(0, 500)}`);
+    return '';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function homunculusReply(message) {
   const data = await registry();
   const agents = data.agents || [];
@@ -543,7 +588,9 @@ async function homunculusReply(message) {
   const groundedQuery = researchRequired
     ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
     : query.slice(0, 7000);
-  const answer = await chatCompletion(system, groundedQuery);
+  const answer =
+    await openClawInternalReply(agentId, system, groundedQuery) ||
+    await chatCompletion(system, groundedQuery);
   if (!answer) {
     if (researchRequired && research?.ok) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${groundedResearchFallback(research)}`;
