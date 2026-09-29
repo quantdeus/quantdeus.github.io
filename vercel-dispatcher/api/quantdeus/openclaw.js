@@ -241,8 +241,25 @@ export default async function handler(req, res) {
     const publicTools = { deny: ['*'] };
     const trustedTools = {
       profile: 'full',
-      allow: ['group:fs', 'group:plugins', 'bundle-mcp'],
-      deny: ['group:runtime', 'group:automation', 'group:messaging', 'group:nodes']
+      allow: [
+        'group:fs',
+        'bundle-mcp',
+        'github__*',
+        'playwright__browser_navigate',
+        'playwright__browser_snapshot',
+        'playwright__browser_find',
+        'playwright__browser_close'
+      ],
+      deny: [
+        'group:runtime',
+        'group:automation',
+        'group:messaging',
+        'group:nodes',
+        'playwright__browser_run_code_unsafe',
+        'playwright__browser_evaluate',
+        'playwright__browser_file_upload',
+        'playwright__browser_drop'
+      ]
     };
     const mcpServers = trustedOffice ? {
       github: {
@@ -252,15 +269,32 @@ export default async function handler(req, res) {
       },
       playwright: {
         command: 'npx',
-        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--idle-timeout=300000']
+        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000'],
+        connectTimeout: 90,
+        timeout: 120
       }
     } : {};
+    if (trustedOffice) {
+      const browserMarker = `${statePath}/.quantdeus-playwright-chromium-ready`;
+      const browserCheck = await sandbox.runCommand({ cmd: 'test', args: ['-f', browserMarker] });
+      if (browserCheck.exitCode !== 0) {
+        const browserInstall = await sandbox.runCommand({
+          cmd: 'npx',
+          args: ['-y', 'playwright@latest', 'install', 'chromium'],
+          cwd: workdir
+        });
+        if (browserInstall.exitCode !== 0) {
+          throw new Error(`openclaw_playwright_install_failed: ${(await browserInstall.stderr()).slice(-1200)}`);
+        }
+        await sandbox.runCommand({ cmd: 'touch', args: [browserMarker] });
+      }
+    }
     const config = {
       models: modelConfig,
       memory: { search: { enabled: false } },
       tools: trustedOffice ? trustedTools : publicTools,
       ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
-      agents: { defaults: { workspace: agentCwd, model: { primary: model, fallbacks: fallbackModels } } }
+      agents: { defaults: { workspace: agentCwd, timeoutSeconds: trustedOffice ? 210 : 180, model: { primary: model, fallbacks: fallbackModels } } }
     };
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
     const runtimeEnv = {};
@@ -373,7 +407,7 @@ export default async function handler(req, res) {
     const modelArgs = ['--model', model, ...fallbackModels.flatMap(ref => ['--fallback', ref])];
     const run = await sandbox.runCommand({
       cmd: 'flock',
-      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '180', '--json', '--message-file', promptPath],
+      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', trustedOffice ? '210' : '180', '--json', '--message-file', promptPath],
       cwd: agentCwd,
       env: runtimeEnv
     });
