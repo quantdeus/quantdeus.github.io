@@ -1,5 +1,7 @@
 name: QuantDeus OpenClaw Admin Office Smoke
 
+# Updating this workflow intentionally retriggers the live trusted-office smoke after a runtime mirror sync.
+
 on:
   workflow_dispatch:
   push:
