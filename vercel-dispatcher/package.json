@@ -9,6 +9,6 @@
   "dependencies": {
     "@vercel/oidc": "^3.8.9",
     "@vercel/sandbox": "^3.5.0",
-    "ai": "latest"
+    "ai": "7.0.122"
   }
 }
