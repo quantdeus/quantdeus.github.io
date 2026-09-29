@@ -1,4 +1,5 @@
 name: QuantDeus OpenClaw Admin Office Smoke
+# production re-smoke after tool-roundtrip gate c041dbe
 
 # Updating this workflow intentionally retriggers the live trusted-office smoke after a runtime mirror sync.
 
