@@ -43,6 +43,9 @@ async function main() {
     llm_smoke_preview: data.llm_smoke?.preview || null,
     role_smoke_ok: data.role_smoke?.ok ?? null,
     role_smoke_preview: data.role_smoke?.preview || null,
+    research_smoke_ok: data.research_smoke?.ok ?? null,
+    research_smoke_items: data.research_smoke?.item_count ?? null,
+    research_smoke_preview: data.research_smoke?.preview || null,
     url: data.webhook?.url || null,
     pending_update_count: data.webhook?.pending_update_count ?? null,
     last_error_message: data.webhook?.last_error_message || null
