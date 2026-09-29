@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@vercel/oidc": "^3.8.9",
-    "@vercel/sandbox": "^3.5.0"
+    "@vercel/sandbox": "^3.5.0",
+    "ai": "latest"
   }
 }
