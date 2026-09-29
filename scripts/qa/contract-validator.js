@@ -125,10 +125,17 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     check(!/^\s*schedule\s*:/m.test(text), name, 'legacy Hermes fleet pulse has no automatic schedule');
     check(/^\s*workflow_dispatch\s*:/m.test(text), name, 'legacy Hermes fleet pulse remains manual-only');
   }
+  if (name === 'quantdeus-coordinator.yml') {
+    check(/group:\s*quantdeus-coordinator\s/.test(text) && /cancel-in-progress:\s*false/.test(text), name, 'Secretary command events share a non-cancelling FIFO lane');
+    check(text.includes("issue_comment:\n    types: [created]"), name, 'Secretary receives every new Issue comment for command draining');
+  }
   if (scheduledMissionWorkflows.has(name)) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
   }
 }
+
+const coordinatorSource = fs.readFileSync(path.join(root,'scripts/coordinator.js'),'utf8');
+check(coordinatorSource.includes('function drainCommandComments()') && coordinatorSource.includes('quantdeus-secretary-command:') && coordinatorSource.includes("drainCommandComments();"), 'scripts/coordinator.js', 'Secretary drains and receipts pending task commands so cancelled events are recovered');
 
 const activeText = [
   fs.readFileSync(path.join(root,'coordination/agents.json'),'utf8'),
