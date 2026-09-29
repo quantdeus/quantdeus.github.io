@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { Sandbox } from '@vercel/sandbox';
+import { getVercelOidcToken } from '@vercel/oidc';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -9,6 +10,7 @@ const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push'
 const SANDBOX = 'quantdeus-openclaw-office';
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
+const VERCEL_GATEWAY_MODELS = [...new Set((process.env.OPENCLAW_VERCEL_GATEWAY_MODELS || [process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini', 'openai/gpt-oss-120b'].join(',')).split(',').map(v => v.trim()).filter(Boolean))].slice(0, 3);
 let jwksCache = [];
 let jwksAt = 0;
 
@@ -51,6 +53,12 @@ export default async function handler(req, res) {
   try {
     const claims = await verify(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
     const openRouterKey = String(req.headers['x-quantdeus-openrouter-key'] || process.env.OPENROUTER_API_KEY || '');
+    let vercelOidcToken = String(req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || '').trim();
+    try {
+      if (!vercelOidcToken) vercelOidcToken = await getVercelOidcToken();
+    } catch (error) {
+      console.warn('[openclaw-gateway] Vercel OIDC unavailable:', String(error?.message || error).slice(0, 300));
+    }
     const localKeyEnv = process.env.HERMES_LOCAL_API_KEY ? 'HERMES_LOCAL_API_KEY' : (process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' : (process.env.MISTRAL_API_KEY ? 'MISTRAL_API_KEY' : ''));
     const localKey = localKeyEnv ? String(process.env[localKeyEnv]) : '';
     const localBaseUrl = String(process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL || (localKeyEnv === 'OPENAI_API_KEY' ? 'https://api.openai.com/v1' : 'https://api.mistral.ai/v1')).replace(/\/+$/, '');
@@ -58,6 +66,15 @@ export default async function handler(req, res) {
     if (!openRouterKey && !localKey) return res.status(503).json({ ok: false, error: 'openclaw_model_credentials_missing' });
     const providerDefs = {};
     const modelCandidates = [];
+    if (vercelOidcToken) {
+      providerDefs['vercel-ai-gateway'] = {
+        baseUrl: 'https://ai-gateway.vercel.sh/v1',
+        api: 'openai-completions',
+        apiKey: { source: 'env', provider: 'default', id: 'AI_GATEWAY_API_KEY' },
+        models: VERCEL_GATEWAY_MODELS.map(id => ({ id, name: id, input: ['text'], contextWindow: 128000, maxTokens: 8192 }))
+      };
+      for (const gatewayModel of VERCEL_GATEWAY_MODELS) modelCandidates.push(`vercel-ai-gateway/${gatewayModel}`);
+    }
     if (localKey) {
       providerDefs['quantdeus-local'] = {
         baseUrl: localBaseUrl,
@@ -102,8 +119,16 @@ export default async function handler(req, res) {
     };
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
     const runtimeEnv = {};
+    if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
     if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
+    console.log('[openclaw-routing] ' + JSON.stringify({
+      candidates: modelCandidates,
+      has_vercel_oidc: Boolean(vercelOidcToken),
+      local_key_env: localKeyEnv || null,
+      has_local_key: Boolean(localKey),
+      has_openrouter_key: Boolean(openRouterKey)
+    }));
 
     // Bootstrap the persistent workspace once so OpenClaw has canonical identity + memory files.
     const baselineMarker = `${statePath}/.quantdeus-baseline-${OPENCLAW_RUNTIME_VERSION}`;
