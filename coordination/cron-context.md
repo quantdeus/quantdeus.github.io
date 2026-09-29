@@ -44,7 +44,7 @@
 - phase_gates: `M1-6 Synchronization → M7-12 Renaissance → M13-18 Warp Threshold → M19-24 Federation; no gate advance without evidence`
 - future_fund_rule: `fund only testable outcomes with falsifier/failure condition and a resulting verifiable/open artifact after reserves and obligations`
 - shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
-- telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → GitHub workflow_dispatch → OpenClaw homunculus → Telegram Bot API`
+- telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`
 - telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
@@ -83,4 +83,4 @@
 - culture_rule: `aesthetics shape emotion, interfaces and participation but never upgrade evidence or hide risk/uncertainty`
 - kill_pause_filters: `reach without action; untestable project; founder-bottleneck manual routine; irreplaceable partner; unjustified secrecy; content without value; excessive moonshot spread; pressure/manipulation`
 - legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
-- next_step: `verify Telegram webhook → Vercel dispatch → GitHub Actions → named OpenClaw agent → direct Telegram reply in private bot and QuantDeus group; keep GitHub as source of truth`
+- next_step: `verify live Telegram webhook → named homunculus reply in private bot and QuantDeus group; if group ordinary messages are absent, inspect can_read_all_group_messages / Privacy Mode`
