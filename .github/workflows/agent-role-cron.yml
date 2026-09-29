@@ -24,7 +24,7 @@ permissions:
 
 concurrency:
   group: quantdeus-agent-role-cron-${{ github.event.schedule || inputs.agent_id || 'manual' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   role-cycle:
