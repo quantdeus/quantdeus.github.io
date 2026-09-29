@@ -1,0 +1,54 @@
+# QuantDeus Living Manifest — Adaptive Horizon
+
+Status: **ACTIVE / automatically maintained adaptive layer**  
+Constitutional base: **Neon Horizon v3.0 + «Эпидемия Добра»**  
+Machine source: `coordination/civilization-doctrine.json`  
+Automation: `.github/workflows/news-manifest-cycle.yml`
+
+## Purpose
+
+This file is the **living, evidence-backed layer** of the QuantDeus manifesto system. It adapts operational priorities to meaningful changes in the world, Russia, science, technology, infrastructure, economics and the QuantDeus community without rewriting the constitutional core because of one headline.
+
+The stable core remains: human dignity and agency, voluntary participation and EXIT, evidence before narrative, transparency, safety, open learning, measurable scarcity reduction, science/engineering progress and a long space horizon.
+
+## Current adaptive horizon
+
+_No material adaptive signal has been promoted yet. The news-manifest cron updates this section only when fresh evidence changes an operational priority._
+
+## World signals
+
+_No material signal recorded yet._
+
+## Russia signals
+
+_No material signal recorded yet._
+
+## Science & technology signals
+
+_No material signal recorded yet._
+
+## Economy, infrastructure & resource signals
+
+_No material signal recorded yet._
+
+## QuantDeus community signals
+
+_No material signal recorded yet._
+
+## Operational implications
+
+_No adaptive change required yet._
+
+## Update contract
+
+1. Use dated, publicly inspectable sources. For a material change, prefer multiple independent sources or a primary source plus corroboration.
+2. Separate **fact**, **trend**, **inference**, and **QuantDeus implication**.
+3. Record uncertainty and contradictory evidence instead of forcing a narrative.
+4. News may change priorities, experiments, messaging, opportunity maps and roadmap hypotheses. It may **not silently remove** human agency, EXIT, evidence requirements, safety, transparency or voluntary participation.
+5. Political/civic topics are handled neutrally: document positions, laws, decisions, data and concrete effects without party/candidate endorsement, electoral targeting or persuasive campaigning.
+6. Growth content derived from this file must explain QuantDeus truthfully and must not exploit fear, tragedy or polarization.
+7. Each automated change uses an `automation/manifest-update/*` branch and a PR. Automatic merge is allowed only when the PR changes this living layer, independent QA + Static Smoke are green, and the branch remains unchanged during verification.
+
+## Change log
+
+- **2026-09-29** — Living adaptive layer created. No current-world claims imported at bootstrap; future cycles must attach dated evidence.
