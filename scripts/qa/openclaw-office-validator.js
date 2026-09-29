@@ -8,6 +8,10 @@ const telegram = fs.readFileSync('scripts/telegram-bot.js', 'utf8');
 const vercel = JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json', 'utf8'));
 const smokeWorkflow = fs.readFileSync('.github/workflows/openclaw-smoke.yml', 'utf8');
 const adminSmokeWorkflow = fs.readFileSync('.github/workflows/openclaw-admin-smoke.yml', 'utf8');
+const evolutionWorkflow = fs.readFileSync('.github/workflows/openclaw-evolution.yml', 'utf8');
+const evolutionSkill = fs.readFileSync('.openclaw/skills/quantdeus-self-evolution/SKILL.md', 'utf8');
+const evolutionPolicy = JSON.parse(fs.readFileSync('coordination/openclaw-evolution.json', 'utf8'));
+const guardedAutomerge = fs.readFileSync('scripts/guarded-automerge.js', 'utf8');
 
 for (const [ok, message] of [
   [route.includes("const AUDIENCE = 'quantdeus-vercel-openclaw'"), 'dedicated GitHub OIDC audience'],
@@ -21,7 +25,12 @@ for (const [ok, message] of [
   [route.includes("include: smokePhase === 'github' ? ['list_branches'] : hourlyOffice ? [") && route.includes("'create_pull_request', 'update_issue', 'update_pull_request'"), 'GitHub MCP exposes one-tool smoke, enforced hourly read-only, and bounded interactive write surfaces'],
   [route.includes('function hourlyOfficeRequest') && route.includes('hourly_read_only: hourlyOffice') && route.includes('github_write: !hourlyOffice && !smokePhase'), 'hourly OpenClaw lane is externally marked and enforced read-only'],
   [route.includes("include: smokePhase === 'playwright'") && route.includes("? ['browser_navigate']") && route.includes("['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']"), 'Playwright MCP exposes one-tool smoke surface plus scoped navigation, snapshot, find and close tools'],
-  [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot'), 'trusted tools are gated to approved GitHub workflows'],
+  [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot') && route.includes('openclaw-evolution'), 'trusted tools are gated to approved GitHub workflows including self-evolution'],
+  [route.includes('.openclaw/skills/quantdeus-self-evolution/SKILL.md') && route.includes('OPENCLAW SELF-EVOLUTION SKILL FROM FRESH MAIN') && route.includes('effectivePrompt'), 'trusted OpenClaw loads the fresh repository self-evolution skill into execution context'],
+  [evolutionPolicy.status === 'active' && evolutionPolicy.branch_prefix === 'automation/openclaw-evolution/' && evolutionPolicy.policy?.core_auto_merge === false, 'self-evolution policy is active, branch-scoped and forbids core auto-merge'],
+  [evolutionWorkflow.includes("cron: '31 2 * * *'") && evolutionWorkflow.includes('node scripts/mission-alignment.js') && evolutionWorkflow.includes('automation/openclaw-evolution/') && evolutionWorkflow.includes('tier') && evolutionWorkflow.includes('openclaw-skill'), 'daily evolution workflow is mission-guarded and separates skill/core tiers'],
+  [evolutionSkill.includes('observe → diagnose → hypothesize') && evolutionSkill.includes('Tier A') && evolutionSkill.includes('Tier B') && evolutionSkill.includes('Never weaken or bypass'), 'self-evolution skill encodes evidence loop, tiers and protected invariants'],
+  [guardedAutomerge.includes("'openclaw-skill'") && guardedAutomerge.includes('.openclaw/skills/quantdeus-self-evolution/SKILL.md') && guardedAutomerge.includes('OpenClaw skill PR touches core/runtime paths'), 'guarded automerge permits only the low-risk OpenClaw evolution layer'],
   [client.includes("execution_mode: trusted ? 'trusted-office' : 'chat'") && client.includes('trusted = false'), 'client can request trusted office explicitly'],
   [telegram.includes('trusted: true') && telegram.includes('telegram-admin-task'), 'Telegram admin task lane invokes trusted office only after admin gate'],
   [route.includes("id: localKeyEnv") && route.includes('runtimeEnv[localKeyEnv] = localKey'), 'model key stays env-backed and out of persisted config'],
