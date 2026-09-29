@@ -1,0 +1,21 @@
+name: QuantDeus One-Shot Hourly OpenClaw Kick
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/kick-hourly-openclaw-once.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Dispatch canonical hourly OpenClaw workflow once
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run quantdeus-hourly-openclaw.yml --repo "$GITHUB_REPOSITORY" --ref main
