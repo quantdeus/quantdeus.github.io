@@ -52,11 +52,20 @@ if (!routeSource.includes("process.env.HERMES_MODEL_PROVIDER || 'custom'")) thro
 if (!routeSource.includes('config set model.base_url')) throw new Error('Hermes route must persist a configured local endpoint in the profile');
 if (!routeSource.includes('runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl')) throw new Error('Hermes route must pass the configured local URL into profile setup');
 
-if (routeSource.includes('https://ai-gateway.vercel.sh/v1')) throw new Error('Hermes local model route must not force Vercel AI Gateway');
+if (!routeSource.includes("import { getVercelOidcToken } from '@vercel/oidc'")) throw new Error('Hermes Vercel fallback must use project OIDC authentication');
+if (!routeSource.includes('https://ai-gateway.vercel.sh/v1/chat/completions')) throw new Error('Hermes route must include Vercel AI Gateway model fallback');
+if (!routeSource.includes('VERCEL_GATEWAY_FALLBACK_MODELS')) throw new Error('Hermes route must include configured Vercel model fallbacks');
+if (!routeSource.includes("executionMode = 'vercel-ai-gateway-fallback'")) throw new Error('Hermes route must report Vercel AI Gateway fallback mode');
+if (!routeSource.includes('model: responseModel')) throw new Error('Hermes route must return the model used by the successful fallback');
 if (!routeSource.includes("x-quantdeus-github-token")) throw new Error('Hermes route must accept ephemeral repo token handoff');
+const siteReplySource = fs.readFileSync('scripts/site-agent-reply.js','utf8');
+if (!siteReplySource.includes("result.runtime === 'vercel-ai-gateway-fallback'")) throw new Error('Site agent must identify Vercel AI Gateway fallback accurately');
+if (!siteReplySource.includes("result.runtime === 'hermes-openrouter-fallback'")) throw new Error('Site agent must identify Hermes OpenRouter fallback accurately');
 console.log('Hermes Cloud PC contract OK: keyless OIDC + persistent Sandbox + GPT-OSS');
 
 const bootstrapSource = fs.readFileSync('scripts/hermes-office-bootstrap.js','utf8');
+const vercelPackage = JSON.parse(fs.readFileSync('vercel-dispatcher/package.json','utf8'));
+if (!vercelPackage.dependencies?.['@vercel/oidc']) throw new Error('Vercel Hermes route must include the OIDC helper dependency');
 if (!bootstrapSource.includes("['hermes-cli', 'connections']")) throw new Error('Every Hermes profile must receive the connections toolset');
 if (!bootstrapSource.includes("['hermes-cli', 'kanban', 'connections']")) throw new Error('Seven must keep Kanban and receive the connections toolset');
 if (!bootstrapSource.includes('const BOOTSTRAP_SCHEMA = 4')) throw new Error('Hermes bootstrap schema must refresh every profile with the updated toolsets');

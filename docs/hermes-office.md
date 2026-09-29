@@ -140,6 +140,8 @@ The Sandbox is a persistent cloud PC. Its filesystem is snapshotted when the ses
 
 Inference is keyless inside Vercel: the function passes its short-lived Vercel OIDC token to Hermes as the Vercel AI Gateway credential. The default model is `openai/gpt-oss-120b`.
 
+If the Hermes custom/Mistral primary and Hermes OpenRouter/GPT-OSS fallback both fail, the endpoint tries Vercel AI Gateway models using the Vercel project's OIDC token. The default sequence is `AI_GATEWAY_MODEL` (or `openai/gpt-5-mini`) followed by `openai/gpt-oss-120b`; `HERMES_VERCEL_FALLBACK_MODELS` can override the comma-separated sequence (maximum three models). This final gateway path is text-only and does not have Hermes tools/MCP, so it must not claim external actions. The response records the successful model and `vercel-ai-gateway-fallback` execution mode.
+
 Vercel Sandbox is stopped after each request, so its in-process scheduler cannot stay alive. The scheduled GitHub Actions workflow `.github/workflows/hermes-office-cron.yml` calls the authenticated Hermes endpoint every 15 minutes; the persistent sandbox runs `hermes cron tick` for each canonical profile. Hermes jobs created by an agent therefore execute after their due time. Their output follows the delivery target configured on each job; chat delivery requires a configured Hermes platform target.
 
 GitHub access is also short-lived. The calling GitHub Actions run passes its repository-scoped `GITHUB_TOKEN` to the Sandbox only for that Hermes turn, and the official remote GitHub MCP reads it from `MCP_GITHUB_API_KEY`. No long-lived GitHub token is written into the repository or persistent Hermes configuration.
