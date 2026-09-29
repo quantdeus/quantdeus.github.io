@@ -351,7 +351,7 @@ export default async function handler(req, res) {
     } : smokePhase === 'playwright' ? {
       profile: 'full',
       codeMode: false,
-      allow: ['bundle-mcp', 'playwright__browser_navigate', 'playwright__browser_snapshot'],
+      allow: ['bundle-mcp', 'playwright__browser_navigate'],
       deny: trustedDeny
     } : {
       profile: 'full',
@@ -386,7 +386,7 @@ export default async function handler(req, res) {
       args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chrome', '--idle-timeout=120000'],
       toolFilter: {
         include: smokePhase === 'playwright'
-          ? ['browser_navigate', 'browser_snapshot']
+          ? ['browser_navigate']
           : ['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']
       }
     };
