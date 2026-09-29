@@ -37,16 +37,16 @@
       "account_registration": "allowed for legitimate QuantDeus project-service accounts until a human-verification or commitment gate"
     },
     "automation": {
-      "cronjob_manage": true,
-      "agents_may_create_cron": true,
+      "cronjob_manage": false,
+      "agents_may_create_cron": false,
       "cron_runs_may_not_recursively_create_cron": true,
       "default_evolution_review": "daily",
       "scheduler": {
-        "provider": "github-actions-pulse",
+        "provider": "manual-legacy-fallback",
         "workflow": ".github/workflows/hermes-office-cron.yml",
-        "cadence": "*/15 * * * *",
-        "action": "hermes cron tick for every canonical profile",
-        "authentication": "GitHub OIDC schedule/workflow_dispatch",
+        "cadence": "disabled",
+        "action": "manual Hermes cron tick for legacy saved jobs only",
+        "authentication": "GitHub OIDC workflow_dispatch only",
         "scale_to_zero_compatible": true
       }
     },
