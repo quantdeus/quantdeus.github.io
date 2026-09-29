@@ -383,7 +383,7 @@ export default async function handler(req, res) {
     };
     const playwrightMcp = {
       command: 'npx',
-      args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000'],
+      args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chrome', '--idle-timeout=120000'],
       toolFilter: {
         include: smokePhase === 'playwright'
           ? ['browser_navigate', 'browser_snapshot']
@@ -396,12 +396,12 @@ export default async function handler(req, res) {
         : { github: githubMcp, playwright: playwrightMcp })
       : {};
     if (trustedOffice && mcpServers.playwright) {
-      const browserMarker = `${statePath}/.quantdeus-playwright-chromium-ready`;
+      const browserMarker = `${statePath}/.quantdeus-playwright-mcp-chrome-ready`;
       const browserCheck = await sandbox.runCommand({ cmd: 'test', args: ['-f', browserMarker] });
       if (browserCheck.exitCode !== 0) {
         const browserInstall = await sandbox.runCommand({
           cmd: 'npx',
-          args: ['-y', 'playwright@latest', 'install', 'chromium'],
+          args: ['-y', '@playwright/mcp@latest', 'install-browser', 'chrome'],
           cwd: workdir
         });
         if (browserInstall.exitCode !== 0) {
