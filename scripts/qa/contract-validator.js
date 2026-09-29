@@ -14,6 +14,7 @@ const registry = readJson('coordination/agents.json');
 const hom = readJson('coordination/homunculi.json');
 const doctrine = readJson('coordination/civilization-doctrine.json');
 const startupOrg = readJson('coordination/startup-org.json');
+const agentCron = readJson('coordination/agent-cron-map.json');
 const ids = registry.agents.map(a=>a.id);
 const homIds = hom.agents.map(a=>a.id);
 
@@ -26,6 +27,14 @@ check(startupOrg.departments?.length === 5, 'coordination/startup-org.json', 'st
 const orgIds = (startupOrg.departments || []).flatMap(d => d.agents || []);
 check(orgIds.length === 26 && new Set(orgIds).size === 26, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
 check(JSON.stringify([...orgIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/startup-org.json', 'startup org covers the canonical agent registry');
+
+const cronIds = (agentCron.agents || []).map(a=>a.id);
+check(agentCron.schema_version === 1, 'coordination/agent-cron-map.json', 'agent cron map schema version 1');
+check(cronIds.length === 26 && new Set(cronIds).size === 26, 'coordination/agent-cron-map.json', 'agent cron map assigns exactly 26 unique agents');
+check(JSON.stringify([...cronIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/agent-cron-map.json', 'agent cron map covers the canonical registry');
+for (const slot of agentCron.agents || []) {
+  check(Boolean(slot.workflow && slot.cadence && Array.isArray(slot.utc_hours) && slot.utc_hours.length && slot.mission), slot.id || 'cron-slot', 'agent cron slot has workflow/cadence/hours/mission');
+}
 
 for (const department of startupOrg.departments || []) {
   for (const id of department.agents || []) {
@@ -96,6 +105,8 @@ check((doctrine.epidemic_of_good?.replication_loop || []).length >= 6, 'coordina
 check(Object.keys(doctrine.kpis || {}).length >= 10, 'coordination/civilization-doctrine.json', 'acceleration KPI set preserved');
 check((doctrine.acceleration_plan?.phases || []).length === 4, 'coordination/civilization-doctrine.json', 'four six-month phase gates preserved');
 check(doctrine.inheritance === 'all-agents', 'coordination/civilization-doctrine.json', 'canonical doctrine applies to all agents');
+check(doctrine.adaptive_manifest?.source === 'coordination/manifesto-living.md', 'coordination/civilization-doctrine.json', 'living manifesto adaptive layer declared');
+check(doctrine.agent_cron?.registry === 'coordination/agent-cron-map.json', 'coordination/civilization-doctrine.json', 'role cron registry declared');
 check(Array.isArray(doctrine.transition_protocol) && doctrine.transition_protocol.length >= 6, 'coordination/civilization-doctrine.json', 'post-scarcity transition protocol declared');
 check(doctrine.cron_policy?.required_check === 'node scripts/mission-alignment.js', 'coordination/civilization-doctrine.json', 'cron mission guard declared');
 
@@ -103,7 +114,7 @@ const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml']);
 const frequentPollingWorkflows = new Set(['telegram-bot.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
@@ -121,6 +132,14 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
           (parts[0] === '17' && parts[1] === '*/6') ||
           (parts[0] === '47' && parts[1] === '3-23/6');
         check(approvedQaSelfHeal, name, 'QA self-heal uses the approved staggered six-hour lanes: '+cron);
+      } else if (name === 'agent-role-cron.yml') {
+        check(parts[0] === '23' && parts[1] === '0-14', name, 'role cron uses the approved daily hourly window: '+cron);
+      } else if (name === 'seven-priority-cycle.yml') {
+        check(parts[0] === '11' && parts[1] === '*/2', name, 'Seven priority cycle uses the approved two-hour cadence: '+cron);
+      } else if (name === 'news-manifest-cycle.yml') {
+        check(parts[0] === '41' && parts[1] === '*/6', name, 'news/manifest cycle uses the approved six-hour cadence: '+cron);
+      } else if (name === 'growth-site-cycle.yml') {
+        check(parts[0] === '53' && parts[1] === '*/4', name, 'growth/site cycle uses the approved four-hour cadence: '+cron);
       } else {
         check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
       }
