@@ -1,0 +1,74 @@
+name: QuantDeus QA Failure Radar 📡
+
+on:
+  schedule:
+    - cron: '7 */2 * * *'
+  workflow_run:
+    workflows:
+      - QuantDeus QA Triad 🦀
+      - QuantDeus Static Smoke
+      - QuantDeus OpenClaw Admin Office Smoke
+      - QuantDeus Site Agent Replies
+      - QuantDeus Telegram GitHub Bot 🤖
+      - QuantDeus Hourly OpenClaw Swarm 🐒
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: Days of Actions history used for failure-frequency ranking
+        required: false
+        default: '7'
+
+permissions:
+  contents: read
+  actions: write
+  checks: read
+
+concurrency:
+  group: quantdeus-qa-failure-radar
+  cancel-in-progress: true
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Rank recurring failures and scan in priority order
+        id: radar
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOOKBACK_DAYS: ${{ inputs.lookback_days || '7' }}
+          TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name || '' }}
+          TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
+        run: node scripts/qa/failure-radar.js
+
+      - name: Wake QA self-heal for unresolved breakage
+        if: steps.radar.outputs.needs_repair == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPAIR_LANE: ${{ steps.radar.outputs.repair_lane }}
+        run: |
+          echo "Failure radar found an unresolved problem; dispatching QA self-heal lane=$REPAIR_LANE"
+          gh workflow run qa-self-heal.yml --repo "$GITHUB_REPOSITORY" --ref main -f lane="$REPAIR_LANE"
+
+      - name: Upload radar evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-qa-failure-radar
+          path: /tmp/quantdeus-qa-failure-radar.json
+          if-no-files-found: warn
+
+      - name: Fail after evidence + repair dispatch
+        if: steps.radar.outcome == 'failure'
+        run: exit 1
