@@ -26,7 +26,8 @@ function isAdminCommentAuthor() {
 
 function isRepositoryActionRequest(text) {
   const value = String(text || '').trim();
-  return /\b(?:создай|создать|открой|открыть|сделай|почини|исправь|внеси|закоммить|коммит|ветк[ауи]|pr|pull request|implement|fix|patch|commit|branch|create)\b/i.test(value);
+  return /(?:создай|создать|открой|открыть|сделай|почини|чини|чинить|исправь|внеси|закоммить|коммит|ветк[ауи]|дожми|добей|удали|убери|обнови)/i.test(value)
+    || /\b(?:pr|pull request|implement|fix|patch|commit|branch|create|update|delete|remove)\b/i.test(value);
 }
 
 if (!repo || !token || !eventPath || !fs.existsSync(eventPath)) {
@@ -165,7 +166,7 @@ function commandReply() {
 
 function isCreateIssueRequest(text) {
   const value = String(text || '').trim();
-  return /\b(?:пожалуйста\s+)?(?:создай|создать|открой|открыть|заведи|завести)\s+(?:новый\s+)?(?:github\s+)?(?:issue|ишью|задачу|тикет)\b/i.test(value)
+  return /(?:пожалуйста\s+)?(?:создай|создать|открой|открыть|заведи|завести)\s+(?:новый\s+)?(?:github\s+)?(?:issue|ишью|задачу|тикет)/i.test(value)
     || /\b(?:create|open)\s+(?:a\s+)?(?:new\s+)?(?:github\s+)?issue\b/i.test(value);
 }
 
