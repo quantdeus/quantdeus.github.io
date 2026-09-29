@@ -37,6 +37,8 @@ async function main() {
   const data = JSON.parse(raw);
   console.log('Telegram webhook configured:', JSON.stringify({
     bot_username: data.bot?.username || null,
+    can_read_all_group_messages: data.bot?.can_read_all_group_messages ?? null,
+    auth_mode: data.auth_mode || null,
     url: data.webhook?.url || null,
     pending_update_count: data.webhook?.pending_update_count ?? null,
     last_error_message: data.webhook?.last_error_message || null

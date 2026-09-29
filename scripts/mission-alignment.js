@@ -72,7 +72,7 @@ for(const name of scheduledWorkflows){
 
 check(cronContext.includes('canonical_repo: `quantdeus/quantdeus.github.io`'),'cron-context','canonical repository current');
 check(cronContext.includes('doctrine_version: `'+doctrine.version+'`'),'cron-context','cron context doctrine version current');
-check(cronContext.includes('telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → GitHub workflow_dispatch → OpenClaw homunculus → Telegram Bot API`'),'cron-context','event-driven Telegram transport recorded');
+check(cronContext.includes('telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`'),'cron-context','event-driven direct Telegram homunculus transport recorded');
 check(cronContext.includes('Манифест Неонового Горизонта'),'cron-context','Neon Horizon manifest recorded');
 check(cronContext.includes('Эпидемия Добра'),'cron-context','Epidemic of Good recorded');
 
