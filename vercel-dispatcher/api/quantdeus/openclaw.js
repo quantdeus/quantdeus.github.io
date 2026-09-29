@@ -8,6 +8,12 @@ const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
+const VERCEL_INTERNAL_AUDIENCE = 'quantdeus-internal-openclaw';
+const VERCEL_INTERNAL_ISSUER = 'https://oidc.vercel.com/energotrons-projects-2705eaed';
+const VERCEL_INTERNAL_JWKS_URL = 'https://oidc.vercel.com/.well-known/jwks';
+const VERCEL_INTERNAL_SUBJECT = 'owner:energotrons-projects-2705eaed:project:quantdeus:environment:production';
+let vercelJwksCache = [];
+let vercelJwksAt = 0;
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 const VERCEL_GATEWAY_MODELS = [...new Set((process.env.OPENCLAW_VERCEL_GATEWAY_MODELS || ['inclusionai/ling-3.0-flash-sante-free', 'openai/gpt-oss-120b'].join(',')).split(',').map(v => v.trim()).filter(Boolean))].slice(0, 3);
@@ -39,6 +45,41 @@ async function verify(token) {
   if (!EVENTS.has(c.event_name)) throw new Error('github_oidc_wrong_event');
   return c;
 }
+async function vercelJwks() {
+  if (vercelJwksCache.length && Date.now() - vercelJwksAt < 3600000) return vercelJwksCache;
+  const r = await fetch(VERCEL_INTERNAL_JWKS_URL, { headers: { accept: 'application/json' } });
+  if (!r.ok) throw new Error(`vercel_oidc_jwks_fetch_failed_${r.status}`);
+  vercelJwksCache = (await r.json()).keys || [];
+  vercelJwksAt = Date.now();
+  return vercelJwksCache;
+}
+
+async function verifyVercelInternal(token) {
+  const p = String(token || '').split('.');
+  if (p.length !== 3) throw new Error('vercel_oidc_invalid_format');
+  const h = jsonPart(p[0]);
+  const c = jsonPart(p[1]);
+  if (!h.kid || !new Set(['RS256','ES256']).has(h.alg)) throw new Error('vercel_oidc_invalid_header');
+  const key = (await vercelJwks()).find(k => k.kid === h.kid);
+  if (!key) throw new Error('vercel_oidc_unknown_key');
+  const algorithm = h.alg === 'RS256' ? 'RSA-SHA256' : 'SHA256';
+  const ok = crypto.verify(
+    algorithm,
+    Buffer.from(`${p[0]}.${p[1]}`),
+    crypto.createPublicKey({ key, format: 'jwk' }),
+    Buffer.from(p[2], 'base64url')
+  );
+  if (!ok) throw new Error('vercel_oidc_bad_signature');
+  const now = Math.floor(Date.now() / 1000);
+  const audienceOk = Array.isArray(c.aud)
+    ? c.aud.includes(VERCEL_INTERNAL_AUDIENCE)
+    : c.aud === VERCEL_INTERNAL_AUDIENCE;
+  if (c.iss !== VERCEL_INTERNAL_ISSUER || !audienceOk) throw new Error('vercel_oidc_bad_issuer_or_audience');
+  if (c.sub !== VERCEL_INTERNAL_SUBJECT) throw new Error('vercel_oidc_bad_subject');
+  if (!c.exp || c.exp < now - 15 || (c.nbf && c.nbf > now + 15)) throw new Error('vercel_oidc_expired_or_not_yet_valid');
+  return c;
+}
+
 async function text(result) { return (await result.stdout()).trim(); }
 async function checked(sandbox, args, label) {
   const r = await sandbox.runCommand(args);
@@ -241,14 +282,33 @@ export default async function handler(req, res) {
   let sandbox;
   let ephemeralFiles = [];
   try {
-    const claims = await verify(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
-    const trustedOffice = trustedOfficeRequest(req, claims);
-    const hourlyOffice = trustedOffice && hourlyOfficeRequest(req, claims);
+    const authToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    let claims;
+    let vercelInternal = false;
+    try {
+      claims = await verify(authToken);
+    } catch (githubOidcError) {
+      if (req.body?.metadata?.source !== 'telegram-internal') throw githubOidcError;
+      const internalClaims = await verifyVercelInternal(authToken);
+      vercelInternal = true;
+      claims = {
+        ...internalClaims,
+        actor: 'vercel-telegram',
+        workflow: 'vercel-internal-telegram',
+        event_name: 'vercel_internal',
+        repository: REPOSITORY
+      };
+    }
+    const trustedOffice = vercelInternal ? false : trustedOfficeRequest(req, claims);
+    const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
     const smokePhase = trustedOffice && req.body?.metadata?.source === 'openclaw-admin-smoke' && new Set(['github', 'playwright']).has(smokePhaseRaw) ? smokePhaseRaw : null;
     const githubToken = String(req.headers['x-quantdeus-github-token'] || process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
     if (req.body?.execution_mode === 'trusted-office' && !trustedOffice) {
       return res.status(403).json({ ok: false, error: 'openclaw_trusted_office_not_authorized' });
+    }
+    if (vercelInternal && req.body?.execution_mode !== 'chat') {
+      return res.status(403).json({ ok: false, error: 'openclaw_vercel_internal_chat_only' });
     }
     if (trustedOffice && !githubToken) {
       return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
@@ -522,6 +582,7 @@ export default async function handler(req, res) {
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
       has_openrouter_key: Boolean(openRouterKey),
+      vercel_internal: vercelInternal,
       validated_fallbacks: fallbackModels
     }));
     if (!healthyRefs.length) {
@@ -643,7 +704,7 @@ export default async function handler(req, res) {
   } catch (error) {
     const message = String(error?.message || error);
     console.error('QuantDeus OpenClaw error:', message);
-    const status = /github_oidc|wrong_repository|wrong_event/.test(message) ? 401 : 502;
+    const status = /github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502;
     return res.status(status).json({ ok: false, error: 'openclaw_office_failed', detail: message.slice(0, 2000) });
   } finally {
     if (sandbox) {
