@@ -55,53 +55,94 @@ function trustedOfficeRequest(req, claims) {
 
 async function probeChatCandidate(candidate, requireTools = false) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
+  const timer = setTimeout(() => controller.abort(), requireTools ? 18000 : 10000);
   try {
+    const probeTool = {
+      type: 'function',
+      function: {
+        name: 'quantdeus_probe_ping',
+        description: 'Capability probe. Call this tool exactly once.',
+        parameters: { type: 'object', properties: {}, additionalProperties: false }
+      }
+    };
+    const probeUser = requireTools
+      ? 'Call the quantdeus_probe_ping tool exactly once. After receiving its result, reply exactly OPENCLAW_PROBE_OK.'
+      : 'Reply with exactly OK.';
     const body = requireTools ? {
       model: candidate.model,
-      messages: [{ role: 'user', content: 'Call the quantdeus_probe_ping tool exactly once.' }],
+      messages: [{ role: 'user', content: probeUser }],
       temperature: 0,
       max_tokens: 64,
-      tools: [{
-        type: 'function',
-        function: {
-          name: 'quantdeus_probe_ping',
-          description: 'Capability probe. Call this tool exactly once.',
-          parameters: { type: 'object', properties: {}, additionalProperties: false }
-        }
-      }],
-      tool_choice: 'required'
+      tools: [probeTool],
+      tool_choice: { type: 'function', function: { name: 'quantdeus_probe_ping' } },
+      parallel_tool_calls: false
     } : {
       model: candidate.model,
-      messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
+      messages: [{ role: 'user', content: probeUser }],
       temperature: 0,
       max_tokens: 8
     };
-    const response = await fetch(candidate.endpoint, {
+    const request = payload => fetch(candidate.endpoint, {
       method: 'POST',
       headers: {
         authorization: 'Bearer ' + candidate.key,
         'content-type': 'application/json',
         accept: 'application/json'
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
       signal: controller.signal
     });
+
+    const response = await request(body);
     const raw = await response.text();
     let data = null;
     try { data = JSON.parse(raw); } catch {}
-    const toolCalls = data?.choices?.[0]?.message?.tool_calls;
-    const validToolCall = Array.isArray(toolCalls) && toolCalls.some(call =>
-      call?.type === 'function' &&
-      call?.function?.name === 'quantdeus_probe_ping' &&
-      typeof call?.function?.arguments === 'string'
-    );
-    const ok = response.ok && (!requireTools || validToolCall);
+    if (!response.ok) {
+      return { ref: candidate.ref, ok: false, status: response.status, detail: raw.slice(0, 300) };
+    }
+    if (!requireTools) {
+      return { ref: candidate.ref, ok: true, status: response.status, detail: 'ok' };
+    }
+
+    const assistant = data?.choices?.[0]?.message;
+    const toolCalls = assistant?.tool_calls;
+    const call = Array.isArray(toolCalls) ? toolCalls.find(item =>
+      item?.type === 'function' &&
+      item?.function?.name === 'quantdeus_probe_ping' &&
+      typeof item?.function?.arguments === 'string' &&
+      typeof item?.id === 'string' &&
+      item.id
+    ) : null;
+    if (!call) {
+      return { ref: candidate.ref, ok: false, status: response.status, detail: 'missing_or_malformed_tool_call' };
+    }
+
+    // A one-turn tool probe can look healthy while OpenClaw later fails when it
+    // sends the tool result back to an OpenAI-compatible provider. Require the
+    // full function-call round trip before trusting a model for MCP work.
+    const followup = await request({
+      model: candidate.model,
+      messages: [
+        { role: 'user', content: probeUser },
+        assistant,
+        { role: 'tool', tool_call_id: call.id, content: 'pong' }
+      ],
+      temperature: 0,
+      max_tokens: 24,
+      tools: [probeTool],
+      tool_choice: 'none',
+      parallel_tool_calls: false
+    });
+    const followRaw = await followup.text();
+    let followData = null;
+    try { followData = JSON.parse(followRaw); } catch {}
+    const finalText = String(followData?.choices?.[0]?.message?.content || '').trim();
+    const ok = followup.ok && finalText === 'OPENCLAW_PROBE_OK';
     return {
       ref: candidate.ref,
       ok,
-      status: response.status,
-      detail: ok ? (requireTools ? 'tool_call_ok' : 'ok') : (response.ok ? 'missing_or_malformed_tool_call' : raw.slice(0, 300))
+      status: followup.status,
+      detail: ok ? 'tool_roundtrip_ok' : (followup.ok ? 'tool_roundtrip_bad_final' : followRaw.slice(0, 300))
     };
   } catch (error) {
     return {
@@ -122,6 +163,8 @@ export default async function handler(req, res) {
   try {
     const claims = await verify(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
     const trustedOffice = trustedOfficeRequest(req, claims);
+    const smokePhaseRaw = String(req.body?.metadata?.phase || '');
+    const smokePhase = trustedOffice && req.body?.metadata?.source === 'openclaw-admin-smoke' && new Set(['github', 'playwright']).has(smokePhaseRaw) ? smokePhaseRaw : null;
     const githubToken = String(req.headers['x-quantdeus-github-token'] || process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
     if (req.body?.execution_mode === 'trusted-office' && !trustedOffice) {
       return res.status(403).json({ ok: false, error: 'openclaw_trusted_office_not_authorized' });
@@ -172,7 +215,7 @@ export default async function handler(req, res) {
     // state, prompt handling and execution contract are still OpenClaw.
     // Trusted Office prefers models that reliably emit OpenAI-compatible tool_calls.
     const pollinationsModels = trustedOffice
-      ? ['openai-fast', 'openai']
+      ? ['gemini', 'openai-fast', 'openai']
       : ['openai-fast', 'openai'];
     providerDefs['quantdeus-pollinations'] = {
       baseUrl: 'https://text.pollinations.ai/openai',
@@ -249,7 +292,7 @@ export default async function handler(req, res) {
     const install = await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'command -v openclaw >/dev/null 2>&1 || npm install --global openclaw@2026.9.6 --allow-scripts=openclaw'] });
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
-    if (trustedOffice) {
+    if (trustedOffice && !smokePhase) {
       const gitCheck = await sandbox.runCommand({ cmd: 'test', args: ['-d', `${repoDir}/.git`] });
       if (gitCheck.exitCode !== 0) {
         await checked(sandbox, {
@@ -262,7 +305,7 @@ export default async function handler(req, res) {
         await sandbox.runCommand({ cmd: 'git', args: ['-C', repoDir, 'clean', '-fd'] });
       }
     }
-    const agentCwd = trustedOffice ? repoDir : workdir;
+    const agentCwd = trustedOffice && !smokePhase ? repoDir : workdir;
     const requestId = crypto.randomUUID();
     const requestsDir = `${home}/.openclaw/requests`;
     const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
@@ -271,8 +314,29 @@ export default async function handler(req, res) {
     const statePath = `${home}/.openclaw/quantdeus-state`;
     for (const dir of [`${home}/.openclaw`, requestsDir, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
     const publicTools = { deny: ['*'] };
-    const trustedTools = {
+    const trustedDeny = [
+      'group:runtime',
+      'group:automation',
+      'group:messaging',
+      'group:nodes',
+      'playwright__browser_run_code_unsafe',
+      'playwright__browser_evaluate',
+      'playwright__browser_file_upload',
+      'playwright__browser_drop'
+    ];
+    const trustedTools = smokePhase === 'github' ? {
       profile: 'full',
+      codeMode: false,
+      allow: ['bundle-mcp', 'github__list_branches'],
+      deny: trustedDeny
+    } : smokePhase === 'playwright' ? {
+      profile: 'full',
+      codeMode: false,
+      allow: ['bundle-mcp', 'playwright__browser_navigate', 'playwright__browser_snapshot'],
+      deny: trustedDeny
+    } : {
+      profile: 'full',
+      codeMode: false,
       allow: [
         'group:fs',
         'bundle-mcp',
@@ -282,41 +346,37 @@ export default async function handler(req, res) {
         'playwright__browser_find',
         'playwright__browser_close'
       ],
-      deny: [
-        'group:runtime',
-        'group:automation',
-        'group:messaging',
-        'group:nodes',
-        'playwright__browser_run_code_unsafe',
-        'playwright__browser_evaluate',
-        'playwright__browser_file_upload',
-        'playwright__browser_drop'
-      ]
+      deny: trustedDeny
     };
-    const mcpServers = trustedOffice ? {
-      github: {
-        transport: 'streamable-http',
-        url: 'https://api.githubcopilot.com/mcp/',
-        headers: { Authorization: 'Bearer ' + githubToken },
-        toolFilter: {
-          include: [
-            'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
-            'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
-            'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
-            'create_branch', 'create_or_update_file', 'create_issue',
-            'add_issue_comment', 'create_pull_request', 'update_issue', 'update_pull_request'
-          ]
-        }
-      },
-      playwright: {
-        command: 'npx',
-        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000'],
-        toolFilter: {
-          include: ['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']
-        }
+    const githubMcp = {
+      transport: 'streamable-http',
+      url: 'https://api.githubcopilot.com/mcp/',
+      headers: { Authorization: 'Bearer ' + githubToken },
+      toolFilter: {
+        include: smokePhase === 'github' ? ['list_branches'] : [
+          'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
+          'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
+          'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
+          'create_branch', 'create_or_update_file', 'create_issue',
+          'add_issue_comment', 'create_pull_request', 'update_issue', 'update_pull_request'
+        ]
       }
-    } : {};
-    if (trustedOffice) {
+    };
+    const playwrightMcp = {
+      command: 'npx',
+      args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000'],
+      toolFilter: {
+        include: smokePhase === 'playwright'
+          ? ['browser_navigate', 'browser_snapshot']
+          : ['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']
+      }
+    };
+    const mcpServers = trustedOffice
+      ? (smokePhase === 'github' ? { github: githubMcp }
+        : smokePhase === 'playwright' ? { playwright: playwrightMcp }
+        : { github: githubMcp, playwright: playwrightMcp })
+      : {};
+    if (trustedOffice && mcpServers.playwright) {
       const browserMarker = `${statePath}/.quantdeus-playwright-chromium-ready`;
       const browserCheck = await sandbox.runCommand({ cmd: 'test', args: ['-f', browserMarker] });
       if (browserCheck.exitCode !== 0) {
@@ -336,7 +396,7 @@ export default async function handler(req, res) {
       memory: { search: { enabled: false } },
       tools: trustedOffice ? trustedTools : publicTools,
       ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
-      agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, model: { primary: model, fallbacks: fallbackModels } } }
+      agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
     };
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
     const runtimeEnv = {};
@@ -351,8 +411,9 @@ export default async function handler(req, res) {
       chosen: model || null,
       fallbacks: fallbackModels,
       trusted_office: trustedOffice,
-      github_mcp: trustedOffice && Boolean(githubToken),
-      playwright_mcp: trustedOffice,
+      github_mcp: trustedOffice && Boolean(githubToken) && Boolean(mcpServers.github),
+      playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
+      smoke_phase: smokePhase,
       has_vercel_oidc: Boolean(vercelOidcToken),
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
