@@ -68,7 +68,7 @@ jobs:
               trusted: true,
               messages: [{
                 role: 'user',
-                content: 'Read-only browser smoke. Use only playwright__browser_navigate and playwright__browser_snapshot. Do not call GitHub. Call playwright__browser_navigate exactly once with https://example.com and then playwright__browser_snapshot exactly once. Do not use evaluate, run-code, or any other tools. Confirm Example Domain is visible, then reply exactly OPENCLAW_PLAYWRIGHT_MCP_OK.'
+                content: 'Read-only browser smoke. Use only playwright__browser_navigate. Do not call GitHub. Call playwright__browser_navigate exactly once with https://example.com. The navigate result includes the rendered page state; confirm Example Domain is visible from that result, then reply exactly OPENCLAW_PLAYWRIGHT_MCP_OK. Do not call snapshot, evaluate, run-code, or any other tools.'
               }],
               metadata: { source: 'openclaw-admin-smoke', phase: 'playwright', repository: process.env.GITHUB_REPOSITORY }
             });
