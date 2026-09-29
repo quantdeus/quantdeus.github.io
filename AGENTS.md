@@ -167,57 +167,22 @@ Canonical protocol: `coordination/swarm-review-protocol.md`.
 Post-merge P1/P2 findings become bounded repair Issues instead of being left as dead comments on already-merged PRs. Comment volume is not progress; verified artifacts are.
 
 
-## Hermes AI Office
+## OpenClaw AI Office
 
-Hermes Agent is the optional persistent office runtime for all 26 canonical QuantDeus agents.
-
-Canonical contract:
-- manifest: `coordination/hermes-office.json`
-- bootstrap: `scripts/hermes-office-bootstrap.js`
-- validation: `scripts/qa/hermes-office-validator.js`
-- guide: `docs/hermes-office.md`
-
-Runtime model:
-`Human CEO → Seven of Nine (Hermes orchestrator) → shared QuantDeus Kanban → isolated agent profiles → QA → GitHub evidence`.
-
-Rules:
-1. One Hermes profile per canonical `coordination/agents.json` id. Do not make multiple agents share one Hermes profile/home.
-2. Seven of Nine owns the Hermes Kanban dispatcher/orchestrator role; the Swarm Secretary remains record/routing support.
-3. GitHub remains source of truth. Hermes memory, sessions and Kanban state are execution context, not proof of a GitHub mutation.
-4. Default model is GPT-OSS 120B; provider/model may be overridden at runtime without changing canonical agent identity.
-5. Prefer an isolated terminal backend for autonomous work; the QuantDeus manifest prefers Vercel Sandbox and permits Docker for local testing.
-6. Never commit Hermes `.env`, memory/session databases, Kanban SQLite files, API keys or provider credentials.
-7. Existing Telegram transport remains canonical unless ownership is explicitly migrated; never run two gateways against one bot token.
-
-
-## Hermes Evolution + connected chat
-
-When a Hermes runtime host is configured, QuantDeus chat surfaces route real turns into named Hermes profiles:
-
-`GitHub Command Center / Telegram → Hermes profile → tools/MCP/Kanban/cron → GitHub evidence → reply`.
-
-Runtime secrets:
-- `HERMES_API_URL` — externally reachable HTTPS root of the Hermes API server.
-- `HERMES_API_KEY` — API key for the exposed Hermes profile route.
-- `GITHUB_PERSONAL_ACCESS_TOKEN` — host-only credential consumed by the official GitHub MCP server. Prefer a dedicated GitHub App installation token when available.
-- `GITHUB_TOOLSETS=all` — broad GitHub MCP surface; actual access is still bounded by the credential.
-
-Evolution rules are canonical in `coordination/hermes-evolution.json`.
-
-All profiles may create agent-local skills, cron jobs and reversible MCP connections. Agent-created skills are security-scanned and ledgered; the Curator may consolidate them with backups/rollback. Canonical repository self-improvements use branch/PR + QA evidence.
-
-Playwright MCP is provisioned as `playwright` for every profile using Microsoft's `@playwright/mcp@latest`. Project-local QuantDeus operating skills live under `.hermes/skills/`.
-
-Legitimate QuantDeus project/service-account registration may be automated with browser tooling, but agents stop at CAPTCHA, unavailable verification, 2FA/passkeys, payment, legal commitment or identity verification. Credentials never belong in GitHub artifacts.
-
-
-## Hermes Cloud PC production route
-
-The canonical QuantDeus Hermes runtime is a named persistent Vercel Sandbox: `quantdeus-hermes-office`.
+OpenClaw is the canonical persistent execution runtime for all 26 QuantDeus agents.
 
 Production route:
-`GitHub/Telegram → GitHub Actions OIDC → Vercel /api/quantdeus/hermes → Vercel Sandbox → Hermes profile → MCP/tools → verified GitHub evidence`.
+`Human CEO → Seven of Nine → GitHub Actions OIDC → Vercel /api/quantdeus/openclaw → persistent Vercel Sandbox → scoped GitHub/Playwright MCP → QA evidence → PR`.
 
-Do not require Replit, a manually maintained VPS, `HERMES_API_URL`, or `HERMES_API_KEY` for the standard production path. The site and Telegram workflows use a dedicated OIDC audience `quantdeus-vercel-hermes`. Vercel supplies the model credential through its short-lived project OIDC token, and GitHub supplies only the current workflow's ephemeral repository token to the official GitHub MCP.
+Canonical rules:
+1. Seven of Nine is the coordinator and runs before the Swarm Secretary.
+2. Normal public/site conversation is no-tools. Repository mutations from the GitHub Command Center require an authenticated owner/admin comment and the trusted OpenClaw lane.
+3. Trusted repository changes use a branch + PR; never silently push directly to `main`.
+4. QA repair is executable, not advisory: deterministic failures should create/update a bounded `qa/self-heal/*` repair PR, or a real escalation Issue only for external/human-only blockers.
+5. QA repair PRs merge only after fresh `QA Triad` and `Static Smoke` checks complete successfully.
+6. GitHub is source of truth. Model text is not evidence of a mutation; verify tool traces plus the resulting GitHub artifact.
+7. Secrets remain ephemeral. Never commit API keys, tokens, credentials, browser profiles, or agent runtime state.
+8. Playwright stops at CAPTCHA, 2FA/passkeys, payment, identity verification, legal commitment, or destructive production actions.
 
-The Sandbox filesystem is persistent; processes are disposable. Each request may resume the named Sandbox, run one bounded Hermes turn, and stop it so the filesystem is snapshotted.
+Hermes files under `.hermes/`, `coordination/hermes-*`, `scripts/hermes-*`, and `docs/hermes-office.md` are legacy compatibility/archive material only. They must not be treated as the canonical runtime or scheduling path. The retired Hermes fleet cron workflow is intentionally absent.
+
