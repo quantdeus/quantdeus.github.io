@@ -129,6 +129,16 @@ export default async function handler(req, res) {
       };
       modelCandidates.push(`openrouter/${OPENROUTER_MODEL}`);
     }
+
+    // Keyless emergency inference remains INSIDE OpenClaw: the agent runtime,
+    // state, prompt handling and execution contract are still OpenClaw.
+    providerDefs.pollinations = {
+      baseUrl: 'https://text.pollinations.ai/openai',
+      api: 'openai-completions',
+      apiKey: { source: 'env', provider: 'default', id: 'POLLINATIONS_API_KEY' },
+      models: [{ id: 'openai-fast', name: 'openai-fast', input: ['text'], contextWindow: 32768, maxTokens: 4096 }]
+    };
+    modelCandidates.push('pollinations/openai-fast');
     const probeCandidates = [];
     if (vercelOidcToken) {
       for (const gatewayModel of VERCEL_GATEWAY_MODELS) {
@@ -159,6 +169,12 @@ export default async function handler(req, res) {
         model: OPENROUTER_MODEL
       });
     }
+    probeCandidates.push({
+      ref: 'pollinations/openai-fast',
+      endpoint: 'https://text.pollinations.ai/openai/chat/completions',
+      key: 'anonymous',
+      model: 'openai-fast'
+    });
 
     const probeResults = [];
     let healthyRef = null;
@@ -204,6 +220,7 @@ export default async function handler(req, res) {
     if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
     if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
+    runtimeEnv.POLLINATIONS_API_KEY = 'anonymous';
     runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
