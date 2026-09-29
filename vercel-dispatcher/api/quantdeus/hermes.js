@@ -22,18 +22,6 @@ const VERCEL_GATEWAY_FALLBACK_MODELS = [...new Set(
 )].slice(0, 3);
 const MAX_PROMPT = 90000;
 
-function buildFallbackProviders(runtimeEnv) {
-  const models = [...new Set(
-    String(runtimeEnv.HERMES_VERCEL_FALLBACK_MODELS || '')
-      .split(',').map(model => model.trim()).filter(Boolean)
-  )].slice(0, 3);
-  const providers = models.map(model => ({ provider: 'ai-gateway', model }));
-  if (runtimeEnv.OPENROUTER_API_KEY) {
-    providers.push({ provider: 'openrouter', model: runtimeEnv.HERMES_OPENROUTER_MODEL || OPENROUTER_MODEL });
-  }
-  return providers;
-}
-
 let jwksCache = null;
 let jwksFetchedAt = 0;
 
@@ -520,14 +508,6 @@ export default async function handler(req, res) {
     }
 
     await configureLocalModel(sandbox, profile, runtimeEnv, paths);
-    const profileConfig = paths.home + '/.hermes/profiles/' + profile + '/config.yaml';
-    const configWrite = await sandbox.runCommand({
-      cmd: 'bash',
-      args: ['-lc', 'python3 -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); d[\'fallback_providers\']=json.loads(sys.argv[2]); open(p,\'w\').write(json.dumps(d,indent=2)+\'\\n\')" "$1" "$2"', 'bash', profileConfig, JSON.stringify(buildFallbackProviders(runtimeEnv))],
-      cwd: paths.workdir,
-      env: runtimeEnv
-    });
-    if (configWrite.exitCode !== 0) throw new Error('hermes_fallback_config_write_failed');
     let text = '';
     let executionMode = 'hermes-agent';
     let responseModel = MODEL;

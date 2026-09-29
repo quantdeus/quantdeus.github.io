@@ -11,7 +11,7 @@ const officePath = path.join(repoRoot, 'coordination', 'hermes-office.json');
 const evolutionPath = path.join(repoRoot, 'coordination', 'hermes-evolution.json');
 const projectSkillsPath = path.join(repoRoot, '.hermes', 'skills');
 
-const BOOTSTRAP_SCHEMA = 5;
+const BOOTSTRAP_SCHEMA = 6;
 
 function fail(message) {
   console.error('[hermes-office] ' + message);
@@ -102,9 +102,11 @@ function canonicalConfig(agent, office, evolution) {
       .filter(Boolean)
   )].slice(0, 3);
   const fallbackProviders = gatewayModels.map(model => ({ provider: 'ai-gateway', model }));
-  if (process.env.OPENROUTER_API_KEY && process.env.HERMES_OPENROUTER_MODEL) {
-    fallbackProviders.push({ provider: 'openrouter', model: process.env.HERMES_OPENROUTER_MODEL });
-  }
+  // Keep provider policy in profile config; the credential is supplied per turn.
+  fallbackProviders.push({
+    provider: 'openrouter',
+    model: process.env.HERMES_OPENROUTER_MODEL || 'openai/gpt-oss-120b'
+  });
 
   const cfg = {
     fallback_providers: fallbackProviders,
