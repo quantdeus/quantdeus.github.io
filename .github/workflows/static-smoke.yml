@@ -33,6 +33,7 @@ jobs:
           node --check scripts/qa/hermes-office-validator.js
           node --check scripts/qa/openclaw-office-validator.js
           node --check scripts/telegram-bot.js
+          node --check scripts/telegram-webhook-setup.js
           node --check scripts/browser-homunculus.js
           node --check scripts/pillar-executor.js
           node --check scripts/strategic-hub.js
@@ -41,6 +42,7 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/browser.js
           node --check vercel-dispatcher/api/quantdeus/hermes.js
           node --check vercel-dispatcher/api/quantdeus/openclaw.js
+          node --check vercel-dispatcher/api/quantdeus/telegram.js
 
       - name: Run QA syntax validator
         run: node scripts/qa/syntax-validator.js
@@ -85,6 +87,8 @@ jobs:
           test -f vercel-dispatcher/api/quantdeus/browser.js
           test -f vercel-dispatcher/api/quantdeus/hermes.js
           test -f vercel-dispatcher/api/quantdeus/openclaw.js
+          test -f vercel-dispatcher/api/quantdeus/telegram.js
+          test -f scripts/telegram-webhook-setup.js
           test -f scripts/browser-homunculus.js
           test -f .github/workflows/browser-homunculus.yml
           test -f docs/browser-homunculus.md
