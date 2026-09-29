@@ -70,11 +70,12 @@ const vercelPackage = JSON.parse(fs.readFileSync('vercel-dispatcher/package.json
 if (!vercelPackage.dependencies?.['@vercel/oidc']) throw new Error('Vercel Hermes route must include the OIDC helper dependency');
 if (!bootstrapSource.includes("['hermes-cli', 'connections']")) throw new Error('Every Hermes profile must receive the connections toolset');
 if (!bootstrapSource.includes("['hermes-cli', 'kanban', 'connections']")) throw new Error('Seven must keep Kanban and receive the connections toolset');
-if (!bootstrapSource.includes('const BOOTSTRAP_SCHEMA = 5')) throw new Error('Hermes bootstrap schema must refresh every profile with the updated toolsets');
+if (!bootstrapSource.includes('const BOOTSTRAP_SCHEMA = 6')) throw new Error('Hermes bootstrap schema must refresh every profile with the updated toolsets');
 if (!bootstrapSource.includes('fallback_providers: fallbackProviders')) throw new Error('Hermes profile must declare its native provider fallback chain');
 if (!routeSource.includes('runtimeEnv.AI_GATEWAY_API_KEY = await getVercelOidcToken()')) throw new Error('Hermes native AI Gateway fallback requires ephemeral Vercel OIDC credentials');
-if (!routeSource.includes('buildFallbackProviders(runtimeEnv)')) throw new Error('Hermes profile fallback chain must include runtime-available providers');
-if (!routeSource.includes("provider: 'ai-gateway'")) throw new Error('Hermes native fallback must include Vercel AI Gateway');
+if (!bootstrapSource.includes("provider: 'ai-gateway'")) throw new Error('Hermes native fallback must include Vercel AI Gateway');
+if (!bootstrapSource.includes("provider: 'openrouter'")) throw new Error('Hermes profile must preserve OpenRouter fallback policy');
+if (routeSource.includes('hermes_fallback_config_write_failed')) throw new Error('Hermes route must not rewrite YAML profile config as JSON');
 if (!routeSource.includes('primary.fallback.model')) throw new Error('Hermes route must report the model used by native provider failover');
 if (!bootstrapSource.includes('modelBaseUrl') || !bootstrapSource.includes('modelKeyEnv')) throw new Error('Every profile must receive runtime model endpoint and key-env references');
 
@@ -96,7 +97,7 @@ try {
     if (gatewayOnly.status !== 0) throw new Error('Hermes Gateway-only bootstrap failed');
     const gatewayProfile = JSON.parse(fs.readFileSync(require('node:path').join(gatewayOnlyRoot, 'profiles', 'seven-of-nine', 'config.yaml'), 'utf8'));
     if (!gatewayProfile.fallback_providers.some(entry => entry.provider === 'ai-gateway')) throw new Error('Hermes Gateway fallback should not depend on an OpenRouter key');
-    if (gatewayProfile.fallback_providers.some(entry => entry.provider === 'openrouter')) throw new Error('Hermes must not use OpenRouter unless a per-turn key is supplied');
+    if (gatewayProfile.fallback_providers.at(-1)?.provider !== 'openrouter') throw new Error('Hermes OpenRouter fallback policy must persist without persisting credentials');
   } finally {
     fs.rmSync(gatewayOnlyRoot, { recursive: true, force: true });
   }
