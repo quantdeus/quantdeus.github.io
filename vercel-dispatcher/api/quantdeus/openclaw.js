@@ -46,6 +46,44 @@ async function checked(sandbox, args, label) {
   return r;
 }
 
+async function probeChatCandidate(candidate) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(candidate.endpoint, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + candidate.key,
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({
+        model: candidate.model,
+        messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
+        temperature: 0,
+        max_tokens: 8
+      }),
+      signal: controller.signal
+    });
+    const raw = await response.text();
+    return {
+      ref: candidate.ref,
+      ok: response.ok,
+      status: response.status,
+      detail: response.ok ? 'ok' : raw.slice(0, 300)
+    };
+  } catch (error) {
+    return {
+      ref: candidate.ref,
+      ok: false,
+      status: 0,
+      detail: String(error?.message || error).slice(0, 300)
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   let sandbox;
@@ -91,8 +129,52 @@ export default async function handler(req, res) {
       };
       modelCandidates.push(`openrouter/${OPENROUTER_MODEL}`);
     }
-    const model = modelCandidates[0];
-    const fallbackModels = modelCandidates.slice(1);
+    const probeCandidates = [];
+    if (vercelOidcToken) {
+      for (const gatewayModel of VERCEL_GATEWAY_MODELS) {
+        probeCandidates.push({
+          ref: `vercel-ai-gateway/${gatewayModel}`,
+          endpoint: 'https://ai-gateway.vercel.sh/v1/chat/completions',
+          key: vercelOidcToken,
+          model: gatewayModel
+        });
+      }
+    }
+    if (localKey) {
+      const localEndpoint = localBaseUrl.endsWith('/v1')
+        ? localBaseUrl + '/chat/completions'
+        : localBaseUrl + '/v1/chat/completions';
+      probeCandidates.push({
+        ref: `quantdeus-local/${localModel}`,
+        endpoint: localEndpoint,
+        key: localKey,
+        model: localModel
+      });
+    }
+    if (openRouterKey) {
+      probeCandidates.push({
+        ref: `openrouter/${OPENROUTER_MODEL}`,
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: openRouterKey,
+        model: OPENROUTER_MODEL
+      });
+    }
+
+    const probeResults = [];
+    let healthyRef = null;
+    for (const candidate of probeCandidates) {
+      const probe = await probeChatCandidate(candidate);
+      probeResults.push(probe);
+      if (probe.ok) {
+        healthyRef = candidate.ref;
+        break;
+      }
+    }
+    const orderedModels = healthyRef
+      ? [healthyRef, ...modelCandidates.filter(ref => ref !== healthyRef)]
+      : modelCandidates;
+    const model = orderedModels[0];
+    const fallbackModels = orderedModels.slice(1);
     const modelConfig = { mode: 'merge', providers: providerDefs };
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
@@ -125,11 +207,21 @@ export default async function handler(req, res) {
     runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
+      probes: probeResults,
+      chosen: model || null,
+      fallbacks: fallbackModels,
       has_vercel_oidc: Boolean(vercelOidcToken),
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
       has_openrouter_key: Boolean(openRouterKey)
     }));
+    if (!healthyRef) {
+      return res.status(503).json({
+        ok: false,
+        error: 'openclaw_no_healthy_model_route',
+        probes: probeResults
+      });
+    }
 
     // Bootstrap the persistent workspace once so OpenClaw has canonical identity + memory files.
     const baselineMarker = `${statePath}/.quantdeus-baseline-${OPENCLAW_RUNTIME_VERSION}`;
@@ -211,9 +303,10 @@ export default async function handler(req, res) {
     }
 
     const agentLock = `${statePath}/.quantdeus-agent.lock`;
+    const modelArgs = ['--model', model, ...fallbackModels.flatMap(ref => ['--fallback', ref])];
     const run = await sandbox.runCommand({
       cmd: 'flock',
-      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--state-dir', statePath, '--cwd', workdir, '--timeout', '240', '--json', '--message-file', promptPath],
+      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--state-dir', statePath, '--cwd', workdir, ...modelArgs, '--timeout', '180', '--json', '--message-file', promptPath],
       cwd: workdir,
       env: runtimeEnv
     });
