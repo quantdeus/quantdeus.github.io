@@ -21,7 +21,7 @@ for (const [ok, message] of [
   [client.includes("execution_mode: trusted ? 'trusted-office' : 'chat'") && client.includes('trusted = false'), 'client can request trusted office explicitly'],
   [telegram.includes('trusted: true') && telegram.includes('telegram-admin-task'), 'Telegram admin task lane invokes trusted office only after admin gate'],
   [route.includes("id: localKeyEnv") && route.includes('runtimeEnv[localKeyEnv] = localKey'), 'model key stays env-backed and out of persisted config'],
-  [route.includes("providerDefs['quantdeus-pollinations']") && route.includes("'quantdeus-pollinations/openai-fast'"), 'keyless Pollinations proxy uses a non-conflicting custom provider id'],
+  [route.includes("providerDefs['quantdeus-pollinations']") && route.includes("['openai', 'qwen-coder', 'openai-fast']") && route.includes('quantdeus_probe_ping') && route.includes('probeChatCandidate(candidate, trustedOffice)'), 'trusted Office selects a tool-capable Pollinations model using a live function-call probe'],
   [route.includes('quantdeus-config-') && route.includes('ephemeralFiles = [configPath, promptPath]'), 'request config is isolated and cleaned up'],
   [!route.includes("'--state-dir', statePath"), 'agent exec uses OpenClaw temporary state isolation'],
   [route.includes("'openai/gpt-oss-120b:free'") && route.includes('process.env.HERMES_LOCAL_API_KEY') && route.includes('process.env.MISTRAL_API_KEY'), 'existing Vercel OpenRouter and Mistral model credentials are supported'],
