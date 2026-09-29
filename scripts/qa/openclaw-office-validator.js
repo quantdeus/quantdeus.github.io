@@ -27,6 +27,7 @@ for (const [ok, message] of [
   [route.includes('const fallbackModels = trustedOffice ? [] : orderedModels.slice(1)'), 'trusted MCP runs do not fall through to unvalidated model routes'],
   [route.includes("const smokePhase = trustedOffice") && route.includes("allow: ['bundle-mcp', 'github__list_branches']") && route.includes("allow: ['bundle-mcp', 'playwright__browser_navigate', 'playwright__browser_snapshot']"), 'live smoke phases expose only their required MCP server and tools'],
   [route.includes("codeMode: false") && route.includes("models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }]))"), 'OpenClaw Code Mode stays explicitly disabled on compatible-provider trusted MCP routes'],
+  [route.includes("tools: trustedOffice ? { ...trustedTools, toolSearch: false } : publicTools"), 'trusted MCP disables automatic Tool Search so bounded GitHub and Playwright schemas are exposed directly'],
   [route.includes('quantdeus-config-') && route.includes('ephemeralFiles = [configPath, promptPath]'), 'request config is isolated and cleaned up'],
   [!route.includes("'--state-dir', statePath"), 'agent exec uses OpenClaw temporary state isolation'],
   [route.includes("'openai/gpt-oss-120b:free'") && route.includes('process.env.HERMES_LOCAL_API_KEY') && route.includes('process.env.MISTRAL_API_KEY'), 'existing Vercel OpenRouter and Mistral model credentials are supported'],
