@@ -94,6 +94,7 @@ export default async function handler(req, res) {
     for (const dir of [`${home}/.openclaw`, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
     const config = {
       models: modelConfig,
+      memory: { search: { enabled: false } },
       tools: { deny: ['*'] },
       agents: { defaults: { workspace: workdir, model: { primary: model, fallbacks: fallbackModels } } }
     };
