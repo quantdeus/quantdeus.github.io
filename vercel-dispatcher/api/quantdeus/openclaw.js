@@ -49,7 +49,7 @@ async function checked(sandbox, args, label) {
 function trustedOfficeRequest(req, claims) {
   if (req.body?.execution_mode !== 'trusted-office') return false;
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
-  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|seven-priority-cycle|news-manifest-cycle|growth-site-cycle)\.yml(?:@|$)/.test(workflowRef);
+  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|seven-priority-cycle|news-manifest-cycle|growth-site-cycle|openclaw-evolution)\.yml(?:@|$)/.test(workflowRef);
   return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
 }
 
@@ -472,7 +472,24 @@ export default async function handler(req, res) {
       ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
       agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
     };
-    await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
+    let effectivePrompt = prompt;
+    if (trustedOffice && !smokePhase) {
+      const evolutionSkillPath = `${repoDir}/.openclaw/skills/quantdeus-self-evolution/SKILL.md`;
+      const evolutionSkill = await sandbox.runCommand({ cmd: 'cat', args: [evolutionSkillPath] });
+      if (evolutionSkill.exitCode === 0) {
+        const skillText = (await evolutionSkill.stdout()).trim();
+        if (skillText) {
+          effectivePrompt = [
+            'OPENCLAW SELF-EVOLUTION SKILL FROM FRESH MAIN:',
+            skillText.slice(0, 12000),
+            '',
+            'ACTIVE REQUEST:',
+            prompt
+          ].join('\n').slice(0, 98000);
+        }
+      }
+    }
+    await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(effectivePrompt) }]);
     const runtimeEnv = {};
     if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
