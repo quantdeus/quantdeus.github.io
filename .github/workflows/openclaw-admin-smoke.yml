@@ -1,6 +1,8 @@
 name: QuantDeus OpenClaw Admin Office Smoke
 
 on:
+  push:
+    branches: [smoke/openclaw-admin-tools-2026-09-29]
   workflow_dispatch:
 
 permissions:
