@@ -53,29 +53,40 @@ function trustedOfficeRequest(req, claims) {
   return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
 }
 
-async function probeChatCandidate(candidate, requireTools = false) {
+async function probeChatCandidate(candidate, mode = 'basic') {
+  const requireTools = mode !== 'basic';
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), requireTools ? 30000 : 10000);
+  const timer = setTimeout(() => controller.abort(), mode === 'sequential' ? 40000 : (requireTools ? 25000 : 10000));
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   try {
     const headers = {
       authorization: 'Bearer ' + candidate.key,
       'content-type': 'application/json',
       accept: 'application/json'
     };
-    const request = async body => {
-      const response = await fetch(candidate.endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-      const raw = await response.text();
-      let data = null;
-      try { data = JSON.parse(raw); } catch {}
-      return { response, raw, data };
+    const request = async (body, rateLimitRetries = 0) => {
+      for (let attempt = 0; ; attempt += 1) {
+        const response = await fetch(candidate.endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+          signal: controller.signal
+        });
+        const raw = await response.text();
+        let data = null;
+        try { data = JSON.parse(raw); } catch {}
+        if (response.status !== 429 || attempt >= rateLimitRetries) {
+          return { response, raw, data };
+        }
+        const retryAfterRaw = Number(response.headers.get('retry-after'));
+        const retryAfterMs = Number.isFinite(retryAfterRaw) && retryAfterRaw > 0
+          ? Math.min(8000, retryAfterRaw * 1000)
+          : Math.min(8000, 1000 * (2 ** attempt));
+        await sleep(retryAfterMs);
+      }
     };
 
-    if (!requireTools) {
+    if (mode === 'basic') {
       const { response, raw } = await request({
         model: candidate.model,
         messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
@@ -87,6 +98,81 @@ async function probeChatCandidate(candidate, requireTools = false) {
         ok: response.ok,
         status: response.status,
         detail: response.ok ? 'ok' : raw.slice(0, 300)
+      };
+    }
+
+    const normalizeToolCall = (message, expectedName) => {
+      const calls = message?.tool_calls;
+      if (!Array.isArray(calls) || calls.length !== 1) return null;
+      const call = calls[0];
+      if (
+        call?.type !== 'function' ||
+        call?.function?.name !== expectedName ||
+        typeof call?.function?.arguments !== 'string' ||
+        typeof call?.id !== 'string' ||
+        !call.id
+      ) return null;
+      return {
+        id: call.id,
+        type: 'function',
+        function: { name: expectedName, arguments: call.function.arguments }
+      };
+    };
+
+    if (mode === 'single') {
+      const probeTool = {
+        type: 'function',
+        function: {
+          name: 'quantdeus_probe_ping',
+          description: 'Capability probe. Call this tool exactly once.',
+          parameters: { type: 'object', properties: {}, additionalProperties: false }
+        }
+      };
+      const probePrompt = { role: 'user', content: 'Call the quantdeus_probe_ping tool exactly once.' };
+      const first = await request({
+        model: candidate.model,
+        messages: [probePrompt],
+        temperature: 0,
+        max_tokens: 64,
+        tools: [probeTool],
+        tool_choice: 'required'
+      }, candidate.ref.startsWith('quantdeus-local/') ? 2 : 0);
+      if (!first.response.ok) {
+        return { ref: candidate.ref, ok: false, status: first.response.status, detail: first.raw.slice(0, 300) };
+      }
+      const firstMessage = first.data?.choices?.[0]?.message;
+      const pingCall = normalizeToolCall(firstMessage, 'quantdeus_probe_ping');
+      if (!pingCall) {
+        return { ref: candidate.ref, ok: false, status: first.response.status, detail: 'single_tool_call_missing_or_malformed' };
+      }
+      const second = await request({
+        model: candidate.model,
+        messages: [
+          probePrompt,
+          {
+            role: 'assistant',
+            content: typeof firstMessage?.content === 'string' ? firstMessage.content : null,
+            tool_calls: [pingCall]
+          },
+          { role: 'tool', tool_call_id: pingCall.id, content: 'PONG' },
+          { role: 'user', content: 'The tool result is complete. Reply with exactly PROBE_DONE and do not call any tool.' }
+        ],
+        temperature: 0,
+        max_tokens: 32,
+        tools: [probeTool],
+        tool_choice: 'none'
+      }, candidate.ref.startsWith('quantdeus-local/') ? 2 : 0);
+      const secondMessage = second.data?.choices?.[0]?.message;
+      const finalText = typeof secondMessage?.content === 'string' ? secondMessage.content.trim() : '';
+      const extraToolCalls = Array.isArray(secondMessage?.tool_calls) && secondMessage.tool_calls.length > 0;
+      const ok = second.response.ok && finalText === 'PROBE_DONE' && !extraToolCalls;
+      return {
+        ref: candidate.ref,
+        ok,
+        status: second.response.status,
+        detail: ok
+          ? 'single_tool_roundtrip_ok'
+          : (second.response.ok ? 'single_tool_roundtrip_incomplete_or_malformed' : second.raw.slice(0, 300))
       };
     }
 
@@ -112,24 +198,7 @@ async function probeChatCandidate(candidate, requireTools = false) {
       role: 'user',
       content: 'Call quantdeus_probe_step_one exactly once. After its tool result, call quantdeus_probe_step_two exactly once. After the second tool result, reply exactly PROBE_DONE and do not call any more tools.'
     };
-    const normalizeToolCall = (message, expectedName) => {
-      const calls = message?.tool_calls;
-      if (!Array.isArray(calls) || calls.length !== 1) return null;
-      const call = calls[0];
-      if (
-        call?.type !== 'function' ||
-        call?.function?.name !== expectedName ||
-        typeof call?.function?.arguments !== 'string' ||
-        typeof call?.id !== 'string' ||
-        !call.id
-      ) return null;
-      return {
-        id: call.id,
-        type: 'function',
-        function: { name: expectedName, arguments: call.function.arguments }
-      };
-    };
-
+    const rateLimitRetries = candidate.ref.startsWith('quantdeus-local/') ? 2 : 0;
     const first = await request({
       model: candidate.model,
       messages: [probePrompt],
@@ -137,7 +206,7 @@ async function probeChatCandidate(candidate, requireTools = false) {
       max_tokens: 64,
       tools: probeTools,
       tool_choice: 'required'
-    });
+    }, rateLimitRetries);
     if (!first.response.ok) {
       return { ref: candidate.ref, ok: false, status: first.response.status, detail: first.raw.slice(0, 300) };
     }
@@ -163,7 +232,7 @@ async function probeChatCandidate(candidate, requireTools = false) {
       max_tokens: 64,
       tools: probeTools,
       tool_choice: 'required'
-    });
+    }, rateLimitRetries);
     if (!second.response.ok) {
       return { ref: candidate.ref, ok: false, status: second.response.status, detail: second.raw.slice(0, 300) };
     }
@@ -192,7 +261,7 @@ async function probeChatCandidate(candidate, requireTools = false) {
       max_tokens: 32,
       tools: probeTools,
       tool_choice: 'none'
-    });
+    }, rateLimitRetries);
     const thirdMessage = third.data?.choices?.[0]?.message;
     const finalText = typeof thirdMessage?.content === 'string' ? thirdMessage.content.trim() : '';
     const extraToolCalls = Array.isArray(thirdMessage?.tool_calls) && thirdMessage.tool_calls.length > 0;
@@ -233,6 +302,7 @@ export default async function handler(req, res) {
       return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
     }
     const openRouterKey = String(req.headers['x-quantdeus-openrouter-key'] || process.env.OPENROUTER_API_KEY || '');
+    const pollinationsKey = String(process.env.POLLINATIONS_API_KEY || '').trim();
     let vercelOidcToken = String(req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || '').trim();
     try {
       if (!vercelOidcToken) vercelOidcToken = await getVercelOidcToken();
@@ -320,15 +390,19 @@ export default async function handler(req, res) {
       probeCandidates.push({
         ref: `quantdeus-pollinations/${pollinationsModel}`,
         endpoint: 'https://text.pollinations.ai/openai/chat/completions',
-        key: 'anonymous',
+        key: pollinationsKey || 'anonymous',
         model: pollinationsModel
       });
     }
 
+    const probeMode = !trustedOffice ? 'basic' : (smokePhase ? 'single' : 'sequential');
+    const eligibleProbeCandidates = probeMode === 'sequential' && !pollinationsKey
+      ? probeCandidates.filter(candidate => !candidate.ref.startsWith('quantdeus-pollinations/'))
+      : probeCandidates;
     const probeResults = [];
     let healthyRef = null;
-    for (const candidate of probeCandidates) {
-      const probe = await probeChatCandidate(candidate, trustedOffice);
+    for (const candidate of eligibleProbeCandidates) {
+      const probe = await probeChatCandidate(candidate, probeMode);
       probeResults.push(probe);
       if (probe.ok) {
         healthyRef = candidate.ref;
@@ -465,7 +539,7 @@ export default async function handler(req, res) {
     if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
     if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
-    runtimeEnv.POLLINATIONS_API_KEY = 'anonymous';
+    runtimeEnv.POLLINATIONS_API_KEY = pollinationsKey || 'anonymous';
     runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
@@ -476,6 +550,8 @@ export default async function handler(req, res) {
       github_mcp: trustedOffice && Boolean(githubToken) && Boolean(mcpServers.github),
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       smoke_phase: smokePhase,
+      probe_mode: probeMode,
+      has_pollinations_key: Boolean(pollinationsKey),
       has_vercel_oidc: Boolean(vercelOidcToken),
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
