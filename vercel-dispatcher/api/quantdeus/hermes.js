@@ -422,8 +422,8 @@ export default async function handler(req, res) {
     const mode = String(req.body?.mode || 'chat');
     if (!['chat', 'cron_tick'].includes(mode)) throw new Error('unsupported_hermes_mode');
     const cronTick = mode === 'cron_tick';
-    if (cronTick && !['schedule', 'workflow_dispatch'].includes(String(claims.event_name || ''))) {
-      throw new Error('hermes_cron_wrong_event');
+    if (cronTick && String(claims.event_name || '') !== 'workflow_dispatch') {
+      throw new Error('hermes_cron_manual_only');
     }
 
     const profile = cronTick ? null : normalizeProfile(req.body?.profile);
