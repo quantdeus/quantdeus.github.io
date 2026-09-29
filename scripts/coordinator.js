@@ -175,6 +175,31 @@ function handleCommentEvent(event) {
   return true;
 }
 
+function drainCommandComments() {
+  // Event-triggered runs can be cancelled while waiting behind the global
+  // concurrency lane. Re-scan open task Issues and process every unhandled
+  // slash command so the latest run repairs any command whose run was evicted.
+  const issues = ghJson(['issue', 'list', '--state', 'open', '--label', 'coord:task', '--limit', '100', '--json', 'number']) || [];
+  let processed = 0;
+  for (const { number } of issues) {
+    const comments = ghJson(['api', `repos/${repo}/issues/${number}/comments?per_page=100&sort=created&direction=asc`]) || [];
+    const receipts = new Set(comments.flatMap(item => [...String(item.body || '').matchAll(/<!--\s*quantdeus-secretary-command:(\d+)\s*-->/g)].map(match => match[1])));
+    for (const item of comments) {
+      if (item.user?.type === 'Bot' || !/^\/(take|release|block|ready|done)(\s|$)/i.test(String(item.body || '').trim())) continue;
+      if (receipts.has(String(item.id))) continue;
+      const current = ghJson(['issue', 'view', String(number), '--json', 'number,title,body,labels,state,url']);
+      if (current.state !== 'OPEN' || !taskIssue(current)) break;
+      handleCommentEvent({ issue: current, comment: item });
+      // Persist the receipt after applying the command. A later run will not
+      // replay a /take or /done that already mutated the Issue.
+      comment(number, `<!-- quantdeus-secretary-command:${item.id} -->`);
+      receipts.add(String(item.id));
+      processed++;
+    }
+  }
+  console.log(`Swarm Secretary command drain processed ${processed} pending command(s).`);
+}
+
 async function postJson(url, payload) {
   const res = await fetch(url, {
     method: 'POST',
@@ -293,10 +318,10 @@ async function main() {
 
   if (process.env.GITHUB_EVENT_PATH && fs.existsSync(process.env.GITHUB_EVENT_PATH)) {
     const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf-8'));
-    if (process.env.GITHUB_EVENT_NAME === 'issue_comment') handleCommentEvent(event);
     if (process.env.GITHUB_EVENT_NAME === 'issues') handleIssueEvent(event);
   }
 
+  drainCommandComments();
   await refreshHub();
 }
 
