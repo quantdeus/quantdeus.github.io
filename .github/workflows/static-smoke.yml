@@ -70,7 +70,6 @@ jobs:
           test -f scripts/hermes-office-bootstrap.js
           test -f scripts/qa/hermes-office-validator.js
           test -f scripts/qa/openclaw-office-validator.js
-          test -f .github/workflows/openclaw-smoke.yml
           test -f .github/workflows/openclaw-evolution.yml
           test -f .openclaw/skills/quantdeus-self-evolution/SKILL.md
           test -f coordination/openclaw-evolution.json

@@ -1,18 +1,13 @@
-name: Set Telegram Mini App URL
+name: Set Telegram Mini App URL (manual)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/set-telegram-miniapp-once.yml'
 
 permissions:
   contents: write
 
 jobs:
   bind:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[bind-telegram-miniapp]')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

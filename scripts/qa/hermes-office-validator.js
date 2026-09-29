@@ -129,12 +129,9 @@ try {
 
 const cronSource = fs.readFileSync('scripts/hermes-office-cron.js','utf8');
 const cronClient = fs.readFileSync('scripts/hermes-office-client.js','utf8');
-const cronWorkflow = fs.readFileSync('.github/workflows/hermes-office-cron.yml','utf8');
 if (!cronSource.includes("['-p', profile, 'cron', 'tick']")) throw new Error('Cron pulse must tick Hermes scheduler for every profile');
 if (!cronClient.includes("mode: 'cron_tick'")) throw new Error('Cron client must call the authenticated Hermes cron mode');
-if (/^\s*schedule\s*:/m.test(cronWorkflow)) throw new Error('Legacy Hermes cron pulse must not have an automatic schedule');
-if (!/^\s*workflow_dispatch\s*:/m.test(cronWorkflow)) throw new Error('Legacy Hermes cron pulse must remain manual-only');
-if (!cronWorkflow.includes('  id-token: write')) throw new Error('Hermes cron workflow requires GitHub OIDC token permission');
+if (fs.existsSync('.github/workflows/hermes-office-cron.yml')) throw new Error('Retired Hermes cron workflow must stay removed; OpenClaw owns unattended scheduling');
 const route = fs.readFileSync('vercel-dispatcher/api/quantdeus/hermes.js','utf8');
 if (!route.includes("mode === 'cron_tick'")) throw new Error('Vercel Hermes route must expose cron tick mode');
 if (!route.includes("String(claims.event_name || '') !== 'workflow_dispatch'")) {
@@ -154,4 +151,4 @@ const directTaskFallback = telegramBot.indexOf("const url = createAdminTask(agen
 if (adminTaskStart < 0 || hermesTaskCall < adminTaskStart || directTaskFallback < hermesTaskCall) {
   throw new Error('Telegram admin tasks must route through Hermes before the direct fallback');
 }
-console.log('Hermes Evolution live contract OK: all-profile MCP connections + manual-only legacy cron fallback + chat mutations');
+console.log('Hermes legacy compatibility contract OK: archive-only cron code, no active Hermes scheduler workflow, chat compatibility preserved');

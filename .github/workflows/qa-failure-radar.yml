@@ -59,7 +59,10 @@ jobs:
           REPAIR_LANE: ${{ steps.radar.outputs.repair_lane }}
         run: |
           echo "Failure radar found an unresolved problem; dispatching QA self-heal lane=$REPAIR_LANE"
-          gh workflow run qa-self-heal.yml --repo "$GITHUB_REPOSITORY" --ref main -f lane="$REPAIR_LANE"
+          gh workflow run qa-self-heal.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            -f lane="$REPAIR_LANE" \
+            -f trigger_run_id="${{ github.event.workflow_run.id || '' }}" \
+            -f trigger_workflow="${{ github.event.workflow_run.name || '' }}"
 
       - name: Upload radar evidence
         if: always()

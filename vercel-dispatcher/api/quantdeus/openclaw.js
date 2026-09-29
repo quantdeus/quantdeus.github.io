@@ -49,8 +49,20 @@ async function checked(sandbox, args, label) {
 function trustedOfficeRequest(req, claims) {
   if (req.body?.execution_mode !== 'trusted-office') return false;
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  const eventName = String(claims.event_name || '');
+  const metadata = req.body?.metadata || {};
+
   const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|seven-priority-cycle|news-manifest-cycle|growth-site-cycle|openclaw-evolution)\.yml(?:@|$)/.test(workflowRef);
-  return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
+  if (trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(eventName)) return true;
+
+  const siteOwnerAction =
+    /\.github\/workflows\/site-agent-replies\.yml(?:@|$)/.test(workflowRef) &&
+    eventName === 'issue_comment' &&
+    metadata.source === 'github-command-center' &&
+    metadata.admin_authorized === true &&
+    String(metadata.actor_login || '').toLowerCase() === String(claims.actor || '').toLowerCase();
+
+  return siteOwnerAction;
 }
 
 function hourlyOfficeRequest(req, claims) {

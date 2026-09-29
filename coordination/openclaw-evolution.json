@@ -33,8 +33,7 @@
     "scripts/openclaw-office-client.js",
     "scripts/qa/openclaw-office-validator.js",
     ".github/workflows/openclaw-evolution.yml",
-    ".github/workflows/openclaw-admin-smoke.yml",
-    ".github/workflows/openclaw-smoke.yml"
+    ".github/workflows/openclaw-admin-smoke.yml"
   ],
   "protected_invariants": [
     "github-oidc-authentication",

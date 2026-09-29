@@ -144,18 +144,27 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
       }
     }
   }
-  if (name === 'hermes-office-cron.yml') {
-    check(!/^\s*schedule\s*:/m.test(text), name, 'legacy Hermes fleet pulse has no automatic schedule');
-    check(/^\s*workflow_dispatch\s*:/m.test(text), name, 'legacy Hermes fleet pulse remains manual-only');
-  }
   if (name === 'quantdeus-coordinator.yml') {
-    check(/group:\s*quantdeus-coordinator\s/.test(text) && /cancel-in-progress:\s*false/.test(text), name, 'Secretary command events share a non-cancelling FIFO lane');
-    check(text.includes("issue_comment:\n    types: [created]"), name, 'Secretary receives every new Issue comment for command draining');
+    check(/group:\s*quantdeus-coordinator\s/.test(text) && /cancel-in-progress:\s*false/.test(text), name, 'Coordinator command events share a non-cancelling FIFO lane');
+    check(text.includes("issue_comment:\n    types: [created]"), name, 'Coordinator receives every new Issue comment for command draining');
+    check(text.indexOf('node scripts/seven-of-nine.js') < text.indexOf('node scripts/coordinator.js'), name, 'Seven of Nine runs before the Swarm Secretary');
   }
   if (scheduledMissionWorkflows.has(name)) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
   }
 }
+
+const qaSelfHealWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-self-heal.yml'),'utf8');
+check(qaSelfHealWorkflow.includes('trigger_run_id:') && qaSelfHealWorkflow.includes('Verify claimed repair PR exists'), 'qa-self-heal.yml', 'QA self-heal receives failure evidence and verifies a real repair PR');
+check(qaSelfHealWorkflow.includes('.conclusion=="success"') && !qaSelfHealWorkflow.includes('.conclusion=="skipped"'), 'qa-self-heal.yml', 'QA self-heal merge requires successful independent QA/Smoke checks');
+
+const qaFailureRadarWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-failure-radar.yml'),'utf8');
+check(qaFailureRadarWorkflow.includes('qa-self-heal.yml') && qaFailureRadarWorkflow.includes('trigger_run_id') && qaFailureRadarWorkflow.includes('trigger_workflow'), 'qa-failure-radar.yml', 'failure radar passes concrete failed-run evidence to QA self-heal');
+
+const siteReplyWorkflow = fs.readFileSync(path.join(root,'.github','workflows','site-agent-replies.yml'),'utf8');
+const siteReplySource = fs.readFileSync(path.join(root,'scripts','site-agent-reply.js'),'utf8');
+check(siteReplyWorkflow.includes('QUANTDEUS_ADMIN_GITHUB_USERS'), 'site-agent-replies.yml', 'site reply workflow passes admin allowlist');
+check(siteReplySource.includes('trusted: trustedAction') && siteReplySource.includes('isAdminCommentAuthor()'), 'scripts/site-agent-reply.js', 'site repository mutations require owner/admin trusted action routing');
 
 const telegramWorkflow = fs.readFileSync(path.join(root,'.github','workflows','telegram-bot.yml'),'utf8');
 const telegramSource = fs.readFileSync(path.join(root,'scripts','telegram-bot.js'),'utf8');
