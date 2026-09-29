@@ -47,6 +47,7 @@
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
 - legacy_hermes_scheduler: `automatic 15-minute Hermes fleet pulse retired; .github/workflows/hermes-office-cron.yml is workflow_dispatch-only fallback; scheduled autonomy belongs to OpenClaw`
+- qa_self_heal: `bounded autonomous repair: site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
 - scheduled_workflows:
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
   - `06:27 UTC — QuantDeus Swarm Secretary`
@@ -55,12 +56,14 @@
   - `06:47 UTC — QuantDeus QA Triad`
   - `every 5 minutes — QuantDeus Telegram GitHub Bot`
   - `hourly at minute 0 — QuantDeus Hourly OpenClaw Swarm`
-- cron_cadence_rule: `Telegram bot polling every 5 minutes; GitHub Actions triggers the Vercel OpenClaw swarm hourly; health/QA/research workflows remain staggered daily unless their own workflow says otherwise`
+  - `00:17/06:17/12:17/18:17 UTC — QuantDeus QA Self-Heal / site lane`
+  - `03:47/09:47/15:47/21:47 UTC — QuantDeus QA Self-Heal / Actions lane`
+- cron_cadence_rule: `Telegram bot polling every 5 minutes; GitHub Actions triggers the Vercel OpenClaw swarm hourly; bounded QA self-heal runs in staggered six-hour site/Actions lanes; health/research workflows remain staggered daily unless their own workflow says otherwise`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
 - contributor_growth_rule: `daily Cron maintains one active recruitment sprint and concrete contributor opportunities; invitations are personalized and never mass-sent automatically`
-- privileged_action_rule: `production publication, spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval`
+- privileged_action_rule: `production publication, spending, secrets, irreversible changes, sensitive outreach and third-party commitments require explicit human approval; standing CEO approval applies only to bounded QA self-heal PRs whose head starts qa/self-heal/ and whose QA Triad + Static Smoke checks are green`
 - github_role: `source of truth for doctrine, registries, task state, QA, execution and public Pages`
 - coordination_model: `GitHub Issues [SIGNAL]/[STRATEGY]/[TASK] + opt-in /take + Squad B for approved reversible execution`
 - media_rule: `verified success can become a content/education/replication package; media never upgrades evidence grade and participation remains voluntary`

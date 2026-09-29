@@ -1,0 +1,276 @@
+name: QuantDeus QA Self-Heal 🛠️
+
+on:
+  schedule:
+    # Site lane: 00:17 / 06:17 / 12:17 / 18:17 UTC.
+    - cron: '17 */6 * * *'
+    # Actions lane: 03:47 / 09:47 / 15:47 / 21:47 UTC.
+    - cron: '47 3-23/6 * * *'
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: Repair lane
+        required: false
+        type: choice
+        default: full
+        options:
+          - full
+          - site
+          - actions
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-qa-self-heal-${{ github.event.schedule || inputs.lane || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  self-heal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Collect local QA state
+        id: localqa
+        shell: bash
+        run: |
+          set +e
+          node scripts/qa/syntax-validator.js >/tmp/qd-self-heal-syntax.log 2>&1
+          syntax_rc=$?
+          node scripts/qa/contract-validator.js >/tmp/qd-self-heal-contract.log 2>&1
+          contract_rc=$?
+          node scripts/qa/openclaw-office-validator.js >/tmp/qd-self-heal-openclaw.log 2>&1
+          openclaw_rc=$?
+          {
+            echo "syntax_rc=$syntax_rc"
+            echo "contract_rc=$contract_rc"
+            echo "openclaw_rc=$openclaw_rc"
+          } >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Collect recent main Actions state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const token = process.env.GH_TOKEN;
+          const repo = process.env.GITHUB_REPOSITORY;
+          (async () => {
+            const r = await fetch('https://api.github.com/repos/' + repo + '/actions/runs?branch=main&per_page=40', {
+              headers: {
+                authorization: 'Bearer ' + token,
+                accept: 'application/vnd.github+json',
+                'x-github-api-version': '2022-11-28'
+              }
+            });
+            const raw = await r.text();
+            if (!r.ok) throw new Error('actions_state_' + r.status + ': ' + raw.slice(0,500));
+            const data = JSON.parse(raw);
+            const runs = (data.workflow_runs || []).map(x => ({
+              id: x.id,
+              name: x.name,
+              event: x.event,
+              status: x.status,
+              conclusion: x.conclusion,
+              head_sha: x.head_sha,
+              created_at: x.created_at,
+              updated_at: x.updated_at,
+              html_url: x.html_url
+            }));
+            fs.writeFileSync('/tmp/qd-actions-state.json', JSON.stringify({generated_at:new Date().toISOString(), runs}, null, 2));
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE
+
+      - name: Run bounded QA repair agent
+        id: heal
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+          INPUT_LANE: ${{ inputs.lane }}
+          SYNTAX_RC: ${{ steps.localqa.outputs.syntax_rc }}
+          CONTRACT_RC: ${{ steps.localqa.outputs.contract_rc }}
+          OPENCLAW_RC: ${{ steps.localqa.outputs.openclaw_rc }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const office = require('./scripts/openclaw-office-client');
+
+          function read(path, max = 14000) {
+            try { return fs.readFileSync(path, 'utf8').slice(-max); } catch { return ''; }
+          }
+          function parseDecision(text) {
+            const raw = String(text || '').trim();
+            try { return JSON.parse(raw); } catch {}
+            const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (fenced) return JSON.parse(fenced[1].trim());
+            throw new Error('QA self-heal decision must be strict JSON');
+          }
+
+          const schedule = String(process.env.EVENT_SCHEDULE || '');
+          const input = String(process.env.INPUT_LANE || '').trim();
+          const lane = input && input !== 'full'
+            ? input
+            : schedule === '17 */6 * * *'
+              ? 'site'
+              : schedule === '47 3-23/6 * * *'
+                ? 'actions'
+                : 'full';
+
+          const localState = {
+            syntax_rc: Number(process.env.SYNTAX_RC || 0),
+            contract_rc: Number(process.env.CONTRACT_RC || 0),
+            openclaw_rc: Number(process.env.OPENCLAW_RC || 0),
+            syntax_log: read('/tmp/qd-self-heal-syntax.log'),
+            contract_log: read('/tmp/qd-self-heal-contract.log'),
+            openclaw_log: read('/tmp/qd-self-heal-openclaw.log')
+          };
+          const actionsState = read('/tmp/qd-actions-state.json', 30000);
+
+          (async () => {
+            const result = await office.ask({
+              profile: 'qa-repair',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'QuantDeus autonomous QA self-heal cycle.',
+                  'Repair lane: ' + lane + '.',
+                  'Repository: quantdeus/quantdeus.github.io. Read fresh main before deciding.',
+                  '',
+                  'Local validator state:',
+                  JSON.stringify(localState),
+                  '',
+                  'Recent main GitHub Actions state:',
+                  actionsState,
+                  '',
+                  'Rules:',
+                  '1. Diagnose first; do not mutate until the root cause is identified.',
+                  '2. Site lane: inspect https://quantdeus.github.io/ and important public routes with Playwright, then inspect the relevant main files.',
+                  '3. Actions lane: inspect recent failures plus relevant workflow/scripts on main. Treat transient/cancelled runs as evidence to investigate, not automatic proof of a code defect.',
+                  '4. Full lane: cover both scopes, but still make at most one bounded repair.',
+                  '5. If healthy, or no deterministic safe repository repair exists, do not manufacture a change.',
+                  '6. If a repair is needed, use exactly one branch whose name starts qa/self-heal/. Never write directly to main.',
+                  '7. Keep the patch minimal (maximum 6 files) and create exactly one PR to main. Reuse/update an existing open qa/self-heal PR for the same root cause instead of duplicating it.',
+                  '8. Never weaken/bypass QA, branch protection, security checks, authentication, secret handling, or mission guardrails just to make a check green.',
+                  '9. Never expose/change secrets, spend money, register accounts, perform outreach, or make unrelated product/content edits.',
+                  '10. The workflow will merge only after independent QA Triad + Static Smoke checks are green.',
+                  '',
+                  'Return ONLY strict JSON:',
+                  '{"action":"none","reason":"verified healthy or concrete blocker"}',
+                  'or {"action":"pr","pr_number":123,"branch":"qa/self-heal/...","summary":"root cause and minimal repair"}',
+                  'or {"action":"issue","issue_number":123,"reason":"why human or broader work is required"}.'
+                ].join('\n')
+              }],
+              metadata: {
+                source: 'quantdeus-qa-self-heal',
+                repository: process.env.GITHUB_REPOSITORY,
+                lane,
+                schedule
+              }
+            });
+
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
+              throw new Error('QA self-heal did not receive trusted OpenClaw tools');
+            }
+            const decision = parseDecision(result.text);
+            if (!['none','pr','issue'].includes(decision.action)) throw new Error('Unsupported self-heal action');
+            if (decision.action === 'pr') {
+              const pr = Number(decision.pr_number);
+              const branch = String(decision.branch || '');
+              if (!Number.isInteger(pr) || pr <= 0) throw new Error('Invalid repair PR number');
+              if (!branch.startsWith('qa/self-heal/')) throw new Error('Repair PR branch is outside qa/self-heal/*');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'pr_number=' + pr + '\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'branch=' + branch + '\n');
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'action=' + decision.action + '\n');
+            fs.writeFileSync('/tmp/qd-self-heal-result.json', JSON.stringify({
+              timestamp: new Date().toISOString(),
+              lane,
+              runtime: result.runtime,
+              model: result.model,
+              decision
+            }, null, 2));
+            console.log(JSON.stringify({lane, decision}, null, 2));
+          })().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Guarded merge after independent green checks
+        if: steps.heal.outputs.action == 'pr'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.heal.outputs.pr_number }}
+          EXPECTED_BRANCH: ${{ steps.heal.outputs.branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr="$PR_NUMBER"
+          meta="$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json state,baseRefName,headRefName,headRefOid)"
+          state="$(jq -r .state <<<"$meta")"
+          base="$(jq -r .baseRefName <<<"$meta")"
+          head="$(jq -r .headRefName <<<"$meta")"
+          sha="$(jq -r .headRefOid <<<"$meta")"
+
+          test "$state" = "OPEN"
+          test "$base" = "main"
+          test "$head" = "$EXPECTED_BRANCH"
+          [[ "$head" == qa/self-heal/* ]]
+
+          echo "Waiting for independent qa + smoke checks on $sha"
+          green=0
+          for attempt in $(seq 1 24); do
+            checks="$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha/check-runs" --jq '.check_runs | map({name,status,conclusion,html_url})')"
+            qa_ok="$(jq '[.[] | select(.name=="qa" and .status=="completed" and (.conclusion=="success" or .conclusion=="neutral" or .conclusion=="skipped"))] | length' <<<"$checks")"
+            smoke_ok="$(jq '[.[] | select(.name=="smoke" and .status=="completed" and (.conclusion=="success" or .conclusion=="neutral" or .conclusion=="skipped"))] | length' <<<"$checks")"
+            hard_fail="$(jq '[.[] | select((.name=="qa" or .name=="smoke") and .status=="completed" and (.conclusion!="success" and .conclusion!="neutral" and .conclusion!="skipped"))] | length' <<<"$checks")"
+
+            if [ "$hard_fail" -gt 0 ]; then
+              echo "Critical QA check failed; leaving repair PR open."
+              jq . <<<"$checks"
+              exit 0
+            fi
+            if [ "$qa_ok" -gt 0 ] && [ "$smoke_ok" -gt 0 ]; then
+              green=1
+              break
+            fi
+            sleep 20
+          done
+
+          if [ "$green" -ne 1 ]; then
+            echo "Critical checks did not settle in time; leaving repair PR open."
+            exit 0
+          fi
+
+          latest_sha="$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
+          test "$latest_sha" = "$sha"
+          gh pr merge "$pr" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+
+      - name: Upload self-heal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-qa-self-heal
+          path: |
+            /tmp/qd-self-heal-*.log
+            /tmp/qd-actions-state.json
+            /tmp/qd-self-heal-result.json
+          if-no-files-found: warn
