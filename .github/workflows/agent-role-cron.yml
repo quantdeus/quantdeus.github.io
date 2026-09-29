@@ -9,6 +9,10 @@ on:
         description: Optional registered agent id
         required: false
         type: string
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/agent-role-cron.yml'
 
 permissions:
   contents: write
@@ -24,6 +28,7 @@ concurrency:
 
 jobs:
   role-cycle:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -100,4 +105,127 @@ jobs:
             if(decision.action==='pr' && !String(decision.branch||'').startsWith('automation/role/'+agent.id+'/')) throw new Error('Role PR branch outside allowed prefix');
             console.log(JSON.stringify({agent:agent.id,model:result.model,decision},null,2));
           })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          NODE
+
+
+  smoke-all-agents:
+    if: github.event_name == 'push'
+    name: smoke-${{ matrix.agent_id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        agent_id:
+          - coordinator
+          - seven-of-nine
+          - emh
+          - pillar-executor
+          - strategic-hub
+          - sherlock
+          - tuvok
+          - orchestrator
+          - energy
+          - justice
+          - unity
+          - space
+          - potential
+          - synthesis
+          - control-tower
+          - scout
+          - verifier
+          - analyst
+          - strategist
+          - guardian
+          - tasksmith
+          - archivist
+          - herald
+          - qa-syntax
+          - qa-contract
+          - qa-repair
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+      - name: Read-only trusted OpenClaw profile smoke
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_ID: ${{ matrix.agent_id }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const office = require('./scripts/openclaw-office-client');
+          const registry = JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));
+          const cron = JSON.parse(fs.readFileSync('coordination/agent-cron-map.json','utf8'));
+          const agent = registry.agents.find(a => a.id === process.env.AGENT_ID);
+          const slot = cron.agents.find(a => a.id === process.env.AGENT_ID);
+          if (!agent || !slot) throw new Error('Agent not fully registered: ' + process.env.AGENT_ID);
+
+          function parse(text) {
+            const raw = String(text || '').trim();
+            try { return JSON.parse(raw); } catch {}
+            const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (m) return JSON.parse(m[1].trim());
+            throw new Error('Smoke response must be strict JSON');
+          }
+
+          (async () => {
+            const result = await office.ask({
+              profile: agent.id,
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'QuantDeus ALL-AGENT read-only smoke test.',
+                  'Expected agent id: ' + agent.id,
+                  'Expected name: ' + agent.name,
+                  'Expected role: ' + agent.role,
+                  'Expected cron mission: ' + slot.mission,
+                  '',
+                  'This is diagnostic only. Do not create/update Issues, PRs, branches, files, comments, workflows, releases or any other external state.',
+                  'Use exactly ONE tool: github__list_branches for owner quantdeus and repo quantdeus.github.io. Do not call Playwright or any mutation tool.',
+                  'After the tool result, return ONLY strict JSON with this shape:',
+                  '{"ok":true,"agent_id":"' + agent.id + '","mission_ack":true,"github_mcp":"ok"}'
+                ].join('\n')
+              }],
+              metadata: {
+                source: 'quantdeus-all-agent-smoke',
+                repository: process.env.GITHUB_REPOSITORY,
+                agent_id: agent.id
+              }
+            });
+
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
+              throw new Error('Unexpected runtime: ' + result.runtime);
+            }
+            if (result.profile !== agent.id) {
+              throw new Error('Profile mismatch: expected ' + agent.id + ', got ' + result.profile);
+            }
+            const summary = result.raw?.tool_summary;
+            if (!summary || !Array.isArray(summary.tools) || !summary.tools.includes('github__list_branches') || Number(summary.failures || 0) !== 0) {
+              throw new Error('GitHub MCP smoke trace missing/failed: ' + JSON.stringify(summary));
+            }
+            const decision = parse(result.text);
+            if (decision.ok !== true || decision.agent_id !== agent.id || decision.mission_ack !== true || decision.github_mcp !== 'ok') {
+              throw new Error('Agent smoke acknowledgement invalid: ' + JSON.stringify(decision));
+            }
+            console.log(JSON.stringify({
+              ok: true,
+              agent: agent.id,
+              name: agent.name,
+              model: result.model,
+              runtime: result.runtime,
+              tool_summary: summary,
+              response: decision
+            }, null, 2));
+          })().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
           NODE
