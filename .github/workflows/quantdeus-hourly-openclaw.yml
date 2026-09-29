@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
       - name: Run one bounded OpenClaw swarm step
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
