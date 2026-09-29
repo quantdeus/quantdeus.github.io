@@ -49,7 +49,7 @@ async function checked(sandbox, args, label) {
 function trustedOfficeRequest(req, claims) {
   if (req.body?.execution_mode !== 'trusted-office') return false;
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
-  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw)\.yml(?:@|$)/.test(workflowRef);
+  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal)\.yml(?:@|$)/.test(workflowRef);
   return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
 }
 
