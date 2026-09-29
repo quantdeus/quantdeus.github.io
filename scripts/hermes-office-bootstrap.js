@@ -11,7 +11,7 @@ const officePath = path.join(repoRoot, 'coordination', 'hermes-office.json');
 const evolutionPath = path.join(repoRoot, 'coordination', 'hermes-evolution.json');
 const projectSkillsPath = path.join(repoRoot, '.hermes', 'skills');
 
-const BOOTSTRAP_SCHEMA = 4;
+const BOOTSTRAP_SCHEMA = 5;
 
 function fail(message) {
   console.error('[hermes-office] ' + message);
@@ -92,8 +92,22 @@ function canonicalConfig(agent, office, evolution) {
   const modelKeyEnv = process.env.HERMES_LOCAL_API_KEY
     ? 'HERMES_LOCAL_API_KEY'
     : (process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' : null);
+  const gatewayModels = [...new Set(
+    (process.env.HERMES_VERCEL_FALLBACK_MODELS || [
+      process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini',
+      'openai/gpt-oss-120b'
+    ].join(','))
+      .split(',')
+      .map(model => model.trim())
+      .filter(Boolean)
+  )].slice(0, 3);
+  const fallbackProviders = gatewayModels.map(model => ({ provider: 'ai-gateway', model }));
+  if (process.env.OPENROUTER_API_KEY && process.env.HERMES_OPENROUTER_MODEL) {
+    fallbackProviders.push({ provider: 'openrouter', model: process.env.HERMES_OPENROUTER_MODEL });
+  }
 
   const cfg = {
+    fallback_providers: fallbackProviders,
     quantdeus: {
       bootstrap_schema: BOOTSTRAP_SCHEMA,
       agent_id: agent.id,

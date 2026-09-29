@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { Sandbox } from '@vercel/sandbox';
+import { getVercelOidcToken } from '@vercel/oidc';
 
 const GITHUB_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
 const GITHUB_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
@@ -10,7 +11,28 @@ const SANDBOX_NAME = 'quantdeus-hermes-office';
 const REPO_URL = 'https://github.com/quantdeus/quantdeus.github.io.git';
 const MODEL = process.env.HERMES_CLOUD_MODEL || 'openai/gpt-oss-120b';
 const OPENROUTER_MODEL = process.env.HERMES_OPENROUTER_MODEL || 'openai/gpt-oss-120b';
+const VERCEL_GATEWAY_FALLBACK_MODELS = [...new Set(
+  (process.env.HERMES_VERCEL_FALLBACK_MODELS || [
+    process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini',
+    'openai/gpt-oss-120b'
+  ].join(','))
+    .split(',')
+    .map(model => model.trim())
+    .filter(Boolean)
+)].slice(0, 3);
 const MAX_PROMPT = 90000;
+
+function buildFallbackProviders(runtimeEnv) {
+  const models = [...new Set(
+    String(runtimeEnv.HERMES_VERCEL_FALLBACK_MODELS || '')
+      .split(',').map(model => model.trim()).filter(Boolean)
+  )].slice(0, 3);
+  const providers = models.map(model => ({ provider: 'ai-gateway', model }));
+  if (runtimeEnv.OPENROUTER_API_KEY) {
+    providers.push({ provider: 'openrouter', model: runtimeEnv.HERMES_OPENROUTER_MODEL || OPENROUTER_MODEL });
+  }
+  return providers;
+}
 
 let jwksCache = null;
 let jwksFetchedAt = 0;
@@ -297,7 +319,11 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths, model = MO
   if (result.exitCode !== 0) {
     throw new Error('hermes_run_failed_' + result.exitCode + ': ' + (stderr || stdout || 'no output').slice(0, 4000));
   }
-  return stdout.slice(0, 30000);
+  const fallbackNotice = (stdout + '\n' + stderr).match(/Provider fallback:\s*([^/\s]+)\/([^\s;]+)\s+unavailable;\s+using\s+([^/\s]+)\/([^\s]+?)\s+for this response\./i);
+  return {
+    text: stdout.slice(0, 30000),
+    fallback: fallbackNotice ? { provider: fallbackNotice[3], model: fallbackNotice[4] } : null
+  };
 }
 
 async function runModelFallback(prompt, baseUrl, apiKey, model) {
@@ -325,6 +351,57 @@ async function runModelFallback(prompt, baseUrl, apiKey, model) {
   const text = String(data?.choices?.[0]?.message?.content || '').trim();
   if (!text) throw new Error('model_fallback_empty_response');
   return text.slice(0, 30000);
+}
+
+async function runVercelAIGatewayFallback(messages) {
+  const token = await getVercelOidcToken();
+  const fallbackMessages = [
+    {
+      role: 'system',
+      content: [
+        'You are the text-only fallback for QuantDeus Hermes Office.',
+        'Hermes tools and MCP are unavailable in this fallback turn.',
+        'Do not claim to have performed GitHub, browser, Kanban, cron, or other external actions.',
+        'Use only the facts and instructions in the conversation; explain when an external action still needs Hermes.'
+      ].join(' ')
+    },
+    ...messages
+  ];
+  const failures = [];
+
+  for (const model of VERCEL_GATEWAY_FALLBACK_MODELS) {
+    try {
+      const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer ' + token,
+          'content-type': 'application/json',
+          accept: 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages: fallbackMessages,
+          temperature: 0.45,
+          max_tokens: 900
+        })
+      });
+      const raw = await response.text();
+      if (!response.ok) throw new Error('ai_gateway_fallback_failed_' + response.status + ': ' + raw.slice(0, 500));
+
+      let data;
+      try { data = JSON.parse(raw); }
+      catch { throw new Error('ai_gateway_fallback_non_json'); }
+
+      const text = String(data?.choices?.[0]?.message?.content || '').trim();
+      if (!text) throw new Error('ai_gateway_fallback_empty_response');
+      return { text: text.slice(0, 30000), model: data.model || model };
+    } catch (error) {
+      failures.push(String(error?.message || error).slice(0, 300));
+      console.warn('Vercel AI Gateway fallback failed for', model + ':', failures[failures.length - 1]);
+    }
+  }
+
+  throw new Error('vercel_ai_gateway_fallback_exhausted: ' + failures.join(' | '));
 }
 
 async function runHermesCronTicks(sandbox, runtimeEnv, paths) {
@@ -376,9 +453,21 @@ export default async function handler(req, res) {
     const runtimeEnv = {
       HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'custom',
       HERMES_MODEL: MODEL,
+      HERMES_OPENROUTER_MODEL: OPENROUTER_MODEL,
+      AI_GATEWAY_MODEL: process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini',
+      HERMES_VERCEL_FALLBACK_MODELS: process.env.HERMES_VERCEL_FALLBACK_MODELS || [
+        process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini',
+        'openai/gpt-oss-120b'
+      ].join(','),
       HERMES_TERMINAL_BACKEND: 'local',
       GITHUB_TOOLSETS: 'all'
     };
+    try {
+      // Hermes uses this short-lived project OIDC token as its AI Gateway bearer credential.
+      runtimeEnv.AI_GATEWAY_API_KEY = await getVercelOidcToken();
+    } catch (error) {
+      console.warn('Hermes AI Gateway credentials unavailable:', String(error?.message || error).slice(0, 300));
+    }
     if (modelBaseUrl) runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl;
     if (modelApiKey) runtimeEnv.HERMES_LOCAL_API_KEY = modelApiKey;
     if (openRouterApiKey) runtimeEnv.OPENROUTER_API_KEY = openRouterApiKey;
@@ -431,11 +520,28 @@ export default async function handler(req, res) {
     }
 
     await configureLocalModel(sandbox, profile, runtimeEnv, paths);
+    const profileConfig = paths.home + '/.hermes/profiles/' + profile + '/config.yaml';
+    const configWrite = await sandbox.runCommand({
+      cmd: 'bash',
+      args: ['-lc', 'python3 -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); d[\'fallback_providers\']=json.loads(sys.argv[2]); open(p,\'w\').write(json.dumps(d,indent=2)+\'\\n\')" "$1" "$2"', 'bash', profileConfig, JSON.stringify(buildFallbackProviders(runtimeEnv))],
+      cwd: paths.workdir,
+      env: runtimeEnv
+    });
+    if (configWrite.exitCode !== 0) throw new Error('hermes_fallback_config_write_failed');
     let text = '';
     let executionMode = 'hermes-agent';
+    let responseModel = MODEL;
     let primaryError = null;
     try {
-      text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
+      const primary = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
+      text = primary.text;
+      if (primary.fallback?.provider === 'ai-gateway') {
+        executionMode = 'hermes-ai-gateway-fallback';
+        responseModel = primary.fallback.model;
+      } else if (primary.fallback?.provider === 'openrouter') {
+        executionMode = 'hermes-openrouter-fallback';
+        responseModel = primary.fallback.model;
+      }
       if (!text) throw new Error('hermes_empty_response');
     } catch (error) {
       primaryError = error;
@@ -450,7 +556,7 @@ export default async function handler(req, res) {
           HERMES_MODEL: OPENROUTER_MODEL,
           OPENROUTER_API_KEY: openRouterApiKey
         };
-        text = await runHermes(
+        const openRouterResult = await runHermes(
           sandbox,
           profile,
           prompt,
@@ -459,9 +565,24 @@ export default async function handler(req, res) {
           OPENROUTER_MODEL,
           'openrouter'
         );
-        if (text) executionMode = 'hermes-openrouter-fallback';
+        text = openRouterResult.text;
+        if (text) {
+          executionMode = 'hermes-openrouter-fallback';
+          responseModel = openRouterResult.fallback?.model || OPENROUTER_MODEL;
+        }
       } catch (error) {
         console.warn('Hermes OpenRouter fallback failed:', String(error?.message || error).slice(0, 500));
+      }
+    }
+
+    if (!text) {
+      try {
+        const fallback = await runVercelAIGatewayFallback(messages);
+        text = fallback.text;
+        responseModel = fallback.model;
+        executionMode = 'vercel-ai-gateway-fallback';
+      } catch (error) {
+        console.warn('Vercel AI Gateway fallback exhausted:', String(error?.message || error).slice(0, 800));
       }
     }
 
@@ -469,6 +590,7 @@ export default async function handler(req, res) {
       console.warn('Hermes providers returned no answer; using direct configured model fallback.');
       executionMode = 'mistral-direct-fallback';
       text = await runModelFallback(prompt, modelBaseUrl, modelApiKey, MODEL);
+      responseModel = MODEL;
     }
 
     if (!text) throw primaryError || new Error('hermes_empty_response');
@@ -479,7 +601,7 @@ export default async function handler(req, res) {
       ok: true,
       mode: 'chat',
       provider: 'quantdeus-hermes-vercel-sandbox',
-      model: MODEL,
+      model: responseModel,
       profile,
       execution_mode: executionMode,
       text,

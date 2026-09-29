@@ -562,7 +562,15 @@ async function buildReply(agentId, query) {
         }
       });
       if (result) {
-        activeProvider = result.runtime === 'mistral-direct-fallback' ? 'mistral-direct-fallback' : 'hermes-office';
+        activeProvider = result.runtime === 'mistral-direct-fallback'
+          ? 'mistral-direct-fallback'
+          : result.runtime === 'vercel-ai-gateway-fallback'
+            ? 'vercel-ai-gateway'
+            : result.runtime === 'hermes-ai-gateway-fallback'
+              ? 'vercel-ai-gateway'
+            : result.runtime === 'hermes-openrouter-fallback'
+              ? 'openrouter'
+              : 'hermes-office';
         activeModel = result.model || agent.id;
         return { text: result.text, llm: true, agent, action: 'hermes_office' };
       }
