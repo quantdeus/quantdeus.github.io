@@ -101,17 +101,16 @@ export default async function handler(req, res) {
     const localKey = localKeyEnv ? String(process.env[localKeyEnv]) : '';
     const localBaseUrl = String(process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL || (localKeyEnv === 'OPENAI_API_KEY' ? 'https://api.openai.com/v1' : 'https://api.mistral.ai/v1')).replace(/\/+$/, '');
     const localModel = process.env.OPENCLAW_LOCAL_MODEL || process.env.HERMES_LOCAL_MODEL || (localKeyEnv === 'OPENAI_API_KEY' ? (process.env.HERMES_CLOUD_MODEL || 'gpt-5-mini') : 'mistral-small-latest');
-    if (!openRouterKey && !localKey) return res.status(503).json({ ok: false, error: 'openclaw_model_credentials_missing' });
     const providerDefs = {};
     const modelCandidates = [];
     if (vercelOidcToken) {
-      providerDefs['vercel-ai-gateway'] = {
+      providerDefs['quantdeus-vercel-gateway'] = {
         baseUrl: 'https://ai-gateway.vercel.sh/v1',
         api: 'openai-completions',
         apiKey: { source: 'env', provider: 'default', id: 'AI_GATEWAY_API_KEY' },
         models: VERCEL_GATEWAY_MODELS.map(id => ({ id, name: id, input: ['text'], contextWindow: 128000, maxTokens: 8192 }))
       };
-      for (const gatewayModel of VERCEL_GATEWAY_MODELS) modelCandidates.push(`vercel-ai-gateway/${gatewayModel}`);
+      for (const gatewayModel of VERCEL_GATEWAY_MODELS) modelCandidates.push(`quantdeus-vercel-gateway/${gatewayModel}`);
     }
     if (localKey) {
       providerDefs['quantdeus-local'] = {
@@ -132,18 +131,18 @@ export default async function handler(req, res) {
 
     // Keyless emergency inference remains INSIDE OpenClaw: the agent runtime,
     // state, prompt handling and execution contract are still OpenClaw.
-    providerDefs.pollinations = {
+    providerDefs['quantdeus-pollinations'] = {
       baseUrl: 'https://text.pollinations.ai/openai',
       api: 'openai-completions',
       apiKey: { source: 'env', provider: 'default', id: 'POLLINATIONS_API_KEY' },
       models: [{ id: 'openai-fast', name: 'openai-fast', input: ['text'], contextWindow: 32768, maxTokens: 4096 }]
     };
-    modelCandidates.push('pollinations/openai-fast');
+    modelCandidates.push('quantdeus-pollinations/openai-fast');
     const probeCandidates = [];
     if (vercelOidcToken) {
       for (const gatewayModel of VERCEL_GATEWAY_MODELS) {
         probeCandidates.push({
-          ref: `vercel-ai-gateway/${gatewayModel}`,
+          ref: `quantdeus-vercel-gateway/${gatewayModel}`,
           endpoint: 'https://ai-gateway.vercel.sh/v1/chat/completions',
           key: vercelOidcToken,
           model: gatewayModel
@@ -170,7 +169,7 @@ export default async function handler(req, res) {
       });
     }
     probeCandidates.push({
-      ref: 'pollinations/openai-fast',
+      ref: 'quantdeus-pollinations/openai-fast',
       endpoint: 'https://text.pollinations.ai/openai/chat/completions',
       key: 'anonymous',
       model: 'openai-fast'
@@ -203,10 +202,10 @@ export default async function handler(req, res) {
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
     const requestId = crypto.randomUUID();
-    const configPath = `${home}/.openclaw/quantdeus-smoke.json`;
     const requestsDir = `${home}/.openclaw/requests`;
+    const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
     const promptPath = `${requestsDir}/quantdeus-prompt-${requestId}.txt`;
-    ephemeralFiles = [promptPath];
+    ephemeralFiles = [configPath, promptPath];
     const statePath = `${home}/.openclaw/quantdeus-state`;
     for (const dir of [`${home}/.openclaw`, requestsDir, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
     const config = {
@@ -323,7 +322,7 @@ export default async function handler(req, res) {
     const modelArgs = ['--model', model, ...fallbackModels.flatMap(ref => ['--fallback', ref])];
     const run = await sandbox.runCommand({
       cmd: 'flock',
-      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--state-dir', statePath, '--cwd', workdir, ...modelArgs, '--timeout', '180', '--json', '--message-file', promptPath],
+      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', workdir, ...modelArgs, '--timeout', '180', '--json', '--message-file', promptPath],
       cwd: workdir,
       env: runtimeEnv
     });
