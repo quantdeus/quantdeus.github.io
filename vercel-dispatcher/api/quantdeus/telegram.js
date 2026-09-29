@@ -140,9 +140,17 @@ async function setupWebhook(req, res) {
 
   await telegram(botToken, 'setWebhook', webhookPayload);
   const info = await telegram(botToken, 'getWebhookInfo');
+  const llmProbe = await chatCompletion(
+    'You are a health check for the QuantDeus Telegram homunculus runtime. Return a short plain-text success marker.',
+    'Reply with exactly TELEGRAM_LLM_OK'
+  );
 
   return res.status(200).json({
     ok: true,
+    llm_smoke: {
+      ok: Boolean(llmProbe),
+      preview: String(llmProbe || '').slice(0, 120)
+    },
     bot: {
       id: me.id,
       username: me.username || null,
