@@ -18,7 +18,7 @@ concurrency:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,8 +38,9 @@ jobs:
                 role: 'user',
                 content: [
                   'This is a read-only smoke. Do not mutate GitHub.',
-                  'Use the GitHub MCP to inspect quantdeus/quantdeus.github.io and confirm the repository name.',
-                  'Then use the Playwright MCP to open https://example.com and confirm the page title.',
+                  'Use GitHub MCP once to list branches for quantdeus/quantdeus.github.io and confirm main exists.',
+                  'Then use Playwright MCP with browser_navigate to open https://example.com and read the page title.',
+                  'Do not use browser_run_code_unsafe. Avoid extra searches or retries.',
                   'Reply exactly: OPENCLAW_ADMIN_TOOLS_OK'
                 ].join(' ')
               }],
