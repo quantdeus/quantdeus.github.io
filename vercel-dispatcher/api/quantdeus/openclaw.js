@@ -56,11 +56,27 @@ export default async function handler(req, res) {
     const localBaseUrl = String(process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL || (localKeyEnv === 'OPENAI_API_KEY' ? 'https://api.openai.com/v1' : 'https://api.mistral.ai/v1')).replace(/\/+$/, '');
     const localModel = process.env.OPENCLAW_LOCAL_MODEL || process.env.HERMES_LOCAL_MODEL || (localKeyEnv === 'OPENAI_API_KEY' ? (process.env.HERMES_CLOUD_MODEL || 'gpt-5-mini') : 'mistral-small-latest');
     if (!openRouterKey && !localKey) return res.status(503).json({ ok: false, error: 'openclaw_model_credentials_missing' });
-    const providerId = openRouterKey ? 'openrouter' : 'quantdeus-local';
-    const model = openRouterKey ? `openrouter/${OPENROUTER_MODEL}` : `${providerId}/${localModel}`;
-    const modelConfig = openRouterKey
-      ? { providers: { openrouter: { apiKey: { source: 'env', provider: 'default', id: 'OPENROUTER_API_KEY' }, baseUrl: 'https://openrouter.ai/api/v1' } } }
-      : { mode: 'merge', providers: { [providerId]: { baseUrl: localBaseUrl, api: 'openai-completions', apiKey: { source: 'env', provider: 'default', id: localKeyEnv }, models: [{ id: localModel, name: localModel, input: ['text'], contextWindow: 32768, maxTokens: 8192 }] } } };
+    const providerDefs = {};
+    const modelCandidates = [];
+    if (localKey) {
+      providerDefs['quantdeus-local'] = {
+        baseUrl: localBaseUrl,
+        api: 'openai-completions',
+        apiKey: { source: 'env', provider: 'default', id: localKeyEnv },
+        models: [{ id: localModel, name: localModel, input: ['text'], contextWindow: 32768, maxTokens: 8192 }]
+      };
+      modelCandidates.push(`quantdeus-local/${localModel}`);
+    }
+    if (openRouterKey) {
+      providerDefs.openrouter = {
+        apiKey: { source: 'env', provider: 'default', id: 'OPENROUTER_API_KEY' },
+        baseUrl: 'https://openrouter.ai/api/v1'
+      };
+      modelCandidates.push(`openrouter/${OPENROUTER_MODEL}`);
+    }
+    const model = modelCandidates[0];
+    const fallbackModels = modelCandidates.slice(1);
+    const modelConfig = { mode: 'merge', providers: providerDefs };
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
     if (!prompt) return res.status(400).json({ ok: false, error: 'messages_required' });
@@ -79,11 +95,45 @@ export default async function handler(req, res) {
     const config = {
       models: modelConfig,
       tools: { deny: ['*'] },
-      agents: { defaults: { workspace: workdir, model: { primary: model } } }
+      agents: { defaults: { workspace: workdir, model: { primary: model, fallbacks: fallbackModels } } }
     };
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
-    const runtimeKeyEnv = openRouterKey ? 'OPENROUTER_API_KEY' : localKeyEnv;
-    const runtimeKey = openRouterKey || localKey;
+    const runtimeEnv = {};
+    if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
+    if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
+
+    // Bootstrap the persistent workspace once so OpenClaw has canonical identity + memory files.
+    const baselineMarker = `${statePath}/.quantdeus-baseline-${OPENCLAW_RUNTIME_VERSION}`;
+    const baselineCheck = await sandbox.runCommand({ cmd: 'test', args: ['-f', baselineMarker] });
+    if (baselineCheck.exitCode !== 0) {
+      const baseline = await sandbox.runCommand({
+        cmd: 'openclaw',
+        args: ['setup', '--baseline', '--workspace', workdir],
+        cwd: workdir,
+        env: {
+          ...runtimeEnv,
+          OPENCLAW_HOME: home,
+          OPENCLAW_STATE_DIR: statePath,
+          OPENCLAW_CONFIG_PATH: configPath,
+          CI: '1'
+        }
+      });
+      console.log('[openclaw-baseline] exit=' + baseline.exitCode + ' tail=' + ((await baseline.stdout()) || (await baseline.stderr())).slice(-1600));
+      if (baseline.exitCode === 0) await sandbox.runCommand({ cmd: 'touch', args: [baselineMarker] });
+    }
+
+    // Ensure the canonical Markdown memory surface exists even when baseline preserved an authored workspace.
+    const memoryDir = `${workdir}/memory`;
+    await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', memoryDir] });
+    const memoryFiles = [
+      { path: `${workdir}/MEMORY.md`, content: Buffer.from('# QuantDeus OpenClaw Memory\n\nPersistent operational memory for the QuantDeus OpenClaw Office.\n') },
+      { path: `${workdir}/USER.md`, content: Buffer.from('# User\n\nQuantDeus CEO / human operator. Human instructions override agent preferences.\n') },
+      { path: `${workdir}/AGENTS.md`, content: Buffer.from('# QuantDeus OpenClaw Office\n\nUse MEMORY.md and memory/*.md as the canonical workspace memory system. GitHub quantdeus/quantdeus.github.io remains project source of truth.\n') }
+    ];
+    for (const file of memoryFiles) {
+      const exists = await sandbox.runCommand({ cmd: 'test', args: ['-f', file.path] });
+      if (exists.exitCode !== 0) await sandbox.writeFiles([file]);
+    }
 
     // One-time self-heal for the persistent Vercel Sandbox state on this OpenClaw release.
     // Official OpenClaw recovery is `doctor --fix`; follow it with structured lint/doctor verification.
@@ -92,7 +142,7 @@ export default async function handler(req, res) {
     let doctor = { ran: false, status: 'already-repaired', version: OPENCLAW_RUNTIME_VERSION };
     if (markerCheck.exitCode !== 0) {
       const doctorEnv = {
-        [runtimeKeyEnv]: runtimeKey,
+        ...runtimeEnv,
         OPENCLAW_HOME: home,
         OPENCLAW_STATE_DIR: statePath,
         OPENCLAW_CONFIG_PATH: configPath,
@@ -123,22 +173,28 @@ export default async function handler(req, res) {
         doctor_tail: (checkStdout || checkStderr).slice(-2600)
       };
       console.log('[openclaw-doctor] ' + JSON.stringify(doctor));
-      if (fix.exitCode === 0 && check.exitCode === 0) {
+      if (fix.exitCode === 0) {
         await sandbox.runCommand({ cmd: 'touch', args: [doctorMarker] });
-        doctor.status = 'healthy';
+        doctor.status = check.exitCode === 0 ? 'healthy' : 'repaired-with-findings';
       } else {
         doctor.status = 'needs-attention';
       }
     }
 
-    const run = await sandbox.runCommand({ cmd: 'openclaw', args: ['agent', 'exec', '--config', configPath, '--state-dir', statePath, '--cwd', workdir, '--model', model, '--timeout', '240', '--json', '--message-file', promptPath], cwd: workdir, env: { [runtimeKeyEnv]: runtimeKey } });
+    const agentLock = `${statePath}/.quantdeus-agent.lock`;
+    const run = await sandbox.runCommand({
+      cmd: 'flock',
+      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--state-dir', statePath, '--cwd', workdir, '--timeout', '240', '--json', '--message-file', promptPath],
+      cwd: workdir,
+      env: runtimeEnv
+    });
     const raw = await text(run);
     await sandbox.runCommand({ cmd: 'rm', args: ['-f', configPath, promptPath] });
     if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: ${raw.slice(-1800)}`);
     const result = JSON.parse(raw);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
     await sandbox.stop();
-    return res.status(200).json({ ok: true, provider: 'quantdeus-openclaw-vercel-sandbox', runtime: 'openclaw', model: result.model || model, execution_mode: 'openclaw-agent-exec-no-tools', doctor, text: result.final.trim(), github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository } });
+    return res.status(200).json({ ok: true, provider: 'quantdeus-openclaw-vercel-sandbox', runtime: 'openclaw', model: result.model || model, configured_primary: model, configured_fallbacks: fallbackModels, execution_mode: 'openclaw-agent-exec-no-tools', doctor, text: result.final.trim(), github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository } });
   } catch (error) {
     const message = String(error?.message || error);
     console.error('QuantDeus OpenClaw error:', message);
