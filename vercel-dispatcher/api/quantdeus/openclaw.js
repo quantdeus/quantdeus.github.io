@@ -55,7 +55,7 @@ function trustedOfficeRequest(req, claims) {
 
 async function probeChatCandidate(candidate, requireTools = false) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), requireTools ? 20000 : 10000);
+  const timer = setTimeout(() => controller.abort(), requireTools ? 30000 : 10000);
   try {
     const headers = {
       authorization: 'Bearer ' + candidate.key,
@@ -90,76 +90,120 @@ async function probeChatCandidate(candidate, requireTools = false) {
       };
     }
 
-    const probeTool = {
-      type: 'function',
-      function: {
-        name: 'quantdeus_probe_ping',
-        description: 'Capability probe. Call this tool exactly once.',
-        parameters: { type: 'object', properties: {}, additionalProperties: false }
+    const probeTools = [
+      {
+        type: 'function',
+        function: {
+          name: 'quantdeus_probe_step_one',
+          description: 'Sequential capability probe, first step. Call this first and exactly once.',
+          parameters: { type: 'object', properties: {}, additionalProperties: false }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'quantdeus_probe_step_two',
+          description: 'Sequential capability probe, second step. Call this only after step one returns.',
+          parameters: { type: 'object', properties: {}, additionalProperties: false }
+        }
       }
+    ];
+    const probePrompt = {
+      role: 'user',
+      content: 'Call quantdeus_probe_step_one exactly once. After its tool result, call quantdeus_probe_step_two exactly once. After the second tool result, reply exactly PROBE_DONE and do not call any more tools.'
     };
-    const probePrompt = { role: 'user', content: 'Call the quantdeus_probe_ping tool exactly once.' };
+    const normalizeToolCall = (message, expectedName) => {
+      const calls = message?.tool_calls;
+      if (!Array.isArray(calls) || calls.length !== 1) return null;
+      const call = calls[0];
+      if (
+        call?.type !== 'function' ||
+        call?.function?.name !== expectedName ||
+        typeof call?.function?.arguments !== 'string' ||
+        typeof call?.id !== 'string' ||
+        !call.id
+      ) return null;
+      return {
+        id: call.id,
+        type: 'function',
+        function: { name: expectedName, arguments: call.function.arguments }
+      };
+    };
+
     const first = await request({
       model: candidate.model,
       messages: [probePrompt],
       temperature: 0,
       max_tokens: 64,
-      tools: [probeTool],
+      tools: probeTools,
       tool_choice: 'required'
     });
     if (!first.response.ok) {
       return { ref: candidate.ref, ok: false, status: first.response.status, detail: first.raw.slice(0, 300) };
     }
-
     const firstMessage = first.data?.choices?.[0]?.message;
-    const toolCalls = firstMessage?.tool_calls;
-    const pingCall = Array.isArray(toolCalls) && toolCalls.find(call =>
-      call?.type === 'function' &&
-      call?.function?.name === 'quantdeus_probe_ping' &&
-      typeof call?.function?.arguments === 'string' &&
-      typeof call?.id === 'string' &&
-      call.id.length > 0
-    );
-    if (!pingCall) {
-      return { ref: candidate.ref, ok: false, status: first.response.status, detail: 'missing_or_malformed_tool_call' };
+    const firstCall = normalizeToolCall(firstMessage, 'quantdeus_probe_step_one');
+    if (!firstCall) {
+      return { ref: candidate.ref, ok: false, status: first.response.status, detail: 'first_tool_call_missing_or_malformed' };
     }
-
-    const assistantToolCall = {
+    const assistantFirst = {
       role: 'assistant',
       content: typeof firstMessage?.content === 'string' ? firstMessage.content : null,
-      tool_calls: [{
-        id: pingCall.id,
-        type: 'function',
-        function: {
-          name: 'quantdeus_probe_ping',
-          arguments: pingCall.function.arguments
-        }
-      }]
+      tool_calls: [firstCall]
     };
+
     const second = await request({
       model: candidate.model,
       messages: [
         probePrompt,
-        assistantToolCall,
-        { role: 'tool', tool_call_id: pingCall.id, content: 'PONG' },
-        { role: 'user', content: 'The tool result is complete. Reply with exactly PROBE_DONE and do not call any tool.' }
+        assistantFirst,
+        { role: 'tool', tool_call_id: firstCall.id, content: 'STEP_ONE_OK' }
+      ],
+      temperature: 0,
+      max_tokens: 64,
+      tools: probeTools,
+      tool_choice: 'required'
+    });
+    if (!second.response.ok) {
+      return { ref: candidate.ref, ok: false, status: second.response.status, detail: second.raw.slice(0, 300) };
+    }
+    const secondMessage = second.data?.choices?.[0]?.message;
+    const secondCall = normalizeToolCall(secondMessage, 'quantdeus_probe_step_two');
+    if (!secondCall) {
+      return { ref: candidate.ref, ok: false, status: second.response.status, detail: 'second_tool_call_missing_or_malformed' };
+    }
+    const assistantSecond = {
+      role: 'assistant',
+      content: typeof secondMessage?.content === 'string' ? secondMessage.content : null,
+      tool_calls: [secondCall]
+    };
+
+    const third = await request({
+      model: candidate.model,
+      messages: [
+        probePrompt,
+        assistantFirst,
+        { role: 'tool', tool_call_id: firstCall.id, content: 'STEP_ONE_OK' },
+        assistantSecond,
+        { role: 'tool', tool_call_id: secondCall.id, content: 'STEP_TWO_OK' },
+        { role: 'user', content: 'The second tool result is complete. Reply with exactly PROBE_DONE and do not call any tool.' }
       ],
       temperature: 0,
       max_tokens: 32,
-      tools: [probeTool],
+      tools: probeTools,
       tool_choice: 'none'
     });
-    const secondMessage = second.data?.choices?.[0]?.message;
-    const finalText = typeof secondMessage?.content === 'string' ? secondMessage.content.trim() : '';
-    const extraToolCalls = Array.isArray(secondMessage?.tool_calls) && secondMessage.tool_calls.length > 0;
-    const ok = second.response.ok && finalText === 'PROBE_DONE' && !extraToolCalls;
+    const thirdMessage = third.data?.choices?.[0]?.message;
+    const finalText = typeof thirdMessage?.content === 'string' ? thirdMessage.content.trim() : '';
+    const extraToolCalls = Array.isArray(thirdMessage?.tool_calls) && thirdMessage.tool_calls.length > 0;
+    const ok = third.response.ok && finalText === 'PROBE_DONE' && !extraToolCalls;
     return {
       ref: candidate.ref,
       ok,
-      status: second.response.status,
+      status: third.response.status,
       detail: ok
-        ? 'tool_roundtrip_ok'
-        : (second.response.ok ? 'tool_roundtrip_incomplete_or_malformed' : second.raw.slice(0, 300))
+        ? 'sequential_tool_roundtrip_ok'
+        : (third.response.ok ? 'sequential_tool_roundtrip_incomplete_or_malformed' : third.raw.slice(0, 300))
     };
   } catch (error) {
     return {
@@ -172,7 +216,6 @@ async function probeChatCandidate(candidate, requireTools = false) {
     clearTimeout(timer);
   }
 }
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   let sandbox;
@@ -297,7 +340,7 @@ export default async function handler(req, res) {
       : modelCandidates;
     const model = orderedModels[0];
     // Trusted MCP runs must never fall through to a model that did not pass
-    // the full tool-call -> tool-result -> final-answer round-trip gate.
+    // two sequential tool calls -> two tool results -> final-answer round-trip.
     const fallbackModels = trustedOffice ? [] : orderedModels.slice(1);
     const modelConfig = { mode: 'replace', providers: providerDefs };
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
