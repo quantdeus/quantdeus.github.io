@@ -6,6 +6,8 @@ const doctrine = JSON.parse(fs.readFileSync(path.join(root,'coordination','civil
 const agents = JSON.parse(fs.readFileSync(path.join(root,'coordination','agents.json'),'utf8'));
 const homunculi = JSON.parse(fs.readFileSync(path.join(root,'coordination','homunculi.json'),'utf8'));
 const cronContext = fs.readFileSync(path.join(root,'coordination','cron-context.md'),'utf8');
+const agentCron = JSON.parse(fs.readFileSync(path.join(root,'coordination','agent-cron-map.json'),'utf8'));
+const livingManifest = fs.readFileSync(path.join(root,'coordination','manifesto-living.md'),'utf8');
 
 const requiredSources = ['thrive-1','thrive-2','venus-project','earth-renovation','gravity-frontiers'];
 const requiredManifests = ['neon-horizon-v3','epidemiya-dobra-2y'];
@@ -17,7 +19,7 @@ const requiredPrinciples = [
   'prototype-before-scale',
   'space-capability-must-also-create-earthside-value'
 ];
-const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml'];
+const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml'];
 
 const failures = [];
 const checks = [];
@@ -44,6 +46,13 @@ check(Boolean(doctrine.cultural_layer?.aesthetics?.synthwave),'doctrine','Synthw
 check(Boolean(doctrine.cultural_layer?.aesthetics?.frutiger_aero),'doctrine','Frutiger Aero cultural layer declared');
 check(doctrine.cultural_layer?.status==='cultural-and-design-layer-not-evidence-source','doctrine','culture cannot substitute for evidence');
 check(doctrine.cron_policy?.required_check==='node scripts/mission-alignment.js','doctrine','cron guard points to mission alignment');
+check(doctrine.adaptive_manifest?.source==='coordination/manifesto-living.md','doctrine','living manifesto adaptive layer declared');
+check(doctrine.agent_cron?.registry==='coordination/agent-cron-map.json','doctrine','agent cron registry declared');
+check(livingManifest.includes('QuantDeus Living Manifest'),'manifesto-living','living manifesto exists and is recognizable');
+const cronIds=(agentCron.agents||[]).map(a=>a.id);
+const canonicalIds=(agents.agents||[]).map(a=>a.id);
+check(cronIds.length===26&&new Set(cronIds).size===26,'agent-cron-map','26 unique agent cron assignments');
+check(JSON.stringify([...cronIds].sort())===JSON.stringify([...canonicalIds].sort()),'agent-cron-map','cron assignments cover canonical agent ids');
 
 for(const [name,registry] of [['agents',agents],['homunculi',homunculi]]){
   check(registry.doctrine?.version===doctrine.version,name,'inherits canonical doctrine version');
