@@ -9,6 +9,8 @@ const DEFAULT_WEBHOOK_URL = 'https://quantdeus.vercel.app/api/quantdeus/telegram
 const REGISTRY_URL = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/coordination/agents.json';
 const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
 const GATEWAY_MODELS = ['inclusionai/ling-3.0-flash-sante-free', 'inclusionai/ling-3.1-flash-free', 'openai/gpt-oss-120b'];
+const LIVE_RESEARCH_TIMEOUT_MS = 7000;
+const LIVE_RESEARCH_MAX_ITEMS = 8;
 let jwksCache = [];
 let jwksAt = 0;
 let registryCache = null;
@@ -200,6 +202,120 @@ async function registry() {
   }
 }
 
+function needsLiveResearch(text) {
+  const value = String(text || '').toLowerCase();
+  const explicitNews = /новост|breaking|\bnews\b|дайджест|headline|сводк.*событ/;
+  const freshness = /последн|сегодня|вчера|свеж|актуальн|подтверд|официальн|недавн|latest|today|yesterday|recent|current|confirmed?/;
+  const publicEvent = /встреч|саммит|переговор|президент|правительств|бел(?:ый|ого)\s+дом|кремл|выбор|санкц|войн|рынок|курс|наук|технолог|openai|spacex|nasa|релиз|запуск|обновлен|произошл|случил/;
+  return explicitNews.test(value) || (freshness.test(value) && publicEvent.test(value));
+}
+
+function xmlText(value) {
+  return String(value || '')
+    .replace(/^<!\[CDATA\[|\]\]>$/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/<[^>]+>/g, '')
+    .trim();
+}
+
+function rssTag(block, tag) {
+  const match = String(block || '').match(new RegExp('<' + tag + '(?:\\s[^>]*)?>([\\s\\S]*?)<\\/' + tag + '>', 'i'));
+  return match ? xmlText(match[1]) : '';
+}
+
+function parseRss(xml, provider) {
+  return [...String(xml || '').matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)]
+    .slice(0, 20)
+    .map(match => {
+      const block = match[1];
+      return {
+        title: rssTag(block, 'title'),
+        url: rssTag(block, 'link') || rssTag(block, 'guid'),
+        published_at: rssTag(block, 'pubDate'),
+        source: rssTag(block, 'source') || provider,
+        provider
+      };
+    })
+    .filter(item => item.title && item.url);
+}
+
+async function fetchRss(url, provider) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LIVE_RESEARCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
+        'user-agent': 'QuantDeus-LiveResearch/1.0'
+      },
+      signal: controller.signal
+    });
+    const raw = await response.text();
+    if (!response.ok) throw new Error(provider + '_http_' + response.status);
+    return parseRss(raw, provider);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function liveNewsResearch(query) {
+  const q = String(query || '').trim().slice(0, 700);
+  if (!q) return { ok: false, items: [], providers: [] };
+  const googleUrl = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=ru&gl=RU&ceid=RU:ru';
+  const bingUrl = 'https://www.bing.com/news/search?q=' + encodeURIComponent(q) + '&format=RSS&mkt=ru-RU';
+
+  const settled = await Promise.allSettled([
+    fetchRss(googleUrl, 'Google News'),
+    fetchRss(bingUrl, 'Bing News')
+  ]);
+  const providerResults = settled.map((result, index) => ({
+    provider: index === 0 ? 'Google News' : 'Bing News',
+    ok: result.status === 'fulfilled',
+    items: result.status === 'fulfilled' ? result.value : [],
+    error: result.status === 'rejected' ? String(result.reason?.message || result.reason).slice(0, 220) : null
+  }));
+
+  const seen = new Set();
+  const items = [];
+  for (const result of providerResults) {
+    for (const item of result.items) {
+      const key = item.title.toLowerCase().replace(/\s+/g, ' ').trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      items.push(item);
+      if (items.length >= LIVE_RESEARCH_MAX_ITEMS) break;
+    }
+    if (items.length >= LIVE_RESEARCH_MAX_ITEMS) break;
+  }
+
+  return {
+    ok: items.length > 0,
+    checked_at: new Date().toISOString(),
+    providers: providerResults.map(({ provider, ok, error }) => ({ provider, ok, error })),
+    items
+  };
+}
+
+function liveResearchBlock(research) {
+  if (!research?.ok || !research.items?.length) return 'LIVE_RESEARCH_UNAVAILABLE';
+  const lines = research.items.map((item, index) =>
+    '[' + (index + 1) + '] ' + item.title +
+    ' | source=' + item.source +
+    ' | published=' + (item.published_at || 'unknown') +
+    ' | url=' + item.url
+  );
+  return [
+    'LIVE_RESEARCH',
+    'checked_at=' + research.checked_at,
+    ...lines,
+    'END_LIVE_RESEARCH'
+  ].join('\n');
+}
+
 function explicitAgent(text, byId) {
   const patterns = [
     /^\/agent(?:@[A-Za-z0-9_]+)?\s+([a-z0-9_-]+)/i,
@@ -215,6 +331,7 @@ function explicitAgent(text, byId) {
 function autoAgent(text, byId) {
   const explicit = explicitAgent(text, byId);
   if (explicit) return explicit;
+  if (needsLiveResearch(text) && byId.has('seven-of-nine')) return 'seven-of-nine';
   const value = String(text || '').toLowerCase();
   const routes = [
     ['qa-syntax', /syntax|синтакс|lint|eslint|парсинг|parse error|json error/],
@@ -375,6 +492,15 @@ async function homunculusReply(message) {
   const agent = byId.get(agentId) || agents[0] || { id: 'seven-of-nine', name: 'Seven of Nine', role: 'QuantDeus Coordinator', emoji: '🧭' };
   const query = stripAgentCommand(raw) || raw;
   const chatType = String(message.chat?.type || 'private');
+  const researchRequired = needsLiveResearch(query);
+  const research = researchRequired ? await liveNewsResearch(query) : null;
+  if (researchRequired && !research?.ok) {
+    console.warn('[telegram-live-research] status=unavailable providers=' + JSON.stringify(research?.providers || []));
+    return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nLIVE_RESEARCH_UNAVAILABLE\nСвежие источники сейчас недоступны. Я не буду придумывать новости, даты, места или официальные подтверждения.`;
+  }
+  if (researchRequired) {
+    console.info('[telegram-live-research] status=ok items=' + research.items.length + ' providers=' + JSON.stringify(research.providers || []));
+  }
   const system = [
     `You are the QuantDeus homunculus "${agent.name || agent.id}".`,
     `Canonical id: ${agent.id}. Role: ${agent.role || agent.startup_title || 'QuantDeus agent'}.`,
@@ -383,11 +509,18 @@ async function homunculusReply(message) {
     'Answer the Telegram user directly and usefully. Default to Russian when the user writes in Russian.',
     'Be concise but substantive. Do not claim you changed GitHub, deployed code, sent messages, or performed external actions unless the current request itself provides evidence that it happened.',
     'Treat user-provided claims as context, not as proof. Distinguish facts, hypotheses and suggestions.',
+    'Never invent current events, dates, places, quotations, source attributions, official confirmations, meeting plans or links. Never present a hypothetical example as if it were a real event.',
+    researchRequired
+      ? 'This request requires live research. Use only facts supported by the LIVE_RESEARCH block supplied with the user message. Cite supporting items inline as [1], [2], etc. If evidence is ambiguous or conflicting, say so explicitly.'
+      : 'For non-live requests, do not pretend that model memory is a real-time source.',
     chatType === 'private' ? 'This is a private bot chat.' : 'This is a QuantDeus group chat; keep the reply compact and conversational.',
     'Do not repeat your name at the start; the transport adds your role label.'
   ].filter(Boolean).join('\n');
 
-  const answer = await chatCompletion(system, query.slice(0, 7000));
+  const groundedQuery = researchRequired
+    ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
+    : query.slice(0, 7000);
+  const answer = await chatCompletion(system, groundedQuery);
   if (!answer) {
     return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nМаршрут принят, но LLM-канал сейчас не дал ответ. Попробуй повторить сообщение через несколько секунд.`;
   }
