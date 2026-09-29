@@ -118,9 +118,7 @@ Bootstrap adds Microsoft's `@playwright/mcp@latest` to every profile. Use it for
 
 ### Evolution
 
-Each profile enables skills, browser, cron, code execution, delegation and connection management. Agent-created skills are security-scanned, writes remain autonomous, and the mutation ledger is enabled. Curator is configured for a daily idle review with consolidation/backups.
-
-Seven also receives a daily `QuantDeus Evolution Review` cron. It may make one bounded reversible improvement per run, including an Issue/PR or agent-local skill improvement, provided it verifies the external mutation.
+Each legacy Hermes profile keeps skills, browser, code execution, delegation and connection management. Unattended Hermes cron creation is disabled; scheduled autonomous QuantDeus execution belongs to the OpenClaw workflow lane. Agent-created skills are security-scanned, writes remain autonomous, and the mutation ledger remains available for manual legacy sessions.
 
 Project-local skills:
 - `quantdeus-autonomy`
@@ -142,7 +140,7 @@ Inference is keyless inside Vercel: the function passes its short-lived Vercel O
 
 Hermes profiles now configure the native `fallback_providers` chain: Vercel AI Gateway models first (`AI_GATEWAY_MODEL`, default `openai/gpt-5-mini`, then `openai/gpt-oss-120b`; override with `HERMES_VERCEL_FALLBACK_MODELS`, maximum three), then OpenRouter/GPT-OSS when an OpenRouter key is supplied for the turn. The route passes the short-lived Vercel project OIDC token as `AI_GATEWAY_API_KEY` only to the running Sandbox command; it is never written to profile config. Native Hermes failover keeps the active conversation and its tools/MCP. If the Hermes run still returns no answer, the endpoint retains the separate text-only Vercel AI Gateway fallback, which cannot claim external actions; the response records its successful model and `vercel-ai-gateway-fallback` execution mode.
 
-Vercel Sandbox is stopped after each request, so its in-process scheduler cannot stay alive. The scheduled GitHub Actions workflow `.github/workflows/hermes-office-cron.yml` calls the authenticated Hermes endpoint every 15 minutes; the persistent sandbox runs `hermes cron tick` for each canonical profile. Hermes jobs created by an agent therefore execute after their due time. Their output follows the delivery target configured on each job; chat delivery requires a configured Hermes platform target.
+Vercel Sandbox is stopped after each request, so its in-process scheduler cannot stay alive. Automatic Hermes fleet scheduling is retired. `.github/workflows/hermes-office-cron.yml` is retained only as a manual legacy fallback (`workflow_dispatch`) and the Vercel Hermes `cron_tick` route rejects scheduled events. The active unattended execution lane is `.github/workflows/quantdeus-hourly-openclaw.yml` → the authenticated Vercel OpenClaw Office. Native OpenClaw automations require a running OpenClaw Gateway and are not emulated through the legacy Hermes pulse.
 
 GitHub access is also short-lived. The calling GitHub Actions run passes its repository-scoped `GITHUB_TOKEN` to the Sandbox only for that Hermes turn, and the official remote GitHub MCP reads it from `MCP_GITHUB_API_KEY`. No long-lived GitHub token is written into the repository or persistent Hermes configuration.
 
