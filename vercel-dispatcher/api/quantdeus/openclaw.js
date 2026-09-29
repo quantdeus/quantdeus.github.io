@@ -269,9 +269,7 @@ export default async function handler(req, res) {
       },
       playwright: {
         command: 'npx',
-        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000'],
-        connectTimeout: 90,
-        timeout: 120
+        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000']
       }
     } : {};
     if (trustedOffice) {
