@@ -297,11 +297,23 @@ export default async function handler(req, res) {
       github: {
         transport: 'streamable-http',
         url: 'https://api.githubcopilot.com/mcp/',
-        headers: { Authorization: 'Bearer ' + githubToken }
+        headers: { Authorization: 'Bearer ' + githubToken },
+        toolFilter: {
+          include: [
+            'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
+            'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
+            'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
+            'create_branch', 'create_or_update_file', 'create_issue',
+            'add_issue_comment', 'create_pull_request', 'update_issue', 'update_pull_request'
+          ]
+        }
       },
       playwright: {
         command: 'npx',
-        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000']
+        args: ['-y', '@playwright/mcp@latest', '--headless', '--isolated', '--no-sandbox', '--browser=chromium', '--idle-timeout=120000'],
+        toolFilter: {
+          include: ['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']
+        }
       }
     } : {};
     if (trustedOffice) {
