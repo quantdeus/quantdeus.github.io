@@ -74,3 +74,26 @@ jobs:
             console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, smoke: result.text }));
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
+
+      - name: Record successful live MCP smoke
+        run: |
+          mkdir -p coordination/tests
+          cat > coordination/tests/openclaw-admin-live-smoke-latest.md <<EOF
+          # OpenClaw Admin Office live MCP smoke
+
+          - commit: ${GITHUB_SHA}
+          - run: ${GITHUB_RUN_ID}
+          - verified_at_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          - GitHub MCP: OPENCLAW_GITHUB_MCP_OK
+          - Playwright MCP: OPENCLAW_PLAYWRIGHT_MCP_OK
+          - production endpoint: https://quantdeus.vercel.app/api/quantdeus/openclaw
+          EOF
+          git config user.name "quantdeus-smoke[bot]"
+          git config user.email "quantdeus-smoke[bot]@users.noreply.github.com"
+          git add coordination/tests/openclaw-admin-live-smoke-latest.md
+          if git diff --cached --quiet; then
+            echo "Smoke evidence unchanged."
+          else
+            git commit -m "test(openclaw): record live MCP smoke pass"
+            git push
+          fi
