@@ -260,7 +260,7 @@ export default async function handler(req, res) {
       memory: { search: { enabled: false } },
       tools: trustedOffice ? trustedTools : publicTools,
       ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
-      agents: { defaults: { workspace: agentCwd, model: { primary: model, fallbacks: fallbackModels } } }
+      agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, model: { primary: model, fallbacks: fallbackModels } } }
     };
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
     const runtimeEnv = {};
@@ -373,7 +373,7 @@ export default async function handler(req, res) {
     const modelArgs = ['--model', model, ...fallbackModels.flatMap(ref => ['--fallback', ref])];
     const run = await sandbox.runCommand({
       cmd: 'flock',
-      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '180', '--json', '--message-file', promptPath],
+      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '240', '--json', '--message-file', promptPath],
       cwd: agentCwd,
       env: runtimeEnv
     });
