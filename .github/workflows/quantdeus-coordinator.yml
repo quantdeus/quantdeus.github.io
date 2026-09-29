@@ -1,4 +1,4 @@
-name: QuantDeus Swarm Secretary 🗂️
+name: QuantDeus Seven + Swarm Secretary 🖖🗂️
 
 on:
   schedule:
@@ -47,8 +47,8 @@ jobs:
           QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
         run: |
           node scripts/governance-gate.js
-          node scripts/coordinator.js
           node scripts/seven-of-nine.js
+          node scripts/coordinator.js
           node scripts/emh.js
           node scripts/sherlock.js
           node scripts/tuvok.js
