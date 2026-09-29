@@ -60,7 +60,9 @@ if (!routeSource.includes('model: responseModel')) throw new Error('Hermes route
 if (!routeSource.includes("x-quantdeus-github-token")) throw new Error('Hermes route must accept ephemeral repo token handoff');
 const siteReplySource = fs.readFileSync('scripts/site-agent-reply.js','utf8');
 if (!siteReplySource.includes("result.runtime === 'vercel-ai-gateway-fallback'")) throw new Error('Site agent must identify Vercel AI Gateway fallback accurately');
+if (!siteReplySource.includes("result.runtime === 'hermes-ai-gateway-fallback'")) throw new Error('Site agent must identify native Hermes AI Gateway fallback accurately');
 if (!siteReplySource.includes("result.runtime === 'hermes-openrouter-fallback'")) throw new Error('Site agent must identify Hermes OpenRouter fallback accurately');
+if (!routeSource.includes('Provider fallback:')) throw new Error('Hermes route must parse native fallback notice for actual provider/model attribution');
 console.log('Hermes Cloud PC contract OK: keyless OIDC + persistent Sandbox + GPT-OSS');
 
 const bootstrapSource = fs.readFileSync('scripts/hermes-office-bootstrap.js','utf8');
@@ -68,7 +70,12 @@ const vercelPackage = JSON.parse(fs.readFileSync('vercel-dispatcher/package.json
 if (!vercelPackage.dependencies?.['@vercel/oidc']) throw new Error('Vercel Hermes route must include the OIDC helper dependency');
 if (!bootstrapSource.includes("['hermes-cli', 'connections']")) throw new Error('Every Hermes profile must receive the connections toolset');
 if (!bootstrapSource.includes("['hermes-cli', 'kanban', 'connections']")) throw new Error('Seven must keep Kanban and receive the connections toolset');
-if (!bootstrapSource.includes('const BOOTSTRAP_SCHEMA = 4')) throw new Error('Hermes bootstrap schema must refresh every profile with the updated toolsets');
+if (!bootstrapSource.includes('const BOOTSTRAP_SCHEMA = 5')) throw new Error('Hermes bootstrap schema must refresh every profile with the updated toolsets');
+if (!bootstrapSource.includes('fallback_providers: fallbackProviders')) throw new Error('Hermes profile must declare its native provider fallback chain');
+if (!routeSource.includes('runtimeEnv.AI_GATEWAY_API_KEY = await getVercelOidcToken()')) throw new Error('Hermes native AI Gateway fallback requires ephemeral Vercel OIDC credentials');
+if (!routeSource.includes('buildFallbackProviders(runtimeEnv)')) throw new Error('Hermes profile fallback chain must include runtime-available providers');
+if (!routeSource.includes("provider: 'ai-gateway'")) throw new Error('Hermes native fallback must include Vercel AI Gateway');
+if (!routeSource.includes('primary.fallback.model')) throw new Error('Hermes route must report the model used by native provider failover');
 if (!bootstrapSource.includes('modelBaseUrl') || !bootstrapSource.includes('modelKeyEnv')) throw new Error('Every profile must receive runtime model endpoint and key-env references');
 
 const cronRunner = spawnSync(process.execPath, ['scripts/hermes-office-cron.js', '--dry-run'], { encoding: 'utf8' });
@@ -76,6 +83,47 @@ if (cronRunner.status !== 0) throw new Error('Hermes cron fleet dry-run failed: 
 const cronSummary = JSON.parse(cronRunner.stdout);
 if (!cronSummary.ok || cronSummary.profiles_checked !== ids.length || cronSummary.profiles_failed !== 0) {
   throw new Error('Hermes cron pulse dry-run must cover every canonical profile');
+}
+
+const bootstrapRoot = fs.mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'hermes-office-fallback-'));
+try {
+  const gatewayOnlyRoot = fs.mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'hermes-office-gateway-'));
+  const gatewayOnly = spawnSync(process.execPath, ['scripts/hermes-office-bootstrap.js'], {
+    encoding: 'utf8',
+    env: { ...process.env, HERMES_HOME: gatewayOnlyRoot }
+  });
+  try {
+    if (gatewayOnly.status !== 0) throw new Error('Hermes Gateway-only bootstrap failed');
+    const gatewayProfile = JSON.parse(fs.readFileSync(require('node:path').join(gatewayOnlyRoot, 'profiles', 'seven-of-nine', 'config.yaml'), 'utf8'));
+    if (!gatewayProfile.fallback_providers.some(entry => entry.provider === 'ai-gateway')) throw new Error('Hermes Gateway fallback should not depend on an OpenRouter key');
+    if (gatewayProfile.fallback_providers.some(entry => entry.provider === 'openrouter')) throw new Error('Hermes must not use OpenRouter unless a per-turn key is supplied');
+  } finally {
+    fs.rmSync(gatewayOnlyRoot, { recursive: true, force: true });
+  }
+
+  const boot = spawnSync(process.execPath, ['scripts/hermes-office-bootstrap.js'], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      HERMES_HOME: bootstrapRoot,
+      AI_GATEWAY_API_KEY: 'test-only-never-persist',
+      HERMES_VERCEL_FALLBACK_MODELS: 'openai/gpt-5-mini,openai/gpt-oss-120b',
+      HERMES_OPENROUTER_MODEL: 'openai/gpt-oss-120b',
+      OPENROUTER_API_KEY: 'test-only-openrouter'
+    }
+  });
+  if (boot.status !== 0) throw new Error('Hermes native fallback bootstrap failed: ' + String(boot.stderr || '').slice(0, 500));
+  const profile = JSON.parse(fs.readFileSync(require('node:path').join(bootstrapRoot, 'profiles', 'seven-of-nine', 'config.yaml'), 'utf8'));
+  const expected = [
+    { provider: 'ai-gateway', model: 'openai/gpt-5-mini' },
+    { provider: 'ai-gateway', model: 'openai/gpt-oss-120b' },
+    { provider: 'openrouter', model: 'openai/gpt-oss-120b' }
+  ];
+  if (JSON.stringify(profile.fallback_providers) !== JSON.stringify(expected)) throw new Error('Hermes native fallback providers/order mismatch');
+  const configText = fs.readFileSync(require('node:path').join(bootstrapRoot, 'profiles', 'seven-of-nine', 'config.yaml'), 'utf8');
+  if (configText.includes('test-only-never-persist') || configText.includes('test-only-openrouter')) throw new Error('Provider credentials must not persist in profile config');
+} finally {
+  fs.rmSync(bootstrapRoot, { recursive: true, force: true });
 }
 
 const cronSource = fs.readFileSync('scripts/hermes-office-cron.js','utf8');

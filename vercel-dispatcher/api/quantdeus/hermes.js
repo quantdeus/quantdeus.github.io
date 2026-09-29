@@ -22,6 +22,18 @@ const VERCEL_GATEWAY_FALLBACK_MODELS = [...new Set(
 )].slice(0, 3);
 const MAX_PROMPT = 90000;
 
+function buildFallbackProviders(runtimeEnv) {
+  const models = [...new Set(
+    String(runtimeEnv.HERMES_VERCEL_FALLBACK_MODELS || '')
+      .split(',').map(model => model.trim()).filter(Boolean)
+  )].slice(0, 3);
+  const providers = models.map(model => ({ provider: 'ai-gateway', model }));
+  if (runtimeEnv.OPENROUTER_API_KEY) {
+    providers.push({ provider: 'openrouter', model: runtimeEnv.HERMES_OPENROUTER_MODEL || OPENROUTER_MODEL });
+  }
+  return providers;
+}
+
 let jwksCache = null;
 let jwksFetchedAt = 0;
 
@@ -307,7 +319,11 @@ async function runHermes(sandbox, profile, prompt, runtimeEnv, paths, model = MO
   if (result.exitCode !== 0) {
     throw new Error('hermes_run_failed_' + result.exitCode + ': ' + (stderr || stdout || 'no output').slice(0, 4000));
   }
-  return stdout.slice(0, 30000);
+  const fallbackNotice = (stdout + '\n' + stderr).match(/Provider fallback:\s*([^/\s]+)\/([^\s;]+)\s+unavailable;\s+using\s+([^/\s]+)\/([^\s]+?)\s+for this response\./i);
+  return {
+    text: stdout.slice(0, 30000),
+    fallback: fallbackNotice ? { provider: fallbackNotice[3], model: fallbackNotice[4] } : null
+  };
 }
 
 async function runModelFallback(prompt, baseUrl, apiKey, model) {
@@ -437,9 +453,21 @@ export default async function handler(req, res) {
     const runtimeEnv = {
       HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'custom',
       HERMES_MODEL: MODEL,
+      HERMES_OPENROUTER_MODEL: OPENROUTER_MODEL,
+      AI_GATEWAY_MODEL: process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini',
+      HERMES_VERCEL_FALLBACK_MODELS: process.env.HERMES_VERCEL_FALLBACK_MODELS || [
+        process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini',
+        'openai/gpt-oss-120b'
+      ].join(','),
       HERMES_TERMINAL_BACKEND: 'local',
       GITHUB_TOOLSETS: 'all'
     };
+    try {
+      // Hermes uses this short-lived project OIDC token as its AI Gateway bearer credential.
+      runtimeEnv.AI_GATEWAY_API_KEY = await getVercelOidcToken();
+    } catch (error) {
+      console.warn('Hermes AI Gateway credentials unavailable:', String(error?.message || error).slice(0, 300));
+    }
     if (modelBaseUrl) runtimeEnv.HERMES_LOCAL_BASE_URL = modelBaseUrl;
     if (modelApiKey) runtimeEnv.HERMES_LOCAL_API_KEY = modelApiKey;
     if (openRouterApiKey) runtimeEnv.OPENROUTER_API_KEY = openRouterApiKey;
@@ -492,12 +520,28 @@ export default async function handler(req, res) {
     }
 
     await configureLocalModel(sandbox, profile, runtimeEnv, paths);
+    const profileConfig = paths.home + '/.hermes/profiles/' + profile + '/config.yaml';
+    const configWrite = await sandbox.runCommand({
+      cmd: 'bash',
+      args: ['-lc', 'python3 -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); d[\'fallback_providers\']=json.loads(sys.argv[2]); open(p,\'w\').write(json.dumps(d,indent=2)+\'\\n\')" "$1" "$2"', 'bash', profileConfig, JSON.stringify(buildFallbackProviders(runtimeEnv))],
+      cwd: paths.workdir,
+      env: runtimeEnv
+    });
+    if (configWrite.exitCode !== 0) throw new Error('hermes_fallback_config_write_failed');
     let text = '';
     let executionMode = 'hermes-agent';
     let responseModel = MODEL;
     let primaryError = null;
     try {
-      text = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
+      const primary = await runHermes(sandbox, profile, prompt, runtimeEnv, paths);
+      text = primary.text;
+      if (primary.fallback?.provider === 'ai-gateway') {
+        executionMode = 'hermes-ai-gateway-fallback';
+        responseModel = primary.fallback.model;
+      } else if (primary.fallback?.provider === 'openrouter') {
+        executionMode = 'hermes-openrouter-fallback';
+        responseModel = primary.fallback.model;
+      }
       if (!text) throw new Error('hermes_empty_response');
     } catch (error) {
       primaryError = error;
@@ -512,7 +556,7 @@ export default async function handler(req, res) {
           HERMES_MODEL: OPENROUTER_MODEL,
           OPENROUTER_API_KEY: openRouterApiKey
         };
-        text = await runHermes(
+        const openRouterResult = await runHermes(
           sandbox,
           profile,
           prompt,
@@ -521,9 +565,10 @@ export default async function handler(req, res) {
           OPENROUTER_MODEL,
           'openrouter'
         );
+        text = openRouterResult.text;
         if (text) {
           executionMode = 'hermes-openrouter-fallback';
-          responseModel = OPENROUTER_MODEL;
+          responseModel = openRouterResult.fallback?.model || OPENROUTER_MODEL;
         }
       } catch (error) {
         console.warn('Hermes OpenRouter fallback failed:', String(error?.message || error).slice(0, 500));

@@ -566,6 +566,8 @@ async function buildReply(agentId, query) {
           ? 'mistral-direct-fallback'
           : result.runtime === 'vercel-ai-gateway-fallback'
             ? 'vercel-ai-gateway'
+            : result.runtime === 'hermes-ai-gateway-fallback'
+              ? 'vercel-ai-gateway'
             : result.runtime === 'hermes-openrouter-fallback'
               ? 'openrouter'
               : 'hermes-office';
