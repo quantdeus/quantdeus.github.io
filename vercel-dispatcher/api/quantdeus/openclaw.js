@@ -9,7 +9,6 @@ const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
-const MISTRAL_MODEL = process.env.OPENCLAW_MISTRAL_MODEL || 'mistral-small-latest';
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 const VERCEL_GATEWAY_MODELS = [...new Set((process.env.OPENCLAW_VERCEL_GATEWAY_MODELS || ['inclusionai/ling-3.0-flash-sante-free', 'openai/gpt-oss-120b'].join(',')).split(',').map(v => v.trim()).filter(Boolean))].slice(0, 3);
 let jwksCache = [];
@@ -280,16 +279,6 @@ export default async function handler(req, res) {
       };
       modelCandidates.push(`openrouter/${OPENROUTER_MODEL}`);
     }
-    const mistralKey = process.env.MISTRAL_API_KEY ? String(process.env.MISTRAL_API_KEY) : '';
-    if (mistralKey && localKeyEnv !== 'MISTRAL_API_KEY') {
-      providerDefs['quantdeus-mistral'] = {
-        baseUrl: 'https://api.mistral.ai/v1',
-        api: 'openai-completions',
-        apiKey: { source: 'env', provider: 'default', id: 'MISTRAL_API_KEY' },
-        models: [{ id: MISTRAL_MODEL, name: MISTRAL_MODEL, input: ['text'], contextWindow: 32768, maxTokens: 8192 }]
-      };
-      modelCandidates.push(`quantdeus-mistral/${MISTRAL_MODEL}`);
-    }
 
     // Keyless emergency inference remains INSIDE OpenClaw: the agent runtime,
     // state, prompt handling and execution contract are still OpenClaw.
@@ -336,14 +325,6 @@ export default async function handler(req, res) {
         model: OPENROUTER_MODEL
       });
     }
-    if (mistralKey && localKeyEnv !== 'MISTRAL_API_KEY') {
-      probeCandidates.push({
-        ref: `quantdeus-mistral/${MISTRAL_MODEL}`,
-        endpoint: 'https://api.mistral.ai/v1/chat/completions',
-        key: mistralKey,
-        model: MISTRAL_MODEL
-      });
-    }
     for (const pollinationsModel of pollinationsModels) {
       probeCandidates.push({
         ref: `quantdeus-pollinations/${pollinationsModel}`,
@@ -354,22 +335,21 @@ export default async function handler(req, res) {
     }
 
     const probeResults = [];
-    let healthyRef = null;
+    const healthyRefs = [];
     for (const candidate of probeCandidates) {
       const probe = await probeChatCandidate(candidate, trustedOffice);
       probeResults.push(probe);
-      if (probe.ok) {
-        healthyRef = candidate.ref;
-        break;
-      }
+      if (probe.ok) healthyRefs.push(candidate.ref);
     }
-    const orderedModels = healthyRef
-      ? [healthyRef, ...modelCandidates.filter(ref => ref !== healthyRef)]
+    const orderedModels = healthyRefs.length
+      ? [...healthyRefs, ...modelCandidates.filter(ref => !healthyRefs.includes(ref))]
       : modelCandidates;
     const model = orderedModels[0];
-    // Trusted MCP runs must never fall through to a model that did not pass
-    // two sequential tool calls -> two tool results -> final-answer round-trip.
-    const fallbackModels = trustedOffice ? [] : orderedModels.slice(1);
+    // Trusted MCP can fail over only to routes that passed the same sequential
+    // two-tool round-trip as the primary. Unhealthy/unprobed models stay excluded.
+    const fallbackModels = trustedOffice
+      ? healthyRefs.filter(ref => ref !== model)
+      : orderedModels.slice(1);
     const modelConfig = { mode: 'replace', providers: providerDefs };
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
@@ -497,7 +477,6 @@ export default async function handler(req, res) {
     if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
     if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
-    if (mistralKey) runtimeEnv.MISTRAL_API_KEY = mistralKey;
     runtimeEnv.POLLINATIONS_API_KEY = 'anonymous';
     runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
@@ -514,9 +493,9 @@ export default async function handler(req, res) {
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
       has_openrouter_key: Boolean(openRouterKey),
-      has_independent_mistral_key: Boolean(mistralKey && localKeyEnv !== 'MISTRAL_API_KEY')
+      validated_fallbacks: fallbackModels
     }));
-    if (!healthyRef) {
+    if (!healthyRefs.length) {
       return res.status(503).json({
         ok: false,
         error: 'openclaw_no_healthy_model_route',
