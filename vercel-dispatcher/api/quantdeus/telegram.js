@@ -146,6 +146,7 @@ async function setupWebhook(req, res) {
     'You are a health check for the QuantDeus Telegram homunculus runtime. Return a short plain-text success marker.',
     'Reply with exactly TELEGRAM_LLM_OK'
   );
+  const researchProbe = await liveNewsResearch('OpenAI latest news');
   const roleProbe = await homunculusReply({
     text: 'Бро проверь состояние QuantDeus и коротко скажи, что сейчас важно проверить в автоматизации.',
     message_id: 1,
@@ -162,6 +163,12 @@ async function setupWebhook(req, res) {
     role_smoke: {
       ok: Boolean(roleProbe) && !String(roleProbe).includes('LLM-канал сейчас не дал ответ'),
       preview: String(roleProbe || '').slice(0, 260)
+    },
+    research_smoke: {
+      ok: Boolean(researchProbe?.ok),
+      providers: researchProbe?.providers || [],
+      item_count: researchProbe?.items?.length || 0,
+      preview: researchProbe?.items?.[0]?.title || null
     },
     bot: {
       id: me.id,
@@ -314,6 +321,22 @@ function liveResearchBlock(research) {
     ...lines,
     'END_LIVE_RESEARCH'
   ].join('\n');
+}
+
+function groundedResearchFallback(research) {
+  const items = Array.isArray(research?.items) ? research.items.slice(0, 4) : [];
+  if (!items.length) return 'LIVE_RESEARCH_UNAVAILABLE';
+  return [
+    'Свежие источники получены, но LLM-синтез временно недоступен.',
+    'Ниже — выдача источников без пересказа и без додумывания:',
+    '',
+    ...items.flatMap((item, index) => [
+      '[' + (index + 1) + '] ' + item.title,
+      (item.source || item.provider || 'source') + ' · ' + (item.published_at || 'дата не указана'),
+      item.url,
+      ''
+    ])
+  ].join('\n').trim().slice(0, 3400);
 }
 
 function explicitAgent(text, byId) {
@@ -522,6 +545,9 @@ async function homunculusReply(message) {
     : query.slice(0, 7000);
   const answer = await chatCompletion(system, groundedQuery);
   if (!answer) {
+    if (researchRequired && research?.ok) {
+      return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${groundedResearchFallback(research)}`;
+    }
     return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nМаршрут принят, но LLM-канал сейчас не дал ответ. Попробуй повторить сообщение через несколько секунд.`;
   }
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${answer}`.slice(0, 3900);
