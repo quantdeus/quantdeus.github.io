@@ -341,8 +341,9 @@ async function runModelFallback(prompt, baseUrl, apiKey, model) {
   return text.slice(0, 30000);
 }
 
-async function runVercelAIGatewayFallback(messages) {
-  const token = await getVercelOidcToken();
+async function runVercelAIGatewayFallback(messages, oidcToken) {
+  const token = String(oidcToken || '').trim();
+  if (!token) throw new Error('vercel_oidc_token_unavailable');
   const fallbackMessages = [
     {
       role: 'system',
@@ -438,6 +439,9 @@ export default async function handler(req, res) {
 
     const githubToken = String(req.headers?.['x-quantdeus-github-token'] || '');
     const openRouterApiKey = String(req.headers?.['x-quantdeus-openrouter-key'] || '');
+    let vercelOidcToken = String(
+      req.headers?.['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || ''
+    ).trim();
     const runtimeEnv = {
       HERMES_MODEL_PROVIDER: process.env.HERMES_MODEL_PROVIDER || 'custom',
       HERMES_MODEL: MODEL,
@@ -451,8 +455,9 @@ export default async function handler(req, res) {
       GITHUB_TOOLSETS: 'all'
     };
     try {
-      // Hermes uses this short-lived project OIDC token as its AI Gateway bearer credential.
-      runtimeEnv.AI_GATEWAY_API_KEY = await getVercelOidcToken();
+      // Reuse Vercel's short-lived request token; only resolve through the helper if the injected header is absent.
+      if (!vercelOidcToken) vercelOidcToken = await getVercelOidcToken();
+      runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     } catch (error) {
       console.warn('Hermes AI Gateway credentials unavailable:', String(error?.message || error).slice(0, 300));
     }
@@ -557,7 +562,7 @@ export default async function handler(req, res) {
 
     if (!text) {
       try {
-        const fallback = await runVercelAIGatewayFallback(messages);
+        const fallback = await runVercelAIGatewayFallback(messages, vercelOidcToken);
         text = fallback.text;
         responseModel = fallback.model;
         executionMode = 'vercel-ai-gateway-fallback';
