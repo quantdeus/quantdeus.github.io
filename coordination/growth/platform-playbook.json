@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "updated": "2026-09-29",
+  "purpose": "Turn verified QuantDeus work into truthful multi-platform discovery, education and contributor growth without spam or fake engagement.",
+  "source_of_truth": [
+    "coordination/manifesto-living.md",
+    "coordination/growth/contributor-recruitment.md",
+    "open GitHub Issues/PRs",
+    "verified public site artifacts"
+  ],
+  "rules": [
+    "Every campaign must point to a real artifact, useful result, open task or community entry path.",
+    "No fake likes, fake contributors, sockpuppets, engagement manipulation or mass unsolicited DMs.",
+    "Personalized outreach is limited to public/opt-in collaboration paths and must respect decline/no-response.",
+    "Automatic publication is allowed only on owned repository/site surfaces with an explicit workflow path. Other platforms receive platform-specific draft packages until an authorized connector/account exists.",
+    "Political/civic content must be informational and neutral; QuantDeus growth automation must not endorse parties/candidates or target voters."
+  ],
+  "platform_families": [
+    {
+      "id": "quantdeus-site",
+      "mode": "owned-autopublish-after-qa",
+      "formats": [
+        "landing update",
+        "news card",
+        "project page",
+        "SEO page",
+        "changelog"
+      ]
+    },
+    {
+      "id": "github",
+      "mode": "owned-autonomous",
+      "formats": [
+        "release note",
+        "issue",
+        "discussion-ready brief",
+        "README/docs",
+        "contributor opportunity"
+      ]
+    },
+    {
+      "id": "telegram",
+      "mode": "owned-if-configured",
+      "formats": [
+        "community update",
+        "release digest",
+        "contributor call",
+        "research summary"
+      ]
+    },
+    {
+      "id": "vk",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "post",
+        "clip brief",
+        "community update"
+      ]
+    },
+    {
+      "id": "youtube",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "Shorts brief",
+        "community post",
+        "video outline",
+        "description"
+      ]
+    },
+    {
+      "id": "dzen",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "article",
+        "short post"
+      ]
+    },
+    {
+      "id": "habr",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "technical article",
+        "devlog"
+      ]
+    },
+    {
+      "id": "pikabu",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "community story",
+        "project update"
+      ]
+    },
+    {
+      "id": "x",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "thread",
+        "short update"
+      ]
+    },
+    {
+      "id": "reddit",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "community-specific post",
+        "research/devlog"
+      ]
+    },
+    {
+      "id": "linkedin",
+      "mode": "draft-until-authorized",
+      "formats": [
+        "project update",
+        "research/partnership post"
+      ]
+    },
+    {
+      "id": "other-relevant-platforms",
+      "mode": "discover-and-propose-via-pr",
+      "formats": [
+        "platform-native package"
+      ]
+    }
+  ]
+}
