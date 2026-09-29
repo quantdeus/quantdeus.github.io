@@ -183,6 +183,8 @@ if (fs.existsSync(telegramBridgePath)) {
     telegramBridge.includes('needsLiveResearch') &&
     telegramBridge.includes('news.google.com/rss/search') &&
     telegramBridge.includes('LIVE_RESEARCH_UNAVAILABLE') &&
+    telegramBridge.includes('groundedResearchFallback') &&
+    telegramBridge.includes('research_smoke') &&
     telegramBridge.includes('Never invent current events'),
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'Telegram live-news lane requires fresh source grounding and fails closed instead of hallucinating current events'
