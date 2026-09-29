@@ -1,0 +1,82 @@
+name: QuantDeus Hourly OpenClaw Swarm 🐒
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-hourly-openclaw
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Run one bounded OpenClaw swarm step
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+
+          (async () => {
+            const result = await office.ask({
+              profile: 'seven-of-nine',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'Hourly QuantDeus swarm tick.',
+                  'Read fresh main and coordination/agents.json first.',
+                  'Inspect open Issues and PRs in quantdeus/quantdeus.github.io.',
+                  'Choose at most ONE highest-priority actionable coord:active or coord:ready task that is not already represented by an open implementation PR.',
+                  'Respect any explicit target-agent or pillar ownership and act as Seven of Nine coordinating that specialist role.',
+                  'Perform at most ONE bounded, reversible, auditable repository step via GitHub MCP.',
+                  'Good steps include: add a precise issue comment with verified findings, create/update one branch artifact, or open one reviewable PR.',
+                  'Do not merge PRs, publish/deploy production, spend money, touch secrets/private data, change auth/roles/security policy, perform sensitive external outreach, register accounts, or create duplicate Issues/PRs.',
+                  'Do not mark DONE unless acceptance criteria are actually verified.',
+                  'If no safe useful step exists, make no mutation and reply NO_SAFE_ACTION plus the concrete blocker.',
+                  'Leave repository evidence for any mutation and reply with a concise summary including issue/PR/artifact references.'
+                ].join('\n')
+              }],
+              metadata: {
+                source: 'quantdeus-hourly-openclaw',
+                repository: process.env.GITHUB_REPOSITORY,
+                cadence: 'hourly'
+              }
+            });
+
+            console.log(JSON.stringify({
+              ok: true,
+              runtime: result.runtime,
+              model: result.model,
+              profile: result.profile,
+              text: result.text
+            }, null, 2));
+
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
+              throw new Error('Hourly dispatcher did not receive trusted OpenClaw tools');
+            }
+          })().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
