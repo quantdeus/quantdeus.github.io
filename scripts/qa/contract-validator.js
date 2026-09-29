@@ -115,8 +115,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
       if (frequentPollingWorkflows.has(name)) {
         check(parts[0] === '*/5' && parts[1] === '*', name, 'Telegram polling workflow runs at the approved 5-minute cadence: '+cron);
       } else if (name === 'quantdeus-hourly-openclaw.yml') {
-        const temporaryScheduleSmoke = text.includes('# TEMP_SCHEDULE_SMOKE');
-        check((parts[0] === '0' && parts[1] === '*') || (temporaryScheduleSmoke && parts[0] === '*/5' && parts[1] === '*'), name, 'OpenClaw swarm runs hourly, except explicit temporary 5-minute schedule smoke: '+cron);
+        check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
       } else {
         check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
       }
