@@ -239,54 +239,109 @@ function rssTag(block, tag) {
   return match ? xmlText(match[1]) : '';
 }
 
+function feedLink(block) {
+  const textLink = rssTag(block, 'link');
+  if (textLink) return textLink;
+  const href = String(block || '').match(/<link\b[^>]*\bhref=(["'])(.*?)\1[^>]*\/?\s*>/i);
+  return href ? xmlText(href[2]) : (rssTag(block, 'guid') || rssTag(block, 'id'));
+}
+
 function parseRss(xml, provider) {
-  return [...String(xml || '').matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)]
-    .slice(0, 20)
+  const raw = String(xml || '');
+  let blocks = [...raw.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)];
+  if (!blocks.length) blocks = [...raw.matchAll(/<entry\b[^>]*>([\s\S]*?)<\/entry>/gi)];
+  return blocks
+    .slice(0, 24)
     .map(match => {
       const block = match[1];
       return {
         title: rssTag(block, 'title'),
-        url: rssTag(block, 'link') || rssTag(block, 'guid'),
-        published_at: rssTag(block, 'pubDate'),
-        source: rssTag(block, 'source') || provider,
+        url: feedLink(block),
+        published_at: rssTag(block, 'pubDate') || rssTag(block, 'published') || rssTag(block, 'updated'),
+        source: rssTag(block, 'source') || rssTag(block, 'author') || provider,
         provider
       };
     })
     .filter(item => item.title && item.url);
 }
 
-async function fetchRss(url, provider) {
+function parseJsonFeed(raw, provider) {
+  let data = {};
+  try { data = JSON.parse(String(raw || '')); } catch { return []; }
+  const rows = Array.isArray(data.items)
+    ? data.items
+    : Array.isArray(data.articles)
+      ? data.articles
+      : [];
+  return rows
+    .slice(0, 24)
+    .map(item => ({
+      title: xmlText(item?.title || item?.name || ''),
+      url: String(item?.url || item?.external_url || item?.id || '').trim(),
+      published_at: String(item?.date_published || item?.date_modified || item?.seendate || item?.published_at || '').trim(),
+      source: String(item?._source_name || item?.source || item?.domain || provider).trim(),
+      provider
+    }))
+    .filter(item => item.title && /^https?:\/\//i.test(item.url));
+}
+
+async function fetchNewsSource(url, provider, parser, accept) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LIVE_RESEARCH_TIMEOUT_MS);
   try {
     const response = await fetch(url, {
       headers: {
-        accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
-        'user-agent': 'QuantDeus-LiveResearch/1.0'
+        accept: accept || 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
+        'user-agent': 'QuantDeus-LiveResearch/1.1'
       },
       signal: controller.signal
     });
     const raw = await response.text();
     if (!response.ok) throw new Error(provider + '_http_' + response.status);
-    return parseRss(raw, provider);
+    const items = parser(raw, provider);
+    if (!items.length) {
+      const type = String(response.headers.get('content-type') || 'unknown').split(';')[0];
+      throw new Error(provider + '_empty_feed_' + type.replace(/[^a-z0-9.+-]/gi, '_'));
+    }
+    return items;
   } finally {
     clearTimeout(timer);
   }
 }
 
 async function liveNewsResearch(query) {
-  const q = String(query || '').trim().slice(0, 700);
+  const q = String(query || '')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 320);
   if (!q) return { ok: false, items: [], providers: [] };
-  const googleUrl = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=ru&gl=RU&ceid=RU:ru';
-  const bingUrl = 'https://www.bing.com/news/search?q=' + encodeURIComponent(q) + '&format=RSS&mkt=ru-RU';
 
-  const settled = await Promise.allSettled([
-    fetchRss(googleUrl, 'Google News'),
-    fetchRss(bingUrl, 'Bing News')
-  ]);
+  const sources = [
+    {
+      provider: 'Google News',
+      url: 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=ru&gl=RU&ceid=RU:ru',
+      parser: parseRss
+    },
+    {
+      provider: 'Bing News',
+      url: 'https://www.bing.com/news/search?q=' + encodeURIComponent(q) + '&format=RSS&mkt=ru-RU',
+      parser: parseRss
+    },
+    {
+      provider: 'GDELT',
+      url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=' + encodeURIComponent(q) + '&mode=artlist&maxrecords=12&format=jsonfeed&sort=datedesc',
+      parser: parseJsonFeed,
+      accept: 'application/feed+json, application/json;q=0.9, */*;q=0.1'
+    }
+  ];
+
+  const settled = await Promise.allSettled(
+    sources.map(source => fetchNewsSource(source.url, source.provider, source.parser, source.accept))
+  );
   const providerResults = settled.map((result, index) => ({
-    provider: index === 0 ? 'Google News' : 'Bing News',
-    ok: result.status === 'fulfilled',
+    provider: sources[index].provider,
+    ok: result.status === 'fulfilled' && result.value.length > 0,
     items: result.status === 'fulfilled' ? result.value : [],
     error: result.status === 'rejected' ? String(result.reason?.message || result.reason).slice(0, 220) : null
   }));

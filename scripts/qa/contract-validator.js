@@ -182,6 +182,8 @@ if (fs.existsSync(telegramBridgePath)) {
   check(
     telegramBridge.includes('needsLiveResearch') &&
     telegramBridge.includes('news.google.com/rss/search') &&
+    telegramBridge.includes('api.gdeltproject.org/api/v2/doc/doc') &&
+    telegramBridge.includes('parseJsonFeed') &&
     telegramBridge.includes('LIVE_RESEARCH_UNAVAILABLE') &&
     telegramBridge.includes('groundedResearchFallback') &&
     telegramBridge.includes('research_smoke') &&
