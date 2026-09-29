@@ -15,12 +15,13 @@ permissions:
   pull-requests: write
   actions: read
   checks: read
+  statuses: write
   id-token: write
 
 # production re-smoke after bounded MCP deploy cc83cb2
 concurrency:
   group: qd-openclaw-admin-smoke
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   smoke:
@@ -53,6 +54,16 @@ jobs:
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
+
+      - name: Record GitHub MCP smoke status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=success \
+            -f context='openclaw/github-mcp' \
+            -f description='OpenClaw GitHub MCP live smoke passed'
+
       - name: Verify trusted OpenClaw Playwright MCP lane
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -74,3 +85,13 @@ jobs:
             console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, smoke: result.text }));
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
+
+      - name: Record Playwright MCP smoke status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=success \
+            -f context='openclaw/playwright-mcp' \
+            -f description='OpenClaw Playwright MCP live smoke passed'
+
