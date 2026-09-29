@@ -8,6 +8,7 @@ const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
+const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 let jwksCache = [];
 let jwksAt = 0;
 
@@ -83,6 +84,53 @@ export default async function handler(req, res) {
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(prompt) }]);
     const runtimeKeyEnv = openRouterKey ? 'OPENROUTER_API_KEY' : localKeyEnv;
     const runtimeKey = openRouterKey || localKey;
+
+    // One-time self-heal for the persistent Vercel Sandbox state on this OpenClaw release.
+    // Official OpenClaw recovery is `doctor --fix`; follow it with structured lint/doctor verification.
+    const doctorMarker = `${statePath}/.quantdeus-doctor-${OPENCLAW_RUNTIME_VERSION}`;
+    const markerCheck = await sandbox.runCommand({ cmd: 'test', args: ['-f', doctorMarker] });
+    let doctor = { ran: false, status: 'already-repaired', version: OPENCLAW_RUNTIME_VERSION };
+    if (markerCheck.exitCode !== 0) {
+      const doctorEnv = {
+        [runtimeKeyEnv]: runtimeKey,
+        OPENCLAW_HOME: home,
+        OPENCLAW_STATE_DIR: statePath,
+        OPENCLAW_CONFIG_PATH: configPath,
+        CI: '1'
+      };
+      const fix = await sandbox.runCommand({
+        cmd: 'openclaw',
+        args: ['doctor', '--fix', '--non-interactive'],
+        cwd: workdir,
+        env: doctorEnv
+      });
+      const fixStdout = (await fix.stdout()).trim();
+      const fixStderr = (await fix.stderr()).trim();
+      const check = await sandbox.runCommand({
+        cmd: 'openclaw',
+        args: ['doctor', '--lint', '--json'],
+        cwd: workdir,
+        env: doctorEnv
+      });
+      const checkStdout = (await check.stdout()).trim();
+      const checkStderr = (await check.stderr()).trim();
+      doctor = {
+        ran: true,
+        version: OPENCLAW_RUNTIME_VERSION,
+        fix_exit: fix.exitCode,
+        doctor_exit: check.exitCode,
+        fix_tail: (fixStdout || fixStderr).slice(-1800),
+        doctor_tail: (checkStdout || checkStderr).slice(-2600)
+      };
+      console.log('[openclaw-doctor] ' + JSON.stringify(doctor));
+      if (fix.exitCode === 0 && check.exitCode === 0) {
+        await sandbox.runCommand({ cmd: 'touch', args: [doctorMarker] });
+        doctor.status = 'healthy';
+      } else {
+        doctor.status = 'needs-attention';
+      }
+    }
+
     const run = await sandbox.runCommand({ cmd: 'openclaw', args: ['agent', 'exec', '--config', configPath, '--state-dir', statePath, '--cwd', workdir, '--model', model, '--timeout', '240', '--json', '--message-file', promptPath], cwd: workdir, env: { [runtimeKeyEnv]: runtimeKey } });
     const raw = await text(run);
     await sandbox.runCommand({ cmd: 'rm', args: ['-f', configPath, promptPath] });
@@ -90,7 +138,7 @@ export default async function handler(req, res) {
     const result = JSON.parse(raw);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
     await sandbox.stop();
-    return res.status(200).json({ ok: true, provider: 'quantdeus-openclaw-vercel-sandbox', runtime: 'openclaw', model: result.model || model, execution_mode: 'openclaw-agent-exec-no-tools', text: result.final.trim(), github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository } });
+    return res.status(200).json({ ok: true, provider: 'quantdeus-openclaw-vercel-sandbox', runtime: 'openclaw', model: result.model || model, execution_mode: 'openclaw-agent-exec-no-tools', doctor, text: result.final.trim(), github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository } });
   } catch (error) {
     const message = String(error?.message || error);
     console.error('QuantDeus OpenClaw error:', message);
