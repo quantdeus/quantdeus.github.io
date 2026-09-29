@@ -55,53 +55,111 @@ function trustedOfficeRequest(req, claims) {
 
 async function probeChatCandidate(candidate, requireTools = false) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
+  const timer = setTimeout(() => controller.abort(), requireTools ? 20000 : 10000);
   try {
-    const body = requireTools ? {
+    const headers = {
+      authorization: 'Bearer ' + candidate.key,
+      'content-type': 'application/json',
+      accept: 'application/json'
+    };
+    const request = async body => {
+      const response = await fetch(candidate.endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      const raw = await response.text();
+      let data = null;
+      try { data = JSON.parse(raw); } catch {}
+      return { response, raw, data };
+    };
+
+    if (!requireTools) {
+      const { response, raw } = await request({
+        model: candidate.model,
+        messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
+        temperature: 0,
+        max_tokens: 8
+      });
+      return {
+        ref: candidate.ref,
+        ok: response.ok,
+        status: response.status,
+        detail: response.ok ? 'ok' : raw.slice(0, 300)
+      };
+    }
+
+    const probeTool = {
+      type: 'function',
+      function: {
+        name: 'quantdeus_probe_ping',
+        description: 'Capability probe. Call this tool exactly once.',
+        parameters: { type: 'object', properties: {}, additionalProperties: false }
+      }
+    };
+    const probePrompt = { role: 'user', content: 'Call the quantdeus_probe_ping tool exactly once.' };
+    const first = await request({
       model: candidate.model,
-      messages: [{ role: 'user', content: 'Call the quantdeus_probe_ping tool exactly once.' }],
+      messages: [probePrompt],
       temperature: 0,
       max_tokens: 64,
-      tools: [{
+      tools: [probeTool],
+      tool_choice: 'required'
+    });
+    if (!first.response.ok) {
+      return { ref: candidate.ref, ok: false, status: first.response.status, detail: first.raw.slice(0, 300) };
+    }
+
+    const firstMessage = first.data?.choices?.[0]?.message;
+    const toolCalls = firstMessage?.tool_calls;
+    const pingCall = Array.isArray(toolCalls) && toolCalls.find(call =>
+      call?.type === 'function' &&
+      call?.function?.name === 'quantdeus_probe_ping' &&
+      typeof call?.function?.arguments === 'string' &&
+      typeof call?.id === 'string' &&
+      call.id.length > 0
+    );
+    if (!pingCall) {
+      return { ref: candidate.ref, ok: false, status: first.response.status, detail: 'missing_or_malformed_tool_call' };
+    }
+
+    const assistantToolCall = {
+      role: 'assistant',
+      content: typeof firstMessage?.content === 'string' ? firstMessage.content : null,
+      tool_calls: [{
+        id: pingCall.id,
         type: 'function',
         function: {
           name: 'quantdeus_probe_ping',
-          description: 'Capability probe. Call this tool exactly once.',
-          parameters: { type: 'object', properties: {}, additionalProperties: false }
+          arguments: pingCall.function.arguments
         }
-      }],
-      tool_choice: 'required'
-    } : {
-      model: candidate.model,
-      messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
-      temperature: 0,
-      max_tokens: 8
+      }]
     };
-    const response = await fetch(candidate.endpoint, {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer ' + candidate.key,
-        'content-type': 'application/json',
-        accept: 'application/json'
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal
+    const second = await request({
+      model: candidate.model,
+      messages: [
+        probePrompt,
+        assistantToolCall,
+        { role: 'tool', tool_call_id: pingCall.id, content: 'PONG' },
+        { role: 'user', content: 'The tool result is complete. Reply with exactly PROBE_DONE and do not call any tool.' }
+      ],
+      temperature: 0,
+      max_tokens: 32,
+      tools: [probeTool],
+      tool_choice: 'none'
     });
-    const raw = await response.text();
-    let data = null;
-    try { data = JSON.parse(raw); } catch {}
-    const toolCalls = data?.choices?.[0]?.message?.tool_calls;
-    const validToolCall = Array.isArray(toolCalls) && toolCalls.some(call =>
-      call?.type === 'function' &&
-      call?.function?.name === 'quantdeus_probe_ping' &&
-      typeof call?.function?.arguments === 'string'
-    );
-    const ok = response.ok && (!requireTools || validToolCall);
+    const secondMessage = second.data?.choices?.[0]?.message;
+    const finalText = typeof secondMessage?.content === 'string' ? secondMessage.content.trim() : '';
+    const extraToolCalls = Array.isArray(secondMessage?.tool_calls) && secondMessage.tool_calls.length > 0;
+    const ok = second.response.ok && finalText === 'PROBE_DONE' && !extraToolCalls;
     return {
       ref: candidate.ref,
       ok,
-      status: response.status,
-      detail: ok ? (requireTools ? 'tool_call_ok' : 'ok') : (response.ok ? 'missing_or_malformed_tool_call' : raw.slice(0, 300))
+      status: second.response.status,
+      detail: ok
+        ? 'tool_roundtrip_ok'
+        : (second.response.ok ? 'tool_roundtrip_incomplete_or_malformed' : second.raw.slice(0, 300))
     };
   } catch (error) {
     return {
@@ -172,7 +230,7 @@ export default async function handler(req, res) {
     // state, prompt handling and execution contract are still OpenClaw.
     // Trusted Office prefers models that reliably emit OpenAI-compatible tool_calls.
     const pollinationsModels = trustedOffice
-      ? ['openai-fast', 'openai']
+      ? ['openai', 'mistral', 'gemini-fast', 'openai-fast']
       : ['openai-fast', 'openai'];
     providerDefs['quantdeus-pollinations'] = {
       baseUrl: 'https://text.pollinations.ai/openai',
@@ -236,7 +294,9 @@ export default async function handler(req, res) {
       ? [healthyRef, ...modelCandidates.filter(ref => ref !== healthyRef)]
       : modelCandidates;
     const model = orderedModels[0];
-    const fallbackModels = orderedModels.slice(1);
+    // Trusted MCP runs must never fall through to a model that did not pass
+    // the full tool-call -> tool-result -> final-answer round-trip gate.
+    const fallbackModels = trustedOffice ? [] : orderedModels.slice(1);
     const modelConfig = { mode: 'replace', providers: providerDefs };
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
