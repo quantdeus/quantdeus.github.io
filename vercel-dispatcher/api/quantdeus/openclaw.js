@@ -172,7 +172,7 @@ export default async function handler(req, res) {
     // state, prompt handling and execution contract are still OpenClaw.
     // Trusted Office prefers models that reliably emit OpenAI-compatible tool_calls.
     const pollinationsModels = trustedOffice
-      ? ['qwen-coder', 'openai', 'openai-fast']
+      ? ['openai-fast', 'openai']
       : ['openai-fast', 'openai'];
     providerDefs['quantdeus-pollinations'] = {
       baseUrl: 'https://text.pollinations.ai/openai',
