@@ -51,6 +51,7 @@
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
 - legacy_hermes_scheduler: `automatic 15-minute Hermes fleet pulse retired; .github/workflows/hermes-office-cron.yml is workflow_dispatch-only fallback; scheduled autonomy belongs to OpenClaw`
 - qa_self_heal: `bounded autonomous repair: site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
+- openclaw_evolution: `daily 02:31 UTC evidence loop; OpenClaw reads its fresh-main self-evolution skill on trusted runs; Tier A skill/docs/ledger improvements may auto-merge after QA+Smoke; Tier B runtime/auth/MCP/workflow changes remain reviewable PRs`
 - scheduled_workflows:
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
   - `06:27 UTC — QuantDeus Swarm Secretary`
@@ -65,7 +66,8 @@
   - `every 2 hours at :11 — Seven Priority Cycle / Actions + PRs + Issues + public community + manifesto`
   - `every 6 hours at :41 — News → Living Manifest / world + Russia + science/technology/economics`
   - `every 4 hours at :53 — Growth + Site Cycle / unity → synthesis → archivist → herald → tasksmith → control-tower`
-- cron_cadence_rule: `Telegram bot polling every 5 minutes; OpenClaw swarm hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h`
+  - `02:31 UTC daily — OpenClaw Self-Evolution / observe → diagnose → hypothesize → bounded PR → QA → compare`
+- cron_cadence_rule: `Telegram bot polling every 5 minutes; OpenClaw swarm hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h; OpenClaw self-evolution runs daily at 02:31 UTC`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
