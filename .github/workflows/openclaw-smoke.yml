@@ -8,6 +8,9 @@ on:
         required: false
         type: string
         default: https://quantdeus.vercel.app/api/quantdeus/openclaw
+  push:
+    branches:
+      - smoke/openclaw-prod-20260929
 
 permissions:
   contents: read
