@@ -44,7 +44,7 @@
 - telegram_transport: `GitHub Actions → Telegram Bot API`
 - telegram_polling: `*/5 * * * * / .github/workflows/telegram-bot.yml / direct getUpdates + sendMessage`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
-- vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → GitHub MCP / tracked by Issue #154`
+- vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `implementation in PR review; do not claim DONE until hourly workflow is merged and one trusted OpenClaw run leaves verifiable GitHub/runtime evidence`
 - scheduled_workflows:
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
