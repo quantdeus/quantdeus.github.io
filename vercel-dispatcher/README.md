@@ -44,20 +44,13 @@ The endpoint:
 
 ## Hourly scheduling
 
-Preferred when the Vercel plan supports hourly Cron:
+The canonical execution cadence is GitHub Actions `.github/workflows/quantdeus-hourly-openclaw.yml` at:
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/quantdeus/hourly",
-      "schedule": "0 * * * *"
-    }
-  ]
-}
-```
+`0 * * * *`
 
-If the active Vercel plan cannot provide the requested hourly cadence, keep the endpoint deployable and mark hourly scheduling blocked until the runtime supports it. Telegram transport remains independent in GitHub Actions.
+GitHub provides the schedule and OIDC identity; the actual agent runtime remains the Vercel-hosted OpenClaw Office. In the unattended hourly lane, GitHub MCP is enforced read-only. Seven of Nine returns one structured decision, and the workflow may publish at most one guarded comment to an open `coord:active` or `coord:ready` Issue. Code/branch/PR mutations remain outside this unattended lane until a separately constrained credential/executor exists.
+
+The legacy `/api/quantdeus/hourly` endpoint remains a read/bootstrap surface and must not be mistaken for the execution adapter.
 
 ## Telegram boundary\n\nTelegram transport is owned by the GitHub Actions bot and direct Telegram Bot API. The Vercel dispatcher does not need a separate messaging bridge.\n
 ## Browser execution queue

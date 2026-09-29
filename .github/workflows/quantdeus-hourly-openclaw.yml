@@ -1,0 +1,135 @@
+name: QuantDeus Hourly OpenClaw Swarm 🐒
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-hourly-openclaw
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Run one guarded OpenClaw swarm tick
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+
+          function parseDecision(text) {
+            const raw = String(text || '').trim();
+            try { return JSON.parse(raw); } catch {}
+            const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (fenced) return JSON.parse(fenced[1].trim());
+            throw new Error('Hourly OpenClaw decision must be strict JSON');
+          }
+
+          async function github(path, options = {}) {
+            const response = await fetch('https://api.github.com' + path, {
+              ...options,
+              headers: {
+                authorization: 'Bearer ' + process.env.GITHUB_TOKEN,
+                accept: 'application/vnd.github+json',
+                'x-github-api-version': '2022-11-28',
+                'content-type': 'application/json',
+                ...(options.headers || {})
+              }
+            });
+            const raw = await response.text();
+            let data = null;
+            try { data = raw ? JSON.parse(raw) : null; } catch {}
+            if (!response.ok) throw new Error(`GitHub ${response.status}: ${raw.slice(0, 800)}`);
+            return data;
+          }
+
+          (async () => {
+            const result = await office.ask({
+              profile: 'seven-of-nine',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'Hourly QuantDeus swarm tick.',
+                  'Read fresh main and coordination/agents.json first.',
+                  'Inspect open Issues and PRs in quantdeus/quantdeus.github.io.',
+                  'GitHub MCP is READ-ONLY in this hourly lane. Do not attempt any mutation through tools.',
+                  'Choose at most ONE highest-priority actionable coord:active or coord:ready Issue that is not already represented by an open implementation PR.',
+                  'Respect any explicit target-agent or pillar ownership and act as Seven of Nine coordinating that specialist role.',
+                  'Return ONLY strict JSON in one of these forms:',
+                  '{"action":"comment","issue_number":123,"comment":"verified finding / concrete next bounded step with artifact references"}',
+                  '{"action":"none","reason":"NO_SAFE_ACTION: concrete blocker"}',
+                  'Do not request merge/deploy/spending/secrets/security-role changes/sensitive outreach/account registration.',
+                  'Do not mark DONE unless acceptance criteria are actually verified.'
+                ].join('\n')
+              }],
+              metadata: {
+                source: 'quantdeus-hourly-openclaw',
+                repository: process.env.GITHUB_REPOSITORY,
+                cadence: 'hourly'
+              }
+            });
+
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
+              throw new Error('Hourly dispatcher did not receive trusted OpenClaw tools');
+            }
+
+            const decision = parseDecision(result.text);
+            console.log(JSON.stringify({
+              ok: true,
+              runtime: result.runtime,
+              model: result.model,
+              profile: result.profile,
+              decision
+            }, null, 2));
+
+            if (decision.action === 'none') return;
+            if (decision.action !== 'comment') throw new Error('Unsupported hourly action: ' + decision.action);
+
+            const issueNumber = Number(decision.issue_number);
+            const comment = String(decision.comment || '').trim();
+            if (!Number.isInteger(issueNumber) || issueNumber <= 0) throw new Error('Invalid issue_number');
+            if (comment.length < 20 || comment.length > 6000) throw new Error('Comment length outside guarded bounds');
+
+            const repository = process.env.GITHUB_REPOSITORY;
+            if (repository !== 'quantdeus/quantdeus.github.io') throw new Error('Unexpected repository');
+            const issue = await github(`/repos/${repository}/issues/${issueNumber}`);
+            if (issue.state !== 'open' || issue.pull_request) throw new Error('Target must be an open Issue, not a PR');
+            const labels = new Set((issue.labels || []).map(x => typeof x === 'string' ? x : x.name));
+            if (!labels.has('coord:active') && !labels.has('coord:ready')) {
+              throw new Error('Target Issue is not coord:active or coord:ready');
+            }
+
+            const posted = await github(`/repos/${repository}/issues/${issueNumber}/comments`, {
+              method: 'POST',
+              body: JSON.stringify({ body: comment })
+            });
+            console.log(JSON.stringify({ mutation: 'issue_comment', issue_number: issueNumber, comment_url: posted.html_url }, null, 2));
+          })().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE

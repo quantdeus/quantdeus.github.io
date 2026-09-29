@@ -44,8 +44,8 @@
 - telegram_transport: `GitHub Actions → Telegram Bot API`
 - telegram_polling: `*/5 * * * * / .github/workflows/telegram-bot.yml / direct getUpdates + sendMessage`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
-- vercel_swarm_dispatcher: `hourly target / 0 * * * * / /api/quantdeus/hourly / tracked by Issue #154`
-- vercel_swarm_status: `pending deployment verification; do not claim DONE until Vercel Cron + Agent Run/runtime logs + GitHub smoke artifact exist`
+- vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
+- vercel_swarm_status: `implementation in PR review; do not claim DONE until hourly workflow is merged and one trusted OpenClaw run leaves verifiable GitHub/runtime evidence`
 - scheduled_workflows:
   - `06:17 UTC — QuantDeus Daily Agent Health Check`
   - `06:27 UTC — QuantDeus Swarm Secretary`
@@ -53,7 +53,8 @@
   - `06:42 UTC — QuantDeus Contributor Growth`
   - `06:47 UTC — QuantDeus QA Triad`
   - `every 5 minutes — QuantDeus Telegram GitHub Bot`
-- cron_cadence_rule: `Telegram bot polling every 5 minutes; Vercel dispatcher hourly target; health/QA/research workflows remain staggered daily unless their own workflow says otherwise`
+  - `hourly at minute 0 — QuantDeus Hourly OpenClaw Swarm`
+- cron_cadence_rule: `Telegram bot polling every 5 minutes; GitHub Actions triggers the Vercel OpenClaw swarm hourly; health/QA/research workflows remain staggered daily unless their own workflow says otherwise`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`

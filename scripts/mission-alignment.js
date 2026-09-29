@@ -17,7 +17,7 @@ const requiredPrinciples = [
   'prototype-before-scale',
   'space-capability-must-also-create-earthside-value'
 ];
-const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml'];
+const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml'];
 
 const failures = [];
 const checks = [];
