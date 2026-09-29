@@ -1,5 +1,5 @@
 name: QuantDeus OpenClaw Admin Office Smoke
-# production re-smoke after tool-roundtrip gate c041dbe
+# production re-smoke after hardened MCP runtime 84c6ffe
 
 # Updating this workflow intentionally retriggers the live trusted-office smoke after a runtime mirror sync.
 
@@ -21,7 +21,7 @@ permissions:
 # production re-smoke after bounded MCP deploy cc83cb2
 concurrency:
   group: qd-openclaw-admin-smoke
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   smoke:
