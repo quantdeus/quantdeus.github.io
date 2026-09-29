@@ -29,6 +29,7 @@ jobs:
           node --check scripts/hermes-office-bootstrap.js
           node --check scripts/hermes-office-client.js
           node --check scripts/openclaw-office-client.js
+          node --check scripts/guarded-automerge.js
           node --check scripts/qa/hermes-office-validator.js
           node --check scripts/qa/openclaw-office-validator.js
           node --check scripts/telegram-bot.js
@@ -68,6 +69,10 @@ jobs:
           test -f scripts/qa/hermes-office-validator.js
           test -f scripts/qa/openclaw-office-validator.js
           test -f .github/workflows/openclaw-smoke.yml
+          test -f .github/workflows/openclaw-evolution.yml
+          test -f .openclaw/skills/quantdeus-self-evolution/SKILL.md
+          test -f coordination/openclaw-evolution.json
+          test -f docs/openclaw-evolution.md
           test -f coordination/startup-org.json
           test -f robots.txt
           test -f sitemap.xml
