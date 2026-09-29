@@ -401,10 +401,10 @@ function cleanModelText(value) {
 
 async function pollinationsFallback(system, user) {
   const compactPrompt = [
-    String(system || '').slice(0, 260),
+    String(system || '').slice(0, 80),
     '',
     'USER:',
-    String(user || '').slice(0, 520)
+    String(user || '').slice(0, 180)
   ].join('\n').slice(0, 3200);
 
   const runWithTimeout = async (label, fn) => {
@@ -435,11 +435,11 @@ async function pollinationsFallback(system, user) {
         body: JSON.stringify({
           model: 'openai',
           messages: [
-            { role: 'system', content: String(system || '').slice(0, 300) },
-            { role: 'user', content: String(user || '').slice(0, 650) }
+            { role: 'system', content: String(system || '').slice(0, 90) },
+            { role: 'user', content: String(user || '').slice(0, 220) }
           ],
           temperature: 0.45,
-          max_tokens: 160
+          max_tokens: 96
         }),
         signal
       });
