@@ -1,0 +1,159 @@
+name: QuantDeus OpenClaw Evolution 🧬
+
+on:
+  schedule:
+    - cron: '31 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-openclaw-evolution
+  cancel-in-progress: false
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Collect OpenClaw operational evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/qd-openclaw-evolution
+          gh run list --repo "$GITHUB_REPOSITORY" --limit 80 --json databaseId,workflowName,status,conclusion,createdAt,updatedAt,headSha,url > /tmp/qd-openclaw-evolution/actions.json
+          gh pr list --repo "$GITHUB_REPOSITORY" --state all --limit 60 --json number,title,state,headRefName,updatedAt,url > /tmp/qd-openclaw-evolution/prs.json
+          gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 80 --json number,title,state,labels,updatedAt,url > /tmp/qd-openclaw-evolution/issues.json
+
+      - name: Let OpenClaw improve itself
+        id: evolve
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const office = require('./scripts/openclaw-office-client');
+
+          function read(path, max = 40000) {
+            try { return fs.readFileSync(path, 'utf8').slice(0, max); } catch { return ''; }
+          }
+          function parse(text) {
+            const raw = String(text || '').trim();
+            try { return JSON.parse(raw); } catch {}
+            const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (fenced) return JSON.parse(fenced[1].trim());
+            throw new Error('OpenClaw evolution response must be strict JSON');
+          }
+
+          (async () => {
+            const result = await office.ask({
+              profile: 'control-tower',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'QuantDeus OpenClaw self-evolution cycle.',
+                  'Read fresh main first, especially:',
+                  '- .openclaw/skills/quantdeus-self-evolution/SKILL.md',
+                  '- coordination/openclaw-evolution.json',
+                  '- docs/openclaw-evolution.md',
+                  '- vercel-dispatcher/api/quantdeus/openclaw.js',
+                  '- scripts/openclaw-office-client.js',
+                  '- scripts/qa/openclaw-office-validator.js',
+                  '',
+                  'Recent Actions evidence:',
+                  read('/tmp/qd-openclaw-evolution/actions.json'),
+                  '',
+                  'Recent PR evidence:',
+                  read('/tmp/qd-openclaw-evolution/prs.json'),
+                  '',
+                  'Recent Issue evidence:',
+                  read('/tmp/qd-openclaw-evolution/issues.json'),
+                  '',
+                  'Identify at most ONE evidence-backed improvement to OpenClaw itself. No activity-for-activity.',
+                  'State the observed problem, root-cause hypothesis, expected measurable improvement and falsifier before mutating.',
+                  'Use branch automation/openclaw-evolution/<topic> and create exactly one PR.',
+                  'Tier A may change only the evolution skill, evolution ledger and evolution docs. Maximum 3 files.',
+                  'Tier B may change OpenClaw runtime/client/validator/workflows when evidence requires it. Maximum 4 files.',
+                  'Never push directly to main. Never weaken OIDC/auth, trusted workflow gating, public no-tools mode, MCP deny/tool filters, secret isolation, QA/Smoke/mission checks, or human approval gates.',
+                  'Do not expand privileges, expose credentials, register accounts or spend money.',
+                  'If evidence is insufficient, do nothing.',
+                  '',
+                  'Return ONLY strict JSON:',
+                  '{"action":"none","reason":"..."}',
+                  'or {"action":"pr","pr_number":123,"branch":"automation/openclaw-evolution/...","tier":"skill","summary":"...","metric":"...","falsifier":"..."}',
+                  'or {"action":"pr","pr_number":123,"branch":"automation/openclaw-evolution/...","tier":"core","summary":"...","metric":"...","falsifier":"..."}'
+                ].join('\n')
+              }],
+              metadata: {
+                source: 'quantdeus-openclaw-evolution',
+                repository: process.env.GITHUB_REPOSITORY
+              }
+            });
+
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
+              throw new Error('OpenClaw evolution did not receive trusted tools');
+            }
+            const d = parse(result.text);
+            if (!['none','pr'].includes(d.action)) throw new Error('Unsupported evolution action');
+
+            if (d.action === 'pr') {
+              const pr = Number(d.pr_number);
+              const branch = String(d.branch || '');
+              const tier = String(d.tier || '');
+              if (!Number.isInteger(pr) || pr <= 0) throw new Error('Invalid evolution PR');
+              if (!branch.startsWith('automation/openclaw-evolution/')) throw new Error('Evolution branch outside allowed prefix');
+              if (!['skill','core'].includes(tier)) throw new Error('Invalid evolution tier');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'pr_number=' + pr + '\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'tier=' + tier + '\n');
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'action=' + d.action + '\n');
+            fs.writeFileSync('/tmp/qd-openclaw-evolution/result.json', JSON.stringify({
+              timestamp: new Date().toISOString(),
+              model: result.model,
+              decision: d
+            }, null, 2));
+            console.log(JSON.stringify({model: result.model, decision: d}, null, 2));
+          })().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Guarded auto-merge Tier A evolution
+        if: steps.evolve.outputs.action == 'pr' && steps.evolve.outputs.tier == 'skill'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.evolve.outputs.pr_number }}
+          AUTO_MERGE_MODE: openclaw-skill
+          EXPECTED_BRANCH_PREFIX: automation/openclaw-evolution/
+        run: node scripts/guarded-automerge.js
+
+      - name: Upload evolution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-openclaw-evolution
+          path: |
+            /tmp/qd-openclaw-evolution/actions.json
+            /tmp/qd-openclaw-evolution/prs.json
+            /tmp/qd-openclaw-evolution/issues.json
+            /tmp/qd-openclaw-evolution/result.json
+          if-no-files-found: warn

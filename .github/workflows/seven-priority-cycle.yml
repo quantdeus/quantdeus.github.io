@@ -70,7 +70,7 @@ jobs:
                 '',
                 'Priority order: (1) broken production/Actions/security, (2) blocked human contributors and community needs, (3) active manifesto commitments and measured outcomes, (4) stale/high-value PRs or execution gaps, (5) growth/site opportunities backed by real artifacts.',
                 'Choose at most ONE action. You may create/update one Issue or create one branch+PR via GitHub MCP. PR branch must start automation/seven/.',
-                'Alternatively request ONE safe workflow dispatch from this allowlist: qa-triad.yml, static-smoke.yml, qa-self-heal.yml, contributor-growth.yml, quantdeus-pulse.yml, agent-role-cron.yml, news-manifest-cycle.yml, growth-site-cycle.yml.',
+                'Alternatively request ONE safe workflow dispatch from this allowlist: qa-triad.yml, static-smoke.yml, qa-self-heal.yml, contributor-growth.yml, quantdeus-pulse.yml, agent-role-cron.yml, news-manifest-cycle.yml, growth-site-cycle.yml, openclaw-evolution.yml.',
                 'Do not merge PRs, weaken guardrails, expose secrets, spend money, mass-message people or manufacture urgency/community activity.',
                 'Political/civic signals can affect neutral research and operational risk analysis but never become party/candidate endorsement, voter targeting or persuasion.',
                 '',
@@ -103,7 +103,7 @@ jobs:
         run: |
           node <<'NODE'
           const {execFileSync}=require('child_process');
-          const allowed=new Set(['qa-triad.yml','static-smoke.yml','qa-self-heal.yml','contributor-growth.yml','quantdeus-pulse.yml','agent-role-cron.yml','news-manifest-cycle.yml','growth-site-cycle.yml']);
+          const allowed=new Set(['qa-triad.yml','static-smoke.yml','qa-self-heal.yml','contributor-growth.yml','quantdeus-pulse.yml','agent-role-cron.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml']);
           const workflow=String(process.env.WORKFLOW||'');
           if(!allowed.has(workflow)) throw new Error('Workflow not in Seven dispatch allowlist');
           const inputs=JSON.parse(Buffer.from(process.env.INPUTS_B64||'e30=','base64').toString('utf8'));
