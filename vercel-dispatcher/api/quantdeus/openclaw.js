@@ -6,7 +6,7 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
-const EVENTS = new Set(['issue_comment', 'workflow_run', 'schedule', 'workflow_dispatch', 'push']);
+const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
@@ -62,12 +62,7 @@ function trustedOfficeRequest(req, claims) {
     metadata.admin_authorized === true &&
     String(metadata.actor_login || '').toLowerCase() === String(claims.actor || '').toLowerCase();
 
-  const qaFailureRepair =
-    /\.github\/workflows\/qa-self-heal\.yml(?:@|$)/.test(workflowRef) &&
-    eventName === 'workflow_run' &&
-    metadata.source === 'quantdeus-qa-self-heal';
-
-  return siteOwnerAction || qaFailureRepair;
+  return siteOwnerAction;
 }
 
 function hourlyOfficeRequest(req, claims) {
