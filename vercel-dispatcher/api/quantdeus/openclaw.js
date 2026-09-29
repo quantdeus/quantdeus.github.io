@@ -10,7 +10,7 @@ const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push'
 const SANDBOX = 'quantdeus-openclaw-office';
 const OPENROUTER_MODEL = process.env.OPENCLAW_OPENROUTER_MODEL || 'openai/gpt-oss-120b:free';
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
-const VERCEL_GATEWAY_MODELS = [...new Set((process.env.OPENCLAW_VERCEL_GATEWAY_MODELS || [process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini', 'openai/gpt-oss-120b'].join(',')).split(',').map(v => v.trim()).filter(Boolean))].slice(0, 3);
+const VERCEL_GATEWAY_MODELS = [...new Set((process.env.OPENCLAW_VERCEL_GATEWAY_MODELS || ['inclusionai/ling-3.0-flash-sante-free', 'openai/gpt-oss-120b'].join(',')).split(',').map(v => v.trim()).filter(Boolean))].slice(0, 3);
 let jwksCache = [];
 let jwksAt = 0;
 
@@ -122,6 +122,7 @@ export default async function handler(req, res) {
     if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
     if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
+    runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
       has_vercel_oidc: Boolean(vercelOidcToken),
