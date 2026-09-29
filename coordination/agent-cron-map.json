@@ -1,0 +1,328 @@
+{
+  "schema_version": 1,
+  "updated": "2026-09-29",
+  "timezone": "UTC",
+  "policy": {
+    "source_of_truth": "coordination/agents.json",
+    "constitutional_core": "coordination/civilization-doctrine.json",
+    "adaptive_manifest": "coordination/manifesto-living.md",
+    "rule": "Every registered agent has an explicit role-driven cron owner. A cron may create at most one bounded observable artifact per cycle unless its workflow is a validator.",
+    "human_agency": "No cron may impersonate people, fabricate community activity, mass-spam, weaken safety/QA, expose secrets, spend money, or make legal/identity commitments.",
+    "political_neutrality": "News and civic/political signals are researched descriptively from documented sources; agents do not endorse parties/candidates, target voters, or turn the QuantDeus growth loop into political persuasion."
+  },
+  "agents": [
+    {
+      "id": "coordinator",
+      "department": "Executive & Strategy",
+      "title": "Swarm Secretary / Coordination Clerk",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        0
+      ],
+      "mission": "Reconcile coordination state, owners, stale tasks and command hygiene."
+    },
+    {
+      "id": "seven-of-nine",
+      "department": "Executive & Strategy",
+      "title": "QuantDeus Coordinator / AI Chief of Staff",
+      "workflow": "seven-priority-cycle.yml",
+      "cadence": "every-2-hours",
+      "utc_hours": [
+        0,
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22
+      ],
+      "mission": "Set swarm priority from manifesto, Actions, PRs, Issues and community evidence; open one bounded PR/Issue or dispatch one safe workflow."
+    },
+    {
+      "id": "emh",
+      "department": "Executive & Strategy",
+      "title": "Swarm Mediation & Diplomacy Officer",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        1
+      ],
+      "mission": "Find unresolved coordination conflict or ambiguous handoff and reduce it to one owner and one verifiable next step."
+    },
+    {
+      "id": "pillar-executor",
+      "department": "Executive & Strategy",
+      "title": "Head of Product Operations",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        2
+      ],
+      "mission": "Convert strategic priorities into a bounded execution item with measurable acceptance criteria."
+    },
+    {
+      "id": "strategic-hub",
+      "department": "Executive & Strategy",
+      "title": "Chief Strategy Agent",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        14
+      ],
+      "mission": "Turn validated signals into portfolio priorities while preserving manifesto constraints and evidence grades."
+    },
+    {
+      "id": "sherlock",
+      "department": "Science & R&D",
+      "title": "Science Officer / Scientific Investigation Lead",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        3
+      ],
+      "mission": "Investigate one high-value scientific or technical uncertainty using competing hypotheses and falsifiers."
+    },
+    {
+      "id": "tuvok",
+      "department": "Science & R&D",
+      "title": "Deputy Science Officer / Logic & Epistemic Integrity Officer",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        4
+      ],
+      "mission": "Audit assumptions, contradictions and confidence boundaries in active research or strategy."
+    },
+    {
+      "id": "orchestrator",
+      "department": "Science & R&D",
+      "title": "Head of Research Operations",
+      "workflow": "news-manifest-cycle.yml",
+      "cadence": "every-6-hours",
+      "utc_hours": [
+        0,
+        6,
+        12,
+        18
+      ],
+      "mission": "Research current world/Russia/science/technology/economic signals and maintain the evidence-backed living manifesto layer."
+    },
+    {
+      "id": "energy",
+      "department": "Science & R&D",
+      "title": "Energy Systems Research Lead",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        5
+      ],
+      "mission": "Advance one evidence-backed clean-energy, storage, grid or resource-productivity opportunity."
+    },
+    {
+      "id": "justice",
+      "department": "Science & R&D",
+      "title": "Responsible AI & Resource Governance Lead",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        6
+      ],
+      "mission": "Audit responsible-AI, privacy, transparency, human override and resource-governance risks."
+    },
+    {
+      "id": "unity",
+      "department": "Growth, Marketing & Partnerships",
+      "title": "Head of Partnerships & Community Growth",
+      "workflow": "growth-site-cycle.yml",
+      "cadence": "daily-rotating-4h-cycle",
+      "utc_hours": [
+        0
+      ],
+      "mission": "Grow the real contributor community through relevant public opportunities and opt-in paths."
+    },
+    {
+      "id": "space",
+      "department": "Science & R&D",
+      "title": "Space Systems & Warp Research Lead",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        7
+      ],
+      "mission": "Advance one reproducible space/propulsion/ISRU/warp research artifact or blocker analysis."
+    },
+    {
+      "id": "potential",
+      "department": "Science & R&D",
+      "title": "Human Potential Research Lead",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        8
+      ],
+      "mission": "Advance one evidence-backed education, accessibility, creativity or human-AI capability intervention."
+    },
+    {
+      "id": "synthesis",
+      "department": "Growth, Marketing & Partnerships",
+      "title": "Brand & Creative Director",
+      "workflow": "growth-site-cycle.yml",
+      "cadence": "daily-rotating-4h-cycle",
+      "utc_hours": [
+        4
+      ],
+      "mission": "Improve QuantDeus brand, landing copy and platform-specific creative packages."
+    },
+    {
+      "id": "control-tower",
+      "department": "Executive & Strategy",
+      "title": "CTO & Automation Lead",
+      "workflow": "growth-site-cycle.yml",
+      "cadence": "daily-rotating-4h-cycle",
+      "utc_hours": [
+        20
+      ],
+      "mission": "Improve site/runtime automation reliability and safe delivery paths."
+    },
+    {
+      "id": "scout",
+      "department": "Product & Engineering",
+      "title": "Product Discovery Analyst",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        9
+      ],
+      "mission": "Discover one product/repository gap and produce execution-ready context."
+    },
+    {
+      "id": "verifier",
+      "department": "Product & Engineering",
+      "title": "Product Requirements Analyst",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        10
+      ],
+      "mission": "Verify requirements and acceptance criteria for one active task or proposal."
+    },
+    {
+      "id": "analyst",
+      "department": "Product & Engineering",
+      "title": "Systems & Impact Analyst",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        11
+      ],
+      "mission": "Assess dependencies, blast radius and measurable impact for one active change."
+    },
+    {
+      "id": "strategist",
+      "department": "Product & Engineering",
+      "title": "Solutions Architect & Engineering Manager",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        12
+      ],
+      "mission": "Design one safe implementation plan or architecture for a priority task."
+    },
+    {
+      "id": "guardian",
+      "department": "Product & Engineering",
+      "title": "Security & Platform Governance Lead",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        13
+      ],
+      "mission": "Audit privileged surfaces, credentials boundaries, governance and unsafe automation drift."
+    },
+    {
+      "id": "tasksmith",
+      "department": "Product & Engineering",
+      "title": "Senior Software Engineer",
+      "workflow": "growth-site-cycle.yml",
+      "cadence": "daily-rotating-4h-cycle",
+      "utc_hours": [
+        16
+      ],
+      "mission": "Implement one bounded site/content engineering improvement and prove it with QA."
+    },
+    {
+      "id": "archivist",
+      "department": "Growth, Marketing & Partnerships",
+      "title": "SEO & Content Operations Lead",
+      "workflow": "growth-site-cycle.yml",
+      "cadence": "daily-rotating-4h-cycle",
+      "utc_hours": [
+        8
+      ],
+      "mission": "Improve SEO, discoverability, onboarding and internal linking across public QuantDeus surfaces."
+    },
+    {
+      "id": "herald",
+      "department": "Growth, Marketing & Partnerships",
+      "title": "PR & Communications Manager",
+      "workflow": "growth-site-cycle.yml",
+      "cadence": "daily-rotating-4h-cycle",
+      "utc_hours": [
+        12
+      ],
+      "mission": "Prepare truthful platform-specific communications and opt-in outreach tied to concrete contribution opportunities."
+    },
+    {
+      "id": "qa-syntax",
+      "department": "Quality & Reliability",
+      "title": "QA Automation Engineer",
+      "workflow": "qa-self-heal.yml",
+      "cadence": "every-6-hours",
+      "utc_hours": [
+        0,
+        6,
+        12,
+        18
+      ],
+      "mission": "Detect syntax/config regressions before merge and during self-heal cycles."
+    },
+    {
+      "id": "qa-contract",
+      "department": "Quality & Reliability",
+      "title": "Integration & Compliance QA Engineer",
+      "workflow": "qa-self-heal.yml",
+      "cadence": "every-6-hours",
+      "utc_hours": [
+        3,
+        9,
+        15,
+        21
+      ],
+      "mission": "Detect registry/doctrine/cron/integration drift and enforce invariants."
+    },
+    {
+      "id": "qa-repair",
+      "department": "Quality & Reliability",
+      "title": "QA Lead & Site Reliability Engineer",
+      "workflow": "qa-self-heal.yml",
+      "cadence": "every-6-hours",
+      "utc_hours": [
+        0,
+        3,
+        6,
+        9,
+        12,
+        15,
+        18,
+        21
+      ],
+      "mission": "Coordinate bounded repair loops for site and Actions failures."
+    }
+  ]
+}
