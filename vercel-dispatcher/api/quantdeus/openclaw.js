@@ -53,6 +53,14 @@ function trustedOfficeRequest(req, claims) {
   return trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(String(claims.event_name || ''));
 }
 
+function hourlyOfficeRequest(req, claims) {
+  if (!trustedOfficeRequest(req, claims)) return false;
+  const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  return /\.github\/workflows\/quantdeus-hourly-openclaw\.yml(?:@|$)/.test(workflowRef) &&
+    req.body?.metadata?.source === 'quantdeus-hourly-openclaw' &&
+    new Set(['schedule', 'workflow_dispatch']).has(String(claims.event_name || ''));
+}
+
 async function probeChatCandidate(candidate, requireTools = false) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), requireTools ? 30000 : 10000);
@@ -223,6 +231,7 @@ export default async function handler(req, res) {
   try {
     const claims = await verify(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
     const trustedOffice = trustedOfficeRequest(req, claims);
+    const hourlyOffice = trustedOffice && hourlyOfficeRequest(req, claims);
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
     const smokePhase = trustedOffice && req.body?.metadata?.source === 'openclaw-admin-smoke' && new Set(['github', 'playwright']).has(smokePhaseRaw) ? smokePhaseRaw : null;
     const githubToken = String(req.headers['x-quantdeus-github-token'] || process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
@@ -415,7 +424,11 @@ export default async function handler(req, res) {
       url: 'https://api.githubcopilot.com/mcp/',
       headers: { Authorization: 'Bearer ' + githubToken },
       toolFilter: {
-        include: smokePhase === 'github' ? ['list_branches'] : [
+        include: smokePhase === 'github' ? ['list_branches'] : hourlyOffice ? [
+          'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
+          'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
+          'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status'
+        ] : [
           'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
           'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
           'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
@@ -476,6 +489,7 @@ export default async function handler(req, res) {
       github_mcp: trustedOffice && Boolean(githubToken) && Boolean(mcpServers.github),
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       smoke_phase: smokePhase,
+      hourly_read_only: hourlyOffice,
       has_vercel_oidc: Boolean(vercelOidcToken),
       local_key_env: localKeyEnv || null,
       has_local_key: Boolean(localKey),
@@ -590,7 +604,7 @@ export default async function handler(req, res) {
       configured_primary: model,
       configured_fallbacks: fallbackModels,
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-no-tools',
-      tools: trustedOffice ? { filesystem: true, github_mcp: true, playwright_mcp: true, shell: false } : { filesystem: false, github_mcp: false, playwright_mcp: false, shell: false },
+      tools: trustedOffice ? { filesystem: true, github_mcp: true, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, shell: false } : { filesystem: false, github_mcp: false, github_write: false, playwright_mcp: false, shell: false },
       doctor,
       text: result.final.trim(),
       github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository }
