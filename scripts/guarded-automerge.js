@@ -7,7 +7,7 @@ const prNumber = Number(process.env.PR_NUMBER || 0);
 const mode = String(process.env.AUTO_MERGE_MODE || '');
 const expectedPrefix = String(process.env.EXPECTED_BRANCH_PREFIX || '');
 
-if (!repo || !prNumber || !['manifest','site'].includes(mode) || !expectedPrefix) {
+if (!repo || !prNumber || !['manifest','site','openclaw-skill'].includes(mode) || !expectedPrefix) {
   console.error('GITHUB_REPOSITORY, PR_NUMBER, AUTO_MERGE_MODE and EXPECTED_BRANCH_PREFIX are required');
   process.exit(2);
 }
@@ -49,6 +49,17 @@ function allowedSitePath(path) {
       console.log('Manifest PR touches non-living-manifest paths; leaving open for human review.');
       return;
     }
+  } else if (mode === 'openclaw-skill') {
+    const allowed = new Set([
+      '.openclaw/skills/quantdeus-self-evolution/SKILL.md',
+      'coordination/openclaw-evolution.json',
+      'docs/openclaw-evolution.md'
+    ]);
+    if (files.some(p => !allowed.has(p))) {
+      console.log('OpenClaw skill PR touches core/runtime paths; leaving open for Seven/human review.');
+      return;
+    }
+    if (files.length > 3) throw new Error('OpenClaw skill automerge exceeds 3-file bound');
   } else if (files.some(p => !allowedSitePath(p))) {
     console.log('Site PR touches a non-content/non-site path; leaving open for human review.');
     return;
