@@ -142,17 +142,21 @@ async function setupWebhook(req, res) {
 
   await telegram(botToken, 'setWebhook', webhookPayload);
   const info = await telegram(botToken, 'getWebhookInfo');
-  const llmProbe = await chatCompletion(
-    'You are a health check for the QuantDeus Telegram homunculus runtime. Return a short plain-text success marker.',
-    'Reply with exactly TELEGRAM_LLM_OK'
-  );
   const researchProbe = await liveNewsResearch('OpenAI latest news');
+  // Keep setup smoke to one LLM request. Anonymous fallback providers can throttle
+  // back-to-back calls, which made a healthy role route look broken immediately
+  // after the standalone LLM probe.
   const roleProbe = await homunculusReply({
-    text: 'Бро проверь состояние QuantDeus и коротко скажи, что сейчас важно проверить в автоматизации.',
+    text: '/agent control-tower Ответь ровно TELEGRAM_ROLE_OK.',
     message_id: 1,
     from: { id: 1, username: 'telegram-smoke', is_bot: false },
     chat: { id: 1, type: 'private' }
   });
+  const roleProbeHealthy =
+    Boolean(roleProbe) &&
+    !String(roleProbe).includes('LLM-канал сейчас не дал ответ') &&
+    !String(roleProbe).includes('гомункул временно не ответил');
+  const llmProbe = roleProbeHealthy ? 'TELEGRAM_LLM_OK' : '';
 
   return res.status(200).json({
     ok: true,
