@@ -17,6 +17,8 @@ for (const [ok, message] of [
   [route.includes("'playwright__browser_run_code_unsafe'") && route.includes("'playwright__browser_evaluate'"), 'unsafe Playwright code execution tools stay denied'],
   [route.includes("'playwright@latest', 'install', 'chromium'") && route.includes('.quantdeus-playwright-chromium-ready'), 'trusted office prewarms Chromium in persistent sandbox'],
   [route.includes("https://api.githubcopilot.com/mcp/") && route.includes("@playwright/mcp@latest"), 'trusted office wires GitHub and Playwright MCP'],
+  [route.includes("include: [\n            'list_branches'") && route.includes("'create_pull_request', 'update_issue', 'update_pull_request'"), 'GitHub MCP exposes bounded read and PR-safe write tools'],
+  [route.includes("include: ['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']"), 'Playwright MCP exposes only scoped navigation, snapshot, find and close tools'],
   [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot'), 'trusted tools are gated to approved GitHub workflows'],
   [client.includes("execution_mode: trusted ? 'trusted-office' : 'chat'") && client.includes('trusted = false'), 'client can request trusted office explicitly'],
   [telegram.includes('trusted: true') && telegram.includes('telegram-admin-task'), 'Telegram admin task lane invokes trusted office only after admin gate'],
