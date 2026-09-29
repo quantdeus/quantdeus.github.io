@@ -51,7 +51,7 @@ async function verifyGithubOidc(token) {
 }
 
 function webhookSecret() {
-  const base = String(process.env.TELEGRAM_WEBHOOK_SECRET || process.env.CRON_SECRET || '').trim();
+  const base = String(process.env.TELEGRAM_WEBHOOK_SECRET || process.env.CRON_SECRET || process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
   if (!base) return '';
   return crypto.createHash('sha256').update('quantdeus-telegram-webhook:' + base).digest('base64url');
 }
