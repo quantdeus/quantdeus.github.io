@@ -42,11 +42,11 @@
       "cron_runs_may_not_recursively_create_cron": true,
       "default_evolution_review": "daily",
       "scheduler": {
-        "provider": "manual-legacy-fallback",
-        "workflow": ".github/workflows/hermes-office-cron.yml",
+        "provider": "retired",
+        "workflow": null,
         "cadence": "disabled",
-        "action": "manual Hermes cron tick for legacy saved jobs only",
-        "authentication": "GitHub OIDC workflow_dispatch only",
+        "action": "legacy Hermes cron scripts/routes retained for archive compatibility only",
+        "authentication": "none; no active GitHub workflow",
         "scale_to_zero_compatible": true
       }
     },
