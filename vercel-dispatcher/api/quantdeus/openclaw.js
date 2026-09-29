@@ -87,11 +87,13 @@ export default async function handler(req, res) {
     const install = await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'command -v openclaw >/dev/null 2>&1 || npm install --global openclaw@2026.9.6 --allow-scripts=openclaw'] });
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
+    const requestId = crypto.randomUUID();
     const configPath = `${home}/.openclaw/quantdeus-smoke.json`;
-    const promptPath = `${home}/.openclaw/quantdeus-prompt.txt`;
-    ephemeralFiles = [configPath, promptPath];
+    const requestsDir = `${home}/.openclaw/requests`;
+    const promptPath = `${requestsDir}/quantdeus-prompt-${requestId}.txt`;
+    ephemeralFiles = [promptPath];
     const statePath = `${home}/.openclaw/quantdeus-state`;
-    for (const dir of [`${home}/.openclaw`, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
+    for (const dir of [`${home}/.openclaw`, requestsDir, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
     const config = {
       models: modelConfig,
       memory: { search: { enabled: false } },
@@ -190,7 +192,7 @@ export default async function handler(req, res) {
       env: runtimeEnv
     });
     const raw = await text(run);
-    await sandbox.runCommand({ cmd: 'rm', args: ['-f', configPath, promptPath] });
+    await sandbox.runCommand({ cmd: 'rm', args: ['-f', promptPath] });
     if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: ${raw.slice(-1800)}`);
     const result = JSON.parse(raw);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
