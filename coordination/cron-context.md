@@ -44,8 +44,8 @@
 - phase_gates: `M1-6 Synchronization → M7-12 Renaissance → M13-18 Warp Threshold → M19-24 Federation; no gate advance without evidence`
 - future_fund_rule: `fund only testable outcomes with falsifier/failure condition and a resulting verifiable/open artifact after reserves and obligations`
 - shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
-- telegram_transport: `GitHub Actions → Telegram Bot API`
-- telegram_polling: `*/5 * * * * / .github/workflows/telegram-bot.yml / direct getUpdates + sendMessage`
+- telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → GitHub workflow_dispatch → OpenClaw homunculus → Telegram Bot API`
+- telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
@@ -58,7 +58,6 @@
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:42 UTC — QuantDeus Contributor Growth`
   - `06:47 UTC — QuantDeus QA Triad`
-  - `every 5 minutes — QuantDeus Telegram GitHub Bot`
   - `hourly at minute 0 — QuantDeus Hourly OpenClaw Swarm`
   - `00:17/06:17/12:17/18:17 UTC — QuantDeus QA Self-Heal / site lane`
   - `03:47/09:47/15:47/21:47 UTC — QuantDeus QA Self-Heal / Actions lane`
@@ -67,7 +66,7 @@
   - `every 6 hours at :41 — News → Living Manifest / world + Russia + science/technology/economics`
   - `every 4 hours at :53 — Growth + Site Cycle / unity → synthesis → archivist → herald → tasksmith → control-tower`
   - `02:31 UTC daily — OpenClaw Self-Evolution / observe → diagnose → hypothesize → bounded PR → QA → compare`
-- cron_cadence_rule: `Telegram bot polling every 5 minutes; OpenClaw swarm hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h; OpenClaw self-evolution runs daily at 02:31 UTC`
+- cron_cadence_rule: `Telegram is webhook/event-driven rather than cron-polled; OpenClaw swarm hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h; OpenClaw self-evolution runs daily at 02:31 UTC`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
@@ -84,4 +83,4 @@
 - culture_rule: `aesthetics shape emotion, interfaces and participation but never upgrade evidence or hide risk/uncertainty`
 - kill_pause_filters: `reach without action; untestable project; founder-bottleneck manual routine; irreplaceable partner; unjustified secrecy; content without value; excessive moonshot spread; pressure/manipulation`
 - legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
-- next_step: `verify GitHub Actions Telegram Bot → agent routing → GitHub task/proposal → QA → direct Telegram Bot API reply; keep GitHub as source of truth`
+- next_step: `verify Telegram webhook → Vercel dispatch → GitHub Actions → named OpenClaw agent → direct Telegram reply in private bot and QuantDeus group; keep GitHub as source of truth`
