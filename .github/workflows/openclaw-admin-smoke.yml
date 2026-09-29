@@ -40,7 +40,7 @@ jobs:
               trusted: true,
               messages: [{
                 role: 'user',
-                content: 'Read-only smoke. Call github__list_branches exactly once for quantdeus/quantdeus.github.io. Do not call Playwright and do not mutate GitHub. Confirm main exists, then reply exactly OPENCLAW_GITHUB_MCP_OK.'
+                content: 'Read-only smoke. Use only github__list_branches, exactly once, for quantdeus/quantdeus.github.io. Do not call any other tool, do not call Playwright, and do not mutate GitHub. Confirm main exists, then reply exactly OPENCLAW_GITHUB_MCP_OK.'
               }],
               metadata: { source: 'openclaw-admin-smoke', phase: 'github', repository: process.env.GITHUB_REPOSITORY }
             });
@@ -62,7 +62,7 @@ jobs:
               trusted: true,
               messages: [{
                 role: 'user',
-                content: 'Read-only browser smoke. Do not call GitHub. Call playwright__browser_navigate exactly once with https://example.com and then playwright__browser_snapshot exactly once. Do not use evaluate or run-code tools. Confirm Example Domain is visible, then reply exactly OPENCLAW_PLAYWRIGHT_MCP_OK.'
+                content: 'Read-only browser smoke. Use only playwright__browser_navigate and playwright__browser_snapshot. Do not call GitHub. Call playwright__browser_navigate exactly once with https://example.com and then playwright__browser_snapshot exactly once. Do not use evaluate, run-code, or any other tools. Confirm Example Domain is visible, then reply exactly OPENCLAW_PLAYWRIGHT_MCP_OK.'
               }],
               metadata: { source: 'openclaw-admin-smoke', phase: 'playwright', repository: process.env.GITHUB_REPOSITORY }
             });
