@@ -1,5 +1,5 @@
 const fs = require('fs');
-const hermesOffice = require('./hermes-office-client');
+const openclawOffice = require('./openclaw-office-client');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -333,36 +333,6 @@ async function handleMessage(message) {
       await send(chatId, 'Прямой /task доступен только Telegram admin. Используй /propose для обычного предложения.', replyId);
       return;
     }
-    if (hermesOffice.configured()) {
-      try {
-        const result = await hermesOffice.ask({
-          profile: agentId,
-          messages: [{
-            role: 'user',
-            content: [
-              'Telegram admin has explicitly authorized this QuantDeus task.',
-              'Create one GitHub Issue for the task using the Hermes GitHub MCP.',
-              'Use labels governance:passed, coord:task, coord:ready, and agent:' + agentId + ' when they exist.',
-              'Check for a duplicate first, then return the verified Issue number and URL.',
-              'Task: ' + task
-            ].join('\n')
-          }],
-          metadata: {
-            source: 'telegram-admin-task',
-            chat_id: chatId,
-            message_id: replyId,
-            username: username || 'unknown',
-            repository: repo,
-            authorized_by_chat_admin: true
-          }
-        });
-        await send(chatId, result.text, replyId);
-        return;
-      } catch (error) {
-        console.error('Hermes Office /task fallback:', error.message || error);
-      }
-    }
-
     const url = createAdminTask(agentId, task, username);
     await send(chatId, `🚀 Task отправлен гомункулу ${agentId}:\n${url}`, replyId);
     return;
@@ -375,9 +345,9 @@ async function handleMessage(message) {
       return;
     }
     const query = stripCommand(text);
-    if (hermesOffice.configured()) {
+    if (openclawOffice.configured()) {
       try {
-        const result = await hermesOffice.ask({
+        const result = await openclawOffice.ask({
           profile: agentId,
           messages: [{ role: 'user', content: query }],
           metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo }
@@ -385,7 +355,7 @@ async function handleMessage(message) {
         await send(chatId, result.text, replyId);
         return;
       } catch (error) {
-        console.error('Hermes Office /agent fallback:', error.message || error);
+        console.error('OpenClaw Office /agent fallback:', error.message || error);
       }
     }
     await send(chatId, advisory(agentId, query), replyId);
@@ -393,9 +363,9 @@ async function handleMessage(message) {
   }
 
   const agentId = autoAgent(text);
-  if (hermesOffice.configured()) {
+  if (openclawOffice.configured()) {
     try {
-      const result = await hermesOffice.ask({
+      const result = await openclawOffice.ask({
         profile: agentId,
         messages: [{ role: 'user', content: text }],
         metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo }
@@ -403,7 +373,7 @@ async function handleMessage(message) {
       await send(chatId, result.text, replyId);
       return;
     } catch (error) {
-      console.error('Hermes Office auto-route fallback:', error.message || error);
+      console.error('OpenClaw Office auto-route fallback:', error.message || error);
     }
   }
   await send(chatId, '🔀 Авто-роль: ' + agentId + '\n\n' + advisory(agentId, text), replyId);

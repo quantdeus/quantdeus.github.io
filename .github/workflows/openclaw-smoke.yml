@@ -1,0 +1,46 @@
+name: QuantDeus OpenClaw Endpoint Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      endpoint_url:
+        description: OpenClaw Vercel endpoint URL (Preview or production)
+        required: false
+        type: string
+        default: https://quantdeus.vercel.app/api/quantdeus/openclaw
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: qd-openclaw-endpoint-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Call deployed OpenClaw endpoint through GitHub OIDC
+        env:
+          OPENCLAW_VERCEL_URL: ${{ inputs.endpoint_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+          (async () => {
+            if (!office.configured()) throw new Error('GitHub OIDC request token unavailable');
+            const result = await office.ask({
+              profile: 'smoke',
+              messages: [{ role: 'user', content: 'Reply exactly OPENCLAW_SMOKE_OK and nothing else.' }],
+              metadata: { source: 'openclaw-live-smoke', repository: process.env.GITHUB_REPOSITORY }
+            });
+            if (result.text.trim() !== 'OPENCLAW_SMOKE_OK') throw new Error('Unexpected smoke response: ' + result.text.slice(0, 300));
+            console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, smoke: 'OPENCLAW_SMOKE_OK' }));
+          })().catch(error => { console.error(error.message || error); process.exit(1); });
+          NODE

@@ -28,7 +28,9 @@ jobs:
           node --check scripts/site-agent-reply.js
           node --check scripts/hermes-office-bootstrap.js
           node --check scripts/hermes-office-client.js
+          node --check scripts/openclaw-office-client.js
           node --check scripts/qa/hermes-office-validator.js
+          node --check scripts/qa/openclaw-office-validator.js
           node --check scripts/telegram-bot.js
           node --check scripts/browser-homunculus.js
           node --check scripts/pillar-executor.js
@@ -37,6 +39,7 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/hourly.js
           node --check vercel-dispatcher/api/quantdeus/browser.js
           node --check vercel-dispatcher/api/quantdeus/hermes.js
+          node --check vercel-dispatcher/api/quantdeus/openclaw.js
 
       - name: Run QA syntax validator
         run: node scripts/qa/syntax-validator.js
@@ -44,8 +47,8 @@ jobs:
       - name: Run QA contract validator
         run: node scripts/qa/contract-validator.js
 
-      - name: Validate Hermes AI Office contract
-        run: node scripts/qa/hermes-office-validator.js
+      - name: Validate OpenClaw Office contract
+        run: node scripts/qa/openclaw-office-validator.js
 
       - name: Validate production routes
         run: |
@@ -63,6 +66,8 @@ jobs:
           test -f docs/hermes-office.md
           test -f scripts/hermes-office-bootstrap.js
           test -f scripts/qa/hermes-office-validator.js
+          test -f scripts/qa/openclaw-office-validator.js
+          test -f .github/workflows/openclaw-smoke.yml
           test -f coordination/startup-org.json
           test -f robots.txt
           test -f sitemap.xml
@@ -74,6 +79,7 @@ jobs:
           test -f vercel-dispatcher/api/quantdeus/hourly.js
           test -f vercel-dispatcher/api/quantdeus/browser.js
           test -f vercel-dispatcher/api/quantdeus/hermes.js
+          test -f vercel-dispatcher/api/quantdeus/openclaw.js
           test -f scripts/browser-homunculus.js
           test -f .github/workflows/browser-homunculus.yml
           test -f docs/browser-homunculus.md
