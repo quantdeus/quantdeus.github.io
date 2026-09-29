@@ -246,7 +246,7 @@ export default async function handler(req, res) {
     };
     const mcpServers = trustedOffice ? {
       github: {
-        transport: 'http',
+        transport: 'streamable-http',
         url: 'https://api.githubcopilot.com/mcp/',
         headers: { Authorization: 'Bearer ' + githubToken }
       },
