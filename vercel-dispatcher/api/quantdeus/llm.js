@@ -58,8 +58,15 @@ async function verifyGitHubOidc(token) {
   if (!claims.exp || claims.exp < now - 15) throw new Error('github_oidc_expired');
   if (claims.nbf && claims.nbf > now + 15) throw new Error('github_oidc_not_yet_valid');
   if (claims.repository !== EXPECTED_REPOSITORY) throw new Error('github_oidc_wrong_repository');
-  if (claims.event_name !== 'issue_comment') throw new Error('github_oidc_wrong_event');
 
+  const eventName = String(claims.event_name || '');
+  const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || '');
+  const siteAgentRequest = eventName === 'issue_comment';
+  const browserRequest =
+    new Set(['issues', 'workflow_dispatch']).has(eventName) &&
+    /\.github\/workflows\/browser-homunculus\.yml@/.test(workflowRef);
+
+  if (!siteAgentRequest && !browserRequest) throw new Error('github_oidc_wrong_event_or_workflow');
   return claims;
 }
 
@@ -99,7 +106,7 @@ export default async function handler(req, res) {
     let data; try { data = JSON.parse(raw); } catch { throw new Error('provider_non_json: ' + raw.slice(0, 250)); }
     const text = data?.choices?.[0]?.message?.content;
     if (!text || !String(text).trim()) throw new Error('provider_empty_response');
-    return res.status(200).json({ ok: true, provider: 'openrouter', model: data?.model || MODEL, text: String(text).trim(), github_run: { actor: claims.actor || null, workflow: claims.workflow || null, repository: claims.repository } });
+    return res.status(200).json({ ok: true, provider: 'openrouter', model: data?.model || MODEL, text: String(text).trim(), github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name || null, repository: claims.repository } });
   } catch (error) {
     console.error('QuantDeus LLM bridge error:', error);
     const message = String(error?.message || error);

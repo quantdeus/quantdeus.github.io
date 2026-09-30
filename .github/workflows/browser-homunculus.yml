@@ -13,6 +13,7 @@ on:
 permissions:
   contents: read
   issues: write
+  id-token: write
 
 concurrency:
   group: browser-homunculus-${{ github.event.issue.number || inputs.issue_number }}
@@ -61,8 +62,7 @@ jobs:
           QD_BROWSER_PASSWORD: ${{ secrets.QD_BROWSER_PASSWORD }}
           QD_BROWSER_PHONE: ${{ secrets.QD_BROWSER_PHONE }}
           QD_BROWSER_RECOVERY_EMAIL: ${{ secrets.QD_BROWSER_RECOVERY_EMAIL }}
-          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-          AI_GATEWAY_MODEL: ${{ vars.AI_GATEWAY_MODEL }}
+          QD_BROWSER_LLM_BRIDGE: https://quantdeus.vercel.app/api/quantdeus/llm
         run: node scripts/browser-homunculus.js
 
       - name: Publish public-safe result to the Issue

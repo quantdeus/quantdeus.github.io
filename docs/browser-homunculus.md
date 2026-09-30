@@ -16,7 +16,7 @@ GitHub remains the source of truth. Vercel queues work; GitHub Actions executes 
 - click buttons and links;
 - select/check form controls;
 - wait for navigation;
-- run bounded natural-language browser tasks only when an explicit Vercel AI Gateway key and model are configured;
+- run bounded natural-language browser tasks through the authenticated GitHub OIDC → QuantDeus Vercel LLM bridge;
 - create ordinary accounts when the site permits automation and no human verification gate blocks the flow.
 
 It stops instead of trying to bypass CAPTCHA, anti-bot challenges, passkeys, 2FA, SMS/email verification, payment screens, or other human gates.
@@ -30,12 +30,6 @@ Never put credentials into an Issue or Vercel request. Use these optional GitHub
 - QD_BROWSER_PASSWORD
 - QD_BROWSER_PHONE
 - QD_BROWSER_RECOVERY_EMAIL
-- AI_GATEWAY_API_KEY for natural-language chat mode
-
-Optional repository variable:
-
-- AI_GATEWAY_MODEL (required when chat mode is used)
-
 
 A structured action references a secret by name:
 
@@ -68,7 +62,7 @@ If the site requests email/SMS verification or CAPTCHA after submission, the wor
 
 ## AI chat mode
 
-Chat mode is fail-closed unless both `AI_GATEWAY_API_KEY` and an explicit `AI_GATEWAY_MODEL` are configured. It uses the native `agent-browser chat` command through Vercel AI Gateway; it does not resurrect the retired provider fallback cascade.
+Chat mode uses a bounded agent loop: `snapshot → GitHub OIDC → QuantDeus Vercel LLM bridge → one allowed browser action → snapshot`. No separate Browser Homunculus API key is required in GitHub Actions. The Vercel bridge keeps the provider key server-side and accepts browser requests only from the repository's `browser-homunculus.yml` workflow for `issues` or `workflow_dispatch` events.
 
 ~~~json
 {
@@ -80,7 +74,7 @@ Chat mode is fail-closed unless both `AI_GATEWAY_API_KEY` and an explicit `AI_GA
 }
 ~~~
 
-The runtime keeps content boundaries, output limits, a pinned active tab, the domain allowlist, CAPTCHA/2FA handoff, and a strict final URL/snapshot check. Browser execution failures now fail the GitHub Actions job instead of being masked as a green run.
+The planner can choose only a small allowlisted action schema (click/fill/type/press/wait/open-on-allowed-domain/done/handoff), one action per turn, with a hard step limit. Page text is treated as untrusted data. The runtime keeps content boundaries, output limits, a pinned active tab, the domain allowlist, CAPTCHA/2FA handoff, and a strict final URL/snapshot check. Browser execution failures fail the GitHub Actions job instead of being masked as a green run.
 
 ## Vercel queue endpoint
 
