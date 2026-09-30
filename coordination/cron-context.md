@@ -14,6 +14,7 @@
 - doctrine_version: `2026.09-post-scarcity-v3`
 - doctrine_source: `coordination/civilization-doctrine.json`
 - doctrine_inheritance: `all 26 registered agents`
+- collective_cognition: `borg-collective-v1 / all 26 agents / deduction + induction + abduction + emotional intelligence + prudence + anti-duplication handoff discipline`
 - canonical_manifest_sources:
   - `Манифест Неонового Горизонта — QuantDeus v3.0 / Dropbox: /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf`
   - `Эпидемия Добра — 24-месячный план / Dropbox: QuantDeus_2Y_Epidemiya_Dobra_Cron.pdf`
