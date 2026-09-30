@@ -1,0 +1,105 @@
+name: QuantDeus Daily Swarm Learning 📚🐒
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  id-token: write
+
+concurrency:
+  group: quantdeus-daily-swarm-learning
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Study AI and OpenClaw engineering
+        env:
+          LEARNING_REPORT: /tmp/quantdeus-daily-learning.json
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const office = require('./scripts/openclaw-office-client');
+
+          function parse(text) {
+            const raw = String(text || '').trim();
+            try { return JSON.parse(raw); } catch {}
+            const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (fenced) return JSON.parse(fenced[1].trim());
+            throw new Error('Daily learning response must be strict JSON');
+          }
+
+          (async () => {
+            const result = await office.ask({
+              profile: 'sherlock',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'Daily QuantDeus engineering study cycle. This is a research-only lane.',
+                  'Study high-quality books, long-form technical guides, official documentation and credible engineering discussions about AI agents, multi-agent systems, OpenClaw and OpenClaw Office.',
+                  'Use public browser/research tools when useful. Prefer primary documentation and technically substantive books; community reports are supporting evidence, not authority.',
+                  'Sherlock protocol: OBSERVE → CLASSIFY → competing hypotheses → FALSIFY → ROOT CAUSE/PATTERN → smallest evidence-producing implication → VERIFY.',
+                  'Compare findings with the checked-out QuantDeus architecture, but DO NOT mutate GitHub, create Issues/PRs, dispatch workflows, send messages, expose secrets, or expand permissions.',
+                  'Do not persist or request hidden chain-of-thought. Persist only concise evidence, source references, conclusions, uncertainty, and falsifiable recommendations.',
+                  'Reject hype, unverifiable AGI claims, prompt-only security, self-modifying permission schemes, and lessons that conflict with current guardrails.',
+                  'Return ONLY strict JSON:',
+                  '{"date":"YYYY-MM-DD","sources":[{"title":"...","kind":"book|docs|discussion","reference":"...","lesson":"..."}],"validated_patterns":[{"pattern":"...","evidence":"...","quantdeus_implication":"...","confidence":"high|medium|low"}],"rejected_claims":[{"claim":"...","reason":"..."}],"recommended_experiments":[{"experiment":"...","success_criterion":"...","risk":"..."}],"summary":"..."}'
+                ].join('\n')
+              }],
+              metadata: {
+                source: 'quantdeus-daily-swarm-learning',
+                repository: process.env.GITHUB_REPOSITORY,
+                mode: 'research-only'
+              },
+              timeoutMs: 180000,
+              retryTransient: true
+            });
+
+            const report = parse(result.text);
+            if (!Array.isArray(report.sources) || report.sources.length < 2) throw new Error('Learning report needs at least two substantive sources');
+            if (!Array.isArray(report.validated_patterns)) throw new Error('validated_patterns missing');
+            if (!Array.isArray(report.recommended_experiments)) throw new Error('recommended_experiments missing');
+            fs.writeFileSync(process.env.LEARNING_REPORT, JSON.stringify({
+              schema_version: 1,
+              generated_at: new Date().toISOString(),
+              profile: result.profile,
+              model: result.model,
+              report
+            }, null, 2) + '\n');
+            console.log(JSON.stringify({ok:true,sources:report.sources.length,patterns:report.validated_patterns.length,experiments:report.recommended_experiments.length}));
+          })().catch(error => {
+            console.error(error.stack || error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Upload learning evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-daily-swarm-learning
+          path: /tmp/quantdeus-daily-learning.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Wake guarded swarm after successful study
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run quantdeus-hourly-openclaw.yml --ref main
