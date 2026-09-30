@@ -2,7 +2,7 @@
   "schema_version": 1,
   "title": "QuantDeus Holding — 26-agent startup organization",
   "source_of_truth": "quantdeus/quantdeus.github.io",
-  "updated": "2026-09-28",
+  "updated": "2026-09-30",
   "agents": [
     {
       "id": "coordinator",
@@ -29,14 +29,14 @@
     },
     {
       "id": "emh",
-      "name": "EMH — Swarm Mediation & Diplomacy Officer",
+      "name": "EMH — Swarm Cognitive Hygiene, Mediation & Diplomacy Officer",
       "emoji": "🩺",
-      "role": "Психологический медиатор и дипломат роя: деэскалирует агентские споры, отделяет факты от позиций, ищет общий интерес, сводит обсуждение к одному owner и проверяемому следующему шагу без клинической диагностики людей",
+      "role": "Медиатор и диагност программного поведения роя: постоянно отслеживает перегрев агентного контура, повторные циклы, деградированные ответы, stale handoff, review contention и избыточный chatter; сводит проблему к фактам, одному owner и проверяемому следующему шагу без клинической диагностики людей",
       "source": "scripts/emh.js",
       "group": "executive",
-      "startup_title": "Swarm Mediation & Diplomacy Officer",
+      "startup_title": "Swarm Cognitive Hygiene, Mediation & Diplomacy Officer",
       "department": "Executive & Strategy",
-      "kpi": "conflict-to-resolution latency / duplicate debate reduction / escalation clarity"
+      "kpi": "synaptic heat / duplicate-loop pressure / stale handoff reduction / conflict-to-resolution latency"
     },
     {
       "id": "pillar-executor",
