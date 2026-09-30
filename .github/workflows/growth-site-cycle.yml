@@ -49,9 +49,19 @@ jobs:
           const rotation={0:'unity',4:'synthesis',8:'archivist',12:'herald',16:'tasksmith',20:'control-tower'};
           const allowed=new Set(Object.values(rotation));
           const manual=String(process.env.INPUT_AGENT_ID||'').trim();
-          const hour=new Date().getUTCHours();
-          const agentId=manual||rotation[hour];
-          if(!allowed.has(agentId)) throw new Error('Invalid growth/site agent');
+          const now=new Date();
+          const hour=now.getUTCHours();
+          const minute=now.getUTCMinutes();
+          const slots=Object.keys(rotation).map(Number).sort((a,b)=>a-b);
+          const nowMinutes=hour*60+minute;
+          const dueSlots=slots.filter(h=>h*60+53<=nowMinutes);
+          const scheduledHour=dueSlots.length?dueSlots[dueSlots.length-1]:slots[slots.length-1];
+          const agentId=manual||rotation[scheduledHour];
+          if(manual && !allowed.has(agentId)) throw new Error('Invalid growth/site agent');
+          if(!agentId || !allowed.has(agentId)){
+            console.log(JSON.stringify({ok:true,action:'none',reason:'no valid growth/site slot',hour_utc:hour,minute_utc:minute}));
+            process.exit(0);
+          }
           const agent=byId.get(agentId);
           function parse(text){
             const raw=String(text||'').trim();
@@ -84,7 +94,7 @@ jobs:
                 'or {"action":"issue","issue_number":123,"summary":"..."}',
                 'or {"action":"pr","pr_number":123,"branch":"automation/site-refresh/...","autopublish":true,"summary":"..."}'
               ].join('\n')}],
-              metadata:{source:'quantdeus-growth-site-cycle',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,hour_utc:hour}
+              metadata:{source:'quantdeus-growth-site-cycle',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,hour_utc:hour,scheduled_hour_utc:scheduledHour}
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Growth/site cycle lacks trusted tools');
             const d=parse(result.text);
@@ -97,7 +107,17 @@ jobs:
             }
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
             console.log(JSON.stringify({agent:agentId,model:result.model,decision:d},null,2));
-          })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          })().catch(e=>{
+            if(office.isTransientError(e)){
+              const decision={action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)};
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'action=none\n');
+              console.warn('Growth/site cycle degraded by transient OpenClaw failure; leaving repository unchanged.');
+              console.log(JSON.stringify({agent:agentId,decision},null,2));
+              return;
+            }
+            console.error(e.stack||e);
+            process.exit(1);
+          });
           NODE
       - name: Guarded auto-publish safe site/content PR
         if: steps.cycle.outputs.action == 'pr' && steps.cycle.outputs.autopublish == 'true'
