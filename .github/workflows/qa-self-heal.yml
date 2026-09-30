@@ -187,7 +187,7 @@ jobs:
                   triggerFailureLog || '(no explicit failure log; scheduled/manual cycle)',
                   '',
                   'Rules:',
-                  'Temporary EMH medbay delegation: qa-repair is the acting LLM owner for qa-syntax and qa-contract; deterministic syntax/contract validators remain authoritative and must still run independently.',
+                  'Deterministic syntax/contract validators remain authoritative and run independently; qa-repair coordinates repair only when evidence shows a QA failure. Any future EMH medbay delegation must come from the fresh canonical agent registry, not a hardcoded owner map.',
                   '1. Diagnose first; do not mutate until the root cause is identified.',
                   '2. Site lane: inspect https://quantdeus.github.io/ and important public routes with Playwright, then inspect the relevant main files.',
                   '3. Actions lane: inspect recent failures plus relevant workflow/scripts on main. Treat transient/cancelled runs as evidence to investigate, not automatic proof of a code defect.',
