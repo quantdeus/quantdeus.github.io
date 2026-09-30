@@ -9,8 +9,10 @@ on:
         description: Optional registered agent id
         required: false
         type: string
-  issues:
-    types: [opened, edited, reopened, labeled]
+      issue_number:
+        description: Optional explicit GitHub Issue to inspect first
+        required: false
+        type: string
   push:
     branches: [main]
     paths:
@@ -25,8 +27,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: quantdeus-agent-role-cron-${{ github.event.issue.number || github.event.schedule || inputs.agent_id || 'manual' }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  group: quantdeus-agent-role-cron-${{ inputs.issue_number || github.event.schedule || inputs.agent_id || 'manual' }}
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
 
 jobs:
   role-cycle:
@@ -47,6 +49,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_AGENT_ID: ${{ inputs.agent_id }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -55,34 +58,13 @@ jobs:
           const registry = JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));
           const byId = new Map(registry.agents.map(a => [a.id,a]));
           const manual = String(process.env.INPUT_AGENT_ID || '').trim();
+          const explicitIssue = String(process.env.INPUT_ISSUE_NUMBER || '').trim();
           const hour = new Date().getUTCHours();
-          let eventTarget = '';
-          let eventActionable = true;
-          if (process.env.GITHUB_EVENT_NAME === 'issues' && process.env.GITHUB_EVENT_PATH && fs.existsSync(process.env.GITHUB_EVENT_PATH)) {
-            const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
-            const issue = event.issue || {};
-            const issueLabels = (issue.labels || []).map(x => typeof x === 'string' ? x : x.name).filter(Boolean);
-            const labelTargets = issueLabels.filter(x => x.startsWith('agent:')).map(x => x.slice('agent:'.length));
-            const marker = String(issue.body || '').match(/<!--\s*quantdeus-target-agent:([a-z0-9-]+)\s*-->/i);
-            const candidates = [...new Set([...labelTargets, ...(marker ? [marker[1]] : [])])].filter(id => byId.has(id));
-            if (candidates.length > 1) throw new Error('Issue targets multiple role agents: ' + candidates.join(','));
-            eventTarget = candidates[0] || '';
-            eventActionable =
-              issueLabels.includes('coord:task') &&
-              !issueLabels.includes('coord:blocked') &&
-              (issueLabels.includes('coord:ready') || issueLabels.includes('coord:active'));
-          }
-          const requested = manual || eventTarget;
-          const due = requested
-            ? map.agents.filter(a => a.id === requested)
-            : process.env.GITHUB_EVENT_NAME === 'issues'
-              ? []
-              : map.agents.filter(a => a.workflow === 'agent-role-cron.yml' && a.utc_hours.includes(hour));
-          if (requested && due.length !== 1) throw new Error('Unknown agent id: ' + requested);
-          if (process.env.GITHUB_EVENT_NAME === 'issues' && (!eventTarget || !eventActionable)) {
-            console.log(JSON.stringify({ok:true,action:'none',reason:'issue has no actionable explicit agent target'}));
-            process.exit(0);
-          }
+          const due = manual
+            ? map.agents.filter(a => a.id === manual)
+            : map.agents.filter(a => a.workflow === 'agent-role-cron.yml' && a.utc_hours.includes(hour));
+          if (manual && due.length !== 1) throw new Error('Unknown agent id: ' + manual);
+          if (explicitIssue && !/^\d+$/.test(explicitIssue)) throw new Error('Invalid explicit Issue number: ' + explicitIssue);
           if (!due.length) {
             console.log(JSON.stringify({ok:true,action:'none',reason:'no role agent due at UTC hour '+hour}));
             process.exit(0);
@@ -120,6 +102,7 @@ jobs:
                 'Agent: '+agent.id+' — '+agent.name,
                 'Role: '+agent.role,
                 'This cycle mission: '+slot.mission,
+                explicitIssue ? 'Explicit assigned task: GitHub Issue #'+explicitIssue+'. Inspect this Issue first and keep the cycle focused on it unless it is already resolved or blocked.' : '',
                 '',
                 'Read fresh main first, including coordination/civilization-doctrine.json, coordination/manifesto-living.md, coordination/cron-context.md, open Issues/PRs and recent Actions relevant to your role.',
                 'Inspect public QuantDeus surfaces with Playwright only when useful.',
@@ -138,7 +121,7 @@ jobs:
                 'or {"action":"comment","issue_number":123,"summary":"..."}',
                 'or {"action":"pr","pr_number":123,"branch":"automation/role/'+agent.id+'/...","summary":"..."}'
               ].join('\n')}],
-              metadata:{source:'quantdeus-agent-role-cron',repository:process.env.GITHUB_REPOSITORY,agent_id:agent.id,hour_utc:hour}
+              metadata:{source:'quantdeus-agent-role-cron',repository:process.env.GITHUB_REPOSITORY,agent_id:agent.id,issue_number:explicitIssue || undefined,hour_utc:hour}
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Role cron lacks trusted OpenClaw tools');
             const decision=parse(result.text);

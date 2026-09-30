@@ -9,6 +9,9 @@ const token = process.env.GITHUB_TOKEN;
 const repoOwner = (repo || '').split('/')[0];
 const HUB_TITLE = '🧭 QuantDeus Coordination Hub';
 const OWNER_RE = /<!--\s*quantdeus-owner:@([A-Za-z0-9-]+)\s*-->/i;
+const TARGET_AGENT_RE = /<!--\s*quantdeus-target-agent:([a-z0-9-]+)\s*-->/i;
+const agentRegistry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
+const agentById = new Map(agentRegistry.agents.map(agent => [agent.id, agent]));
 
 if (!repo || !token) {
   console.error('GITHUB_REPOSITORY and GITHUB_TOKEN are required');
@@ -32,6 +35,26 @@ function ghJson(args) {
 
 function hasLabel(issue, name) {
   return (issue.labels || []).some(l => (typeof l === 'string' ? l : l.name) === name);
+}
+
+function labelsOf(issue) {
+  return (issue.labels || []).map(l => typeof l === 'string' ? l : l.name).filter(Boolean);
+}
+
+function targetAgentOf(issue) {
+  const labelTarget = labelsOf(issue).find(name => name.startsWith('agent:'));
+  if (labelTarget) return labelTarget.slice('agent:'.length);
+  const marker = String(issue.body || '').match(TARGET_AGENT_RE);
+  return marker ? marker[1] : '';
+}
+
+function effectiveAgentId(id) {
+  const agent = agentById.get(id);
+  if (!agent) return '';
+  if (agent.operational_status === 'medbay' && agent.temporary_delegate && agentById.has(agent.temporary_delegate)) {
+    return agent.temporary_delegate;
+  }
+  return id;
 }
 
 function getOwner(body = '') {
@@ -118,6 +141,35 @@ function editLabels(number, add = [], remove = []) {
 
 function comment(number, body) {
   gh(['issue', 'comment', String(number), '--body', body]);
+}
+
+function maybeDispatchIssueAgent(event) {
+  const issue = event.issue;
+  if (!issue || issue.pull_request) return false;
+  const action = String(event.action || '');
+  const labelName = String(event.label?.name || '');
+  const relevant =
+    action === 'opened' ||
+    action === 'reopened' ||
+    (action === 'labeled' && (labelName === 'coord:ready' || labelName === 'coord:active' || labelName.startsWith('agent:'))) ||
+    (action === 'edited' && Boolean(event.changes?.body));
+  if (!relevant) return false;
+
+  const names = labelsOf(issue);
+  if (!names.includes('coord:task') || names.includes('coord:blocked') || (!names.includes('coord:ready') && !names.includes('coord:active'))) return false;
+
+  const requested = targetAgentOf(issue);
+  const target = effectiveAgentId(requested);
+  if (!requested || !target) return false;
+
+  gh([
+    'workflow','run','agent-role-cron.yml',
+    '--ref','main',
+    '-f','agent_id='+target,
+    '-f','issue_number='+String(issue.number),
+  ]);
+  console.log(JSON.stringify({dispatched:true,issue:issue.number,requested_agent:requested,target_agent:target}));
+  return true;
 }
 
 function handleIssueEvent(event) {
@@ -322,7 +374,10 @@ async function main() {
 
   if (process.env.GITHUB_EVENT_PATH && fs.existsSync(process.env.GITHUB_EVENT_PATH)) {
     const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf-8'));
-    if (process.env.GITHUB_EVENT_NAME === 'issues') handleIssueEvent(event);
+    if (process.env.GITHUB_EVENT_NAME === 'issues') {
+      handleIssueEvent(event);
+      maybeDispatchIssueAgent(event);
+    }
   }
 
   drainCommandComments();
