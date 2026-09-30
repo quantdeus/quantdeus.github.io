@@ -77,6 +77,6 @@ test('LLM bridge scopes browser OIDC to the browser workflow', () => {
   assert.match(bridge, /github_oidc_wrong_event_or_workflow/);
   assert.match(bridge, /generateText/);
   assert.match(bridge, /vercel-ai-gateway-oidc/);
-  assert.match(bridge, /google\\/gemini-3\\.6-flash/);
-  assert.doesNotMatch(bridge, /text\\.pollinations\\.ai/);
+  assert.match(bridge, /google\/gemini-3\.6-flash/);
+  assert.doesNotMatch(bridge, /text\.pollinations\.ai/);
 });
