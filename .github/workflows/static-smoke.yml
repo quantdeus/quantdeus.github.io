@@ -60,6 +60,9 @@ jobs:
       - name: Verify Browser Homunculus contract
         run: node --test scripts/qa/browser-homunculus.test.js
 
+      - name: Verify Seven and role dispatch execution guards
+        run: node --test tests/seven-blocked-loop-guard.test.js
+
       - name: Validate OpenClaw Office contract
         run: node scripts/qa/openclaw-office-validator.js
 
