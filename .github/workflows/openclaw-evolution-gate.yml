@@ -21,7 +21,6 @@ concurrency:
 
 jobs:
   gate:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -44,8 +43,7 @@ jobs:
           EXPECTED_BRANCH_PREFIX: automation/openclaw-evolution/
         run: |
           set -euo pipefail
-          gh pr list --repo "$GITHUB_REPOSITORY" --state open --base main --limit 50 --json number,headRefName \
-            --jq '.[] | select(.headRefName | startswith("automation/openclaw-evolution/")) | .number' |
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --base main --limit 50 --json number,headRefName             --jq '.[] | select(.headRefName | startswith("automation/openclaw-evolution/")) | .number' |
           while read -r pr; do
             [ -n "$pr" ] || continue
             echo "Evaluating evolution PR #$pr"
