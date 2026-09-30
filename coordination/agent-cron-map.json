@@ -8,7 +8,8 @@
     "adaptive_manifest": "coordination/manifesto-living.md",
     "rule": "Every registered agent has an explicit role-driven cron owner. A cron may create at most one bounded observable artifact per cycle unless its workflow is a validator.",
     "human_agency": "No cron may impersonate people, fabricate community activity, mass-spam, weaken safety/QA, expose secrets, spend money, or make legal/identity commitments.",
-    "political_neutrality": "News and civic/political signals are researched descriptively from documented sources; agents do not endorse parties/candidates, target voters, or turn the QuantDeus growth loop into political persuasion."
+    "political_neutrality": "News and civic/political signals are researched descriptively from documented sources; agents do not endorse parties/candidates, target voters, or turn the QuantDeus growth loop into political persuasion.",
+    "medbay": "Agents with operational_status=medbay remain registered and testable, but active work is delegated to temporary_delegate until the rejoin condition is met."
   },
   "agents": [
     {
@@ -144,7 +145,10 @@
       "utc_hours": [
         0
       ],
-      "mission": "Grow the real contributor community through relevant public opportunities and opt-in paths."
+      "mission": "Grow the real contributor community through relevant public opportunities and opt-in paths.",
+      "operational_status": "medbay",
+      "temporary_delegate": "herald",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
     },
     {
       "id": "space",
@@ -177,7 +181,10 @@
       "utc_hours": [
         4
       ],
-      "mission": "Improve QuantDeus brand, landing copy and platform-specific creative packages."
+      "mission": "Improve QuantDeus brand, landing copy and platform-specific creative packages.",
+      "operational_status": "medbay",
+      "temporary_delegate": "archivist",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
     },
     {
       "id": "control-tower",
@@ -265,7 +272,11 @@
       "utc_hours": [
         8
       ],
-      "mission": "Improve SEO, discoverability, onboarding and internal linking across public QuantDeus surfaces."
+      "mission": "Improve SEO, discoverability, onboarding and internal linking across public QuantDeus surfaces.",
+      "operational_status": "active",
+      "acting_for": [
+        "synthesis"
+      ]
     },
     {
       "id": "herald",
@@ -276,7 +287,11 @@
       "utc_hours": [
         12
       ],
-      "mission": "Prepare truthful platform-specific communications and opt-in outreach tied to concrete contribution opportunities."
+      "mission": "Prepare truthful platform-specific communications and opt-in outreach tied to concrete contribution opportunities.",
+      "operational_status": "active",
+      "acting_for": [
+        "unity"
+      ]
     },
     {
       "id": "qa-syntax",
@@ -290,7 +305,10 @@
         12,
         18
       ],
-      "mission": "Detect syntax/config regressions before merge and during self-heal cycles."
+      "mission": "Detect syntax/config regressions before merge and during self-heal cycles.",
+      "operational_status": "medbay",
+      "temporary_delegate": "qa-repair",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
     },
     {
       "id": "qa-contract",
@@ -304,7 +322,10 @@
         15,
         21
       ],
-      "mission": "Detect registry/doctrine/cron/integration drift and enforce invariants."
+      "mission": "Detect registry/doctrine/cron/integration drift and enforce invariants.",
+      "operational_status": "medbay",
+      "temporary_delegate": "qa-repair",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
     },
     {
       "id": "qa-repair",
@@ -322,7 +343,12 @@
         18,
         21
       ],
-      "mission": "Coordinate bounded repair loops for site and Actions failures."
+      "mission": "Coordinate bounded repair loops for site and Actions failures.",
+      "operational_status": "active",
+      "acting_for": [
+        "qa-syntax",
+        "qa-contract"
+      ]
     }
   ]
 }
