@@ -74,6 +74,18 @@ jobs:
           (async()=>{
             const slot=due[0];
             const agent=byId.get(slot.id);
+            const emhTreatmentInstructions = agent.id==='emh' ? [
+              '',
+              'EMH TREATMENT LANE (software-agent operational care):',
+              'When repeated observable evidence shows an agent failure caused or prolonged by ambiguous/conflicting operating policy, you may propose one bounded treatment patch.',
+              'A treatment patch MUST be a branch + PR and MUST change AGENTS.md only. Do not directly edit coordination/agents.json, coordination/homunculi.json, doctrine/manifesto state, workflows, QA code, auth/OIDC, trusted-tool gating, MCP deny lists, secrets or production state.',
+              'Base treatment on concrete evidence from fresh runs/Issues/PRs. Do not diagnose humans, infer mental-health traits, punish an agent, or declare an agent cured.',
+              'Use the patch only to clarify role instructions, WIP/handoff rules, evidence requirements, retry/delegation guidance or another reversible operating policy.',
+              'EMH may not weaken QA, grant itself tools, self-approve, merge, alter human/CEO authority or protected runtime/auth/security invariants.',
+              'Every EMH treatment PR must be independently validated by QA Triad and Static Smoke. qa-syntax/qa-contract/qa-repair watch the doctor; EMH may not certify its own treatment.',
+              'If no evidence-backed AGENTS.md treatment is needed, return action=none.'
+            ] : [];
+
             const result=await office.ask({
               profile:agent.id,
               trusted:true,
@@ -89,6 +101,7 @@ jobs:
                 'For a PR use branch prefix automation/role/'+agent.id+'/ and keep it minimal.',
                 'Do not merge your own PR. Do not weaken QA/security/mission rules, expose secrets, spend money, mass-message people, fabricate community activity, or perform unrelated work.',
                 'For political/civic material remain factual and neutral; no party/candidate endorsement, voter targeting or persuasion.',
+                ...emhTreatmentInstructions,
                 'If there is no material action, do nothing.',
                 '',
                 'After any GitHub mutation, verify it exists and return ONLY strict JSON:',
@@ -103,6 +116,29 @@ jobs:
             const decision=parse(result.text);
             if(!['none','issue','comment','pr'].includes(decision.action)) throw new Error('Unsupported role action');
             if(decision.action==='pr' && !String(decision.branch||'').startsWith('automation/role/'+agent.id+'/')) throw new Error('Role PR branch outside allowed prefix');
+            if(agent.id==='emh' && !['none','pr'].includes(decision.action)) {
+              throw new Error('EMH treatment lane permits only action=none or an AGENTS.md PR');
+            }
+            if(agent.id==='emh' && decision.action==='pr') {
+              const num = Number(decision.pr_number);
+              if(!Number.isInteger(num) || num < 1) throw new Error('EMH treatment PR number missing/invalid');
+              const expectedBranch = String(decision.branch || '');
+              const headers = {authorization:'Bearer ' + process.env.GITHUB_TOKEN,accept:'application/vnd.github+json','x-github-api-version':'2022-11-28'};
+              const prUrl = 'https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/pulls/' + num;
+              const prResponse = await fetch(prUrl, {headers});
+              if(!prResponse.ok) throw new Error('Unable to verify EMH treatment PR metadata: HTTP ' + prResponse.status);
+              const pr = await prResponse.json();
+              if(pr.head?.ref !== expectedBranch) throw new Error('EMH treatment PR head does not match declared branch: ' + String(pr.head?.ref || 'missing'));
+              if(pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY) throw new Error('EMH treatment PR must originate from the canonical repository');
+              if(pr.base?.ref !== 'main') throw new Error('EMH treatment PR must target main');
+              const url = prUrl + '/files?per_page=100';
+              const response = await fetch(url, {headers});
+              if(!response.ok) throw new Error('Unable to verify EMH treatment PR files: HTTP ' + response.status);
+              const files = await response.json();
+              const names = files.map(x=>x.filename);
+              if(names.length !== 1 || names[0] !== 'AGENTS.md') throw new Error('EMH treatment PR must change AGENTS.md only; got: ' + names.join(', '));
+              console.log('EMH treatment PR scope verified: AGENTS.md only; independent QA/Smoke required.');
+            }
             console.log(JSON.stringify({agent:agent.id,model:result.model,decision},null,2));
           })().catch(e=>{
             if(office.isTransientError(e)){

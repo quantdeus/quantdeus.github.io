@@ -35,6 +35,13 @@ check(JSON.stringify([...cronIds].sort()) === JSON.stringify([...ids].sort()), '
 for (const slot of agentCron.agents || []) {
   check(Boolean(slot.workflow && slot.cadence && Array.isArray(slot.utc_hours) && slot.utc_hours.length && slot.mission), slot.id || 'cron-slot', 'agent cron slot has workflow/cadence/hours/mission');
 }
+const emhCron = (agentCron.agents || []).find(a=>a.id==='emh');
+check(Boolean(emhCron && /AGENTS\.md/.test(emhCron.mission) && /QA Triad/.test(emhCron.mission) && /Static Smoke/.test(emhCron.mission)), 'emh', 'EMH cron mission binds treatment to AGENTS.md and independent QA/Smoke');
+
+const agentsReadme = fs.readFileSync(path.join(root,'AGENTS.md'),'utf8');
+check(agentsReadme.includes('### EMH operational treatment loop'), 'AGENTS.md', 'EMH AGENTS.md treatment lane is declared');
+check(agentsReadme.includes('QA watches the doctor'), 'AGENTS.md', 'independent QA oversight of EMH treatment is declared');
+check(agentsReadme.includes('The treatment PR must change **`AGENTS.md` only**'), 'AGENTS.md', 'EMH treatment document scope is AGENTS.md only');
 
 for (const department of startupOrg.departments || []) {
   for (const id of department.agents || []) {
@@ -112,6 +119,14 @@ check(doctrine.cron_policy?.required_check === 'node scripts/mission-alignment.j
 
 const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),'utf8');
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
+
+const roleCronWorkflow = fs.readFileSync(path.join(root,'.github','workflows','agent-role-cron.yml'),'utf8');
+check(roleCronWorkflow.includes("agent.id==='emh'") && roleCronWorkflow.includes('EMH TREATMENT LANE') && roleCronWorkflow.includes('AGENTS.md only') && roleCronWorkflow.includes('/pulls/') && roleCronWorkflow.includes("names[0] !== 'AGENTS.md'"), 'agent-role-cron.yml', 'EMH treatment cron is runtime-guarded to AGENTS.md-only PRs');
+check(roleCronWorkflow.includes("pr.head?.ref !== expectedBranch") && roleCronWorkflow.includes("pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY") && roleCronWorkflow.includes("pr.base?.ref !== 'main'"), 'agent-role-cron.yml', 'EMH treatment PR number is bound to the declared canonical branch targeting main');
+check(agentsReadme.includes('Seven of Nine (\`seven-of-nine\`)'), 'AGENTS.md', 'Seven is explicitly named as stress-test authority');
+const qaTriadWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-triad.yml'),'utf8');
+const staticSmokeWorkflow = fs.readFileSync(path.join(root,'.github','workflows','static-smoke.yml'),'utf8');
+check(qaTriadWorkflow.includes('pull_request:') && staticSmokeWorkflow.includes('pull_request:'), 'EMH QA oversight', 'QA Triad and Static Smoke independently run on treatment PRs');
 
 const workflowDir = path.join(root,'.github','workflows');
 const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml']);

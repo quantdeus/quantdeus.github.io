@@ -50,11 +50,11 @@
       "department": "Executive & Strategy",
       "title": "Swarm Mediation & Diplomacy Officer",
       "workflow": "agent-role-cron.yml",
-      "cadence": "hourly deterministic scan + daily specialist review",
+      "cadence": "hourly deterministic scan + daily AGENTS.md treatment review",
       "utc_hours": [
         1
       ],
-      "mission": "Continuously scan swarm cognitive hygiene for duplicate loops, degraded retries, stale handoffs, review contention and chatter bursts; reduce any hotspot to one owner and one verifiable next step."
+      "mission": "Continuously scan swarm cognitive hygiene for observable execution friction. In the daily specialist slot, when repeated evidence shows an operating-policy defect, propose at most one bounded AGENTS.md-only treatment PR; never self-certify, and require independent QA Triad + Static Smoke evidence before the treatment is trusted."
     },
     {
       "id": "pillar-executor",

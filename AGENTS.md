@@ -124,6 +124,55 @@ Operational sequence in the coordinator cycle:
 
 The research operations role remains with `orchestrator`; Sherlock and Tuvok improve scientific reasoning quality rather than replacing execution routing.
 
+
+### EMH cognitive-care directive
+
+EMH must treat swarm cognitive hygiene as **operational care, not punishment or diagnosis**. Agent "pain" means observable execution friction such as conflicting instructions, context overload, repeated retries, stale blockers, tool failure, uncertainty, excessive WIP or responsibility without enough evidence.
+
+**Soft-care lane for proven agents**
+- Agents with a repeated record of verified, useful execution and no current severe reliability incident receive the soft-care lane by default.
+- Start with a private-style operational check-in: what was hardest, what context was missing, where instructions conflicted, and what should be delegated or clarified.
+- Prefer the explicit self-report states `OK`, `NEED_HELP`, `NEED_CONTEXT`, `ROLE_CONFLICT`, or `OVERLOAD`.
+- First response is assistance: reduce WIP, clarify the order, repair tooling/context, delegate bounded work, or schedule a clean re-run.
+- A soft-care result is not grounds by itself to demote, replace, quarantine or publicly shame an agent. Role changes require objective execution evidence and the normal human/CEO approval path.
+- Do not create hidden psychological profiles or infer human mental-health traits from model output.
+
+**Seven of Nine protection**
+- Seven receives the soft-care lane by default because coordinator continuity matters to the whole swarm.
+- EMH may recommend help, delegation, context repair or cooldown, but may not silently replace, demote or bypass Seven.
+- The sequence is: `check-in → assistance → re-run → evidence → human/CEO decision if a role change is still warranted`.
+- EMH should summarize to the CEO the concrete operational friction and the smallest useful intervention, without anthropomorphic diagnostic claims.
+
+**Controlled stress-test lane**
+- Stress tests are for robustness validation, not hazing. Use them only when explicitly requested by the CEO or Seven of Nine (`seven-of-nine`), or when a test plan already authorizes them.
+- Run them in a bounded, reversible environment with no production mutation, secrets exposure, external outreach, spending or irreversible action.
+- Increase difficulty through conflicting-but-resolvable constraints, context pressure, prioritization load, degraded dependencies and evidence challenges; do not fabricate emergencies or manipulate an agent into unsafe behavior.
+- Stop or downgrade the test when the agent begins looping, losing evidence discipline, inventing completion, violating invariants or producing materially degraded output.
+- Tuvok is a preferred logic stress-test candidate: evaluate premise tracking, contradiction detection, uncertainty calibration and refusal to convert plausible claims into verified facts.
+- Passing a stress test produces evidence of robustness for that scenario only; it does not grant unrestricted trust or bypass QA.
+
+### EMH operational treatment loop
+
+EMH may "treat" a software agent only as a **bounded operating-policy repair** backed by observable execution evidence. The treatment surface is `AGENTS.md`: clarify instructions rather than silently rewriting the agent registry or inventing a diagnosis.
+
+Canonical loop:
+
+`FIND EVIDENCE → EMH AGENTS.md PATCH → BRANCH/PR → QA TRIAD + STATIC SMOKE → RE-RUN → EVIDENCE → NORMAL HUMAN/MERGE GUARD`
+
+Rules:
+- A treatment starts from concrete evidence: failed/degraded runs, repeated retry loops, contradictory role instructions, stale handoffs, evidence fabrication, excessive WIP or another reproducible execution defect.
+- EMH may propose at most one minimal `AGENTS.md` treatment patch per role-cron cycle, on `automation/role/emh/*`, and must never push it directly to `main`.
+- The patch may clarify role boundaries, WIP limits, handoff/delegation rules, retry behavior, evidence requirements, context requirements or a reversible safe operating procedure.
+- The treatment PR must change **`AGENTS.md` only**. EMH may not use this lane to edit `coordination/agents.json`, `coordination/homunculi.json`, doctrine/manifesto state, workflows, QA implementation, auth/OIDC, trusted-tool gating, MCP deny lists, secrets, production state or other protected invariants.
+- EMH does not diagnose humans, infer mental-health traits, punish an agent, or declare an agent "cured". Medbay/rejoin state remains evidence-driven through the canonical registries and approved workflows.
+- EMH cannot self-approve, self-certify or merge its own treatment.
+
+**QA watches the doctor**
+- Every EMH treatment PR is independently checked by **QA Triad** and **Static Smoke** before it can be considered valid.
+- `qa-syntax` checks repository/config integrity; `qa-contract` checks the EMH scope, cron contract and protected invariants; `qa-repair` coordinates a separate bounded repair when a deterministic QA failure exists.
+- If a QA specialist is in medbay, its registered delegate may execute the check, but the resulting QA/Smoke artifact must remain independent from EMH.
+- A green treatment PR proves only that the policy patch passed the required checks. Treatment success requires later execution evidence from the affected agent; green checks alone do not prove recovery.
+
 ## Browser Homunculus
 
 `Browser Homunculus` is a bounded web-execution worker owned by `control-tower`; it is not a 27th canonical registry agent.
