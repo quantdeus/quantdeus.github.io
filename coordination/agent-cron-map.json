@@ -146,9 +146,7 @@
         0
       ],
       "mission": "Grow the real contributor community through relevant public opportunities and opt-in paths.",
-      "operational_status": "medbay",
-      "temporary_delegate": "herald",
-      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
+      "operational_status": "active"
     },
     {
       "id": "space",
@@ -182,9 +180,7 @@
         4
       ],
       "mission": "Improve QuantDeus brand, landing copy and platform-specific creative packages.",
-      "operational_status": "medbay",
-      "temporary_delegate": "archivist",
-      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
+      "operational_status": "active"
     },
     {
       "id": "control-tower",
@@ -273,10 +269,7 @@
         8
       ],
       "mission": "Improve SEO, discoverability, onboarding and internal linking across public QuantDeus surfaces.",
-      "operational_status": "active",
-      "acting_for": [
-        "synthesis"
-      ]
+      "operational_status": "active"
     },
     {
       "id": "herald",
@@ -288,10 +281,7 @@
         12
       ],
       "mission": "Prepare truthful platform-specific communications and opt-in outreach tied to concrete contribution opportunities.",
-      "operational_status": "active",
-      "acting_for": [
-        "unity"
-      ]
+      "operational_status": "active"
     },
     {
       "id": "qa-syntax",
@@ -306,9 +296,7 @@
         18
       ],
       "mission": "Detect syntax/config regressions before merge and during self-heal cycles.",
-      "operational_status": "medbay",
-      "temporary_delegate": "qa-repair",
-      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
+      "operational_status": "active"
     },
     {
       "id": "qa-contract",
@@ -323,9 +311,7 @@
         21
       ],
       "mission": "Detect registry/doctrine/cron/integration drift and enforce invariants.",
-      "operational_status": "medbay",
-      "temporary_delegate": "qa-repair",
-      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test"
+      "operational_status": "active"
     },
     {
       "id": "qa-repair",
@@ -344,11 +330,7 @@
         21
       ],
       "mission": "Coordinate bounded repair loops for site and Actions failures.",
-      "operational_status": "active",
-      "acting_for": [
-        "qa-syntax",
-        "qa-contract"
-      ]
+      "operational_status": "active"
     }
   ]
 }
