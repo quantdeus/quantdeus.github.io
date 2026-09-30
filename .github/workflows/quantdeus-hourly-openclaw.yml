@@ -90,7 +90,9 @@ jobs:
                 source: 'quantdeus-hourly-openclaw',
                 repository: process.env.GITHUB_REPOSITORY,
                 cadence: 'hourly'
-              }
+              },
+              timeoutMs: 120000,
+              retryTransient: true
             });
 
             if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
@@ -129,6 +131,16 @@ jobs:
             });
             console.log(JSON.stringify({ mutation: 'issue_comment', issue_number: issueNumber, comment_url: posted.html_url }, null, 2));
           })().catch(error => {
+            if (office.isTransientError(error)) {
+              console.warn('Hourly OpenClaw tick degraded by transient provider failure; no mutation performed.');
+              console.log(JSON.stringify({
+                ok: true,
+                action: 'none',
+                degraded: true,
+                reason: 'TRANSIENT_OPENCLAW: ' + String(error.message || error).slice(0, 500)
+              }, null, 2));
+              return;
+            }
             console.error(error.stack || error.message || error);
             process.exit(1);
           });
