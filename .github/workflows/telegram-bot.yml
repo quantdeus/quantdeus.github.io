@@ -16,6 +16,8 @@ on:
     paths:
       - '.github/workflows/telegram-bot.yml'
       - 'scripts/telegram-bot.js'
+      - 'scripts/openclaw-office-client.js'
+      - 'scripts/github-oidc.js'
       - 'scripts/telegram-webhook-setup.js'
       - 'scripts/telegram-retry-smoke.js'
       - 'vercel-dispatcher/api/quantdeus/telegram.js'

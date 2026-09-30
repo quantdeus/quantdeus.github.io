@@ -1,5 +1,6 @@
 const fs = require('fs');
 const openclawOffice = require('./openclaw-office-client');
+const { getGithubOidcToken } = require('./github-oidc');
 const { execFileSync } = require('child_process');
 
 const repo = process.env.GITHUB_REPOSITORY;
@@ -38,21 +39,6 @@ const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
 const RETRY_SMOKE_AUDIENCE = 'quantdeus-vercel-telegram';
 const RETRY_SMOKE_ENDPOINT = process.env.TELEGRAM_RETRY_SMOKE_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
-
-async function getGithubOidcToken(audience) {
-  const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-  const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-  if (!requestUrl || !requestToken) throw new Error('GITHUB_OIDC_UNAVAILABLE');
-  const separator = requestUrl.includes('?') ? '&' : '?';
-  const response = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent(audience), {
-    headers: { authorization: 'Bearer ' + requestToken, accept: 'application/json' }
-  });
-  const raw = await response.text();
-  if (!response.ok) throw new Error('GitHub OIDC ' + response.status + ': ' + raw.slice(0, 500));
-  const data = JSON.parse(raw);
-  if (!data?.value) throw new Error('GitHub OIDC returned no token');
-  return data.value;
-}
 
 async function reportRetrySmoke(payload) {
   const oidc = await getGithubOidcToken(RETRY_SMOKE_AUDIENCE);
