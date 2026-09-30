@@ -56,12 +56,16 @@ jobs:
           const nowMinutes=hour*60+minute;
           const dueSlots=slots.filter(h=>h*60+53<=nowMinutes);
           const scheduledHour=dueSlots.length?dueSlots[dueSlots.length-1]:slots[slots.length-1];
-          const agentId=manual||rotation[scheduledHour];
-          if(manual && !allowed.has(agentId)) throw new Error('Invalid growth/site agent');
-          if(!agentId || !allowed.has(agentId)){
+          const requestedAgentId=manual||rotation[scheduledHour];
+          if(manual && !allowed.has(requestedAgentId)) throw new Error('Invalid growth/site agent');
+          if(!requestedAgentId || !allowed.has(requestedAgentId)){
             console.log(JSON.stringify({ok:true,action:'none',reason:'no valid growth/site slot',hour_utc:hour,minute_utc:minute}));
             process.exit(0);
           }
+          const requestedAgent=byId.get(requestedAgentId);
+          const delegatedFrom=requestedAgent?.operational_status==='medbay' ? requestedAgentId : null;
+          const agentId=delegatedFrom ? String(requestedAgent?.temporary_delegate||'') : requestedAgentId;
+          if(!agentId || !allowed.has(agentId) || !byId.has(agentId)) throw new Error('Invalid medbay delegate for '+requestedAgentId);
           const agent=byId.get(agentId);
           function parse(text){
             const raw=String(text||'').trim();
@@ -76,7 +80,8 @@ jobs:
               trusted:true,
               messages:[{role:'user',content:[
                 'QuantDeus growth + site autonomous cycle.',
-                'Agent: '+agentId+' — '+agent.role,
+                'Requested slot: '+requestedAgentId+'. Active profile: '+agentId+' — '+agent.role,
+                delegatedFrom ? 'EMH medbay delegation: '+delegatedFrom+' is temporarily inactive; preserve its requested mission while using the active delegate profile.' : '',
                 'Read coordination/manifesto-living.md, coordination/growth/platform-playbook.json, contributor recruitment contract, open Issues/PRs and the current public site.',
                 'Use Playwright to inspect https://quantdeus.github.io/ and relevant routes when site work is appropriate.',
                 '',
@@ -94,7 +99,7 @@ jobs:
                 'or {"action":"issue","issue_number":123,"summary":"..."}',
                 'or {"action":"pr","pr_number":123,"branch":"automation/site-refresh/...","autopublish":true,"summary":"..."}'
               ].join('\n')}],
-              metadata:{source:'quantdeus-growth-site-cycle',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,hour_utc:hour,scheduled_hour_utc:scheduledHour}
+              metadata:{source:'quantdeus-growth-site-cycle',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,requested_agent_id:requestedAgentId,delegated_from:delegatedFrom||'',hour_utc:hour,scheduled_hour_utc:scheduledHour}
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Growth/site cycle lacks trusted tools');
             const d=parse(result.text);
@@ -106,7 +111,7 @@ jobs:
               fs.appendFileSync(process.env.GITHUB_OUTPUT,'autopublish='+(d.autopublish===true?'true':'false')+'\n');
             }
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
-            console.log(JSON.stringify({agent:agentId,model:result.model,decision:d},null,2));
+            console.log(JSON.stringify({requested_agent:requestedAgentId,active_agent:agentId,delegated_from:delegatedFrom,model:result.model,decision:d},null,2));
           })().catch(e=>{
             if(office.isTransientError(e)){
               const decision={action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)};
