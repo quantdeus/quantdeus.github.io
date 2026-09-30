@@ -187,7 +187,7 @@ Rules:
 3. Credentials come only from GitHub Actions Secrets via approved secret slots; never place passwords/tokens in Issues.
 4. Stop for CAPTCHA, anti-bot challenges, 2FA, passkeys, SMS/email verification, payments, purchases or irreversible commitments; create a human handoff instead of bypassing the gate.
 5. Do not store screenshots after secret credentials are entered.
-6. Natural-language browser control requires Vercel AI Gateway; deterministic structured steps work without an LLM.
+6. Natural-language browser control stays disabled until a verified provider adapter is explicitly configured; deterministic structured steps work without an LLM.
 
 Implementation: `scripts/browser-homunculus.js`, `.github/workflows/browser-homunculus.yml`, `vercel-dispatcher/api/quantdeus/browser.js`.
 
