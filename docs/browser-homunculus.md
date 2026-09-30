@@ -16,7 +16,7 @@ GitHub remains the source of truth. Vercel queues work; GitHub Actions executes 
 - click buttons and links;
 - select/check form controls;
 - wait for navigation;
-- run bounded natural-language browser tasks when Vercel AI Gateway is configured;
+- keep natural-language browser tasks disabled until a verified provider adapter is explicitly configured;
 - create ordinary accounts when the site permits automation and no human verification gate blocks the flow.
 
 It stops instead of trying to bypass CAPTCHA, anti-bot challenges, passkeys, 2FA, SMS/email verification, payment screens, or other human gates.
@@ -30,11 +30,9 @@ Never put credentials into an Issue or Vercel request. Use these optional GitHub
 - QD_BROWSER_PASSWORD
 - QD_BROWSER_PHONE
 - QD_BROWSER_RECOVERY_EMAIL
-- AI_GATEWAY_API_KEY for chat mode
 
 Optional repository variable:
 
-- AI_GATEWAY_MODEL
 
 A structured action references a secret by name:
 
@@ -67,19 +65,8 @@ If the site requests email/SMS verification or CAPTCHA after submission, the wor
 
 ## AI chat mode
 
-With AI_GATEWAY_API_KEY configured, the manifest may use:
-
-~~~json
-{
-  "version": 1,
-  "mode": "chat",
-  "url": "https://example.com",
-  "allowed_domains": ["example.com"],
-  "instruction": "Open the pricing documentation and report where the free-tier limits are stated."
-}
-~~~
-
-The runtime uses vercel-labs/agent-browser AI chat through Vercel AI Gateway. Allowed-domain restrictions remain active.
+Chat mode is currently fail-closed. The manifest may declare it, but execution stops until a verified provider adapter is configured.
+Allowed-domain restrictions remain active for deterministic browser actions.
 
 ## Vercel queue endpoint
 

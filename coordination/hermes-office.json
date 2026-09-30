@@ -10,7 +10,7 @@
   "github_repository": "quantdeus/quantdeus.github.io",
   "model": {
     "provider": "custom",
-    "default": "openai/gpt-oss-120b",
+    "default": "",
     "base_url_env": "HERMES_LOCAL_BASE_URL (fallback OPENAI_BASE_URL; otherwise preserve the persistent Hermes Sandbox profile endpoint)",
     "api_key_env": "HERMES_LOCAL_API_KEY (fallback OPENAI_API_KEY; otherwise preserve Sandbox credentials)",
     "minimum_context_tokens": 131072,

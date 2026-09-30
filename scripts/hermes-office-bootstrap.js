@@ -92,21 +92,11 @@ function canonicalConfig(agent, office, evolution) {
   const modelKeyEnv = process.env.HERMES_LOCAL_API_KEY
     ? 'HERMES_LOCAL_API_KEY'
     : (process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' : null);
-  const gatewayModels = [...new Set(
-    (process.env.HERMES_VERCEL_FALLBACK_MODELS || [
-      process.env.AI_GATEWAY_MODEL || 'openai/gpt-5-mini',
-      'openai/gpt-oss-120b'
-    ].join(','))
-      .split(',')
-      .map(model => model.trim())
-      .filter(Boolean)
-  )].slice(0, 3);
-  const fallbackProviders = gatewayModels.map(model => ({ provider: 'ai-gateway', model }));
-  // Keep provider policy in profile config; the credential is supplied per turn.
-  fallbackProviders.push({
-    provider: 'openrouter',
-    model: process.env.HERMES_OPENROUTER_MODEL || 'openai/gpt-oss-120b'
-  });
+  const openRouterModel = String(process.env.HERMES_OPENROUTER_MODEL || 'openrouter/free').trim();
+  const fallbackProviders = [];
+  if (process.env.OPENROUTER_API_KEY && openRouterModel) {
+    fallbackProviders.push({ provider: 'openrouter', model: openRouterModel });
+  }
 
   const cfg = {
     fallback_providers: fallbackProviders,
@@ -118,7 +108,7 @@ function canonicalConfig(agent, office, evolution) {
     },
     model: {
       provider: process.env.HERMES_MODEL_PROVIDER || office.model.provider || 'custom',
-      default: process.env.HERMES_MODEL || office.model.default || 'openai/gpt-oss-120b',
+      default: process.env.HERMES_MODEL || office.model.default || '',
       ...(modelBaseUrl ? { base_url: modelBaseUrl } : {}),
       ...(modelKeyEnv ? { key_env: modelKeyEnv } : {})
     },
@@ -165,7 +155,7 @@ function canonicalConfig(agent, office, evolution) {
     },
     cron: {
       allow_agent_scheduling: true,
-      model: process.env.HERMES_MODEL || office.model.default || 'openai/gpt-oss-120b',
+      model: process.env.HERMES_MODEL || office.model.default || '',
       model_provider: process.env.HERMES_MODEL_PROVIDER || office.model.provider || 'custom',
       max_parallel_jobs: seven ? 3 : 1
     }

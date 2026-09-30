@@ -191,7 +191,6 @@ function main() {
       AGENT_BROWSER_CONTENT_BOUNDARIES: '1',
       AGENT_BROWSER_IDLE_TIMEOUT_MS: '300000'
     };
-    if (!env.AI_GATEWAY_MODEL) delete env.AI_GATEWAY_MODEL;
 
     fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
     runAB(['open', validated.url], env);
@@ -208,16 +207,7 @@ function main() {
     }
 
     if (manifest.mode === 'chat') {
-      if (!process.env.AI_GATEWAY_API_KEY) throw new Error('AI_GATEWAY_API_KEY_required_for_chat_mode');
-      const policy = [
-        'You are the QuantDeus Browser Homunculus.',
-        'Operate only on the allowed domains.',
-        'Do not bypass CAPTCHA, anti-bot checks, 2FA, passkeys, SMS/email verification, payments, purchases, or irreversible legal/financial commitments.',
-        'If any such gate appears, stop and report that human handoff is required.',
-        'Task:',
-        String(manifest.instruction)
-      ].join('\n');
-      runAB(['--json', 'chat', policy], env);
+      throw new Error('browser_chat_llm_disabled_until_verified_provider_adapter');
     } else {
       for (let i = 0; i < manifest.actions.length; i++) {
         performAction(manifest.actions[i], env);

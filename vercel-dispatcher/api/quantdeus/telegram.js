@@ -9,7 +9,6 @@ const AUDIENCE = 'quantdeus-vercel-telegram';
 const DEFAULT_WEBHOOK_URL = 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 const REGISTRY_URL = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/coordination/agents.json';
 const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
-const GATEWAY_MODELS = ['inclusionai/ling-3.0-flash-sante-free', 'inclusionai/ling-3.1-flash-free', 'openai/gpt-oss-120b'];
 const LIVE_RESEARCH_TIMEOUT_MS = 7000;
 const LIVE_RESEARCH_MAX_ITEMS = 8;
 let jwksCache = [];
@@ -459,102 +458,6 @@ function cleanModelText(value) {
   return text.replace(/^["']|["']$/g, '').trim().slice(0, 3600);
 }
 
-async function pollinationsFallback(system, user) {
-  const compactPrompt = [
-    String(system || '').slice(0, 80),
-    '',
-    'USER:',
-    String(user || '').slice(0, 180)
-  ].join('\n').slice(0, 3200);
-
-  const runWithTimeout = async (label, fn) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 9000);
-    try {
-      const output = cleanModelText(await fn(controller.signal));
-      if (!output) throw new Error('empty_output');
-      console.info(`[telegram-llm] provider=${label} status=ok chars=${output.length}`);
-      return output;
-    } catch (error) {
-      console.warn(`[telegram-llm] provider=${label} status=error detail=${String(error?.message || error).slice(0, 300)}`);
-      throw error;
-    } finally {
-      clearTimeout(timer);
-    }
-  };
-
-  const candidates = [
-    runWithTimeout('pollinations-chat-openai', async signal => {
-      const response = await fetch('https://text.pollinations.ai/openai/chat/completions', {
-        method: 'POST',
-        headers: {
-          authorization: 'Bearer anonymous',
-          'content-type': 'application/json',
-          accept: 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'openai',
-          messages: [
-            { role: 'system', content: String(system || '').slice(0, 90) },
-            { role: 'user', content: String(user || '').slice(0, 220) }
-          ],
-          temperature: 0.45,
-          max_tokens: 96
-        }),
-        signal
-      });
-      const raw = await response.text();
-      if (!response.ok) throw new Error(`http_${response.status}: ${raw.slice(0, 200)}`);
-      let data = {};
-      try { data = JSON.parse(raw); } catch {}
-      return data?.choices?.[0]?.message?.content || '';
-    }),
-    runWithTimeout('pollinations-text-openai', async signal => {
-      const url = 'https://text.pollinations.ai/' + encodeURIComponent(compactPrompt) + '?model=openai';
-      const response = await fetch(url, { method: 'GET', headers: { accept: 'text/plain' }, signal });
-      const raw = await response.text();
-      if (!response.ok) throw new Error(`http_${response.status}: ${raw.slice(0, 200)}`);
-      return raw;
-    }),
-    runWithTimeout('pollinations-gen-gpt4o-mini', async signal => {
-      const url = 'https://gen.pollinations.ai/text/' + encodeURIComponent(compactPrompt) + '?model=openai/gpt-4o-mini';
-      const response = await fetch(url, { method: 'GET', headers: { accept: 'text/plain' }, signal });
-      const raw = await response.text();
-      if (!response.ok) throw new Error(`http_${response.status}: ${raw.slice(0, 200)}`);
-      return raw;
-    })
-  ];
-
-  try {
-    return await Promise.any(candidates);
-  } catch {
-    return '';
-  }
-}
-
-async function chatCompletion(system, user) {
-  for (const model of GATEWAY_MODELS) {
-    try {
-      const result = await generateText({
-        model,
-        system,
-        prompt: user,
-        temperature: 0.45
-      });
-      const output = cleanModelText(result?.text);
-      if (output) {
-        console.info(`[telegram-llm] provider=vercel-ai-sdk model=${model} status=ok chars=${output.length}`);
-        return output;
-      }
-      console.warn(`[telegram-llm] provider=vercel-ai-sdk model=${model} status=empty`);
-    } catch (error) {
-      console.warn(`[telegram-llm] provider=vercel-ai-sdk model=${model} status=error detail=${String(error?.message || error).slice(0, 500)}`);
-    }
-  }
-
-  return pollinationsFallback(system, user);
-}
-
 async function openClawInternalReply(agentId, requestedAgentId, system, user) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
@@ -657,14 +560,12 @@ async function homunculusReply(message) {
   const groundedQuery = researchRequired
     ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
     : query.slice(0, 7000);
-  const answer =
-    await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery) ||
-    await chatCompletion(system, groundedQuery);
+  const answer = await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery);
   if (!answer) {
     if (researchRequired && research?.ok) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${groundedResearchFallback(research)}`;
     }
-    return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nМаршрут принят, но LLM-канал сейчас не дал ответ. Попробуй повторить сообщение через несколько секунд.`;
+    return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nНет проверенного живого LLM-маршрута. Дохлые fallback-модели отключены; требуется провайдер, прошедший health probe.`;
   }
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${answer}`.slice(0, 3900);
 }
