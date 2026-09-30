@@ -108,7 +108,55 @@ jobs:
             }
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
             console.log(JSON.stringify({model:result.model,decision:d},null,2));
-          })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          })().catch(e=>{
+            if(office.isTransientError(e)){
+              console.warn('Seven OpenClaw decision degraded; selecting one deterministic safe role dispatch.');
+              const issues=JSON.parse(read('/tmp/qd-seven/issues.json')||'[]');
+              const prs=JSON.parse(read('/tmp/qd-seven/prs.json')||'[]');
+              const registry=require('./coordination/agents.json');
+              const known=new Set((registry.agents||[]).map(x=>String(x.id||'').trim()).filter(Boolean));
+              const labelsOf=i=>new Set((i.labels||[]).map(x=>typeof x==='string'?x:x.name));
+              const targetOf=i=>{
+                const labels=labelsOf(i);
+                const byLabel=[...labels].find(x=>x.startsWith('agent:'))?.slice(6);
+                const byMarker=String(i.body||'').match(/quantdeus-target-agent:([a-z0-9-]+)/i)?.[1];
+                const target=String(byLabel||byMarker||'').trim();
+                return known.has(target)?target:'';
+              };
+              const represented=i=>prs.some(pr=>{
+                const hay=[pr.title,pr.body,pr.headRefName].filter(Boolean).join('\n');
+                return new RegExp(`(?:#|issue[-_/ ])${i.number}(?:\\b|$)`,'i').test(hay);
+              });
+              const candidates=issues.filter(i=>{
+                const labels=labelsOf(i);
+                return labels.has('coord:task') &&
+                  (labels.has('coord:active')||labels.has('coord:ready')) &&
+                  !labels.has('coord:blocked') &&
+                  !labels.has('squad-b:blocked') &&
+                  !labels.has('squad-b:review') &&
+                  !represented(i) &&
+                  Boolean(targetOf(i));
+              }).sort((a,b)=>{
+                const la=labelsOf(a),lb=labelsOf(b);
+                const score=l=>(l.has('coord:active')?0:10)+(l.has('priority:p0')?0:l.has('priority:p1')?1:2);
+                return score(la)-score(lb)||String(a.updatedAt||'').localeCompare(String(b.updatedAt||''))||a.number-b.number;
+              });
+              const candidate=candidates[0];
+              if(candidate){
+                const inputs={agent_id:targetOf(candidate),issue_number:String(candidate.number)};
+                fs.appendFileSync(process.env.GITHUB_OUTPUT,'workflow=agent-role-cron.yml\n');
+                fs.appendFileSync(process.env.GITHUB_OUTPUT,'inputs='+Buffer.from(JSON.stringify(inputs)).toString('base64')+'\n');
+                fs.appendFileSync(process.env.GITHUB_OUTPUT,'action=dispatch\n');
+                console.log(JSON.stringify({degraded:true,fallback:'deterministic',workflow:'agent-role-cron.yml',inputs,reason:String(e.message||e).slice(0,500)},null,2));
+                return;
+              }
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'action=none\n');
+              console.warn('No deterministic safe role candidate found after transient OpenClaw failure.');
+              return;
+            }
+            console.error(e.stack||e);
+            process.exit(1);
+          });
           NODE
       - name: Publish Seven-proposed Issue deterministically
         if: steps.seven.outputs.action == 'open_issue'
@@ -136,6 +184,7 @@ jobs:
           for(const [k,v] of Object.entries(inputs)){
             if(workflow==='qa-self-heal.yml' && k==='lane' && ['full','site','actions'].includes(String(v))) args.push('-f',k+'='+v);
             else if(workflow==='agent-role-cron.yml' && k==='agent_id' && /^[a-z0-9-]+$/.test(String(v))) args.push('-f',k+'='+v);
+            else if(workflow==='agent-role-cron.yml' && k==='issue_number' && /^\\d+$/.test(String(v))) args.push('-f',k+'='+v);
             else if(Object.keys(inputs).length) throw new Error('Unsupported workflow input');
           }
           execFileSync('gh',args,{stdio:'inherit',env:{...process.env,GH_TOKEN:process.env.GH_TOKEN}});
