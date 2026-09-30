@@ -1,8 +1,13 @@
 name: QuantDeus OpenClaw Evolution PR Guard
 
 on:
-  pull_request:
-    branches: [main]
+  # Evolution PRs may be created by GITHUB_TOKEN. GitHub intentionally suppresses
+  # recursive pull_request workflows from that token, so the evolution publisher
+  # explicitly workflow_dispatches this guard on the candidate branch.
+  # Human-authored pushes to an evolution branch are guarded as well.
+  push:
+    branches:
+      - 'automation/openclaw-evolution/**'
   workflow_dispatch:
 
 permissions:

@@ -113,8 +113,13 @@ async function countIssueState(label) {
 }
 
 async function actionsSnapshot() {
-  const data = await githubJson('/repos/' + process.env.GITHUB_REPOSITORY + '/actions/runs?per_page=100');
+  const repo = process.env.GITHUB_REPOSITORY;
+  const [data, main] = await Promise.all([
+    githubJson('/repos/' + repo + '/actions/runs?per_page=100'),
+    githubJson('/repos/' + repo + '/branches/main'),
+  ]);
   if (!data) return null;
+  const currentMainSha = main?.commit?.sha || null;
   const watched = [
     'QuantDeus Seven + Swarm Secretary 🖖🗂️',
     'QuantDeus Seven Priority Cycle 🖖',
@@ -126,12 +131,17 @@ async function actionsSnapshot() {
   const latest = {};
   for (const run of data.workflow_runs || []) {
     if (!watched.includes(run.name) || latest[run.name]) continue;
+    // Crew health represents the production control plane. Branch/PR validation
+    // runs are useful evidence, but must not turn production health red.
+    if (run.head_branch !== 'main') continue;
     latest[run.name] = {
       id: run.id,
       status: run.status,
       conclusion: run.conclusion,
       run_number: run.run_number,
       head_sha: run.head_sha,
+      current_main_sha: currentMainSha,
+      current_main: Boolean(currentMainSha && run.head_sha === currentMainSha),
       created_at: run.created_at,
       html_url: run.html_url,
     };
@@ -157,7 +167,11 @@ async function actionsSnapshot() {
     actions = await actionsSnapshot();
     for (const [name, run] of Object.entries(actions || {})) {
       if (run.status === 'completed' && !['success', 'skipped'].includes(run.conclusion)) {
-        failures.push({ agent: name, message: `latest run is ${run.conclusion}` });
+        if (run.current_main) {
+          failures.push({ agent: name, message: `current-main run is ${run.conclusion}` });
+        } else {
+          warnings.push(`stale Actions failure on previous main for ${name}: ${run.conclusion} (run ${run.id})`);
+        }
       }
     }
   } catch (err) {
