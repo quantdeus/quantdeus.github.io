@@ -116,6 +116,21 @@ function hourlyOfficeRequest(req, claims) {
     new Set(['schedule', 'workflow_dispatch']).has(String(claims.event_name || ''));
 }
 
+function autonomousWorkerRequest(req, claims) {
+  if (!trustedOfficeRequest(req, claims)) return false;
+  const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  const source = String(req.body?.metadata?.source || '');
+  const eventName = String(claims.event_name || '');
+  if (!new Set(['schedule', 'workflow_dispatch']).has(eventName)) return false;
+  if (/\.github\/workflows\/agent-role-cron\.yml(?:@|$)/.test(workflowRef)) {
+    return source === 'quantdeus-agent-role-cron';
+  }
+  if (/\.github\/workflows\/qa-self-heal\.yml(?:@|$)/.test(workflowRef)) {
+    return source === 'quantdeus-qa-self-heal';
+  }
+  return false;
+}
+
 async function probeChatCandidate(candidate, requireTools = false) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), requireTools ? 30000 : 10000);
@@ -342,9 +357,16 @@ export default async function handler(req, res) {
     }
     const trustedOffice = vercelInternal ? false : trustedOfficeRequest(req, claims);
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
+    const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
     const smokePhase = trustedOffice && req.body?.metadata?.source === 'openclaw-admin-smoke' && new Set(['github', 'playwright']).has(smokePhaseRaw) ? smokePhaseRaw : null;
-    const githubToken = String(req.headers['x-quantdeus-github-token'] || process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
+    const callerGithubToken = String(req.headers['x-quantdeus-github-token'] || '').trim();
+    const executorGithubToken = String(process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
+    const githubToken = String(
+      autonomousWorker && executorGithubToken
+        ? executorGithubToken
+        : (callerGithubToken || executorGithubToken)
+    ).trim();
     if (req.body?.execution_mode === 'trusted-office' && !trustedOffice) {
       return res.status(403).json({ ok: false, error: 'openclaw_trusted_office_not_authorized' });
     }
@@ -759,6 +781,8 @@ export default async function handler(req, res) {
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
+      autonomous_worker: autonomousWorker,
+      github_credential_source: autonomousWorker && executorGithubToken ? 'vercel-executor' : (callerGithubToken ? 'caller' : (executorGithubToken ? 'vercel-fallback' : 'none')),
       vercel_internal: vercelInternal,
       validated_fallbacks: fallbackModels
     }));
