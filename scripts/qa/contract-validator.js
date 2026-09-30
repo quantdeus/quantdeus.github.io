@@ -213,6 +213,13 @@ if (fs.existsSync(telegramBridgePath)) {
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'Telegram webhook setup uses one role-aware LLM probe to avoid anonymous-provider burst throttling'
   );
+  check(
+    telegramBridge.includes('async function openClawInternalReply(agentId, requestedAgentId, system, user)') &&
+    telegramBridge.includes('await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery)') &&
+    telegramBridge.includes('requested_agent_id: requestedAgentId'),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Telegram OpenClaw lane passes the requested agent id explicitly instead of relying on an out-of-scope variable'
+  );
 }
 
 const coordinatorSource = fs.readFileSync(path.join(root,'scripts/coordinator.js'),'utf8');
