@@ -37,6 +37,7 @@ jobs:
           node --check scripts/telegram-bot.js
           node --check scripts/telegram-webhook-setup.js
           node --check scripts/browser-homunculus.js
+          node --check scripts/qa/browser-homunculus.test.js
           node --check scripts/pillar-executor.js
           node --check scripts/strategic-hub.js
           node --check scripts/orchestrator.js
@@ -54,6 +55,9 @@ jobs:
 
       - name: Verify evolution boundaries and merge guard behavior
         run: node --test scripts/qa/openclaw-evolution.test.js
+
+      - name: Verify Browser Homunculus contract
+        run: node --test scripts/qa/browser-homunculus.test.js
 
       - name: Validate OpenClaw Office contract
         run: node scripts/qa/openclaw-office-validator.js

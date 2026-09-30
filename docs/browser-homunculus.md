@@ -16,7 +16,7 @@ GitHub remains the source of truth. Vercel queues work; GitHub Actions executes 
 - click buttons and links;
 - select/check form controls;
 - wait for navigation;
-- keep natural-language browser tasks disabled until a verified provider adapter is explicitly configured;
+- run bounded natural-language browser tasks only when an explicit Vercel AI Gateway key and model are configured;
 - create ordinary accounts when the site permits automation and no human verification gate blocks the flow.
 
 It stops instead of trying to bypass CAPTCHA, anti-bot challenges, passkeys, 2FA, SMS/email verification, payment screens, or other human gates.
@@ -30,8 +30,11 @@ Never put credentials into an Issue or Vercel request. Use these optional GitHub
 - QD_BROWSER_PASSWORD
 - QD_BROWSER_PHONE
 - QD_BROWSER_RECOVERY_EMAIL
+- AI_GATEWAY_API_KEY for natural-language chat mode
 
 Optional repository variable:
+
+- AI_GATEWAY_MODEL (required when chat mode is used)
 
 
 A structured action references a secret by name:
@@ -65,8 +68,19 @@ If the site requests email/SMS verification or CAPTCHA after submission, the wor
 
 ## AI chat mode
 
-Chat mode is currently fail-closed. The manifest may declare it, but execution stops until a verified provider adapter is configured.
-Allowed-domain restrictions remain active for deterministic browser actions.
+Chat mode is fail-closed unless both `AI_GATEWAY_API_KEY` and an explicit `AI_GATEWAY_MODEL` are configured. It uses the native `agent-browser chat` command through Vercel AI Gateway; it does not resurrect the retired provider fallback cascade.
+
+~~~json
+{
+  "version": 1,
+  "mode": "chat",
+  "url": "https://example.com",
+  "allowed_domains": ["example.com"],
+  "instruction": "Open the documentation page and report the relevant limit."
+}
+~~~
+
+The runtime keeps content boundaries, output limits, a pinned active tab, the domain allowlist, CAPTCHA/2FA handoff, and a strict final URL/snapshot check. Browser execution failures now fail the GitHub Actions job instead of being masked as a green run.
 
 ## Vercel queue endpoint
 
