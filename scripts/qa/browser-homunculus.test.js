@@ -75,4 +75,7 @@ test('LLM bridge scopes browser OIDC to the browser workflow', () => {
   assert.match(bridge, /workflow_dispatch/);
   assert.match(bridge, /issues/);
   assert.match(bridge, /github_oidc_wrong_event_or_workflow/);
+  assert.match(bridge, /text\.pollinations\.ai\/openai/);
+  assert.match(bridge, /Reply with exactly OK/);
+  assert.match(bridge, /no_verified_provider_configured/);
 });
