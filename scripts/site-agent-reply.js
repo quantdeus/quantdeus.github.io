@@ -59,6 +59,15 @@ const doctrine = JSON.parse(fs.readFileSync('coordination/civilization-doctrine.
 const agents = registry.agents || [];
 const byId = new Map(agents.map(a => [a.id, a]));
 
+function resolveActiveAgentId(agentId) {
+  const agent = byId.get(agentId);
+  if (agent?.operational_status === 'medbay' && agent.temporary_delegate && byId.has(agent.temporary_delegate)) {
+    return agent.temporary_delegate;
+  }
+  return agentId;
+}
+
+
 function pickAgent(text) {
   const slash = text.match(/^\/agent\s+([a-z0-9_-]+)/i);
   if (slash) return slash[1].toLowerCase();
@@ -547,7 +556,9 @@ async function callModel(messages) {
 }
 
 async function buildReply(agentId, query) {
-  const agent = byId.get(agentId) || byId.get(room.defaultAgent);
+  const requestedAgentId = agentId;
+  const activeAgentId = resolveActiveAgentId(requestedAgentId);
+  const agent = byId.get(activeAgentId) || byId.get(resolveActiveAgentId(room.defaultAgent));
   const command = commandReply();
   if (command) return { text: command, llm: false, agent };
 
@@ -592,7 +603,9 @@ async function buildReply(agentId, query) {
           thread: issue.number,
           source_url: comment.html_url || '',
           actor_login: comment.user?.login || '',
-          admin_authorized: trustedAction
+          admin_authorized: trustedAction,
+          requested_agent_id: requestedAgentId,
+          delegated_from: requestedAgentId !== agent.id ? requestedAgentId : ''
         }
       });
       if (result) {
