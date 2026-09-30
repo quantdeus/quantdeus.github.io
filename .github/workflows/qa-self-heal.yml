@@ -30,7 +30,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  actions: read
+  actions: write
   checks: read
   id-token: write
 
@@ -296,6 +296,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.heal.outputs.issue_number }}
         run: gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json number,state,title >/dev/null
+
+      - name: Dispatch independent QA after automated repair PR
+        if: steps.heal.outputs.action == 'pr'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.heal.outputs.pr_number }}
+          EXPECTED_BRANCH: ${{ steps.heal.outputs.branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          meta="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,baseRefName,headRefName)"
+          test "$(jq -r .state <<<"$meta")" = "OPEN"
+          test "$(jq -r .baseRefName <<<"$meta")" = "main"
+          test "$(jq -r .headRefName <<<"$meta")" = "$EXPECTED_BRANCH"
+          [[ "$EXPECTED_BRANCH" == qa/self-heal/* ]]
+          gh workflow run qa-triad.yml --repo "$GITHUB_REPOSITORY" --ref "$EXPECTED_BRANCH"
+          gh workflow run static-smoke.yml --repo "$GITHUB_REPOSITORY" --ref "$EXPECTED_BRANCH"
+          echo "Dispatched QA Triad + Static Smoke for automated repair PR #$PR_NUMBER"
 
       - name: Guarded merge after independent green checks
         if: steps.heal.outputs.action == 'pr'
