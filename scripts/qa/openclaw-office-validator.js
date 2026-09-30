@@ -15,6 +15,10 @@ const evolutionWorkflow = fs.readFileSync('.github/workflows/openclaw-evolution.
 const evolutionSkill = fs.readFileSync('.openclaw/skills/quantdeus-self-evolution/SKILL.md', 'utf8');
 const evolutionPolicy = JSON.parse(fs.readFileSync('coordination/openclaw-evolution.json', 'utf8'));
 const guardedAutomerge = fs.readFileSync('scripts/guarded-automerge.js', 'utf8');
+const evolutionGuard = fs.readFileSync('scripts/openclaw-evolution-guard.js', 'utf8');
+const evolutionApply = fs.readFileSync('scripts/openclaw-evolution-apply.js', 'utf8');
+const evolutionPrGuard = fs.readFileSync('.github/workflows/openclaw-evolution-pr-guard.yml', 'utf8');
+const evolutionGate = fs.readFileSync('.github/workflows/openclaw-evolution-gate.yml', 'utf8');
 
 for (const [ok, message] of [
   [route.includes("const AUDIENCE = 'quantdeus-vercel-openclaw'"), 'dedicated GitHub OIDC audience'],
@@ -25,8 +29,8 @@ for (const [ok, message] of [
   [route.includes("'playwright__browser_run_code_unsafe'") && route.includes("'playwright__browser_evaluate'"), 'unsafe Playwright code execution tools stay denied'],
   [route.includes("'@playwright/mcp@latest', 'install-browser', 'chrome'") && route.includes("'--browser=chrome'") && route.includes('.quantdeus-playwright-mcp-chrome-ready'), 'trusted office prewarms the exact Playwright MCP Chrome channel in persistent sandbox'],
   [route.includes("https://api.githubcopilot.com/mcp/") && route.includes("@playwright/mcp@latest"), 'trusted office wires GitHub and Playwright MCP'],
-  [route.includes("include: smokePhase === 'github' ? ['list_branches'] : hourlyOffice ? [") && route.includes("'create_pull_request', 'update_issue', 'update_pull_request'"), 'GitHub MCP exposes one-tool smoke, enforced hourly read-only, and bounded interactive write surfaces'],
-  [route.includes('function hourlyOfficeRequest') && route.includes('hourly_read_only: hourlyOffice') && route.includes('github_write: !hourlyOffice && !smokePhase'), 'hourly OpenClaw lane is externally marked and enforced read-only'],
+  [route.includes("include: smokePhase === 'github' ? ['list_branches'] : readOnlyGitHubOffice ? [") && route.includes("'create_pull_request', 'update_issue', 'update_pull_request'"), 'GitHub MCP exposes one-tool smoke, enforced evolution/hourly read-only lanes, and bounded interactive write surfaces'],
+  [route.includes('function hourlyOfficeRequest') && route.includes('function evolutionOfficeRequest') && route.includes('const readOnlyGitHubOffice = hourlyOffice || evolutionOffice') && route.includes('github_write: !readOnlyGitHubOffice && !smokePhase'), 'hourly and self-evolution OpenClaw lanes are externally marked and enforced GitHub read-only'],
   [route.includes("include: smokePhase === 'playwright'") && route.includes("? ['browser_navigate']") && route.includes("['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']"), 'Playwright MCP exposes one-tool smoke surface plus scoped navigation, snapshot, find and close tools'],
   [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot') && route.includes('site-agent-replies') && route.includes("eventName === 'issue_comment'") && route.includes('metadata.admin_authorized === true'), 'trusted tools are workflow-gated and owner/admin site actions require signed issue-comment metadata'],
   [route.includes('.openclaw/skills/quantdeus-self-evolution/SKILL.md') && route.includes('OPENCLAW SELF-EVOLUTION SKILL FROM FRESH MAIN') && route.includes('effectivePrompt'), 'trusted OpenClaw loads the fresh repository self-evolution skill into execution context'],
