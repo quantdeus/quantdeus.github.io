@@ -18,13 +18,13 @@ The active behavioral skill is:
 
 `.openclaw/skills/quantdeus-self-evolution/SKILL.md`
 
-Trusted OpenClaw Office requests load this file into the execution prompt from fresh `main`, so an accepted Tier A skill improvement changes later OpenClaw behavior.
+The skill is consumed only by the inference-only evolution analysis as repository snapshot data. It is deliberately not injected into trusted write-capable OpenClaw requests.
 
 ## Tiers
 
-**Tier A — skill/evolution layer.** Only the skill, evolution ledger and this documentation may be changed. These PRs require human review and independent successful QA Triad + Static Smoke. Autonomous merge is disabled, including for the behavioral skill.
+**Tier A — bounded skill/evolution layer.** Only the skill/docs mutable sections and one ledger history append may change automatically. The semantic guard runs before GitHub mutation. A Tier A PR may auto-merge only after independent successful QA Triad + Static Smoke + Evolution Guard runs and a final guard revalidation against the current `main`.
 
-**Tier B — core runtime.** Changes to the OpenClaw Vercel endpoint, client, validator, auth, MCP wiring or workflows remain ordinary reviewable PRs. The evolution job cannot auto-merge them.
+**Tier B — core/runtime proposal only.** The model may name approved core paths, but the broker records that proposal in `coordination/openclaw-evolution-proposals/` instead of mutating runtime/auth/MCP/workflow code. Any core implementation requires a separate human/Seven-authorized change.
 
 ## Why the split exists
 
@@ -35,10 +35,18 @@ A self-improving system should be able to learn from evidence, but it should not
 
 Analysis and publication use separate jobs and credentials. Analysis calls the signed OpenClaw chat lane with no tools and no GitHub token. The runtime refuses trusted-office promotion for the signed evolution workflow, regardless of request metadata. Operational evidence and repository files are supplied as snapshot data.
 
-The publisher never executes model-generated code. It validates a structured proposal against the observed base SHA, collected evidence URLs, exact Tier A/Tier B paths, unique paths and bounds (3/4 files, 240 KB). It refuses stale main or another open evolution PR. It creates one deterministic branch, checks the actual diff before creating a draft PR, verifies the resulting PR/head/files, and explicitly dispatches QA Triad and Static Smoke because GITHUB_TOKEN-created PRs do not trigger PR workflows.
+The publisher never executes model-generated code. It validates a structured proposal against the observed base SHA, collected evidence URLs, exact Tier A/Tier B paths, unique paths and bounds (3/4 files, 240 KB). It refuses stale main or another open evolution PR. For Tier A it creates one deterministic non-draft PR only after semantic validation; for Tier B it creates a draft proposal-record PR with no core code mutation. It verifies the resulting PR/head/files and explicitly dispatches QA Triad, Static Smoke and Evolution Guard because GITHUB_TOKEN-created PRs do not trigger PR workflows.
 
-Every evolution PR requires human approval. A runtime or skill proposal may exist on a branch; it cannot automatically change production auth, OIDC, trusted gating, public no-tools, MCP filters, secrets or QA/human approval invariants. The shared merge guard refuses evolution branches in every merge mode. Ordinary guarded merges require success (never skipped/neutral), GitHub Actions provenance, the exact QA/Smoke workflow path and head SHA, and an atomic head match at merge.
+Tier B proposal PRs require human approval and are never auto-merged. Tier A auto-merge is narrowly allowed only for the three evolution-layer files and only inside the semantically frozen envelope. The shared merge guard rejects evolution branches in manifest/site modes, requires success (never skipped/neutral), verifies exact QA/Smoke/Evolution-Guard workflow provenance and head SHA, revalidates the candidate against current `main`, and uses an atomic head match at merge.
 
 Evidence artifacts record the no-tools execution, proposal, verified PR identity and dispatched checks. If inference, validation, mission alignment or check dispatch fails, the workflow reports failure rather than claiming completion. A failed publication may leave a review-only branch/PR; it never attempts a second PR or merge.
 
 Behavioral verification: `node --test scripts/qa/openclaw-evolution.test.js`. Production cadence and inference availability still require a real scheduled run after deployment; local tests do not claim that evidence.
+
+## Operational learning notes
+
+Only this bounded notes section is mutable by automated Tier A evolution; control-plane semantics above are frozen.
+
+<!-- QD_EVOLUTION_MUTABLE_START -->
+- Enforcement baseline: no-tools analysis, deterministic broker, semantic guard, three independent checks, final guarded merge.
+<!-- QD_EVOLUTION_MUTABLE_END -->
