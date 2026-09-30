@@ -104,7 +104,15 @@ jobs:
             if(!['none','issue','comment','pr'].includes(decision.action)) throw new Error('Unsupported role action');
             if(decision.action==='pr' && !String(decision.branch||'').startsWith('automation/role/'+agent.id+'/')) throw new Error('Role PR branch outside allowed prefix');
             console.log(JSON.stringify({agent:agent.id,model:result.model,decision},null,2));
-          })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          })().catch(e=>{
+            if(office.isTransientError(e)){
+              console.warn('Role cron degraded by transient OpenClaw failure; no further action will be attempted.');
+              console.log(JSON.stringify({ok:true,action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)},null,2));
+              return;
+            }
+            console.error(e.stack||e);
+            process.exit(1);
+          });
           NODE
 
 
