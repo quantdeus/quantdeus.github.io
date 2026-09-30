@@ -52,7 +52,7 @@ for (const agent of agents) {
 }
 
 const byId = new Map(agents.map(agent => [agent.id, agent]));
-const bridgeIds = ['seven-of-nine', 'emh', 'sherlock', 'tuvok', 'coordinator', 'control-tower', 'qa-repair'];
+const bridgeIds = ['seven-of-nine', 'coordinator', 'emh', 'sherlock', 'tuvok', 'control-tower', 'qa-repair'];
 const bridgeCrew = bridgeIds.map(id => {
   const agent = byId.get(id);
   if (!agent) {
@@ -117,10 +117,11 @@ async function actionsSnapshot() {
   if (!data) return null;
   const watched = [
     'QuantDeus Seven + Swarm Secretary 🖖🗂️',
+    'QuantDeus Seven Priority Cycle 🖖',
     'QuantDeus QA Triad 🦀',
     'QuantDeus Static Smoke',
     'QuantDeus QA Failure Radar 📡',
-    'QuantDeus Hourly OpenClaw Swarm',
+    'QuantDeus Hourly OpenClaw Swarm 🐒',
   ];
   const latest = {};
   for (const run of data.workflow_runs || []) {
@@ -156,7 +157,7 @@ async function actionsSnapshot() {
     actions = await actionsSnapshot();
     for (const [name, run] of Object.entries(actions || {})) {
       if (run.status === 'completed' && !['success', 'skipped'].includes(run.conclusion)) {
-        warnings.push(`${name} latest run is ${run.conclusion}`);
+        failures.push({ agent: name, message: `latest run is ${run.conclusion}` });
       }
     }
   } catch (err) {
@@ -201,6 +202,7 @@ async function actionsSnapshot() {
     `- status: **${overallStatus.toUpperCase()}**`,
     `- agents: **${agents.length}**`,
     `- bridge crew: **${bridgeCrew.filter(x => x.present).length}/${bridgeIds.length} present**`,
+    `- order: **${bridgeCrew.map(x => x.id).join(' → ')}**`,
     `- medbay: **${medbay.length}**`,
     `- coordination: READY **${coordination.ready ?? '?'}** / ACTIVE **${coordination.active ?? '?'}** / BLOCKED **${coordination.blocked ?? '?'}**`,
     `- hard failures: **${failures.length}**`,
