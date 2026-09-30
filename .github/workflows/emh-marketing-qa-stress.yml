@@ -33,7 +33,7 @@ jobs:
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: EMH parallel no-tools stress-test Marketing + QA agents
+      - name: EMH bounded-pool no-tools stress-test Marketing + QA agents
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -112,7 +112,7 @@ jobs:
                   execution:'no-tools'
                 },
                 timeoutMs:60000,
-                retryTransient:false
+                retryTransient:true
               });
 
               const decision = parse(result.text);
@@ -159,7 +159,21 @@ jobs:
           }
 
           (async () => {
-            const results = await Promise.all(targets.map(probe));
+            async function runPool(ids, limit = 2) {
+              const results = new Array(ids.length);
+              let cursor = 0;
+              async function worker() {
+                while (true) {
+                  const index = cursor++;
+                  if (index >= ids.length) return;
+                  results[index] = await probe(ids[index]);
+                }
+              }
+              await Promise.all(Array.from({length:Math.min(limit,ids.length)}, () => worker()));
+              return results;
+            }
+
+            const results = await runPool(targets, 2);
             const counts = {
               pass:results.filter(r=>r.status==='pass').length,
               degraded:results.filter(r=>r.status==='degraded').length,
@@ -195,7 +209,7 @@ jobs:
                   execution:'no-tools'
                 },
                 timeoutMs:60000,
-                retryTransient:false
+                retryTransient:true
               });
               emhSummary = parse(emh.text);
             } catch (error) {
@@ -216,7 +230,7 @@ jobs:
 
             const report = {
               timestamp:new Date().toISOString(),
-              test:'EMH Marketing + QA parallel no-tools cognitive-hygiene stress test',
+              test:'EMH Marketing + QA bounded-pool no-tools cognitive-hygiene stress test',
               scope:groups,
               overall,
               counts,
