@@ -53,6 +53,7 @@ jobs:
           const fs=require('fs');
           const office=require('./scripts/openclaw-office-client');
           const read=p=>{try{return fs.readFileSync(p,'utf8').slice(0,40000)}catch{return ''}};
+          const readJson=p=>JSON.parse(fs.readFileSync(p,'utf8'));
           function parse(text){
             const raw=String(text||'').trim();
             try{return JSON.parse(raw)}catch{}
@@ -116,8 +117,10 @@ jobs:
           })().catch(e=>{
             if(office.isTransientError(e)){
               console.warn('Seven OpenClaw decision degraded; selecting one deterministic safe role dispatch.');
-              const issues=JSON.parse(read('/tmp/qd-seven/issues.json')||'[]');
-              const prs=JSON.parse(read('/tmp/qd-seven/prs.json')||'[]');
+              // The prompt snapshot is intentionally truncated, but deterministic
+              // recovery must use the complete machine-generated JSON.
+              const issues=readJson('/tmp/qd-seven/issues.json');
+              const prs=readJson('/tmp/qd-seven/prs.json');
               const registry=require('./coordination/agents.json');
               const known=new Set((registry.agents||[]).map(x=>String(x.id||'').trim()).filter(Boolean));
               const labelsOf=i=>new Set((i.labels||[]).map(x=>typeof x==='string'?x:x.name));
