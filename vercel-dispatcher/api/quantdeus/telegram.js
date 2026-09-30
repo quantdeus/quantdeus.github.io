@@ -606,6 +606,11 @@ async function homunculusReply(message, retryUpdate = null) {
     if (retryDispatched) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n🛰️ Основной LLM-маршрут перегружен. Запрос передан в резервный GitHub retry lane; ответ придёт отдельным сообщением.`;
     }
+    if (retryUpdate) {
+      const retryable = new Error('telegram_retry_transport_unavailable');
+      retryable.code = 'TELEGRAM_RETRYABLE';
+      throw retryable;
+    }
     return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nНет проверенного живого LLM-маршрута. Дохлые fallback-модели отключены; требуется провайдер, прошедший health probe.`;
   }
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${answer}`.slice(0, 3900);
@@ -639,7 +644,10 @@ async function retrySmokeStart(req, res) {
     }
   };
   const dispatched = await dispatchTelegramRetry(update);
-  if (!dispatched) return res.status(503).json({ ok: false, error: 'telegram_retry_smoke_dispatch_failed' });
+  if (!dispatched) {
+    console.info('[telegram-retry-smoke] phase=dispatch status=redelivery_fallback update_id=' + update.update_id);
+    return res.status(200).json({ ok: true, status: 'redelivery_fallback', update_id: update.update_id });
+  }
   console.info('[telegram-retry-smoke] phase=dispatch status=ok update_id=' + update.update_id);
   return res.status(200).json({ ok: true, status: 'dispatched', update_id: update.update_id });
 }
@@ -711,6 +719,15 @@ export default async function handler(req, res) {
     const reply = await homunculusReply(message, update);
     return webhookReply(res, message, reply);
   } catch (error) {
+    if (error?.code === 'TELEGRAM_RETRYABLE') {
+      console.warn('[telegram-redelivery] status=retryable update_id=' + update.update_id + ' reason=' + String(error?.message || error).slice(0, 240));
+      res.setHeader('Retry-After', '5');
+      return res.status(503).json({
+        ok: false,
+        error: 'telegram_retryable_upstream_failure',
+        update_id: update.update_id
+      });
+    }
     console.error('[telegram-homunculus]', String(error?.message || error).slice(0, 800));
     return webhookReply(res, message, '⚠️ QuantDeus: гомункул временно не ответил. Повтори сообщение.');
   }
