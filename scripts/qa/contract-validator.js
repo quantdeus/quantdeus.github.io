@@ -138,6 +138,13 @@ if (fs.existsSync(issuePublisherPath)) {
   const issuePublisher = fs.readFileSync(issuePublisherPath,'utf8');
   check(issuePublisher.includes("method: 'POST'") && issuePublisher.includes("'/repos/' + repo + '/issues'") && issuePublisher.includes("status: 'duplicate'") && issuePublisher.includes('Created Issue failed verification'), 'scripts/publish-agent-issue.js', 'Issue publisher creates, deduplicates and verifies GitHub Issues');
   check(issuePublisher.includes("coord:task") && issuePublisher.includes("coord:ready") && issuePublisher.includes('quantdeus-target-agent:'), 'scripts/publish-agent-issue.js', 'Issue publisher preserves coordination labels and target-agent routing');
+  const publisherTest = path.join(root, 'scripts', 'qa', 'publish-agent-issue.test.js');
+  const publisherResult = require('child_process').spawnSync(process.execPath, [publisherTest], {
+    cwd: root, encoding: 'utf8', timeout: 15000
+  });
+  check(!publisherResult.error && publisherResult.status === 0, 'scripts/publish-agent-issue.js',
+    'Mock publisher contracts: medbay delegation, duplicate reuse, pinned labels and single state' +
+    (publisherResult.status === 0 ? '' : ': ' + String(publisherResult.error || publisherResult.stderr || publisherResult.stdout).slice(0, 2000)));
 }
 
 const sevenPriorityWorkflow = fs.readFileSync(path.join(root,'.github','workflows','seven-priority-cycle.yml'),'utf8');
@@ -164,6 +171,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     if (parts.length===5) {
       if (name === 'quantdeus-hourly-openclaw.yml') {
         check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
+      } else if (name === 'agent-health-daily.yml') {
+        check(parts[0] === '19' && parts[1] === '*/2', name, 'crew health uses the approved two-hour cadence: '+cron);
       } else if (name === 'qa-self-heal.yml') {
         const approvedQaSelfHeal =
           (parts[0] === '17' && parts[1] === '*/6') ||

@@ -84,24 +84,27 @@ const hourlyOpenClaw=fs.readFileSync(path.join(root,'.github','workflows','quant
 check(hourlyOpenClaw.includes('node scripts/emh.js'),'quantdeus-hourly-openclaw.yml','hourly deterministic EMH cognitive-hygiene scan active');
 check(cronContext.includes('swarm_cognitive_hygiene:'),'cron-context','EMH cognitive-hygiene cadence recorded');
 
-const expectedMedbay = {
-  unity: 'herald',
-  synthesis: 'archivist',
-  'qa-syntax': 'qa-repair',
-  'qa-contract': 'qa-repair'
-};
-for (const [id, delegate] of Object.entries(expectedMedbay)) {
-  const agent=(agents.agents||[]).find(a=>a.id===id);
-  check(agent?.operational_status==='medbay',id,'EMH medbay status active');
-  check(agent?.temporary_delegate===delegate,id,'temporary delegate is '+delegate);
-  const delegateAgent=(agents.agents||[]).find(a=>a.id===delegate);
-  check(Boolean(delegateAgent)&&delegateAgent.operational_status!=='medbay',delegate,'delegate remains active');
+const medbayAgents=(agents.agents||[]).filter(a=>a.operational_status==='medbay');
+for (const agent of agents.agents||[]) {
+  if (agent.operational_status === 'medbay') {
+    const delegateId=String(agent.temporary_delegate||'');
+    const delegateAgent=(agents.agents||[]).find(a=>a.id===delegateId);
+    check(Boolean(delegateId),agent.id,'medbay agent declares temporary delegate');
+    check(Boolean(delegateAgent)&&delegateAgent.id!==agent.id&&delegateAgent.operational_status!=='medbay',agent.id,'medbay delegate exists and is active');
+  } else {
+    check(!agent.temporary_delegate,agent.id,'active agent has no stale temporary delegate');
+  }
 }
 const growthWorkflow=fs.readFileSync(path.join(root,'.github','workflows','growth-site-cycle.yml'),'utf8');
-check(growthWorkflow.includes("operational_status==='medbay'")&&growthWorkflow.includes('temporary_delegate'),'growth-site-cycle.yml','growth/site honors EMH medbay delegation');
+check(growthWorkflow.includes("operational_status==='medbay'")&&growthWorkflow.includes('temporary_delegate'),'growth-site-cycle.yml','growth/site can honor evidence-backed medbay delegation when present');
 const qaSelfHealWorkflow=fs.readFileSync(path.join(root,'.github','workflows','qa-self-heal.yml'),'utf8');
-check(qaSelfHealWorkflow.includes('qa-repair is the acting LLM owner for qa-syntax and qa-contract'),'qa-self-heal.yml','QA medbay delegation preserves deterministic validators');
-check(cronContext.includes('emh_medbay:'),'cron-context','EMH medbay delegation recorded');
+check(qaSelfHealWorkflow.includes('Deterministic syntax/contract validators remain authoritative and run independently'),'qa-self-heal.yml','QA validators remain authoritative without hardcoded medbay ownership');
+check(cronContext.includes('emh_medbay:'),'cron-context','current EMH medbay policy/state recorded');
+check(
+  medbayAgents.length>0 || cronContext.includes('returned to active duty'),
+  'cron-context',
+  'zero-medbay state is explicitly grounded by the current CEO override'
+);
 
 const report={timestamp:new Date().toISOString(),doctrine_version:doctrine.version,agent_count:(agents.agents||[]).length,source_streams:sourceIds,manifest_sources:manifestIds,scheduled_workflows:scheduledWorkflows,failures,checks};
 fs.writeFileSync('/tmp/quantdeus-mission-alignment.json',JSON.stringify(report,null,2));

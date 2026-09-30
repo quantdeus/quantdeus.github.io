@@ -72,8 +72,17 @@ async function listAll(path, maxPages = 3) {
   if (body.length < 30 || body.length > 20000) throw new Error('Issue body length outside 30..20000');
 
   const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
-  const agentIds = new Set((registry.agents || []).map(agent => agent.id));
-  if (targetAgent && !agentIds.has(targetAgent)) throw new Error('Unknown target_agent: ' + targetAgent);
+  const byId = new Map((registry.agents || []).map(agent => [agent.id, agent]));
+  if (targetAgent && !byId.has(targetAgent)) throw new Error('Unknown target_agent: ' + targetAgent);
+  let effectiveTarget = targetAgent;
+  const owner = byId.get(targetAgent);
+  if (owner?.operational_status === 'medbay') {
+    const delegate = byId.get(owner.temporary_delegate);
+    if (!delegate || delegate.id === targetAgent || delegate.operational_status === 'medbay') {
+      throw new Error('Medbay target has no valid active temporary_delegate: ' + targetAgent);
+    }
+    effectiveTarget = delegate.id;
+  }
 
   const [labelRows, openRows] = await Promise.all([
     listAll('/repos/' + repo + '/labels', 2),
@@ -81,14 +90,17 @@ async function listAll(path, maxPages = 3) {
   ]);
   const available = new Set(labelRows.map(label => label.name).filter(Boolean));
   const requested = Array.isArray(proposal.labels) ? proposal.labels.map(String) : [];
-  const labels = [];
-  for (const label of requested) if (available.has(label) && !labels.includes(label)) labels.push(label);
-  for (const label of ['coord:task', 'coord:ready']) {
-    if (available.has(label) && !labels.includes(label)) labels.push(label);
+  const stateLabels = ['coord:blocked', 'coord:active', 'coord:ready', 'coord:stale', 'coord:done'];
+  const stateLabel = stateLabels.find(label => requested.includes(label)) || 'coord:ready';
+  const pinned = ['coord:task', stateLabel, ...(effectiveTarget ? ['agent:' + effectiveTarget] : [])];
+  for (const label of pinned) {
+    if (!available.has(label)) throw new Error('Required coordination label unavailable: ' + label);
   }
-  if (targetAgent && available.has('agent:' + targetAgent) && !labels.includes('agent:' + targetAgent)) {
-    labels.push('agent:' + targetAgent);
-  }
+  const extras = [...new Set(requested)].filter(label =>
+    available.has(label) && !pinned.includes(label) &&
+    !stateLabels.includes(label) && !label.startsWith('agent:')
+  );
+  const finalLabels = [...pinned, ...extras].slice(0, 8);
 
   const normalized = normalizeTitle(title);
   const duplicate = openRows
@@ -96,16 +108,66 @@ async function listAll(path, maxPages = 3) {
     .find(row => normalizeTitle(row.title) === normalized);
 
   if (duplicate) {
+    const duplicateLabels = (duplicate.labels || [])
+      .map(label => typeof label === 'string' ? label : label.name)
+      .filter(Boolean);
+    const duplicateState = stateLabels.find(label => duplicateLabels.includes(label)) || stateLabel;
+    const preservedAgent = !effectiveTarget
+      ? duplicateLabels.find(label => label.startsWith('agent:'))
+      : '';
+    const duplicatePinned = [
+      'coord:task',
+      duplicateState,
+      ...(effectiveTarget ? ['agent:' + effectiveTarget] : preservedAgent ? [preservedAgent] : [])
+    ];
+    for (const label of duplicatePinned) {
+      if (!available.has(label)) throw new Error('Required coordination label unavailable: ' + label);
+    }
+    const duplicateExtras = [...new Set([...duplicateLabels, ...requested])].filter(label =>
+      available.has(label) && !duplicatePinned.includes(label) &&
+      !stateLabels.includes(label) && !label.startsWith('agent:')
+    );
+    const reconciledLabels = [...duplicatePinned, ...duplicateExtras].slice(0, 8);
+
+    const routingMarker = /<!--\s*quantdeus-target-agent:[a-z0-9_-]+\s*-->/i;
+    const marker = effectiveTarget ? '<!-- quantdeus-target-agent:' + effectiveTarget + ' -->' : '';
+    let reconciledBody = String(duplicate.body || '').trim();
+    if (marker) {
+      reconciledBody = routingMarker.test(reconciledBody)
+        ? reconciledBody.replace(routingMarker, marker)
+        : [reconciledBody, marker].filter(Boolean).join('\n\n');
+    }
+    if (effectiveTarget !== targetAgent) {
+      const delegationNote = 'Delegated from medbay owner: ' + targetAgent;
+      if (!reconciledBody.includes(delegationNote)) {
+        reconciledBody = [reconciledBody, delegationNote].filter(Boolean).join('\n\n');
+      }
+    }
+
+    const labelsChanged = JSON.stringify(duplicateLabels) !== JSON.stringify(reconciledLabels);
+    const bodyChanged = String(duplicate.body || '').trim() !== reconciledBody;
+    let verifiedDuplicate = duplicate;
+    if (labelsChanged || bodyChanged) {
+      verifiedDuplicate = await github('/repos/' + repo + '/issues/' + duplicate.number, {
+        method: 'PATCH',
+        body: JSON.stringify({ body: reconciledBody, labels: reconciledLabels })
+      });
+      if (verifiedDuplicate.number !== duplicate.number || verifiedDuplicate.state !== 'open' || verifiedDuplicate.pull_request) {
+        throw new Error('Reconciled duplicate Issue failed verification');
+      }
+    }
+
     console.log(JSON.stringify({
       ok: true,
       status: 'duplicate',
-      issue_number: duplicate.number,
-      url: duplicate.html_url,
-      title: duplicate.title
+      issue_number: verifiedDuplicate.number,
+      url: verifiedDuplicate.html_url,
+      title: verifiedDuplicate.title,
+      labels: (verifiedDuplicate.labels || []).map(label => typeof label === 'string' ? label : label.name)
     }, null, 2));
-    out('issue_number', duplicate.number);
+    out('issue_number', verifiedDuplicate.number);
     out('issue_status', 'duplicate');
-    out('issue_url', duplicate.html_url || '');
+    out('issue_url', verifiedDuplicate.html_url || '');
     return;
   }
 
@@ -115,7 +177,8 @@ async function listAll(path, maxPages = 3) {
   const audit = [
     body,
     '',
-    targetAgent ? '<!-- quantdeus-target-agent:' + targetAgent + ' -->' : '',
+    effectiveTarget ? '<!-- quantdeus-target-agent:' + effectiveTarget + ' -->' : '',
+    effectiveTarget !== targetAgent ? 'Delegated from medbay owner: ' + targetAgent : '',
     '---',
     'Created by QuantDeus automated Issue publisher.',
     'Source agent: ' + sourceAgent,
@@ -125,7 +188,7 @@ async function listAll(path, maxPages = 3) {
 
   const created = await github('/repos/' + repo + '/issues', {
     method: 'POST',
-    body: JSON.stringify({ title, body: audit, labels: labels.slice(0, 8) })
+    body: JSON.stringify({ title, body: audit, labels: finalLabels })
   });
   if (!created?.number || !created?.html_url) throw new Error('GitHub issue creation returned no issue identity');
 
