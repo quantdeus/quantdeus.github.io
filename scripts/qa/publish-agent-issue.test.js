@@ -62,7 +62,7 @@ async function publish(overrides = {}, options = {}) {
       error(value) { errors.push(String(value)); }
     },
     async fetch(url, init = {}) {
-      requests.push({ url, method: init.method || 'GET' });
+      requests.push({ url, method: init.method || 'GET', body: init.body ? JSON.parse(init.body) : undefined });
       let data;
       if (url.includes('/labels?')) {
         data = (options.available || available).map(name => ({ name }));
@@ -72,6 +72,16 @@ async function publish(overrides = {}, options = {}) {
         assert.equal(created, undefined, 'at most one POST');
         created = JSON.parse(init.body);
         data = { number: 42, html_url: 'https://github.com/mock/issues/42' };
+      } else if (init.method === 'PATCH' && /\/issues\/\d+$/.test(url)) {
+        const patch = JSON.parse(init.body);
+        const existing = (options.openRows || []).find(row => url.endsWith('/issues/' + row.number)) || {};
+        data = {
+          ...existing,
+          ...patch,
+          number: existing.number || Number(url.split('/').pop()),
+          html_url: existing.html_url || 'https://github.com/mock/issues/' + url.split('/').pop(),
+          state: 'open'
+        };
       } else if (url.endsWith('/issues/42')) {
         data = { ...created, number: 42, html_url: 'https://github.com/mock/issues/42', state: 'open' };
       } else {
@@ -152,6 +162,31 @@ async function run() {
     assert.equal(result.requests.filter(r => r.method === 'POST').length, 0);
     count++;
   }
+
+  const delegatedDuplicate = await publish({ target_agent: 'unity' }, { openRows: [{
+    number: 7,
+    title: 'REPAIR publisher coordination contracts!',
+    html_url: 'https://github.com/mock/issues/7',
+    state: 'open',
+    body: 'Existing task body.\n\n<!-- quantdeus-target-agent:unity -->',
+    labels: [
+      { name: 'coord:task' },
+      { name: 'coord:active' },
+      { name: 'agent:unity' },
+      { name: 'extra:0' }
+    ]
+  }] });
+  assert.equal(delegatedDuplicate.error, undefined);
+  assert.equal(delegatedDuplicate.created, undefined);
+  const duplicatePatch = delegatedDuplicate.requests.find(r => r.method === 'PATCH');
+  assert.ok(duplicatePatch);
+  assert.deepEqual(duplicatePatch.body.labels, ['coord:task', 'coord:active', 'agent:herald', 'extra:0']);
+  assert.ok(duplicatePatch.body.body.includes('<!-- quantdeus-target-agent:herald -->'));
+  assert.ok(!duplicatePatch.body.body.includes('<!-- quantdeus-target-agent:unity -->'));
+  assert.ok(duplicatePatch.body.body.includes('Delegated from medbay owner: unity'));
+  assert.equal(delegatedDuplicate.requests.filter(r => r.method === 'POST').length, 0);
+  assert.ok(delegatedDuplicate.outputs.includes('issue_status=duplicate\n'));
+  count++;
 
   const duplicate = await publish({}, { openRows: [{
     number: 7, title: 'REPAIR publisher coordination contracts!',
