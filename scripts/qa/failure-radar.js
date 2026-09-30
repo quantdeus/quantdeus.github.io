@@ -12,7 +12,10 @@ const triggerConclusion = String(process.env.TRIGGER_CONCLUSION || '');
 if (!token) throw new Error('GH_TOKEN is required');
 
 const failureConclusions = new Set(['failure', 'timed_out', 'startup_failure', 'action_required']);
-const ignoredWorkflows = new Set(['QuantDeus QA Failure Radar 📡']);
+const ignoredWorkflows = new Set([
+  'QuantDeus QA Failure Radar 📡',
+  'QuantDeus QA Self-Heal 🛠️'
+]);
 
 function familyFor(name) {
   const n = String(name || '').toLowerCase();

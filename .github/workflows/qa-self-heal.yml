@@ -250,6 +250,25 @@ jobs:
             }, null, 2));
             console.log(JSON.stringify({lane, decision}, null, 2));
           })().catch(error => {
+            if (office.isTransientError(error)) {
+              const decision = {
+                action: 'none',
+                degraded: true,
+                reason: 'TRANSIENT_OPENCLAW_EXTERNAL: ' + String(error.message || error).slice(0, 500)
+              };
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'action=none\n');
+              fs.writeFileSync('/tmp/qd-self-heal-result.json', JSON.stringify({
+                timestamp: new Date().toISOString(),
+                lane,
+                runtime: 'openclaw-transient-unavailable',
+                model: null,
+                tool_summary: null,
+                decision
+              }, null, 2));
+              console.warn('QA self-heal could not run because OpenClaw is transiently unavailable; evidence recorded without creating a recursive failure.');
+              console.log(JSON.stringify({lane, decision}, null, 2));
+              return;
+            }
             console.error(error.stack || error.message || error);
             process.exit(1);
           });

@@ -51,7 +51,41 @@ function normalizedMessages(messages, metadata, trusted = false) {
   return [{ role: 'system', content: system }, ...(messages || [])];
 }
 
-async function ask({ profile, messages, metadata, trusted = false, timeoutMs = DEFAULT_TIMEOUT_MS }) {
+const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+function officeError(message, { code = 'OPENCLAW_OFFICE_ERROR', status = null, transient = false } = {}) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  error.transient = Boolean(transient);
+  return error;
+}
+
+function isTransientError(error) {
+  return Boolean(
+    error && (
+      error.transient === true ||
+      error.name === 'AbortError' ||
+      ['OPENCLAW_TIMEOUT', 'OPENCLAW_NETWORK', 'OPENCLAW_TRANSIENT'].includes(error.code)
+    )
+  );
+}
+
+function looksTransient(status, raw) {
+  const text = String(raw || '').toLowerCase();
+  return TRANSIENT_STATUS_CODES.has(Number(status)) ||
+    text.includes('incomplete_turn') ||
+    text.includes('incomplete or malformed tool call') ||
+    text.includes('temporarily unavailable') ||
+    text.includes('upstream timeout') ||
+    text.includes('gateway timeout');
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   if (!configured()) throw new Error('OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE');
   const oidc = await getGitHubOidcToken();
   const controller = new AbortController();
@@ -63,19 +97,42 @@ async function ask({ profile, messages, metadata, trusted = false, timeoutMs = D
       accept: 'application/json'
     };
     if (process.env.GITHUB_TOKEN) headers['x-quantdeus-github-token'] = process.env.GITHUB_TOKEN;
-    const response = await fetch(process.env.OPENCLAW_VERCEL_URL || DEFAULT_VERCEL_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        profile,
-        messages: normalizedMessages(messages, metadata, trusted),
-        metadata,
-        execution_mode: trusted ? 'trusted-office' : 'chat'
-      }),
-      signal: controller.signal
-    });
+
+    let response;
+    try {
+      response = await fetch(process.env.OPENCLAW_VERCEL_URL || DEFAULT_VERCEL_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          profile,
+          messages: normalizedMessages(messages, metadata, trusted),
+          metadata,
+          execution_mode: trusted ? 'trusted-office' : 'chat'
+        }),
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        throw officeError('OpenClaw Office timed out after ' + timeoutMs + 'ms', {
+          code: 'OPENCLAW_TIMEOUT',
+          transient: true
+        });
+      }
+      throw officeError('OpenClaw Office network error: ' + String(error?.message || error), {
+        code: 'OPENCLAW_NETWORK',
+        transient: true
+      });
+    }
+
     const raw = await response.text();
-    if (!response.ok) throw new Error('OpenClaw Office ' + response.status + ': ' + raw.slice(0, 1600));
+    if (!response.ok) {
+      throw officeError('OpenClaw Office ' + response.status + ': ' + raw.slice(0, 1600), {
+        code: looksTransient(response.status, raw) ? 'OPENCLAW_TRANSIENT' : 'OPENCLAW_HTTP_ERROR',
+        status: response.status,
+        transient: looksTransient(response.status, raw)
+      });
+    }
+
     let data;
     try { data = JSON.parse(raw); }
     catch { throw new Error('OpenClaw Office returned non-JSON: ' + raw.slice(0, 400)); }
@@ -92,4 +149,26 @@ async function ask({ profile, messages, metadata, trusted = false, timeoutMs = D
   }
 }
 
-module.exports = { configured, ask };
+async function ask(options) {
+  const retryTransient = options?.retryTransient === true;
+  const attempts = retryTransient ? 2 : 1;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await askOnce(options);
+    } catch (error) {
+      lastError = error;
+      if (!retryTransient || !isTransientError(error) || attempt >= attempts) throw error;
+      console.warn('[openclaw-office] transient failure; retrying once', {
+        attempt,
+        code: error.code || null,
+        status: error.status || null,
+        message: String(error.message || error).slice(0, 500)
+      });
+      await sleep(1000);
+    }
+  }
+  throw lastError;
+}
+
+module.exports = { configured, ask, isTransientError };

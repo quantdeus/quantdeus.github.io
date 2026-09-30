@@ -77,7 +77,16 @@ jobs:
             }
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
             console.log(JSON.stringify({model:result.model,decision:d},null,2));
-          })().catch(e=>{console.error(e.stack||e);process.exit(1);});
+          })().catch(e=>{
+            if(office.isTransientError(e)){
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'action=none\n');
+              console.warn('News/manifest cycle degraded by transient OpenClaw failure; manifesto left unchanged.');
+              console.log(JSON.stringify({action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)},null,2));
+              return;
+            }
+            console.error(e.stack||e);
+            process.exit(1);
+          });
           NODE
       - name: Guarded auto-merge living-manifest update
         if: steps.manifest.outputs.action == 'pr'
