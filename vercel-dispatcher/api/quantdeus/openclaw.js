@@ -16,6 +16,9 @@ let vercelJwksAt = 0;
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 let jwksCache = [];
 let jwksAt = 0;
+const providerProbeCache = new Map();
+const PROVIDER_PROBE_OK_TTL_MS = 5 * 60 * 1000;
+const PROVIDER_PROBE_FAIL_TTL_MS = 30 * 1000;
 
 function jsonPart(s) { return JSON.parse(Buffer.from(s, 'base64url').toString('utf8')); }
 async function jwks() {
@@ -282,6 +285,38 @@ async function probeChatCandidate(candidate, requireTools = false) {
     clearTimeout(timer);
   }
 }
+function providerProbeCacheKey(candidate, requireTools) {
+  const keyFingerprint = crypto
+    .createHash('sha256')
+    .update(String(candidate.key || ''))
+    .digest('hex')
+    .slice(0, 12);
+  return (requireTools ? 'tools' : 'text') + ':' + candidate.ref + ':' + keyFingerprint;
+}
+
+async function cachedProbeChatCandidate(candidate, requireTools = false) {
+  const cacheKey = providerProbeCacheKey(candidate, requireTools);
+  const now = Date.now();
+  const cached = providerProbeCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return { ...cached.result, cached: true };
+  }
+
+  const result = await probeChatCandidate(candidate, requireTools);
+  providerProbeCache.set(cacheKey, {
+    expiresAt: now + (result.ok ? PROVIDER_PROBE_OK_TTL_MS : PROVIDER_PROBE_FAIL_TTL_MS),
+    result
+  });
+
+  if (providerProbeCache.size > 100) {
+    for (const [key, value] of providerProbeCache) {
+      if (value.expiresAt <= now) providerProbeCache.delete(key);
+    }
+  }
+
+  return { ...result, cached: false };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   let sandbox;
@@ -474,7 +509,7 @@ export default async function handler(req, res) {
     const modelCandidates = probeCandidates.map(candidate => candidate.ref);
     const probeRows = await Promise.all(probeCandidates.map(async candidate => {
       const startedAt = Date.now();
-      const probe = await probeChatCandidate(candidate, trustedOffice);
+      const probe = await cachedProbeChatCandidate(candidate, trustedOffice);
       return {
         candidate,
         probe: {
