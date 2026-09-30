@@ -62,8 +62,6 @@ jobs:
           QD_BROWSER_PASSWORD: ${{ secrets.QD_BROWSER_PASSWORD }}
           QD_BROWSER_PHONE: ${{ secrets.QD_BROWSER_PHONE }}
           QD_BROWSER_RECOVERY_EMAIL: ${{ secrets.QD_BROWSER_RECOVERY_EMAIL }}
-          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
-          AI_GATEWAY_MODEL: ${{ vars.AI_GATEWAY_MODEL }}
         run: node scripts/browser-homunculus.js
 
       - name: Publish public-safe result to the Issue
