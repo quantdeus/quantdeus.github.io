@@ -50,6 +50,9 @@ jobs:
       - name: Run QA contract validator
         run: node scripts/qa/contract-validator.js
 
+      - name: Verify evolution boundaries and merge guard behavior
+        run: node --test scripts/qa/openclaw-evolution.test.js
+
       - name: Validate OpenClaw Office contract
         run: node scripts/qa/openclaw-office-validator.js
 
@@ -146,3 +149,4 @@ jobs:
             exit 1
           fi
           echo "Single Pages source: repository branch/root"
+

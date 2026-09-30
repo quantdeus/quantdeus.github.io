@@ -10,6 +10,7 @@ const adminSmokeWorkflow = fs.readFileSync('.github/workflows/openclaw-admin-smo
 const siteWorkflow = fs.readFileSync('.github/workflows/site-agent-replies.yml', 'utf8');
 const qaSelfHealWorkflow = fs.readFileSync('.github/workflows/qa-self-heal.yml', 'utf8');
 const qaFailureRadarWorkflow = fs.readFileSync('.github/workflows/qa-failure-radar.yml', 'utf8');
+const evolutionBroker = fs.readFileSync('scripts/openclaw-evolution.js', 'utf8');
 const evolutionWorkflow = fs.readFileSync('.github/workflows/openclaw-evolution.yml', 'utf8');
 const evolutionSkill = fs.readFileSync('.openclaw/skills/quantdeus-self-evolution/SKILL.md', 'utf8');
 const evolutionPolicy = JSON.parse(fs.readFileSync('coordination/openclaw-evolution.json', 'utf8'));
@@ -29,10 +30,10 @@ for (const [ok, message] of [
   [route.includes("include: smokePhase === 'playwright'") && route.includes("? ['browser_navigate']") && route.includes("['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']"), 'Playwright MCP exposes one-tool smoke surface plus scoped navigation, snapshot, find and close tools'],
   [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot') && route.includes('site-agent-replies') && route.includes("eventName === 'issue_comment'") && route.includes('metadata.admin_authorized === true'), 'trusted tools are workflow-gated and owner/admin site actions require signed issue-comment metadata'],
   [route.includes('.openclaw/skills/quantdeus-self-evolution/SKILL.md') && route.includes('OPENCLAW SELF-EVOLUTION SKILL FROM FRESH MAIN') && route.includes('effectivePrompt'), 'trusted OpenClaw loads the fresh repository self-evolution skill into execution context'],
-  [evolutionPolicy.status === 'active' && evolutionPolicy.branch_prefix === 'automation/openclaw-evolution/' && evolutionPolicy.policy?.core_auto_merge === false, 'self-evolution policy is active, branch-scoped and forbids core auto-merge'],
-  [evolutionWorkflow.includes("cron: '31 2 * * *'") && evolutionWorkflow.includes('node scripts/mission-alignment.js') && evolutionWorkflow.includes('automation/openclaw-evolution/') && evolutionWorkflow.includes('tier') && evolutionWorkflow.includes('openclaw-skill'), 'daily evolution workflow is mission-guarded and separates skill/core tiers'],
+  [evolutionPolicy.status === 'active' && evolutionPolicy.branch_prefix === 'automation/openclaw-evolution/' && evolutionPolicy.policy?.core_auto_merge === false && evolutionPolicy.policy?.auto_merge === false && evolutionPolicy.policy?.human_review_required === true, 'self-evolution policy requires human review for every proposal'],
+  [evolutionWorkflow.includes("cron: '31 2 * * *'") && evolutionWorkflow.includes('node scripts/mission-alignment.js') && evolutionBroker.includes('automation/openclaw-evolution/') && evolutionBroker.includes('tier') && evolutionWorkflow.includes('scripts/openclaw-evolution.js') && evolutionWorkflow.includes('contents: read'), 'daily evolution workflow is mission-guarded and separates skill/core tiers'],
   [evolutionSkill.includes('observe → diagnose → hypothesize') && evolutionSkill.includes('Tier A') && evolutionSkill.includes('Tier B') && evolutionSkill.includes('Never weaken or bypass'), 'self-evolution skill encodes evidence loop, tiers and protected invariants'],
-  [guardedAutomerge.includes("'openclaw-skill'") && guardedAutomerge.includes('.openclaw/skills/quantdeus-self-evolution/SKILL.md') && guardedAutomerge.includes('OpenClaw skill PR touches core/runtime paths'), 'guarded automerge permits only the low-risk OpenClaw evolution layer'],
+  [guardedAutomerge.includes("'openclaw-skill'") && guardedAutomerge.includes('Evolution PRs require human review'), 'guarded automerge refuses autonomous evolution merges'],
   [client.includes("execution_mode: trusted ? 'trusted-office' : 'chat'") && client.includes('trusted = false'), 'client can request trusted office explicitly'],
   [telegram.includes('trusted: true') && telegram.includes('telegram-admin-task'), 'Telegram admin task lane invokes trusted office only after admin gate'],
   [route.includes("id: localKeyEnv") && route.includes('runtimeEnv[localKeyEnv] = localKey'), 'model key stays env-backed and out of persisted config'],
@@ -59,3 +60,4 @@ for (const [ok, message] of [
 }
 
 console.log('OpenClaw Office contract OK: public no-tools chat, owner/admin trusted site actions, reactive QA repair, GitHub/Playwright MCP, isolated state and ephemeral secrets.');
+

@@ -1,6 +1,6 @@
 # QuantDeus OpenClaw Self-Evolution Skill
 
-Version: 1.0  
+Version: 1.1  
 Owner: OpenClaw Office / Control Tower  
 Policy: evidence-driven, reversible, QA-gated self-improvement
 
@@ -30,7 +30,7 @@ May autonomously improve only:
 - `coordination/openclaw-evolution.json`
 - `docs/openclaw-evolution.md`
 
-Use branch `automation/openclaw-evolution/*`. A Tier A PR may auto-merge only after independent QA Triad + Static Smoke are green and the guarded path check confirms no other files changed.
+Use branch `automation/openclaw-evolution/*`. All Tier A PRs require human review and successful independent QA Triad + Static Smoke. Autonomous merge is disabled because the behavioral skill can change later trusted execution instructions.
 
 ### Tier B — runtime/core
 
@@ -74,4 +74,5 @@ Record accepted evolution hypotheses and outcomes in `coordination/openclaw-evol
 
 ## Output discipline
 
-One evolution cycle may create at most one PR. If evidence is weak, return no action.
+The analysis job has no tools or GitHub credential. Return one structured proposal with evidence URLs, base SHA, problem, hypothesis, metric, falsifier and complete file replacements. A separate deterministic broker enforces exact paths and file counts before creating one draft PR. It never merges. If evidence is weak, return no action.
+

@@ -29,6 +29,9 @@ jobs:
         continue-on-error: true
         run: node scripts/mission-alignment.js
 
+      - name: Verify evolution boundaries and merge guard behavior
+        run: node --test scripts/qa/openclaw-evolution.test.js
+
       - name: 🩺 Run all-agent monitor
         id: monitor
         continue-on-error: true
@@ -64,3 +67,4 @@ jobs:
             /tmp/quantdeus-mission-alignment.json
             /tmp/quantdeus-agent-health.json
           if-no-files-found: error
+

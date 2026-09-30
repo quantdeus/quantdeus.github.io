@@ -92,8 +92,10 @@ function trustedOfficeRequest(req, claims) {
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
   const eventName = String(claims.event_name || '');
   const metadata = req.body?.metadata || {};
+  // Evolution proposals are inference-only; never grant tools to this signed workflow.
+  if (/\.github\/workflows\/openclaw-evolution\.yml(?:@|$)/.test(workflowRef)) return false;
 
-  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|seven-priority-cycle|news-manifest-cycle|growth-site-cycle|openclaw-evolution)\.yml(?:@|$)/.test(workflowRef);
+  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|seven-priority-cycle|news-manifest-cycle|growth-site-cycle)\.yml(?:@|$)/.test(workflowRef);
   if (trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(eventName)) return true;
 
   const siteOwnerAction =
@@ -713,3 +715,4 @@ export default async function handler(req, res) {
     }
   }
 }
+
