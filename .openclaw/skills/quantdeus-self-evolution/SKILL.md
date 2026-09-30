@@ -76,3 +76,10 @@ Record accepted evolution hypotheses and outcomes in `coordination/openclaw-evol
 
 The analysis job has no tools or GitHub credential. Return one structured proposal with evidence URLs, base SHA, problem, hypothesis, metric, falsifier and complete file replacements. A separate deterministic broker enforces exact paths and file counts before creating one draft PR. It never merges. If evidence is weak, return no action.
 
+## Adaptive learning notes
+
+The bounded section below may collect low-risk operational heuristics. It is non-authoritative: hard invariants, tier boundaries, and merge rules above remain immutable to automated Tier A evolution.
+
+<!-- QD_EVOLUTION_MUTABLE_START -->
+- Prefer evidence that names a reproducible failure, a measurable improvement, and a falsifier.
+<!-- QD_EVOLUTION_MUTABLE_END -->
