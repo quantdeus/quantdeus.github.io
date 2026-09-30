@@ -192,7 +192,7 @@ jobs:
           for(const [k,v] of Object.entries(inputs)){
             if(workflow==='qa-self-heal.yml' && k==='lane' && ['full','site','actions'].includes(String(v))) args.push('-f',k+'='+v);
             else if(workflow==='agent-role-cron.yml' && k==='agent_id' && /^[a-z0-9-]+$/.test(String(v))) args.push('-f',k+'='+v);
-            else if(workflow==='agent-role-cron.yml' && k==='issue_number' && /^\\d+$/.test(String(v))) args.push('-f',k+'='+v);
+            else if(workflow==='agent-role-cron.yml' && k==='issue_number' && /^\d+$/.test(String(v))) args.push('-f',k+'='+v);
             else if(Object.keys(inputs).length) throw new Error('Unsupported workflow input');
           }
           execFileSync('gh',args,{stdio:'inherit',env:{...process.env,GH_TOKEN:process.env.GH_TOKEN}});
