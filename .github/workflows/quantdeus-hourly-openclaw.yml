@@ -81,6 +81,7 @@ jobs:
                   'Hourly QuantDeus swarm tick.',
                   'Read fresh main and coordination/agents.json first.',
                   'Inspect open Issues and PRs in quantdeus/quantdeus.github.io.',
+                  'Inspect recent failed/degraded GitHub Actions runs when deciding whether qa-self-heal should be dispatched.',
                   'GitHub MCP remains READ-ONLY in this coordinator lane. Do not mutate repository state through MCP here; dispatch a constrained executor instead.',
                   'Choose at most ONE highest-priority actionable coord:active or coord:ready Issue that is not already represented by an open implementation PR.',
                   'Respect any explicit target-agent or pillar ownership and act as Seven of Nine coordinating that specialist role.',
