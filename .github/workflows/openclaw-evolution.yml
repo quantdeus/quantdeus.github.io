@@ -4,90 +4,177 @@ on:
   schedule:
     - cron: '31 2 * * *'
   workflow_dispatch:
+    inputs:
+      verification_fixture:
+        description: Create one safe Tier A verification PR to prove the guarded lifecycle
+        required: false
+        default: false
+        type: boolean
 
-permissions: {}
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
 
 concurrency:
   group: quantdeus-openclaw-evolution
   cancel-in-progress: false
 
 jobs:
-  observe:
-    if: github.ref == 'refs/heads/main'
+  evolve:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      actions: read
-      issues: read
-      pull-requests: read
-      id-token: write
-    outputs:
-      base_sha: ${{ steps.base.outputs.sha }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           persist-credentials: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - id: base
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
-      - name: Collect operational evidence with read-only credentials
+
+      - name: Collect OpenClaw operational evidence
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/qd-openclaw-evolution
-          gh run list --repo "$GITHUB_REPOSITORY" --limit 80 --json databaseId,workflowName,status,conclusion,headSha,url > /tmp/qd-openclaw-evolution/actions.json
-          gh pr list --repo "$GITHUB_REPOSITORY" --state all --limit 60 --json number,title,state,headRefName,url > /tmp/qd-openclaw-evolution/prs.json
-          gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 80 --json number,title,state,url > /tmp/qd-openclaw-evolution/issues.json
-      - name: Inference-only evidence-backed proposal (no tools, no GitHub token)
+          gh run list --repo "$GITHUB_REPOSITORY" --limit 80 --json databaseId,workflowName,status,conclusion,createdAt,updatedAt,headSha,url > /tmp/qd-openclaw-evolution/actions.json
+          gh pr list --repo "$GITHUB_REPOSITORY" --state all --limit 60 --json number,title,state,headRefName,updatedAt,url > /tmp/qd-openclaw-evolution/prs.json
+          gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 80 --json number,title,state,labels,updatedAt,url > /tmp/qd-openclaw-evolution/issues.json
+
+      - name: Ask OpenClaw for one bounded proposal
         env:
-          EVOLUTION_BASE_SHA: ${{ steps.base.outputs.sha }}
-        run: node scripts/openclaw-evolution.js observe
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERIFICATION_FIXTURE: ${{ inputs.verification_fixture || false }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const office = require('./scripts/openclaw-office-client');
+
+          function read(path, max = 40000) {
+            try { return fs.readFileSync(path, 'utf8').slice(0, max); } catch { return ''; }
+          }
+          function parse(text) {
+            const raw = String(text || '').trim();
+            try { return JSON.parse(raw); } catch {}
+            const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (fenced) return JSON.parse(fenced[1].trim());
+            throw new Error('OpenClaw evolution response must be strict JSON');
+          }
+          function writeDecision(decision, model = 'verification-fixture') {
+            fs.writeFileSync('/tmp/qd-openclaw-evolution/result.json', JSON.stringify({
+              timestamp: new Date().toISOString(),
+              model,
+              decision
+            }, null, 2));
+            console.log(JSON.stringify({ model, decision }, null, 2));
+          }
+
+          (async () => {
+            if (String(process.env.VERIFICATION_FIXTURE) === 'true') {
+              const policy = JSON.parse(fs.readFileSync('coordination/openclaw-evolution.json', 'utf8'));
+              const today = new Date().toISOString().slice(0, 10);
+              policy.updated = today;
+              policy.history = [...policy.history, {
+                date: today,
+                type: 'guarded-lifecycle-verification',
+                hypothesis: 'A Tier A history-only change should pass deterministic pre-mutation validation and merge only after independent QA, Smoke, and Evolution Guard success.',
+                status: 'verification-candidate'
+              }];
+              writeDecision({
+                action: 'proposal',
+                tier: 'skill',
+                branch: 'automation/openclaw-evolution/verification-' + process.env.GITHUB_RUN_ID,
+                files: [{
+                  path: 'coordination/openclaw-evolution.json',
+                  content: JSON.stringify(policy, null, 2) + '\n'
+                }],
+                summary: 'Guarded lifecycle verification fixture',
+                metric: 'qa + smoke + evolution-guard all conclude success before merge',
+                falsifier: 'any protected field changes or merge occurs without all three successful checks'
+              });
+              return;
+            }
+
+            const result = await office.ask({
+              profile: 'control-tower',
+              trusted: true,
+              messages: [{
+                role: 'user',
+                content: [
+                  'QuantDeus OpenClaw self-evolution proposal cycle.',
+                  'Your GitHub MCP is intentionally READ-ONLY in this workflow. Do not attempt GitHub mutations.',
+                  'Read fresh main and evidence. Propose at most ONE bounded change.',
+                  '',
+                  'Authoritative policy:',
+                  read('coordination/openclaw-evolution.json', 16000),
+                  '',
+                  'Authoritative skill:',
+                  read('.openclaw/skills/quantdeus-self-evolution/SKILL.md', 16000),
+                  '',
+                  'Recent Actions evidence:',
+                  read('/tmp/qd-openclaw-evolution/actions.json'),
+                  '',
+                  'Recent PR evidence:',
+                  read('/tmp/qd-openclaw-evolution/prs.json'),
+                  '',
+                  'Recent Issue evidence:',
+                  read('/tmp/qd-openclaw-evolution/issues.json'),
+                  '',
+                  'Tier A may propose edits only to the bounded mutable sections in SKILL/docs or append one history entry in coordination/openclaw-evolution.json. Return COMPLETE replacement content for each Tier A file.',
+                  'Tier B is PROPOSAL-ONLY: name 1-4 approved core_review_paths and explain the evidence. Do not return code bodies or patches for Tier B.',
+                  'Protected invariants are immutable to this automated loop: OIDC/auth, trusted-workflow gating, public no-tools, MCP deny/tool filters, secrets, mission/QA/Smoke, guarded merge, and human approval.',
+                  'Use branch automation/openclaw-evolution/<topic>.',
+                  '',
+                  'Return ONLY strict JSON in one of these forms:',
+                  '{"action":"none","reason":"..."}',
+                  '{"action":"proposal","tier":"skill","branch":"automation/openclaw-evolution/...","files":[{"path":"...","content":"..."}],"summary":"...","metric":"...","falsifier":"..."}',
+                  '{"action":"proposal","tier":"core","branch":"automation/openclaw-evolution/...","suggested_paths":["..."],"summary":"...","rationale":"...","metric":"...","falsifier":"..."}'
+                ].join('\n')
+              }],
+              metadata: {
+                source: 'quantdeus-openclaw-evolution',
+                repository: process.env.GITHUB_REPOSITORY
+              }
+            });
+
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
+              throw new Error('OpenClaw evolution did not receive trusted read-only tools');
+            }
+            const d = parse(result.text);
+            if (!['none','proposal'].includes(d.action)) throw new Error('Unsupported evolution action');
+            if (d.action === 'proposal' && !['skill','core'].includes(String(d.tier || ''))) {
+              throw new Error('Invalid evolution proposal tier');
+            }
+            writeDecision(d, result.model);
+          })().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Apply only after deterministic pre-mutation guard
+        id: apply
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVOLUTION_RESULT_PATH: /tmp/qd-openclaw-evolution/result.json
+        run: node scripts/openclaw-evolution-apply.js
+
       - name: Upload evolution evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: quantdeus-openclaw-evolution
-          path: /tmp/qd-openclaw-evolution/
-          if-no-files-found: error
-
-  propose:
-    needs: observe
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      pull-requests: write
-      actions: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.observe.outputs.base_sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - uses: actions/download-artifact@v4
-        with:
-          name: quantdeus-openclaw-evolution
-          path: /tmp/qd-openclaw-evolution/
-      - name: Validate shared QuantDeus mission before bounded PR creation
-        run: node scripts/mission-alignment.js
-      - name: Validate proposal and create exactly one review-only PR
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EVOLUTION_BASE_SHA: ${{ needs.observe.outputs.base_sha }}
-        run: node scripts/openclaw-evolution.js propose
-      - name: Upload independently verified publication evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quantdeus-openclaw-evolution-publication
-          path: /tmp/qd-openclaw-evolution/publication.json
+          path: |
+            /tmp/qd-openclaw-evolution/actions.json
+            /tmp/qd-openclaw-evolution/prs.json
+            /tmp/qd-openclaw-evolution/issues.json
+            /tmp/qd-openclaw-evolution/result.json
           if-no-files-found: warn
-
