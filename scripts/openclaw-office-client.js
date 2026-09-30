@@ -1,8 +1,11 @@
 'use strict';
 
+const agentRegistry = require('../coordination/agents.json');
+
 const DEFAULT_TIMEOUT_MS = 250000;
 const DEFAULT_VERCEL_URL = 'https://quantdeus.vercel.app/api/quantdeus/openclaw';
 const OPENCLAW_AUDIENCE = 'quantdeus-vercel-openclaw';
+const collectiveDirective = String(agentRegistry.collective_cognition?.runtime_directive || '').trim();
 
 function configured() {
   return Boolean(
@@ -36,6 +39,7 @@ function normalizedMessages(messages, metadata, trusted = false) {
   const system = [
     'You are running inside the QuantDeus OpenClaw Office.',
     'GitHub quantdeus/quantdeus.github.io is the canonical project source of truth.',
+    collectiveDirective ? 'Collective cognition: ' + collectiveDirective : '',
     trusted
       ? 'This is the trusted QuantDeus Admin Office lane. Use the available GitHub MCP, workspace filesystem and Playwright MCP when they materially help.'
       : 'This route runs OpenClaw with tools disabled. Do not claim that you inspected or changed live GitHub, Vercel, Telegram, browser, cron, or MCP state.',

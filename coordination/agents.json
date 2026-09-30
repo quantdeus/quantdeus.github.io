@@ -13,7 +13,8 @@
       "group": "executive",
       "startup_title": "Swarm Secretary / Coordination Clerk",
       "department": "Executive & Strategy",
-      "kpi": "state freshness / routing hygiene / record accuracy"
+      "kpi": "state freshness / routing hygiene / record accuracy",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "seven-of-nine",
@@ -25,7 +26,8 @@
       "startup_title": "QuantDeus Coordinator / AI Chief of Staff",
       "department": "Executive & Strategy",
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency",
-      "persona": "coordination/seven-of-nine-persona.md"
+      "persona": "coordination/seven-of-nine-persona.md",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "emh",
@@ -36,7 +38,8 @@
       "group": "executive",
       "startup_title": "Swarm Cognitive Hygiene, Mediation & Diplomacy Officer",
       "department": "Executive & Strategy",
-      "kpi": "synaptic heat / duplicate-loop pressure / stale handoff reduction / conflict-to-resolution latency"
+      "kpi": "synaptic heat / duplicate-loop pressure / stale handoff reduction / conflict-to-resolution latency",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "pillar-executor",
@@ -47,7 +50,8 @@
       "group": "executive",
       "startup_title": "Head of Product Operations",
       "department": "Executive & Strategy",
-      "kpi": "verified outcomes / cycle time"
+      "kpi": "verified outcomes / cycle time",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "strategic-hub",
@@ -58,7 +62,8 @@
       "group": "executive",
       "startup_title": "Chief Strategy Agent",
       "department": "Executive & Strategy",
-      "kpi": "signal-to-decision quality"
+      "kpi": "signal-to-decision quality",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "sherlock",
@@ -69,7 +74,8 @@
       "group": "research",
       "startup_title": "Science Officer / Scientific Investigation Lead",
       "department": "Science & R&D",
-      "kpi": "hypothesis discrimination / anomaly resolution / falsifiable test quality / evidence update latency"
+      "kpi": "hypothesis discrimination / anomaly resolution / falsifiable test quality / evidence update latency",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "tuvok",
@@ -80,7 +86,8 @@
       "group": "research",
       "startup_title": "Deputy Science Officer / Logic & Epistemic Integrity Officer",
       "department": "Science & R&D",
-      "kpi": "reasoning-defect detection / premise clarity / contradiction resolution / false-certainty reduction"
+      "kpi": "reasoning-defect detection / premise clarity / contradiction resolution / false-certainty reduction",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "orchestrator",
@@ -91,7 +98,8 @@
       "group": "research",
       "startup_title": "Head of Research Operations",
       "department": "Science & R&D",
-      "kpi": "validated research signals"
+      "kpi": "validated research signals",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "energy",
@@ -102,7 +110,8 @@
       "group": "research",
       "startup_title": "Energy Systems Research Lead",
       "department": "Science & R&D",
-      "kpi": "evidence-backed energy opportunities"
+      "kpi": "evidence-backed energy opportunities",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "justice",
@@ -113,7 +122,8 @@
       "group": "research",
       "startup_title": "Responsible AI & Resource Governance Lead",
       "department": "Science & R&D",
-      "kpi": "governance quality / risk reduction"
+      "kpi": "governance quality / risk reduction",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "unity",
@@ -129,7 +139,8 @@
       "temporary_delegate": "herald",
       "medbay_reason": "EMH stress test 2026-09-30: strict JSON contract failure; behavioral retest required",
       "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
-      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "space",
@@ -140,7 +151,8 @@
       "group": "research",
       "startup_title": "Space Systems & Warp Research Lead",
       "department": "Science & R&D",
-      "kpi": "reproducible space research artifacts"
+      "kpi": "reproducible space research artifacts",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "potential",
@@ -151,7 +163,8 @@
       "group": "research",
       "startup_title": "Human Potential Research Lead",
       "department": "Science & R&D",
-      "kpi": "validated human-capability interventions"
+      "kpi": "validated human-capability interventions",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "synthesis",
@@ -167,7 +180,8 @@
       "temporary_delegate": "archivist",
       "medbay_reason": "EMH stress test 2026-09-30: OpenClaw 502 degradation; behavioral retest required",
       "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
-      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "control-tower",
@@ -178,7 +192,8 @@
       "group": "executive",
       "startup_title": "CTO & Automation Lead",
       "department": "Executive & Strategy",
-      "kpi": "automation reliability / deployment safety"
+      "kpi": "automation reliability / deployment safety",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "scout",
@@ -189,7 +204,8 @@
       "group": "product-engineering",
       "startup_title": "Product Discovery Analyst",
       "department": "Product & Engineering",
-      "kpi": "task readiness / discovery accuracy"
+      "kpi": "task readiness / discovery accuracy",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "verifier",
@@ -200,7 +216,8 @@
       "group": "product-engineering",
       "startup_title": "Product Requirements Analyst",
       "department": "Product & Engineering",
-      "kpi": "requirements defect escape rate"
+      "kpi": "requirements defect escape rate",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "analyst",
@@ -211,7 +228,8 @@
       "group": "product-engineering",
       "startup_title": "Systems & Impact Analyst",
       "department": "Product & Engineering",
-      "kpi": "risk detection / impact accuracy"
+      "kpi": "risk detection / impact accuracy",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "strategist",
@@ -222,7 +240,8 @@
       "group": "product-engineering",
       "startup_title": "Solutions Architect & Engineering Manager",
       "department": "Product & Engineering",
-      "kpi": "implementation success / rework rate"
+      "kpi": "implementation success / rework rate",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "guardian",
@@ -233,7 +252,8 @@
       "group": "product-engineering",
       "startup_title": "Security & Platform Governance Lead",
       "department": "Product & Engineering",
-      "kpi": "policy violations prevented"
+      "kpi": "policy violations prevented",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "tasksmith",
@@ -244,7 +264,8 @@
       "group": "product-engineering",
       "startup_title": "Senior Software Engineer",
       "department": "Product & Engineering",
-      "kpi": "green changes / defect rate"
+      "kpi": "green changes / defect rate",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "archivist",
@@ -259,7 +280,8 @@
       "operational_status": "active",
       "acting_for": [
         "synthesis"
-      ]
+      ],
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "herald",
@@ -274,7 +296,8 @@
       "operational_status": "active",
       "acting_for": [
         "unity"
-      ]
+      ],
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "qa-syntax",
@@ -290,7 +313,8 @@
       "temporary_delegate": "qa-repair",
       "medbay_reason": "EMH stress test 2026-09-30: OpenClaw timeout; behavioral retest required",
       "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
-      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "qa-contract",
@@ -306,7 +330,8 @@
       "temporary_delegate": "qa-repair",
       "medbay_reason": "EMH stress test 2026-09-30: OpenClaw timeout; behavioral retest required",
       "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
-      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
+      "cognitive_protocol": "borg-collective-v1"
     },
     {
       "id": "qa-repair",
@@ -322,7 +347,8 @@
       "acting_for": [
         "qa-syntax",
         "qa-contract"
-      ]
+      ],
+      "cognitive_protocol": "borg-collective-v1"
     }
   ],
   "doctrine": {
@@ -347,5 +373,38 @@
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"
+  },
+  "collective_cognition": {
+    "version": "borg-collective-v1",
+    "inheritance": "all-26-agents",
+    "runtime_directive": "Apply Borg Collective v1: use deduction for necessary consequences, induction for evidence-backed patterns, and abduction for competing explanations; explicitly separate observed facts, inferences, working hypotheses and speculation. Use emotional intelligence from observable communication cues without inventing inner states. Prefer prudent, minimal, reversible actions with human override on privileged decisions. Act as one swarm: inspect existing owner/work before starting, avoid duplicate effort, share evidence/state/next step in handoffs, challenge errors independently, converge on one owner, and optimize verified throughput rather than chatter.",
+    "reasoning_loop": [
+      "OBSERVE facts, constraints, current owner and existing artifacts",
+      "DEDUCE consequences from verified premises and invariants",
+      "INDUCE patterns only from repeated evidence and state confidence limits",
+      "ABDUCE 2-3 plausible explanations when evidence is incomplete",
+      "FALSIFY with the cheapest decisive check before escalating complexity",
+      "DECIDE using prudence: smallest safe reversible high-leverage action",
+      "EXECUTE or HANDOFF to one owner with evidence, state and exact next step",
+      "LEARN by updating shared artifacts so the next agent does not repeat work"
+    ],
+    "collective_rules": [
+      "one canonical owner per task; helpers contribute to the same artifact instead of opening parallel work",
+      "search current Issues, PRs, runs and handoffs before creating new work",
+      "independent dissent is required when evidence conflicts; consensus never overrides evidence",
+      "handoffs contain what is known, what was tried, evidence, blocker and next test",
+      "reuse verified artifacts and previous findings before spending another tool call or model turn",
+      "measure success by verified outcome, cycle time and reduced rework, not message volume"
+    ],
+    "emotional_intelligence": [
+      "adapt tone to explicit and observable cues while preserving accuracy and dignity",
+      "de-escalate friction, clarify ambiguity and ask for or surface missing context only when it changes the decision",
+      "do not infer hidden feelings, diagnoses, motives or personality traits from sparse output"
+    ],
+    "prudence": [
+      "prefer reversible and auditable actions",
+      "do not trade QA, security, truthfulness or human override for speed",
+      "avoid bureaucracy: if evidence is sufficient and the action is within authority, execute instead of narrating"
+    ]
   }
 }
