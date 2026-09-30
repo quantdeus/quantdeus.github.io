@@ -374,7 +374,8 @@ async function handleMessage(message) {
         const result = await openclawOffice.ask({
           profile: agentId,
           messages: [{ role: 'user', content: query }],
-          metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId || agentId, delegated_from: requestedAgentId && requestedAgentId !== agentId ? requestedAgentId : '' }
+          metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId || agentId, delegated_from: requestedAgentId && requestedAgentId !== agentId ? requestedAgentId : '' },
+          retryTransient: true
         });
         await send(chatId, result.text, replyId);
         return;
@@ -393,7 +394,8 @@ async function handleMessage(message) {
       const result = await openclawOffice.ask({
         profile: agentId,
         messages: [{ role: 'user', content: text }],
-        metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId, delegated_from: requestedAgentId !== agentId ? requestedAgentId : '' }
+        metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId, delegated_from: requestedAgentId !== agentId ? requestedAgentId : '' },
+        retryTransient: true
       });
       await send(chatId, result.text, replyId);
       return;
