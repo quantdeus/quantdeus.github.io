@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '31 2 * * *'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/openclaw-evolution.js'
+      - '.github/workflows/openclaw-evolution.yml'
 
 permissions: {}
 
@@ -57,7 +62,9 @@ jobs:
 
   propose:
     needs: observe
-    if: github.ref == 'refs/heads/main'
+    # A push is a read-only self-test of the inference lane; publication remains
+    # limited to the scheduled/manual evolution cycle.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
