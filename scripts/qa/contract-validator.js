@@ -122,6 +122,8 @@ for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governan
 
 const roleCronWorkflow = fs.readFileSync(path.join(root,'.github','workflows','agent-role-cron.yml'),'utf8');
 check(roleCronWorkflow.includes("agent.id==='emh'") && roleCronWorkflow.includes('EMH TREATMENT LANE') && roleCronWorkflow.includes('AGENTS.md only') && roleCronWorkflow.includes('/pulls/') && roleCronWorkflow.includes("names[0] !== 'AGENTS.md'"), 'agent-role-cron.yml', 'EMH treatment cron is runtime-guarded to AGENTS.md-only PRs');
+check(roleCronWorkflow.includes("pr.head?.ref !== expectedBranch") && roleCronWorkflow.includes("pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY") && roleCronWorkflow.includes("pr.base?.ref !== 'main'"), 'agent-role-cron.yml', 'EMH treatment PR number is bound to the declared canonical branch targeting main');
+check(agentsReadme.includes('Seven of Nine (\`seven-of-nine\`)'), 'AGENTS.md', 'Seven is explicitly named as stress-test authority');
 const qaTriadWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-triad.yml'),'utf8');
 const staticSmokeWorkflow = fs.readFileSync(path.join(root,'.github','workflows','static-smoke.yml'),'utf8');
 check(qaTriadWorkflow.includes('pull_request:') && staticSmokeWorkflow.includes('pull_request:'), 'EMH QA oversight', 'QA Triad and Static Smoke independently run on treatment PRs');
