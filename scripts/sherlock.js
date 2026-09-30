@@ -13,9 +13,17 @@ function labels(i){ return (i.labels||[]).map(x=>typeof x==='string'?x:x.name); 
 
 const researchLabels = new Set(['pillar-01-energy','pillar-02-justice','pillar-04-space','pillar-05-potential']);
 const issues = j(['issue','list','--state','open','--limit','200','--json','number,title,body,labels,updatedAt']) || [];
+function targetAgent(issue) {
+  const labelTarget = labels(issue).find(l => l.startsWith('agent:'));
+  if (labelTarget) return labelTarget.slice('agent:'.length);
+  const marker = String(issue.body || '').match(/<!--\s*quantdeus-target-agent:([a-z0-9-]+)\s*-->/i);
+  return marker ? marker[1] : '';
+}
+const explicit = issues.filter(i => targetAgent(i) === 'sherlock' && labels(i).includes('coord:task'));
+const actionableExplicit = explicit.filter(i => !labels(i).includes('coord:blocked'));
 const research = issues.filter(i => labels(i).some(l=>researchLabels.has(l)));
 const blocked = research.filter(i=>labels(i).includes('coord:blocked'));
-const target = blocked[0] || research[0];
+const target = actionableExplicit[0] || explicit[0] || blocked[0] || research[0];
 
 if (!target) {
   console.log('Sherlock: no open research case.');
@@ -42,8 +50,10 @@ const observation = {
 };
 const digest = crypto.createHash('sha256').update(JSON.stringify(observation)).digest('hex').slice(0,12);
 const marker = '<!-- qd-sherlock-digest:' + digest + ' -->';
-const hub = j(['issue','view',String(hubIssue),'--json','comments']);
-const prev = [...(hub.comments||[])].reverse().find(c=>String(c.body||'').includes('<!-- qd-sherlock-digest:'));
+const explicitTarget = targetAgent(target) === 'sherlock';
+const destinationIssue = explicitTarget ? target.number : hubIssue;
+const thread = j(['issue','view',String(destinationIssue),'--json','comments']);
+const prev = [...(thread.comments||[])].reverse().find(c=>String(c.body||'').includes('<!-- qd-sherlock-digest:'));
 if ((prev?.body||'').includes(marker)) process.exit(0);
 
 const evidence = [];
@@ -73,5 +83,5 @@ const body = [
   marker
 ].join('\n');
 
-gh(['issue','comment',String(hubIssue),'--body',body]);
+gh(['issue','comment',String(destinationIssue),'--body',body]);
 console.log('Sherlock case:', target.number);

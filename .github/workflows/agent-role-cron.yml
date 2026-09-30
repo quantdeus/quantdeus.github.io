@@ -9,6 +9,8 @@ on:
         description: Optional registered agent id
         required: false
         type: string
+  issues:
+    types: [opened, edited, reopened, labeled]
   push:
     branches: [main]
     paths:
@@ -23,7 +25,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: quantdeus-agent-role-cron-${{ github.event.schedule || inputs.agent_id || 'manual' }}
+  group: quantdeus-agent-role-cron-${{ github.event.issue.number || github.event.schedule || inputs.agent_id || 'manual' }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
@@ -54,10 +56,33 @@ jobs:
           const byId = new Map(registry.agents.map(a => [a.id,a]));
           const manual = String(process.env.INPUT_AGENT_ID || '').trim();
           const hour = new Date().getUTCHours();
-          const due = manual
-            ? map.agents.filter(a => a.id === manual)
-            : map.agents.filter(a => a.workflow === 'agent-role-cron.yml' && a.utc_hours.includes(hour));
-          if (manual && due.length !== 1) throw new Error('Unknown agent id: ' + manual);
+          let eventTarget = '';
+          let eventActionable = true;
+          if (process.env.GITHUB_EVENT_NAME === 'issues' && process.env.GITHUB_EVENT_PATH && fs.existsSync(process.env.GITHUB_EVENT_PATH)) {
+            const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+            const issue = event.issue || {};
+            const issueLabels = (issue.labels || []).map(x => typeof x === 'string' ? x : x.name).filter(Boolean);
+            const labelTargets = issueLabels.filter(x => x.startsWith('agent:')).map(x => x.slice('agent:'.length));
+            const marker = String(issue.body || '').match(/<!--\s*quantdeus-target-agent:([a-z0-9-]+)\s*-->/i);
+            const candidates = [...new Set([...labelTargets, ...(marker ? [marker[1]] : [])])].filter(id => byId.has(id));
+            if (candidates.length > 1) throw new Error('Issue targets multiple role agents: ' + candidates.join(','));
+            eventTarget = candidates[0] || '';
+            eventActionable =
+              issueLabels.includes('coord:task') &&
+              !issueLabels.includes('coord:blocked') &&
+              (issueLabels.includes('coord:ready') || issueLabels.includes('coord:active'));
+          }
+          const requested = manual || eventTarget;
+          const due = requested
+            ? map.agents.filter(a => a.id === requested)
+            : process.env.GITHUB_EVENT_NAME === 'issues'
+              ? []
+              : map.agents.filter(a => a.workflow === 'agent-role-cron.yml' && a.utc_hours.includes(hour));
+          if (requested && due.length !== 1) throw new Error('Unknown agent id: ' + requested);
+          if (process.env.GITHUB_EVENT_NAME === 'issues' && (!eventTarget || !eventActionable)) {
+            console.log(JSON.stringify({ok:true,action:'none',reason:'issue has no actionable explicit agent target'}));
+            process.exit(0);
+          }
           if (!due.length) {
             console.log(JSON.stringify({ok:true,action:'none',reason:'no role agent due at UTC hour '+hour}));
             process.exit(0);
