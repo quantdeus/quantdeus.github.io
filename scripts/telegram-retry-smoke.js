@@ -19,8 +19,10 @@ async function main() {
   const raw = await response.text();
   if (!response.ok) throw new Error('Telegram retry smoke start ' + response.status + ': ' + raw.slice(0, 800));
   const data = JSON.parse(raw);
-  if (!data?.ok || data.status !== 'dispatched') throw new Error('Telegram retry smoke did not dispatch');
-  console.log('Telegram retry smoke dispatched:', JSON.stringify({ update_id: data.update_id }));
+  if (!data?.ok || !new Set(['dispatched', 'redelivery_fallback']).has(data.status)) {
+    throw new Error('Telegram retry smoke returned unexpected status: ' + String(data?.status || 'missing'));
+  }
+  console.log('Telegram retry smoke transport:', JSON.stringify({ status: data.status, update_id: data.update_id }));
 }
 
 main().catch(error => {

@@ -264,6 +264,12 @@ check(fs.existsSync(telegramRetrySmokePath), 'scripts/telegram-retry-smoke.js', 
 if (fs.existsSync(telegramRetrySmokePath)) {
   const telegramRetrySmoke = fs.readFileSync(telegramRetrySmokePath,'utf8');
   check(telegramRetrySmoke.includes("mode: 'retry_smoke'") && telegramRetrySmoke.includes('quantdeus-vercel-telegram'), 'scripts/telegram-retry-smoke.js', 'Retry smoke starts through GitHub OIDC and never needs a Telegram chat id');
+  check(
+    telegramRetrySmoke.includes("'redelivery_fallback'") &&
+    telegramRetrySmoke.includes("'dispatched'"),
+    'scripts/telegram-retry-smoke.js',
+    'Retry smoke accepts either immediate Actions dispatch or event-driven Telegram redelivery transport'
+  );
 }
 check(
   telegramSource.includes('update.quantdeus_retry_smoke === true') &&
@@ -315,6 +321,16 @@ if (fs.existsSync(telegramBridgePath)) {
     'Telegram bridge hands exhausted non-live chat to the existing GitHub Actions retry lane'
   );
   check(
+    telegramBridge.includes("retryable.code = 'TELEGRAM_RETRYABLE'") &&
+    telegramBridge.includes("error?.code === 'TELEGRAM_RETRYABLE'") &&
+    telegramBridge.includes("res.status(503)") &&
+    telegramBridge.includes("'telegram_retryable_upstream_failure'") &&
+    telegramBridge.includes("[telegram-redelivery] status=retryable") &&
+    telegramBridge.includes("res.setHeader('Retry-After', '5')"),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'When immediate Actions dispatch is unavailable, authenticated Telegram webhook fails with retryable 503 instead of falsely acknowledging a lost update'
+  );
+  check(
     telegramBridge.includes('async function retrySmokeStart(req, res)') &&
     telegramBridge.includes('async function retrySmokeComplete(req, res)') &&
     telegramBridge.includes('quantdeus_retry_smoke: true') &&
@@ -322,6 +338,12 @@ if (fs.existsSync(telegramBridgePath)) {
     telegramBridge.includes("req.body?.mode === 'retry_smoke_complete'"),
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'OIDC-authenticated retry smoke dispatch and evidence callback are implemented without exposing a public bypass'
+  );
+  check(
+    telegramBridge.includes("status=redelivery_fallback") &&
+    telegramBridge.includes("status: 'redelivery_fallback'"),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Retry smoke reports redelivery fallback as a valid degraded transport when no Vercel GitHub credential exists'
   );
 }
 

@@ -31,7 +31,7 @@ The endpoint is fail-closed and requires:
 ## Required environment variables
 
 - `CRON_SECRET` — required.
-- `QUANTDEUS_GITHUB_TOKEN` — required for the Telegram webhook bridge and approved authenticated GitHub REST fallback.
+- `QUANTDEUS_GITHUB_TOKEN` — optional for the Telegram bridge's immediate GitHub Actions handoff. If absent or dispatch fails, the webhook returns retryable HTTP 503 so Telegram can redeliver the same update later. It remains required for Vercel-side GitHub mutations such as browser queueing.
 
 ## Current bootstrap behavior
 
