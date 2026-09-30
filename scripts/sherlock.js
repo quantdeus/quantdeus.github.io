@@ -16,7 +16,7 @@ const issues = j(['issue','list','--state','open','--limit','200','--json','numb
 function targetAgent(issue) {
   const labelTarget = labels(issue).find(l => l.startsWith('agent:'));
   if (labelTarget) return labelTarget.slice('agent:'.length);
-  const marker = String(issue.body || '').match(/<!--\\s*quantdeus-target-agent:([a-z0-9-]+)\\s*-->/i);
+  const marker = String(issue.body || '').match(/<!--\s*quantdeus-target-agent:([a-z0-9-]+)\s*-->/i);
   return marker ? marker[1] : '';
 }
 const explicit = issues.filter(i => targetAgent(i) === 'sherlock' && labels(i).includes('coord:task'));
