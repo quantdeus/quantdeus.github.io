@@ -105,6 +105,7 @@ jobs:
                 explicitIssue ? 'Explicit assigned task: GitHub Issue #'+explicitIssue+'. Inspect this Issue first and keep the cycle focused on it unless it is already resolved or blocked.' : '',
                 '',
                 'Read fresh main first, including coordination/civilization-doctrine.json, coordination/manifesto-living.md, coordination/cron-context.md, open Issues/PRs and recent Actions relevant to your role.',
+                'Prefer the already-cloned local repository filesystem for repository file inspection. Do not call GitHub search_code merely to read files that are already present locally; reserve GitHub MCP for live Issues/PRs, metadata and mutations.',
                 'Inspect public QuantDeus surfaces with Playwright only when useful.',
                 'Choose at most ONE bounded, high-value artifact inside your role: a verified comment, a branch + PR, or a NEW Issue proposal.',
                 'For a NEW Issue, do NOT call create_issue through MCP. Return action=open_issue with a proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.',
@@ -167,9 +168,9 @@ jobs:
             console.log(JSON.stringify({agent:agent.id,model:result.model,decision},null,2));
           })().catch(e=>{
             if(office.isTransientError(e)){
-              console.warn('Role cron degraded by transient OpenClaw failure; no further action will be attempted.');
-              console.log(JSON.stringify({ok:true,action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)},null,2));
-              return;
+              console.error('Role cron exhausted transient OpenClaw retries; fail visibly so Failure Radar/Seven can recover it.');
+              console.error(JSON.stringify({ok:false,action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)},null,2));
+              process.exit(1);
             }
             console.error(e.stack||e);
             process.exit(1);
