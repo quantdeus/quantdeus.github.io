@@ -5,6 +5,7 @@ const path = require('path');
 const {
   domainAllowed,
   gateDetected,
+  parsePlannerDecision,
   validateManifest
 } = require('../browser-homunculus');
 
@@ -46,8 +47,9 @@ test('workflow pins agent-browser and cannot mask execution failure', () => {
   const workflow = fs.readFileSync(path.join(__dirname, '../../.github/workflows/browser-homunculus.yml'), 'utf8');
   assert.match(workflow, /agent-browser@0\.38\.1/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
-  assert.match(workflow, /AI_GATEWAY_API_KEY/);
-  assert.match(workflow, /AI_GATEWAY_MODEL/);
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /QD_BROWSER_LLM_BRIDGE/);
+  assert.doesNotMatch(workflow, /AI_GATEWAY_API_KEY/);
 });
 
 test('runtime enables bounded eyes-and-hands safeguards', () => {
@@ -57,6 +59,20 @@ test('runtime enables bounded eyes-and-hands safeguards', () => {
   assert.match(source, /AGENT_BROWSER_MAX_OUTPUT/);
   assert.match(source, /AGENT_BROWSER_PIN_TAB/);
   assert.match(source, /browser_final_url_outside_allowed_domains/);
-  assert.match(source, /AI_GATEWAY_API_KEY_required_for_chat_mode/);
-  assert.match(source, /AI_GATEWAY_MODEL_required_for_chat_mode/);
+  assert.match(source, /getGithubOidcToken/);
+  assert.match(source, /browser_planner_step_limit_reached/);
+});
+
+test('planner accepts only bounded browser decisions', () => {
+  assert.deepEqual(parsePlannerDecision('{"status":"done","summary":"ok"}'), { status: 'done', summary: 'ok' });
+  assert.equal(parsePlannerDecision('{"status":"act","action":{"op":"click_ref","ref":"@e1"}}').action.op, 'click_ref');
+  assert.throws(() => parsePlannerDecision('{"status":"act","action":{"op":"eval","code":"1+1"}}'), /browser_planner_action_not_allowed/);
+});
+
+test('LLM bridge scopes browser OIDC to the browser workflow', () => {
+  const bridge = fs.readFileSync(path.join(__dirname, '../../vercel-dispatcher/api/quantdeus/llm.js'), 'utf8');
+  assert.match(bridge, /browser-homunculus\\\.yml@/);
+  assert.match(bridge, /workflow_dispatch/);
+  assert.match(bridge, /issues/);
+  assert.match(bridge, /github_oidc_wrong_event_or_workflow/);
 });
