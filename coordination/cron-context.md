@@ -29,7 +29,7 @@
 - swarm_secretary: `coordinator / Swarm Secretary / Coordination Clerk`
 - swarm_diplomat: `emh / Swarm Cognitive Hygiene, Mediation & Diplomacy Officer`
 - swarm_cognitive_hygiene: `EMH deterministic scan runs hourly inside QuantDeus Hourly OpenClaw Swarm and on Coordination Hub events; measures synaptic heat from duplicate-output loops, degraded retries, stale blockers/handoffs, review contention and chatter bursts; emits /tmp/quantdeus-emh-cognitive-health.json and posts to Hub only when state class changes`
-- emh_medbay: `temporary delegation active after 2026-09-30 stress evidence: unity→herald, synthesis→archivist, qa-syntax→qa-repair, qa-contract→qa-repair; deterministic QA validators stay active; medbay profiles remain registered/retestable and rejoin after two consecutive PASS results`
+- emh_medbay: `CEO human override 2026-09-30: unity, synthesis, qa-syntax and qa-contract returned to active duty; prior medbay classification withdrawn as a technical/control-plane classification error. Temporary delegations cleared. Future medbay decisions require evidence that distinguishes infrastructure/provider/runtime failures from agent behavioral failures.`
 - science_officer: `sherlock / Science Officer / Scientific Investigation Lead`
 - deputy_science_officer: `tuvok / Deputy Science Officer / Logic & Epistemic Integrity Officer`
 - human_ai_rule: `люди задают ценности, направление и финальную ответственность; AI-агенты ускоряют исследование, прототипирование, код, координацию и аудит`
