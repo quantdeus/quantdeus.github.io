@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
-  "version": "openclaw-evolution-v1",
+  "schema_version": 2,
+  "version": "openclaw-evolution-v2",
   "status": "active",
-  "updated": "2026-09-29",
+  "updated": "2026-09-30",
   "workflow": ".github/workflows/openclaw-evolution.yml",
   "cadence": "31 2 * * *",
   "branch_prefix": "automation/openclaw-evolution/",
@@ -18,14 +18,23 @@
       "keep-or-revert"
     ],
     "max_prs_per_cycle": 1,
-    "max_changed_files": 4,
+    "max_changed_files": 3,
     "evidence_required": true,
     "direct_main_write": false,
     "core_auto_merge": false,
     "auto_merge": false,
     "human_review_required": true,
     "analysis_tools": false,
-    "mutation_broker": "scripts/openclaw-evolution.js"
+    "mutation_broker": "scripts/openclaw-evolution.js",
+    "github_mutation_enforcement": "deterministic-apply-only",
+    "evolution_mcp_write": false,
+    "tier_b_mutation": "proposal-only",
+    "auto_merge_requires": [
+      "qa:success",
+      "smoke:success",
+      "evolution-guard:success"
+    ],
+    "mutable_skill_sections_only": true
   },
   "auto_merge_paths": [],
   "core_review_paths": [
@@ -61,6 +70,13 @@
       "type": "bootstrap",
       "hypothesis": "A repository-backed, prompt-injected evolution skill plus a daily evidence loop can improve OpenClaw behavior without allowing core self-merge.",
       "status": "pending-production-validation"
+    },
+    {
+      "date": "2026-09-30",
+      "type": "enforcement-hardening",
+      "hypothesis": "Move evolution GitHub writes behind deterministic pre-mutation validation, make Tier B proposal-only, and require independent successful QA, Smoke, and semantic/path guard checks before Tier A merge.",
+      "status": "implementation-pr"
     }
-  ]
+  ],
+  "proposal_prefix": "coordination/openclaw-evolution-proposals/"
 }
