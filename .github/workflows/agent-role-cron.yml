@@ -82,6 +82,21 @@ jobs:
           (async()=>{
             const slot=due[0];
             const agent=byId.get(slot.id);
+            if (explicitIssue) {
+              const headers={authorization:'Bearer '+process.env.GITHUB_TOKEN,accept:'application/vnd.github+json','x-github-api-version':'2022-11-28'};
+              const response=await fetch('https://api.github.com/repos/'+process.env.GITHUB_REPOSITORY+'/issues/'+explicitIssue,{headers});
+              if(!response.ok) throw new Error('Unable to preflight explicit Issue: HTTP '+response.status);
+              const issue=await response.json();
+              const labels=new Set((issue.labels||[]).map(x=>typeof x==='string'?x:x.name));
+              const executable=issue.state==='open' && labels.has('coord:task') &&
+                (labels.has('coord:ready')||labels.has('coord:active')) &&
+                !labels.has('coord:blocked') && !labels.has('squad-b:blocked') && !labels.has('squad-b:review');
+              if(!executable){
+                fs.appendFileSync(process.env.GITHUB_OUTPUT,'action=none\\n');
+                console.log(JSON.stringify({ok:true,action:'none',reason:'explicit Issue is not executable after fresh preflight',issue_number:Number(explicitIssue)}));
+                return;
+              }
+            }
             const emhTreatmentInstructions = agent.id==='emh' ? [
               '',
               'EMH TREATMENT LANE (software-agent operational care):',
