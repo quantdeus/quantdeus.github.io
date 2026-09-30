@@ -191,14 +191,64 @@ jobs:
             }
 
             throw new Error('Unsupported hourly action: ' + decision.action);
-          })().catch(error => {
+          })().catch(async error => {
             if (office.isTransientError(error)) {
-              console.warn('Hourly OpenClaw tick degraded by transient provider failure; no mutation performed.');
+              console.warn('Hourly OpenClaw tick degraded by transient provider failure; using deterministic safe fallback.');
+              const repository = process.env.GITHUB_REPOSITORY;
+              const registry = require('./coordination/agents.json');
+              const knownAgents = new Set((registry.agents || []).map(x => String(x.id || '').trim()).filter(Boolean));
+              const issues = await github(`/repos/${repository}/issues?state=open&per_page=100&sort=updated&direction=asc`);
+              const prs = await github(`/repos/${repository}/pulls?state=open&per_page=100`);
+              const labelNames = item => new Set((item.labels || []).map(x => typeof x === 'string' ? x : x.name));
+              const targetAgent = issue => {
+                const labels = labelNames(issue);
+                const byLabel = [...labels].find(x => x.startsWith('agent:'))?.slice('agent:'.length);
+                const byMarker = String(issue.body || '').match(/quantdeus-target-agent:([a-z0-9-]+)/i)?.[1];
+                const target = String(byLabel || byMarker || '').trim();
+                return knownAgents.has(target) ? target : '';
+              };
+              const represented = issue => prs.some(pr => {
+                const hay = [pr.title, pr.body, pr.head && pr.head.ref].filter(Boolean).join('\n');
+                return new RegExp(`(?:#|issue[-_/ ])${issue.number}(?:\\b|$)`, 'i').test(hay);
+              });
+              const candidates = (issues || []).filter(issue => {
+                if (issue.pull_request) return false;
+                const labels = labelNames(issue);
+                if (!labels.has('coord:task')) return false;
+                if (!labels.has('coord:active') && !labels.has('coord:ready')) return false;
+                if (labels.has('coord:blocked') || labels.has('squad-b:blocked') || labels.has('squad-b:review')) return false;
+                if (represented(issue)) return false;
+                return Boolean(targetAgent(issue));
+              });
+              candidates.sort((a,b) => {
+                const la=labelNames(a), lb=labelNames(b);
+                const score = l => (l.has('coord:active') ? 0 : 10) + (l.has('priority:p0') ? 0 : l.has('priority:p1') ? 1 : 2);
+                return score(la) - score(lb) || String(a.updated_at || '').localeCompare(String(b.updated_at || '')) || a.number - b.number;
+              });
+              const candidate = candidates[0];
+              if (candidate) {
+                const agentId = targetAgent(candidate);
+                await github(`/repos/${repository}/actions/workflows/agent-role-cron.yml/dispatches`, {
+                  method: 'POST',
+                  body: JSON.stringify({ ref: 'main', inputs: { agent_id: agentId, issue_number: String(candidate.number) } })
+                });
+                console.log(JSON.stringify({
+                  ok: true,
+                  action: 'dispatch_role',
+                  degraded: true,
+                  fallback: 'deterministic',
+                  issue_number: candidate.number,
+                  agent_id: agentId,
+                  reason: 'TRANSIENT_OPENCLAW: ' + String(error.message || error).slice(0, 500)
+                }, null, 2));
+                return;
+              }
               console.log(JSON.stringify({
                 ok: true,
                 action: 'none',
                 degraded: true,
-                reason: 'TRANSIENT_OPENCLAW: ' + String(error.message || error).slice(0, 500)
+                fallback: 'deterministic',
+                reason: 'TRANSIENT_OPENCLAW_NO_SAFE_CANDIDATE: ' + String(error.message || error).slice(0, 500)
               }, null, 2));
               return;
             }
