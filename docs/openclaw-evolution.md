@@ -42,3 +42,11 @@ Every evolution PR requires human approval. A runtime or skill proposal may exis
 Evidence artifacts record the no-tools execution, proposal, verified PR identity and dispatched checks. If inference, validation, mission alignment or check dispatch fails, the workflow reports failure rather than claiming completion. A failed publication may leave a review-only branch/PR; it never attempts a second PR or merge.
 
 Behavioral verification: `node --test scripts/qa/openclaw-evolution.test.js`. Production cadence and inference availability still require a real scheduled run after deployment; local tests do not claim that evidence.
+
+## Operational learning notes
+
+Only this bounded notes section may be edited by automated Tier A evolution. Security, auth, tool, approval, tier, and merge semantics in the rest of this document stay immutable to the automated loop.
+
+<!-- QD_EVOLUTION_MUTABLE_START -->
+- Initial enforcement baseline: deterministic pre-mutation validation plus independent QA/Smoke/guard checks.
+<!-- QD_EVOLUTION_MUTABLE_END -->
