@@ -13,7 +13,6 @@ const VERCEL_INTERNAL_JWKS_URL = 'https://oidc.vercel.com/.well-known/jwks';
 const VERCEL_INTERNAL_SUBJECT = 'owner:energotrons-projects-2705eaed:project:quantdeus:environment:production';
 let vercelJwksCache = [];
 let vercelJwksAt = 0;
-const OPENROUTER_MODEL = String(process.env.OPENCLAW_OPENROUTER_MODEL || 'openrouter/free').trim();
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 let jwksCache = [];
 let jwksAt = 0;
@@ -314,64 +313,21 @@ export default async function handler(req, res) {
     if (trustedOffice && !githubToken) {
       return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
     }
-    const openRouterKey = String(req.headers['x-quantdeus-openrouter-key'] || process.env.OPENROUTER_API_KEY || '');
-    const localKeyEnv = process.env.HERMES_LOCAL_API_KEY ? 'HERMES_LOCAL_API_KEY' : (process.env.OPENAI_API_KEY ? 'OPENAI_API_KEY' : '');
-    const localKey = localKeyEnv ? String(process.env[localKeyEnv]) : '';
-    const localBaseUrl = String(process.env.HERMES_LOCAL_BASE_URL || process.env.OPENAI_BASE_URL || '').trim().replace(/\/+$/, '');
-    const localModel = String(process.env.OPENCLAW_LOCAL_MODEL || process.env.HERMES_LOCAL_MODEL || process.env.HERMES_CLOUD_MODEL || '').trim();
-    const providerDefs = {};
-    const modelCandidates = [];
-    if (localKey && localBaseUrl && localModel) {
-      providerDefs['quantdeus-local'] = {
-        baseUrl: localBaseUrl,
+    const providerDefs = {
+      'quantdeus-pollinations': {
+        baseUrl: 'https://text.pollinations.ai/openai',
         api: 'openai-completions',
-        apiKey: { source: 'env', provider: 'default', id: localKeyEnv },
-        models: [{ id: localModel, name: localModel, input: ['text'], contextWindow: 32768, maxTokens: 8192 }]
-      };
-      modelCandidates.push(`quantdeus-local/${localModel}`);
-    }
-    if (openRouterKey && OPENROUTER_MODEL) {
-      providerDefs.openrouter = {
-        apiKey: { source: 'env', provider: 'default', id: 'OPENROUTER_API_KEY' },
-        baseUrl: 'https://openrouter.ai/api/v1'
-      };
-      modelCandidates.push(`openrouter/${OPENROUTER_MODEL}`);
-    }
-
-    providerDefs['quantdeus-pollinations'] = {
-      baseUrl: 'https://text.pollinations.ai/openai',
-      api: 'openai-completions',
-      apiKey: { source: 'env', provider: 'default', id: 'POLLINATIONS_API_KEY' },
-      models: [{ id: 'openai', name: 'openai', input: ['text'], contextWindow: 131072, maxTokens: 8192 }]
+        apiKey: { source: 'env', provider: 'default', id: 'POLLINATIONS_API_KEY' },
+        models: [{ id: 'openai', name: 'openai', input: ['text'], contextWindow: 131072, maxTokens: 8192 }]
+      }
     };
-    modelCandidates.push('quantdeus-pollinations/openai');
-
-    const probeCandidates = [];
-    if (localKey && localBaseUrl && localModel) {
-      const localEndpoint = localBaseUrl.endsWith('/v1')
-        ? localBaseUrl + '/chat/completions'
-        : localBaseUrl + '/v1/chat/completions';
-      probeCandidates.push({
-        ref: `quantdeus-local/${localModel}`,
-        endpoint: localEndpoint,
-        key: localKey,
-        model: localModel
-      });
-    }
-    if (openRouterKey && OPENROUTER_MODEL) {
-      probeCandidates.push({
-        ref: `openrouter/${OPENROUTER_MODEL}`,
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: openRouterKey,
-        model: OPENROUTER_MODEL
-      });
-    }
-    probeCandidates.push({
+    const modelCandidates = ['quantdeus-pollinations/openai'];
+    const probeCandidates = [{
       ref: 'quantdeus-pollinations/openai',
       endpoint: 'https://text.pollinations.ai/openai/chat/completions',
       key: 'anonymous',
       model: 'openai'
-    });
+    }];
 
     const probeResults = [];
     const healthyRefs = [];
@@ -507,10 +463,9 @@ export default async function handler(req, res) {
     };
     const effectivePrompt = prompt;
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(effectivePrompt) }]);
-    const runtimeEnv = {};
-    if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
-    if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
-    runtimeEnv.POLLINATIONS_API_KEY = 'anonymous';
+    const runtimeEnv = {
+      POLLINATIONS_API_KEY: 'anonymous'
+    };
     runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
@@ -522,9 +477,6 @@ export default async function handler(req, res) {
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
-      local_key_env: localKeyEnv || null,
-      has_local_key: Boolean(localKey),
-      has_openrouter_key: Boolean(openRouterKey),
       vercel_internal: vercelInternal,
       validated_fallbacks: fallbackModels
     }));
