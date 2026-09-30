@@ -211,9 +211,17 @@ jobs:
             console.log(JSON.stringify({agent:agent.id,model:result.model,decision},null,2));
           })().catch(e=>{
             if(office.isTransientError(e)){
-              console.error('Role cron exhausted transient OpenClaw retries; fail visibly so Failure Radar/Seven can recover it.');
-              console.error(JSON.stringify({ok:false,action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)},null,2));
-              process.exit(1);
+              console.warn('Role cron exhausted transient OpenClaw retries; degrade cleanly and leave the task eligible for a later Seven/hourly retry.');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'action=none\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'source_agent='+(manual || due[0]?.id || 'unknown')+'\n');
+              console.log(JSON.stringify({
+                ok:true,
+                action:'none',
+                degraded:true,
+                retry_eligible:true,
+                reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)
+              },null,2));
+              return;
             }
             console.error(e.stack||e);
             process.exit(1);
