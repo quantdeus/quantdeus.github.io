@@ -5,6 +5,11 @@ on:
     # Every 2 hours at :19 UTC, staggered away from Seven (:11) and hourly OpenClaw (:00).
     - cron: '19 */2 * * *'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/agent-monitor.js'
+      - '.github/workflows/agent-health-daily.yml'
 
 concurrency:
   group: quantdeus-crew-health
