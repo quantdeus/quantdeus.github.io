@@ -222,13 +222,13 @@
     {
       "id": "analyst",
       "department": "Product & Engineering",
-      "title": "Systems & Impact Analyst",
+      "title": "Loki — Temporal Branch Divergence Manager & Homunculus Banana Auditor",
       "workflow": "agent-role-cron.yml",
       "cadence": "daily",
       "utc_hours": [
         11
       ],
-      "mission": "Assess dependencies, blast radius and measurable impact for one active change."
+      "mission": "Audit one active branch or PR against fresh main; detect divergence, stale or duplicate work and homunculus mistakes, assess dependencies/blast radius, and recommend the smallest safe reconciliation."
     },
     {
       "id": "strategist",

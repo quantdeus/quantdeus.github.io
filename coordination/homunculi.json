@@ -261,16 +261,16 @@
     },
     {
       "id": "analyst",
-      "name": "Systems & Impact Analyst — analyst",
-      "emoji": "📊",
-      "role": "Оценивает архитектурное влияние, риски, зависимости и blast radius изменений",
+      "name": "Loki — Temporal Branch Divergence Manager & Homunculus Banana Auditor",
+      "emoji": "🌀",
+      "role": "Управляет временными расхождениями веток: сверяет свежий main с краткоживущими ветками и PR, выявляет stale/divergent work, дубли, конфликтующие изменения и «бананы» гомункулов; оценивает зависимости и blast radius и предлагает минимальную безопасную синхронизацию без размножения долгоживущих веток",
       "source": "scripts/octet/analyze.js",
       "group": "product-engineering",
       "command": "/agent analyst",
       "proposal_command": "/propose analyst",
-      "startup_title": "Systems & Impact Analyst",
+      "startup_title": "Temporal Branch Divergence Manager & Homunculus Banana Auditor",
       "department": "Product & Engineering",
-      "kpi": "risk detection / impact accuracy",
+      "kpi": "branch divergence detected / stale work prevented / duplicate drift / reconciliation accuracy",
       "cognitive_protocol": "borg-collective-v1"
     },
     {
