@@ -75,9 +75,9 @@ jobs:
                 'ACTIONS='+read('/tmp/qd-seven/actions.json'),
                 'CONTRIBUTORS='+read('/tmp/qd-seven/contributors.json'),
                 '',
-                'Priority order: (1) broken production/Actions/security, (2) unfinished coord:active/coord:ready work with a concrete owner, (3) blocked human contributors and community needs, (4) active manifesto commitments and measured outcomes, (5) stale/high-value PRs or execution gaps, (6) growth/site opportunities backed by real artifacts.',
+                'Priority order: (1) broken production/Actions/security, (2) unfinished coord:active/coord:ready work with a concrete owner, (3) active manifesto commitments and measured outcomes, (4) stale/high-value PRs or execution gaps, (5) growth/site opportunities backed by real artifacts. Blocked work is diagnostic context, not an executable priority.',
                 'Act as the coordinator, not as another implementer: before opening new work, inspect unfinished coord:active/coord:ready Issues and their body/labels. If an actionable Issue has a quantdeus-target-agent marker or agent:<id> label and no open implementation PR, prefer dispatching agent-role-cron.yml with inputs.agent_id=<id> to wake that homunculus.',
-                'Do not repeatedly ping the same task when an implementation PR already exists, the Issue is blocked, or a recent agent action already addresses it.',
+                'Classify blockers as human_decision, external_environment, technical, or dependency. A blocked Issue is diagnostic context, not an executable action: never return action=issue for an Issue carrying coord:blocked or squad-b:blocked. Escalate a human_decision only when the smallest unresolved question is genuinely required from a human; external_environment gaps get an exact handoff; technical/dependency blockers route to an executable ready/active task or safe workflow. Do not repeatedly ping the same task when an implementation PR already exists, the Issue is blocked, or a recent agent action already addresses it.',
                 'Choose at most ONE action. You may update one existing Issue or create one branch+PR via GitHub MCP. PR branch must start automation/seven/.',
                 'For a NEW Issue, do NOT call create_issue through MCP. Return action=open_issue with a bounded proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.',
                 'Alternatively request ONE safe workflow dispatch from this allowlist: qa-triad.yml, static-smoke.yml, qa-self-heal.yml, contributor-growth.yml, quantdeus-pulse.yml, agent-role-cron.yml, news-manifest-cycle.yml, growth-site-cycle.yml, openclaw-evolution.yml.',
@@ -96,6 +96,16 @@ jobs:
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Seven cycle lacks trusted OpenClaw tools');
             const d=parse(result.text);
             if(!['none','dispatch','open_issue','issue','pr'].includes(d.action)) throw new Error('Unsupported Seven action');
+            if(d.action==='issue'){
+              const issueNumber=Number(d.issue_number);
+              const issues=readJson('/tmp/qd-seven/issues.json');
+              const selected=issues.find(i=>Number(i.number)===issueNumber);
+              if(!selected) throw new Error('Seven selected Issue outside fresh snapshot');
+              const labels=new Set((selected.labels||[]).map(x=>typeof x==='string'?x:x.name));
+              if(labels.has('coord:blocked')||labels.has('squad-b:blocked')){
+                throw new Error('Seven selected blocked Issue as executable action');
+              }
+            }
             if(d.action==='pr'&&!String(d.branch||'').startsWith('automation/seven/')) throw new Error('Seven PR outside automation/seven/*');
             if(d.action==='dispatch'){
               fs.appendFileSync(process.env.GITHUB_OUTPUT,'workflow='+String(d.workflow||'')+'\n');
