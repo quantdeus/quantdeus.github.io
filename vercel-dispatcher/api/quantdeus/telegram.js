@@ -458,6 +458,41 @@ function cleanModelText(value) {
   return text.replace(/^["']|["']$/g, '').trim().slice(0, 3600);
 }
 
+async function dispatchTelegramRetry(update) {
+  const token = String(process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
+  if (!token || !update || !Number.isInteger(update.update_id)) {
+    console.warn('[telegram-retry] status=unavailable reason=' + (!token ? 'github_token_missing' : 'invalid_update'));
+    return false;
+  }
+
+  const encoded = Buffer.from(JSON.stringify(update)).toString('base64url');
+  const response = await fetch('https://api.github.com/repos/' + REPOSITORY + '/actions/workflows/telegram-bot.yml/dispatches', {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + token,
+      accept: 'application/vnd.github+json',
+      'x-github-api-version': '2022-11-28',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      ref: 'main',
+      inputs: {
+        telegram_update_b64: encoded,
+        telegram_update_id: String(update.update_id)
+      }
+    })
+  });
+
+  if (response.status === 204) {
+    console.info('[telegram-retry] status=dispatched update_id=' + update.update_id);
+    return true;
+  }
+
+  const raw = await response.text();
+  console.warn('[telegram-retry] status=failed http=' + response.status + ' detail=' + raw.slice(0, 300));
+  return false;
+}
+
 async function openClawInternalReply(agentId, requestedAgentId, system, user) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
@@ -504,7 +539,7 @@ async function openClawInternalReply(agentId, requestedAgentId, system, user) {
   }
 }
 
-async function homunculusReply(message) {
+async function homunculusReply(message, retryUpdate = null) {
   const data = await registry();
   const agents = data.agents || [];
   const collectiveDirective = String(data.collective_cognition?.runtime_directive || '').trim();
@@ -567,6 +602,10 @@ async function homunculusReply(message) {
     if (researchRequired && research?.ok) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${groundedResearchFallback(research)}`;
     }
+    const retryDispatched = retryUpdate ? await dispatchTelegramRetry(retryUpdate) : false;
+    if (retryDispatched) {
+      return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n🛰️ Основной LLM-маршрут перегружен. Запрос передан в резервный GitHub retry lane; ответ придёт отдельным сообщением.`;
+    }
     return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nНет проверенного живого LLM-маршрута. Дохлые fallback-модели отключены; требуется провайдер, прошедший health probe.`;
   }
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${answer}`.slice(0, 3900);
@@ -614,7 +653,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const reply = await homunculusReply(message);
+    const reply = await homunculusReply(message, update);
     return webhookReply(res, message, reply);
   } catch (error) {
     console.error('[telegram-homunculus]', String(error?.message || error).slice(0, 800));
