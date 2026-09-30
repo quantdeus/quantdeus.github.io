@@ -19,11 +19,13 @@ if (evolution.chat_bridge.primary_profile !== 'seven-of-nine') throw new Error('
 if (evolution.capabilities.github.mode !== 'official-mcp') throw new Error('Official GitHub MCP contract missing');
 if (!evolution.capabilities.browser.playwright_mcp) throw new Error('Playwright MCP must be enabled');
 const guarded=['vercel-dispatcher/api/quantdeus/openclaw.js','vercel-dispatcher/api/quantdeus/telegram.js','vercel-dispatcher/api/quantdeus/hermes.js','vercel-dispatcher/api/quantdeus/llm.js','scripts/site-agent-reply.js','scripts/hermes-office-bootstrap.js'];
-const forbidden=['polli'+'nations','mis'+'tral','gpt-'+'oss','inclu'+'sionai','AI_'+'GATEWAY','ai-'+'gateway.vercel.sh','vercel-'+'ai-gateway'];
+const forbidden=['mis'+'tral','gpt-'+'oss','inclu'+'sionai','AI_'+'GATEWAY','ai-'+'gateway.vercel.sh','vercel-'+'ai-gateway'];
 for(const file of guarded){const src=fs.readFileSync(file,'utf8').toLowerCase();for(const token of forbidden)if(src.includes(token.toLowerCase()))throw new Error('Retired inference route remains in '+file);}
 const openclaw=fs.readFileSync('vercel-dispatcher/api/quantdeus/openclaw.js','utf8');
 if(!openclaw.includes('const orderedModels = [...healthyRefs]')) throw new Error('OpenClaw must route only probe-healthy models');
 if(!openclaw.includes('const fallbackModels = healthyRefs.slice(1)')) throw new Error('OpenClaw fallbacks must be probe-healthy only');
+if(!openclaw.includes("quantdeus-pollinations/openai") || !openclaw.includes("model: 'openai'")) throw new Error('Working Pollinations openai route must remain available behind health probe');
+for (const retired of ['openai-fast','gemini-fast',"model: 'mistral'"]) if(openclaw.includes(retired)) throw new Error('Retired Pollinations model returned: '+retired);
 if(!openclaw.includes('openclaw_no_healthy_model_route')) throw new Error('OpenClaw must fail closed without a healthy provider');
 const telegram=fs.readFileSync('vercel-dispatcher/api/quantdeus/telegram.js','utf8');
 if(telegram.includes('await chatCompletion(')) throw new Error('Telegram must not bypass probe-gated OpenClaw');

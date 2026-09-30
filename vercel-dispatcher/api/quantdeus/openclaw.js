@@ -338,6 +338,14 @@ export default async function handler(req, res) {
       modelCandidates.push(`openrouter/${OPENROUTER_MODEL}`);
     }
 
+    providerDefs['quantdeus-pollinations'] = {
+      baseUrl: 'https://text.pollinations.ai/openai',
+      api: 'openai-completions',
+      apiKey: { source: 'env', provider: 'default', id: 'POLLINATIONS_API_KEY' },
+      models: [{ id: 'openai', name: 'openai', input: ['text'], contextWindow: 131072, maxTokens: 8192 }]
+    };
+    modelCandidates.push('quantdeus-pollinations/openai');
+
     const probeCandidates = [];
     if (localKey && localBaseUrl && localModel) {
       const localEndpoint = localBaseUrl.endsWith('/v1')
@@ -358,6 +366,12 @@ export default async function handler(req, res) {
         model: OPENROUTER_MODEL
       });
     }
+    probeCandidates.push({
+      ref: 'quantdeus-pollinations/openai',
+      endpoint: 'https://text.pollinations.ai/openai/chat/completions',
+      key: 'anonymous',
+      model: 'openai'
+    });
 
     const probeResults = [];
     const healthyRefs = [];
@@ -496,6 +510,7 @@ export default async function handler(req, res) {
     const runtimeEnv = {};
     if (localKeyEnv && localKey) runtimeEnv[localKeyEnv] = localKey;
     if (openRouterKey) runtimeEnv.OPENROUTER_API_KEY = openRouterKey;
+    runtimeEnv.POLLINATIONS_API_KEY = 'anonymous';
     runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
