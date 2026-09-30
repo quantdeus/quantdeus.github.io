@@ -32,15 +32,15 @@ May autonomously improve only:
 
 Use branch `automation/openclaw-evolution/*`. All Tier A PRs require human review and successful independent QA Triad + Static Smoke. Autonomous merge is disabled because the behavioral skill can change later trusted execution instructions.
 
-### Tier B — runtime/core
+### Tier B — runtime/core proposal only
 
-May propose a PR for evidence-backed improvements to:
+May identify evidence-backed improvements involving:
 - `vercel-dispatcher/api/quantdeus/openclaw.js`
 - `scripts/openclaw-office-client.js`
 - `scripts/qa/openclaw-office-validator.js`
 - OpenClaw-specific workflow/config files
 
-Tier B never auto-merges from the evolution loop. It remains open for Seven/human review.
+The automated evolution lane **cannot write those files**. Tier B creates only a proposal-record PR that names the suggested core paths and evidence. Any actual runtime/core implementation must happen in a separate human/Seven-authorized change. Tier B never auto-merges.
 
 ## Hard invariants
 
