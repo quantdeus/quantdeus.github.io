@@ -96,10 +96,18 @@ export default async function handler(req, res) {
     const auth = String(req.headers?.authorization || '');
     if (!auth.startsWith('Bearer ')) throw new Error('github_oidc_missing');
     const claims = await verifyGitHubOidc(auth.slice(7));
-    const messages = normalizeMessages(req.body?.messages);
+    const normalized = normalizeMessages(req.body?.messages);
+    const instructions = normalized
+      .filter(message => message.role === 'system')
+      .map(message => message.content)
+      .join('\n\n')
+      .trim();
+    const messages = normalized.filter(message => message.role !== 'system');
+    if (!messages.length) throw new Error('messages_require_non_system_turn');
 
     const result = await generateText({
       model: GATEWAY_MODEL,
+      ...(instructions ? { instructions } : {}),
       messages,
       temperature: 0,
       maxOutputTokens: 900
