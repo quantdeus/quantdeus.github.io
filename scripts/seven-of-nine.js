@@ -28,7 +28,7 @@ function ageHours(iso) {
   return (Date.now() - Date.parse(iso)) / 36e5;
 }
 
-const issues = ghJson(['issue','list','--state','open','--limit','200','--json','number,title,url,labels,updatedAt']) || [];
+const issues = ghJson(['issue','list','--state','open','--limit','200','--json','number,title,body,url,labels,updatedAt']) || [];
 const prs = ghJson(['pr','list','--state','open','--limit','100','--json','number,title,url,isDraft,updatedAt']) || [];
 const tasks = issues.filter(i => labelsOf(i).includes('coord:task'));
 const blocked = tasks.filter(i => labelsOf(i).includes('coord:blocked')).sort((a,b)=>Date.parse(a.updatedAt)-Date.parse(b.updatedAt));
@@ -41,13 +41,10 @@ let primary = 'flow-stable';
 let directive = 'Рой стабилен: сохранять ограниченный WIP, закрывать начатое и не ослаблять QA ради скорости.';
 const actions = [];
 
-if (blocked.length) {
-  const x = blocked[0];
-  primary = `blocked:#${x.number}`;
-  directive = `Главный bottleneck — заблокированная задача #${x.number}: ${x.title}`;
-  actions.push(`Сначала снять блокер у #${x.number} или явно зафиксировать, что нужно от человека.`);
-  actions.push('Не открывать дублирующую реализацию того же результата.');
-} else if (staleActive.length) {
+// Blocked work is diagnostic context, not executable priority.
+ // Coordinator logic: only READY/ACTIVE work can become the primary execution directive.
+ // Sherlock logic: do not infer "needs CEO" from a blocked label; classify and falsify first.
+if (staleActive.length) {
   const x = staleActive[0];
   primary = `stale-active:#${x.number}`;
   directive = `Активная задача #${x.number} давно не менялась; рой должен либо дать следующий артефакт, либо вернуть её в ready/blocked.`;
@@ -63,7 +60,10 @@ if (blocked.length) {
   actions.push('Взять 1–3 наиболее приоритетных ready-задачи и довести их до QA.');
   actions.push('Не считать новый Issue прогрессом без артефакта.');
 } else {
-  actions.push('Продолжать цикл FIND → VERIFY → OWNER → PATCH/TRACK → RECHECK → DONE.');
+  actions.push('Продолжать цикл OBSERVE → CLASSIFY → FALSIFY → OWNER → VERIFY → DONE.');
+}
+if (blocked.length) {
+  actions.push(`Blocked context: ${blocked.length} task(s) remain non-executable until their dependency changes; do not treat BLOCKED as implicit CEO approval request.`);
 }
 
 const snapshot = {
