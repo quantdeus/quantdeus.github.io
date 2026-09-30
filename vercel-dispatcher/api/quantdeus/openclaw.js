@@ -550,11 +550,27 @@ export default async function handler(req, res) {
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
     if (trustedOffice && !smokePhase) {
       // Fresh per-request shallow checkout avoids concurrent mutation of shared
-      // .git/shallow metadata inside the persistent Vercel Sandbox.
-      await checked(sandbox, {
-        cmd: 'git',
-        args: ['clone', '--depth', '1', '--branch', 'main', 'https://github.com/quantdeus/quantdeus.github.io.git', repoDir]
-      }, 'openclaw_repo_clone');
+      // .git/shallow metadata inside the persistent Vercel Sandbox. Clone is
+      // read-only, so retrying it is safe and removes a transient network failure
+      // from the agent mutation path.
+      let cloneError = null;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const clone = await sandbox.runCommand({
+          cmd: 'git',
+          args: ['clone', '--depth', '1', '--branch', 'main', 'https://github.com/quantdeus/quantdeus.github.io.git', repoDir],
+          cwd: workdir
+        });
+        if (clone.exitCode === 0) {
+          cloneError = null;
+          break;
+        }
+        const stderr = (await clone.stderr()).slice(-1200);
+        cloneError = new Error(`openclaw_repo_clone_failed: ${stderr}`);
+        console.warn(`[openclaw-repo] clone attempt ${attempt}/3 failed: ${stderr}`);
+        await sandbox.runCommand({ cmd: 'rm', args: ['-rf', repoDir] });
+        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+      }
+      if (cloneError) throw cloneError;
       ephemeralDirs.push(repoDir);
     }
     const agentCwd = trustedOffice && !smokePhase ? repoDir : workdir;
@@ -754,16 +770,67 @@ export default async function handler(req, res) {
 
     const agentLock = `${statePath}/.quantdeus-agent.lock`;
     const modelArgs = ['--model', model, ...fallbackModels.flatMap(ref => ['--fallback', ref])];
-    const run = await sandbox.runCommand({
-      cmd: 'flock',
-      args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '240', '--json', '--message-file', promptPath],
-      cwd: agentCwd,
-      env: runtimeEnv
-    });
-    const raw = await text(run);
+    const githubMutationTools = new Set([
+      'create_branch',
+      'create_or_update_file',
+      'create_issue',
+      'add_issue_comment',
+      'create_pull_request',
+      'update_issue',
+      'update_pull_request'
+    ]);
+    const normalizedToolName = value => String(value || '').replace(/^github__/, '');
+    const hasMutationEvidence = candidate => {
+      const tools = Array.isArray(candidate?.toolSummary?.tools) ? candidate.toolSummary.tools : [];
+      return tools.some(name => githubMutationTools.has(normalizedToolName(name)));
+    };
+
+    let run = null;
+    let raw = '';
+    let result = null;
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      run = await sandbox.runCommand({
+        cmd: 'flock',
+        args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '240', '--json', '--message-file', promptPath],
+        cwd: agentCwd,
+        env: runtimeEnv
+      });
+      raw = await text(run);
+      result = null;
+      try { result = raw ? JSON.parse(raw) : null; } catch {}
+
+      const structuredToolEvidence = JSON.stringify({
+        error: result?.error || null,
+        toolSummary: result?.toolSummary || null
+      }).toLowerCase();
+      const toolFailures = Number(result?.toolSummary?.failures || 0);
+      const incompleteToolTurn =
+        structuredToolEvidence.includes('incomplete_turn') ||
+        structuredToolEvidence.includes('incomplete or malformed tool call');
+      const executionFailed =
+        run.exitCode !== 0 ||
+        !result?.ok ||
+        !String(result?.final || '').trim() ||
+        toolFailures > 0 ||
+        incompleteToolTurn;
+      const safeRetry =
+        attempt === 1 &&
+        executionFailed &&
+        !hasMutationEvidence(result) &&
+        (!raw || Boolean(result));
+
+      if (!safeRetry) break;
+      console.warn('[openclaw-agent] retrying once after a no-mutation execution failure', {
+        exit_code: run.exitCode,
+        tool_failures: toolFailures,
+        incomplete_tool_turn: incompleteToolTurn
+      });
+      await new Promise(resolve => setTimeout(resolve, 750));
+    }
+
     await sandbox.runCommand({ cmd: 'rm', args: ['-f', promptPath] });
     if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: ${raw.slice(-1800)}`);
-    const result = JSON.parse(raw);
+    if (!result) throw new Error(`openclaw_agent_invalid_json: ${raw.slice(-1000)}`);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
     const toolSummary = result.toolSummary || null;
     if (trustedOffice) {
