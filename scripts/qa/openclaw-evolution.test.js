@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { validateProposal, validateChangedFiles } = require('../openclaw-evolution');
+const { normalizeNoAction, validateProposal, validateChangedFiles } = require('../openclaw-evolution');
 const base = 'a'.repeat(40);
 const evidenceUrl = 'https://github.com/quantdeus/quantdeus.github.io/actions/runs/123';
 const evidence = { actions: [{ url: evidenceUrl }], prs: [], issues: [] };
@@ -90,4 +90,18 @@ test('merge guard rejects skipped/neutral, forged check provenance, moved head',
   assert.ok(merge);
   assert.ok(merge.includes('--match-head-commit'));
   assert.equal(merge.at(-1), 'c'.repeat(40));
+});
+
+test('explicit no-action explanation is bounded without granting mutation authority', () => {
+  for (const reason of ['x'.repeat(5000), undefined, '', { diagnostic: 'no change' }]) {
+    const original = { action: 'none', base_sha: base, reason, files: [{ path: 'main', content: 'unsafe' }] };
+    const normalized = normalizeNoAction(original);
+    validateProposal(normalized, base, evidence);
+    assert.equal(normalized.action, 'none');
+    assert.ok(normalized.reason.length <= 2000);
+    assert.equal(normalized.files, undefined);
+    assert.equal(original.reason, reason);
+  }
+  const actionable = proposal(); delete actionable.metric;
+  assert.throws(() => validateProposal(normalizeNoAction(actionable), base, evidence));
 });
