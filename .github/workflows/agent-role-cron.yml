@@ -63,7 +63,7 @@ jobs:
             const issue = event.issue || {};
             const issueLabels = (issue.labels || []).map(x => typeof x === 'string' ? x : x.name).filter(Boolean);
             const labelTargets = issueLabels.filter(x => x.startsWith('agent:')).map(x => x.slice('agent:'.length));
-            const marker = String(issue.body || '').match(/<!--\\s*quantdeus-target-agent:([a-z0-9-]+)\\s*-->/i);
+            const marker = String(issue.body || '').match(/<!--\s*quantdeus-target-agent:([a-z0-9-]+)\s*-->/i);
             const candidates = [...new Set([...labelTargets, ...(marker ? [marker[1]] : [])])].filter(id => byId.has(id));
             if (candidates.length > 1) throw new Error('Issue targets multiple role agents: ' + candidates.join(','));
             eventTarget = candidates[0] || '';
