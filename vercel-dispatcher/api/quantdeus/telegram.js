@@ -555,7 +555,7 @@ async function chatCompletion(system, user) {
   return pollinationsFallback(system, user);
 }
 
-async function openClawInternalReply(agentId, system, user) {
+async function openClawInternalReply(agentId, requestedAgentId, system, user) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
   try {
@@ -658,7 +658,7 @@ async function homunculusReply(message) {
     ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
     : query.slice(0, 7000);
   const answer =
-    await openClawInternalReply(agentId, system, groundedQuery) ||
+    await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery) ||
     await chatCompletion(system, groundedQuery);
   if (!answer) {
     if (researchRequired && research?.ok) {
