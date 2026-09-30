@@ -696,7 +696,8 @@ export default async function handler(req, res) {
         include: smokePhase === 'github' ? ['list_branches', 'get_file_contents'] : hourlyOffice ? [
           'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
           'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
-          'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status'
+          'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
+          'actions_list', 'actions_get'
         ] : [
           'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
           'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
