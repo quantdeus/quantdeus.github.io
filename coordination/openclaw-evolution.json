@@ -21,19 +21,18 @@
     "max_changed_files": 4,
     "evidence_required": true,
     "direct_main_write": false,
-    "core_auto_merge": false
+    "core_auto_merge": false,
+    "auto_merge": false,
+    "human_review_required": true,
+    "analysis_tools": false,
+    "mutation_broker": "scripts/openclaw-evolution.js"
   },
-  "auto_merge_paths": [
-    ".openclaw/skills/quantdeus-self-evolution/SKILL.md",
-    "coordination/openclaw-evolution.json",
-    "docs/openclaw-evolution.md"
-  ],
+  "auto_merge_paths": [],
   "core_review_paths": [
     "vercel-dispatcher/api/quantdeus/openclaw.js",
     "scripts/openclaw-office-client.js",
     "scripts/qa/openclaw-office-validator.js",
-    ".github/workflows/openclaw-evolution.yml",
-    ".github/workflows/openclaw-admin-smoke.yml"
+    ".github/workflows/openclaw-evolution.yml"
   ],
   "protected_invariants": [
     "github-oidc-authentication",

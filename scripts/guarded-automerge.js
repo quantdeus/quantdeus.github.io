@@ -41,6 +41,10 @@ function allowedSitePath(path) {
   const meta = ghJson(['pr','view',String(prNumber),'--repo',repo,'--json','state,baseRefName,headRefName,headRefOid,files']);
   if (!meta || meta.state !== 'OPEN' || meta.baseRefName !== 'main') throw new Error('PR must be open against main');
   if (!String(meta.headRefName || '').startsWith(expectedPrefix)) throw new Error('unexpected PR branch');
+  if (mode === 'openclaw-skill' || String(meta.headRefName || '').startsWith('automation/openclaw-evolution/')) {
+    console.log('Evolution PRs require human review; autonomous merge refused.');
+    return;
+  }
   const files = (meta.files || []).map(f => f.path);
   if (!files.length || files.length > 8) throw new Error('automerge file count outside bounded range');
 
@@ -49,17 +53,6 @@ function allowedSitePath(path) {
       console.log('Manifest PR touches non-living-manifest paths; leaving open for human review.');
       return;
     }
-  } else if (mode === 'openclaw-skill') {
-    const allowed = new Set([
-      '.openclaw/skills/quantdeus-self-evolution/SKILL.md',
-      'coordination/openclaw-evolution.json',
-      'docs/openclaw-evolution.md'
-    ]);
-    if (files.some(p => !allowed.has(p))) {
-      console.log('OpenClaw skill PR touches core/runtime paths; leaving open for Seven/human review.');
-      return;
-    }
-    if (files.length > 3) throw new Error('OpenClaw skill automerge exceeds 3-file bound');
   } else if (files.some(p => !allowedSitePath(p))) {
     console.log('Site PR touches a non-content/non-site path; leaving open for human review.');
     return;
@@ -68,18 +61,26 @@ function allowedSitePath(path) {
   const sha = meta.headRefOid;
   for (let attempt=0; attempt<24; attempt++) {
     const checks = ghJson(['api',`repos/${repo}/commits/${sha}/check-runs`])?.check_runs || [];
-    const important = checks.filter(x => x.name === 'qa' || x.name === 'smoke');
-    const hardFail = important.some(x => x.status === 'completed' && !['success','neutral','skipped'].includes(x.conclusion));
+    const important = [];
+    for (const check of checks.filter(x => x.name === 'qa' || x.name === 'smoke')) {
+      if (check.app?.slug !== 'github-actions') continue;
+      const match = String(check.details_url || check.html_url || '').match(/\/actions\/runs\/(\d+)\/job\/\d+$/);
+      if (!match) continue;
+      const run = ghJson(['api', `repos/${repo}/actions/runs/${match[1]}`]);
+      const expectedPath = check.name === 'qa' ? '.github/workflows/qa-triad.yml' : '.github/workflows/static-smoke.yml';
+      if (run.head_sha === sha && run.path === expectedPath && ['pull_request','push','workflow_dispatch'].includes(run.event)) important.push(check);
+    }
+    const hardFail = important.some(x => x.status === 'completed' && x.conclusion !== 'success');
     if (hardFail) {
       console.log('QA/Smoke failed; leaving PR open.');
       return;
     }
-    const qaOk = important.some(x => x.name === 'qa' && x.status === 'completed' && ['success','neutral','skipped'].includes(x.conclusion));
-    const smokeOk = important.some(x => x.name === 'smoke' && x.status === 'completed' && ['success','neutral','skipped'].includes(x.conclusion));
+    const qaOk = important.some(x => x.name === 'qa' && x.status === 'completed' && x.conclusion === 'success');
+    const smokeOk = important.some(x => x.name === 'smoke' && x.status === 'completed' && x.conclusion === 'success');
     if (qaOk && smokeOk) {
       const latest = ghJson(['pr','view',String(prNumber),'--repo',repo,'--json','headRefOid']);
       if (latest.headRefOid !== sha) throw new Error('PR head moved during verification');
-      gh(['pr','merge',String(prNumber),'--repo',repo,'--squash','--delete-branch']);
+      gh(['pr','merge',String(prNumber),'--repo',repo,'--squash','--delete-branch','--match-head-commit',sha]);
       console.log(`Merged guarded ${mode} PR #${prNumber}`);
       return;
     }
@@ -90,3 +91,4 @@ function allowedSitePath(path) {
   console.error(error.stack || error.message || error);
   process.exit(1);
 });
+
