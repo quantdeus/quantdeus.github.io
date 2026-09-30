@@ -31,6 +31,7 @@ jobs:
           node-version: '24'
 
       - name: Validate shared post-scarcity mission
+        id: mission
         run: node scripts/mission-alignment.js
 
       - name: Check registered agents + bridge crew
@@ -59,12 +60,12 @@ jobs:
           if-no-files-found: ignore
 
       - name: Create or update monitoring issue on hard failure
-        if: failure()
+        if: steps.health.outcome == 'failure' || steps.mission.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           title="[AGENT HEALTH] Crew health check failed"
-          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          existing="$(gh issue list --state open --search \"$title in:title\" --json number --jq '.[].number' | head -n 1)"
           body="Crew health monitoring detected a hard failure. See this workflow run and the uploaded crew-health artifact for exact evidence."
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body" || true
