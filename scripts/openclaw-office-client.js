@@ -1,6 +1,7 @@
 'use strict';
 
 const agentRegistry = require('../coordination/agents.json');
+const { getGithubOidcToken } = require('./github-oidc');
 
 const DEFAULT_TIMEOUT_MS = 250000;
 const DEFAULT_VERCEL_URL = 'https://quantdeus.vercel.app/api/quantdeus/openclaw';
@@ -12,23 +13,6 @@ function configured() {
     process.env.ACTIONS_ID_TOKEN_REQUEST_URL &&
     process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
   );
-}
-
-async function getGitHubOidcToken() {
-  const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-  const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-  if (!requestUrl || !requestToken) throw new Error('GITHUB_OIDC_UNAVAILABLE');
-  const separator = requestUrl.includes('?') ? '&' : '?';
-  const response = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent(OPENCLAW_AUDIENCE), {
-    headers: { authorization: 'Bearer ' + requestToken, accept: 'application/json' }
-  });
-  const raw = await response.text();
-  if (!response.ok) throw new Error('GitHub OIDC ' + response.status + ': ' + raw.slice(0, 500));
-  let data;
-  try { data = JSON.parse(raw); }
-  catch { throw new Error('GitHub OIDC returned non-JSON'); }
-  if (!data?.value) throw new Error('GitHub OIDC returned no token');
-  return data.value;
 }
 
 function normalizedMessages(messages, metadata, trusted = false) {
@@ -91,7 +75,7 @@ function sleep(ms) {
 
 async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   if (!configured()) throw new Error('OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE');
-  const oidc = await getGitHubOidcToken();
+  const oidc = await getGithubOidcToken(OPENCLAW_AUDIENCE);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
