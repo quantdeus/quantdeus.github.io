@@ -1,6 +1,64 @@
-const { loadState, saveState, gh, ghJson, editIssueLabels, commentIssue } = require('./lib');
+'use strict';
 
-function main() {
+const { loadState, saveState, gh, ghJson, editIssueLabels, commentIssue } = require('./lib');
+const office = require('../openclaw-office-client');
+
+function parseJson(text) {
+  const raw = String(text || '').trim();
+  try { return JSON.parse(raw); } catch {}
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) return JSON.parse(fenced[1].trim());
+  throw new Error('Octet PR executor returned non-JSON output');
+}
+
+async function createPrViaExecutor(state, branch, body) {
+  if (!office.configured()) throw new Error('Octet PR executor OIDC credentials unavailable');
+  const repo = process.env.GITHUB_REPOSITORY;
+  const title = `[Squad B] ${state.issue.title}`;
+  const result = await office.ask({
+    profile: 'herald',
+    trusted: true,
+    retryTransient: true,
+    timeoutMs: 180000,
+    metadata: {
+      source: 'quantdeus-octet-herald',
+      repository: repo,
+      issue_number: state.issue.number,
+      branch
+    },
+    messages: [{
+      role: 'user',
+      content: [
+        'Create or recover exactly one Pull Request in ' + repo + '.',
+        'Head branch: ' + branch,
+        'Base branch: main',
+        'Title: ' + title,
+        'Only PR read/create tools are available in this lane. Do not modify files, branches, Issues, labels, workflows, releases or any other state.',
+        'First check whether a PR already exists for this exact head branch. Reuse it if present; otherwise create it.',
+        'PR body follows between markers.',
+        '---BEGIN PR BODY---',
+        body,
+        '---END PR BODY---',
+        'Return ONLY strict JSON: {"action":"pr","pr_number":123,"url":"https://github.com/..."}'
+      ].join('\n')
+    }]
+  });
+  if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
+    throw new Error('Octet PR executor did not receive trusted OpenClaw tools');
+  }
+  const decision = parseJson(result.text);
+  if (decision.action !== 'pr') throw new Error('Octet PR executor returned unsupported action');
+  const number = Number(decision.pr_number);
+  if (!Number.isInteger(number) || number <= 0) throw new Error('Octet PR executor returned invalid PR number');
+
+  const pr = ghJson(['pr','view',String(number),'--repo',repo,'--json','number,url,state,title,headRefName,baseRefName']);
+  if (pr.headRefName !== branch) throw new Error('Executor PR head does not match Octet branch');
+  if (pr.baseRefName !== 'main') throw new Error('Executor PR base must be main');
+  if (pr.state !== 'OPEN') throw new Error('Executor PR must be open');
+  return { number: pr.number, url: pr.url, state: pr.state, title: pr.title };
+}
+
+async function main() {
   const state = loadState();
   const branch = state.execution.branch;
   const existing = ghJson(['pr','list','--head',branch,'--state','all','--json','number,url,state,title']);
@@ -16,22 +74,30 @@ function main() {
       const detail = String(e.stderr?.toString() || e.message || e);
       if (!/not permitted to create or approve pull requests/i.test(detail)) throw e;
 
-      const repo = process.env.GITHUB_REPOSITORY;
-      const handoffUrl = `https://github.com/${repo}/compare/main...${branch}?expand=1`;
-      editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
-      commentIssue(
-        state.issue.number,
-        `📣 **PR Herald: execution complete; PR handoff required.**\n\nBranch: \`${branch}\`\nOpen PR: ${handoffUrl}\n\nGitHub Actions policy currently prevents GITHUB_TOKEN from creating pull requests. The branch and execution archive are ready for Control Tower / GitHub connector. Validation is dispatched by the isolated workflow validation job.`
-      );
-      saveState({ pr:null, handoff:{ url:handoffUrl, reason:'github-actions-pr-policy' }, stage:'review-handoff' });
-      console.log(`Herald handed off PR creation: ${handoffUrl}`);
-      return;
+      console.warn('GITHUB_TOKEN PR creation blocked; using isolated Vercel/OpenClaw executor.');
+      try {
+        pr = await createPrViaExecutor(state, branch, body);
+      } catch (executorError) {
+        const repo = process.env.GITHUB_REPOSITORY;
+        const handoffUrl = `https://github.com/${repo}/compare/main...${branch}?expand=1`;
+        editIssueLabels(state.issue.number, ['squad-b:blocked'], ['squad-b:active']);
+        commentIssue(
+          state.issue.number,
+          `🛑 **PR Herald executor failed.**\n\nBranch: \`${branch}\`\nManual recovery URL: ${handoffUrl}\n\nPrimary GITHUB_TOKEN was blocked by GitHub Actions PR policy, and the isolated executor also failed: \`${String(executorError.message || executorError).slice(0,1200)}\`\n\nThe branch is preserved; no direct push to main occurred.`
+        );
+        saveState({ pr:null, handoff:{ url:handoffUrl, reason:'executor-pr-create-failed' }, stage:'blocked' });
+        throw executorError;
+      }
     }
   }
+
   editIssueLabels(state.issue.number, ['squad-b:review'], ['squad-b:active','squad-b:blocked']);
   commentIssue(state.issue.number, `📣 **Octet Squad B completed execution.**\n\nPR: ${pr.url}\nBranch: \`${branch}\`\nGuardian: ${state.guardian.verdict}\nValidation: Static Smoke + QA Triad are dispatched by the isolated workflow validation job.\n\nHuman review/merge is required.`);
   saveState({ pr, stage:'review' });
   console.log(`Herald opened PR ${pr.url}`);
 }
 
-main();
+main().catch(error => {
+  console.error(error.stack || error.message || error);
+  process.exit(1);
+});

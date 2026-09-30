@@ -5,7 +5,7 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
-const EVENTS = new Set(['issue_comment', 'schedule', 'workflow_dispatch', 'push']);
+const EVENTS = new Set(['issue_comment', 'issues', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const VERCEL_INTERNAL_AUDIENCE = 'quantdeus-internal-openclaw';
 const VERCEL_INTERNAL_ISSUER = 'https://oidc.vercel.com/energotrons-projects-2705eaed';
@@ -105,7 +105,16 @@ function trustedOfficeRequest(req, claims) {
     metadata.admin_authorized === true &&
     String(metadata.actor_login || '').toLowerCase() === String(claims.actor || '').toLowerCase();
 
-  return siteOwnerAction;
+  const octetIssue = Number(metadata.issue_number);
+  const octetBranch = String(metadata.branch || '');
+  const octetHeraldAction =
+    /\.github\/workflows\/octet-squad\.yml(?:@|$)/.test(workflowRef) &&
+    new Set(['issues', 'workflow_dispatch']).has(eventName) &&
+    metadata.source === 'quantdeus-octet-herald' &&
+    Number.isInteger(octetIssue) && octetIssue > 0 &&
+    new RegExp('^squad-b/issue-' + octetIssue + '-\\d+-\\d+$').test(octetBranch);
+
+  return siteOwnerAction || octetHeraldAction;
 }
 
 function hourlyOfficeRequest(req, claims) {
@@ -127,6 +136,9 @@ function autonomousWorkerRequest(req, claims) {
   }
   if (/\.github\/workflows\/qa-self-heal\.yml(?:@|$)/.test(workflowRef)) {
     return source === 'quantdeus-qa-self-heal';
+  }
+  if (/\.github\/workflows\/octet-squad\.yml(?:@|$)/.test(workflowRef)) {
+    return source === 'quantdeus-octet-herald' && new Set(['issues', 'workflow_dispatch']).has(eventName);
   }
   return false;
 }
@@ -358,6 +370,7 @@ export default async function handler(req, res) {
     const trustedOffice = vercelInternal ? false : trustedOfficeRequest(req, claims);
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
+    const octetHerald = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-octet-herald';
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
     const smokePhase = trustedOffice && req.body?.metadata?.source === 'openclaw-admin-smoke' && new Set(['github', 'playwright']).has(smokePhaseRaw) ? smokePhaseRaw : null;
     const callerGithubToken = String(req.headers['x-quantdeus-github-token'] || '').trim();
@@ -720,6 +733,8 @@ export default async function handler(req, res) {
           'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
           'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
           'actions_list', 'actions_get'
+        ] : octetHerald ? [
+          'search_pull_requests', 'get_pull_request', 'create_pull_request'
         ] : [
           'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
           'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
@@ -782,6 +797,7 @@ export default async function handler(req, res) {
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
       autonomous_worker: autonomousWorker,
+      octet_herald_pr_only: octetHerald,
       github_credential_source: autonomousWorker && executorGithubToken ? 'vercel-executor' : (callerGithubToken ? 'caller' : (executorGithubToken ? 'vercel-fallback' : 'none')),
       vercel_internal: vercelInternal,
       validated_fallbacks: fallbackModels
