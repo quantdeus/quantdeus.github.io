@@ -28,7 +28,7 @@ Hermes is the execution/coordination runtime, not a replacement for the QuantDeu
 - **Profile descriptions** let Hermes route decomposed work to the right specialist.
 - **Dashboard** gives the human-visible office UI with lanes by profile.
 - **Vercel Sandbox** is the preferred isolated terminal backend.
-- Default worker model is **GPT-OSS 120B** via Ollama Cloud; override provider/model at runtime without changing the registry.
+- No worker model is pinned in the repository; provider and model must be supplied explicitly at runtime.
 
 ## Runtime prerequisites
 
@@ -48,7 +48,7 @@ Alternative OpenRouter runtime:
 
 ```bash
 export HERMES_MODEL_PROVIDER=openrouter
-export HERMES_MODEL=openai/gpt-oss-120b
+export HERMES_MODEL=openrouter/free
 export OPENROUTER_API_KEY=...
 node scripts/hermes-office-bootstrap.js
 ```
@@ -136,9 +136,9 @@ The production office no longer requires a separately managed Hermes server or R
 
 The Sandbox is a persistent cloud PC. Its filesystem is snapshotted when the session stops, so Hermes profile memory, skills, Kanban state and configuration survive between chat turns. Processes do not need to stay alive: every request resumes the sandbox, refreshes the repository, runs a one-shot `hermes -p <profile> -z ...`, then stops/snapshots the VM.
 
-Inference is keyless inside Vercel: the function passes its short-lived Vercel OIDC token to Hermes as the Vercel AI Gateway credential. The default model is `openai/gpt-oss-120b`.
+Inference is fail-closed: no repository-default model or anonymous provider route is permitted.
 
-Hermes profiles now configure the native `fallback_providers` chain: Vercel AI Gateway models first (`AI_GATEWAY_MODEL`, default `openai/gpt-5-mini`, then `openai/gpt-oss-120b`; override with `HERMES_VERCEL_FALLBACK_MODELS`, maximum three), then OpenRouter/GPT-OSS when an OpenRouter key is supplied for the turn. The route passes the short-lived Vercel project OIDC token as `AI_GATEWAY_API_KEY` only to the running Sandbox command; it is never written to profile config. Native Hermes failover keeps the active conversation and its tools/MCP. If the Hermes run still returns no answer, the endpoint retains the separate text-only Vercel AI Gateway fallback, which cannot claim external actions; the response records its successful model and `vercel-ai-gateway-fallback` execution mode.
+Hermes profiles only add an OpenRouter fallback when an explicit runtime credential is present; no unhealthy or unverified provider is inserted automatically.
 
 Vercel Sandbox is stopped after each request, so its in-process scheduler cannot stay alive. Automatic Hermes fleet scheduling is retired and the obsolete `.github/workflows/hermes-office-cron.yml` workflow has been removed. Legacy Hermes cron scripts/routes remain archive/compatibility code only and are not an active QuantDeus scheduler. The active unattended execution lane is `.github/workflows/quantdeus-hourly-openclaw.yml` → the authenticated Vercel OpenClaw Office. Native OpenClaw automations require a running OpenClaw Gateway and are not emulated through the legacy Hermes pulse.
 
