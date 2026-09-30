@@ -72,8 +72,17 @@ async function listAll(path, maxPages = 3) {
   if (body.length < 30 || body.length > 20000) throw new Error('Issue body length outside 30..20000');
 
   const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
-  const agentIds = new Set((registry.agents || []).map(agent => agent.id));
-  if (targetAgent && !agentIds.has(targetAgent)) throw new Error('Unknown target_agent: ' + targetAgent);
+  const byId = new Map((registry.agents || []).map(agent => [agent.id, agent]));
+  if (targetAgent && !byId.has(targetAgent)) throw new Error('Unknown target_agent: ' + targetAgent);
+  let effectiveTarget = targetAgent;
+  const owner = byId.get(targetAgent);
+  if (owner?.operational_status === 'medbay') {
+    const delegate = byId.get(owner.temporary_delegate);
+    if (!delegate || delegate.id === targetAgent || delegate.operational_status === 'medbay') {
+      throw new Error('Medbay target has no valid active temporary_delegate: ' + targetAgent);
+    }
+    effectiveTarget = delegate.id;
+  }
 
   const [labelRows, openRows] = await Promise.all([
     listAll('/repos/' + repo + '/labels', 2),
@@ -81,14 +90,17 @@ async function listAll(path, maxPages = 3) {
   ]);
   const available = new Set(labelRows.map(label => label.name).filter(Boolean));
   const requested = Array.isArray(proposal.labels) ? proposal.labels.map(String) : [];
-  const labels = [];
-  for (const label of requested) if (available.has(label) && !labels.includes(label)) labels.push(label);
-  for (const label of ['coord:task', 'coord:ready']) {
-    if (available.has(label) && !labels.includes(label)) labels.push(label);
+  const stateLabels = ['coord:blocked', 'coord:active', 'coord:ready', 'coord:stale', 'coord:done'];
+  const stateLabel = stateLabels.find(label => requested.includes(label)) || 'coord:ready';
+  const pinned = ['coord:task', stateLabel, ...(effectiveTarget ? ['agent:' + effectiveTarget] : [])];
+  for (const label of pinned) {
+    if (!available.has(label)) throw new Error('Required coordination label unavailable: ' + label);
   }
-  if (targetAgent && available.has('agent:' + targetAgent) && !labels.includes('agent:' + targetAgent)) {
-    labels.push('agent:' + targetAgent);
-  }
+  const extras = [...new Set(requested)].filter(label =>
+    available.has(label) && !pinned.includes(label) &&
+    !stateLabels.includes(label) && !label.startsWith('agent:')
+  );
+  const finalLabels = [...pinned, ...extras].slice(0, 8);
 
   const normalized = normalizeTitle(title);
   const duplicate = openRows
@@ -115,7 +127,8 @@ async function listAll(path, maxPages = 3) {
   const audit = [
     body,
     '',
-    targetAgent ? '<!-- quantdeus-target-agent:' + targetAgent + ' -->' : '',
+    effectiveTarget ? '<!-- quantdeus-target-agent:' + effectiveTarget + ' -->' : '',
+    effectiveTarget !== targetAgent ? 'Delegated from medbay owner: ' + targetAgent : '',
     '---',
     'Created by QuantDeus automated Issue publisher.',
     'Source agent: ' + sourceAgent,
@@ -125,7 +138,7 @@ async function listAll(path, maxPages = 3) {
 
   const created = await github('/repos/' + repo + '/issues', {
     method: 'POST',
-    body: JSON.stringify({ title, body: audit, labels: labels.slice(0, 8) })
+    body: JSON.stringify({ title, body: audit, labels: finalLabels })
   });
   if (!created?.number || !created?.html_url) throw new Error('GitHub issue creation returned no issue identity');
 

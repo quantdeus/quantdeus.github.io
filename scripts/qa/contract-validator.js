@@ -126,6 +126,14 @@ if (fs.existsSync(issuePublisherPath)) {
   const issuePublisher = fs.readFileSync(issuePublisherPath,'utf8');
   check(issuePublisher.includes("method: 'POST'") && issuePublisher.includes("'/repos/' + repo + '/issues'") && issuePublisher.includes("status: 'duplicate'") && issuePublisher.includes('Created Issue failed verification'), 'scripts/publish-agent-issue.js', 'Issue publisher creates, deduplicates and verifies GitHub Issues');
   check(issuePublisher.includes("coord:task") && issuePublisher.includes("coord:ready") && issuePublisher.includes('quantdeus-target-agent:'), 'scripts/publish-agent-issue.js', 'Issue publisher preserves coordination labels and target-agent routing');
+  const publisherTest = path.join(root, 'scripts', 'qa', 'publish-agent-issue.test.js');
+  const result = require('child_process').spawnSync(process.execPath, [publisherTest], {
+    cwd: root, encoding: 'utf8', timeout: 15000
+  });
+  check(!result.error && result.status === 0, 'scripts/publish-agent-issue.js',
+    'Mock publisher contracts: medbay delegation, pinned labels, single state and default ready' +
+    (result.status === 0 ? '' : ': ' + String(result.error || result.stderr || result.stdout).slice(0, 2000)));
+
 }
 
 const sevenPriorityWorkflow = fs.readFileSync(path.join(root,'.github','workflows','seven-priority-cycle.yml'),'utf8');
