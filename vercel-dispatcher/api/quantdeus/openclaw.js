@@ -540,6 +540,61 @@ export default async function handler(req, res) {
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
     if (!prompt) return res.status(400).json({ ok: false, error: 'messages_required' });
 
+    // Telegram's Vercel-internal lane is chat-only and has no tools. After a
+    // provider passes the existing exact-OK capability gate, finish this bounded
+    // chat turn directly on that healthy OpenAI-compatible route instead of
+    // paying persistent Sandbox/OpenClaw bootstrap latency inside the webhook.
+    if (vercelInternal) {
+      const selected = probeCandidates.find(candidate => candidate.ref === model);
+      if (!selected) return res.status(503).json({ ok: false, error: 'openclaw_internal_model_missing' });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30000);
+      try {
+        const response = await fetch(selected.endpoint, {
+          method: 'POST',
+          headers: {
+            authorization: 'Bearer ' + selected.key,
+            'content-type': 'application/json',
+            accept: 'application/json'
+          },
+          body: JSON.stringify({
+            model: selected.model,
+            messages: messages.map(message => ({
+              role: String(message?.role || 'user'),
+              content: String(message?.content || '').slice(0, 16000)
+            })),
+            temperature: 0.2,
+            max_tokens: 1800
+          }),
+          signal: controller.signal
+        });
+        const raw = await response.text();
+        let data = null;
+        try { data = JSON.parse(raw); } catch {}
+        const text = typeof data?.choices?.[0]?.message?.content === 'string'
+          ? data.choices[0].message.content.trim()
+          : '';
+        if (!response.ok || !text) {
+          console.warn('[openclaw-internal-fast] provider=' + selected.ref + ' status=' + response.status + ' empty=' + !text);
+          return res.status(502).json({ ok: false, error: 'openclaw_internal_chat_failed', provider: selected.ref });
+        }
+        console.log('[openclaw-internal-fast] provider=' + selected.ref + ' status=200 chars=' + text.length);
+        return res.status(200).json({
+          ok: true,
+          text,
+          model: selected.ref,
+          tool_summary: null,
+          assistant_turns: 1,
+          mode: 'vercel-internal-fast'
+        });
+      } catch (error) {
+        console.warn('[openclaw-internal-fast] error=' + String(error?.message || error).slice(0, 300));
+        return res.status(502).json({ ok: false, error: 'openclaw_internal_chat_failed' });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     sandbox = await Sandbox.getOrCreate({ name: SANDBOX, image: 'vercel/sandbox/universal', resources: { vcpus: 2 }, timeout: 15 * 60 * 1000, persistent: true, snapshotExpiration: 30 * 24 * 60 * 60 * 1000, keepLastSnapshots: { count: 2 }, resume: true, tags: { app: 'quantdeus', runtime: 'openclaw-office' } });
     const home = await text(await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'printf %s "$HOME"'] }));
     const workdir = `${home}/quantdeus`;
