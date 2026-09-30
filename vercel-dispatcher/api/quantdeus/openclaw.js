@@ -87,6 +87,28 @@ async function checked(sandbox, args, label) {
   return r;
 }
 
+async function githubRepoJson(token, path, options = {}) {
+  const response = await fetch('https://api.github.com/repos/' + REPOSITORY + path, {
+    ...options,
+    headers: {
+      authorization: 'Bearer ' + token,
+      accept: 'application/vnd.github+json',
+      'x-github-api-version': '2022-11-28',
+      'content-type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  const raw = await response.text();
+  let data = null;
+  try { data = raw ? JSON.parse(raw) : null; } catch {}
+  if (!response.ok) {
+    const error = new Error('github_pr_broker_' + response.status + ': ' + raw.slice(0, 1200));
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
 function trustedOfficeRequest(req, claims) {
   if (req.body?.execution_mode !== 'trusted-office') return false;
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
@@ -389,6 +411,58 @@ export default async function handler(req, res) {
     if (trustedOffice && !githubToken) {
       return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
     }
+
+    if (octetHerald) {
+      const metadata = req.body?.metadata || {};
+      const issueNumber = Number(metadata.issue_number);
+      const branch = String(metadata.branch || '').trim();
+      const title = String(metadata.pr_title || '').trim();
+      const body = String(metadata.pr_body || '');
+      if (!Number.isInteger(issueNumber) || issueNumber <= 0) throw new Error('octet_pr_broker_invalid_issue');
+      if (!new RegExp('^squad-b/issue-' + issueNumber + '-\\d+-\\d+$').test(branch)) throw new Error('octet_pr_broker_invalid_branch');
+      if (!title.startsWith('[Squad B] ') || title.length > 240) throw new Error('octet_pr_broker_invalid_title');
+      if (!body.includes('Closes #' + issueNumber) || body.length < 30 || body.length > 50000) throw new Error('octet_pr_broker_invalid_body');
+
+      const owner = REPOSITORY.split('/')[0];
+      const params = new URLSearchParams({ state: 'open', head: owner + ':' + branch, per_page: '20' });
+      const existing = await githubRepoJson(githubToken, '/pulls?' + params.toString());
+      let pr = Array.isArray(existing) ? existing.find(item => item?.head?.ref === branch && item?.base?.ref === 'main') : null;
+      if (!pr) {
+        pr = await githubRepoJson(githubToken, '/pulls', {
+          method: 'POST',
+          body: JSON.stringify({
+            title,
+            head: branch,
+            base: 'main',
+            body,
+            maintainer_can_modify: true
+          })
+        });
+      }
+      if (!pr?.number || pr?.head?.ref !== branch || pr?.base?.ref !== 'main' || pr?.state !== 'open') {
+        throw new Error('octet_pr_broker_verification_failed');
+      }
+      const credentialSource = autonomousWorker && executorGithubToken
+        ? 'vercel-executor'
+        : (callerGithubToken ? 'caller' : (executorGithubToken ? 'vercel-fallback' : 'none'));
+      console.log('[openclaw-octet-pr-broker] ' + JSON.stringify({
+        issue_number: issueNumber,
+        branch,
+        pr_number: pr.number,
+        credential_source: credentialSource
+      }));
+      return res.status(200).json({
+        ok: true,
+        provider: 'quantdeus-github-pr-broker',
+        runtime: 'deterministic',
+        model: null,
+        execution_mode: 'openclaw-octet-pr-broker',
+        tools: { github_pr_broker: true, github_write: true, filesystem: false, playwright_mcp: false, shell: false },
+        text: JSON.stringify({ action: 'pr', pr_number: pr.number, url: pr.html_url }),
+        github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository }
+      });
+    }
+
     const providerDefs = {};
     const probeCandidates = [];
     const providerRuntimeEnv = {};
@@ -979,7 +1053,10 @@ export default async function handler(req, res) {
   } catch (error) {
     const message = String(error?.message || error);
     console.error('QuantDeus OpenClaw error:', message);
-    const status = /github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502;
+    const explicitStatus = Number(error?.status || 0);
+    const status = [400, 401, 403, 404, 409, 422].includes(explicitStatus)
+      ? explicitStatus
+      : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502);
     return res.status(status).json({ ok: false, error: 'openclaw_office_failed', detail: message.slice(0, 2000) });
   } finally {
     if (sandbox) {

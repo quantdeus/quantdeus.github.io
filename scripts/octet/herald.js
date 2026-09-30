@@ -18,33 +18,23 @@ async function createPrViaExecutor(state, branch, body) {
   const result = await office.ask({
     profile: 'herald',
     trusted: true,
-    retryTransient: true,
-    timeoutMs: 180000,
+    retryTransient: false,
+    timeoutMs: 45000,
     metadata: {
       source: 'quantdeus-octet-herald',
       repository: repo,
       issue_number: state.issue.number,
-      branch
+      branch,
+      pr_title: title,
+      pr_body: body
     },
     messages: [{
       role: 'user',
-      content: [
-        'Create or recover exactly one Pull Request in ' + repo + '.',
-        'Head branch: ' + branch,
-        'Base branch: main',
-        'Title: ' + title,
-        'Only PR read/create tools are available in this lane. Do not modify files, branches, Issues, labels, workflows, releases or any other state.',
-        'First check whether a PR already exists for this exact head branch. Reuse it if present; otherwise create it.',
-        'PR body follows between markers.',
-        '---BEGIN PR BODY---',
-        body,
-        '---END PR BODY---',
-        'Return ONLY strict JSON: {"action":"pr","pr_number":123,"url":"https://github.com/..."}'
-      ].join('\n')
+      content: 'Execute the authenticated deterministic Octet PR broker request from metadata. No model reasoning is required.'
     }]
   });
-  if (result.runtime !== 'openclaw-agent-exec-trusted-tools') {
-    throw new Error('Octet PR executor did not receive trusted OpenClaw tools');
+  if (result.runtime !== 'openclaw-octet-pr-broker') {
+    throw new Error('Octet PR executor did not use the deterministic PR broker');
   }
   const decision = parseJson(result.text);
   if (decision.action !== 'pr') throw new Error('Octet PR executor returned unsupported action');
