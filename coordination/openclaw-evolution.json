@@ -22,21 +22,24 @@
     "evidence_required": true,
     "direct_main_write": false,
     "core_auto_merge": false,
-    "auto_merge": false,
-    "human_review_required": true,
+    "auto_merge": "tier-a-guarded-only",
+    "human_review_required": "tier-b-only",
     "analysis_tools": false,
     "mutation_broker": "scripts/openclaw-evolution.js",
-    "github_mutation_enforcement": "deterministic-apply-only",
-    "evolution_mcp_write": false,
-    "tier_b_mutation": "proposal-only",
-    "auto_merge_requires": [
-      "qa:success",
-      "smoke:success",
-      "evolution-guard:success"
-    ],
-    "mutable_skill_sections_only": true
+    "pre_mutation_semantic_guard": "scripts/openclaw-evolution-guard.js",
+    "tier_b_mutation": "proposal-record-only",
+    "trusted_runtime_skill_injection": false,
+    "required_auto_merge_checks": [
+      "qa",
+      "smoke",
+      "evolution-guard"
+    ]
   },
-  "auto_merge_paths": [],
+  "auto_merge_paths": [
+    ".openclaw/skills/quantdeus-self-evolution/SKILL.md",
+    "coordination/openclaw-evolution.json",
+    "docs/openclaw-evolution.md"
+  ],
   "core_review_paths": [
     "vercel-dispatcher/api/quantdeus/openclaw.js",
     "scripts/openclaw-office-client.js",
@@ -73,8 +76,8 @@
     },
     {
       "date": "2026-09-30",
-      "type": "enforcement-hardening",
-      "hypothesis": "Move evolution GitHub writes behind deterministic pre-mutation validation, make Tier B proposal-only, and require independent successful QA, Smoke, and semantic/path guard checks before Tier A merge.",
+      "type": "enforcement-hardening-v2",
+      "hypothesis": "No-tools analysis plus deterministic pre-mutation semantic validation can safely permit bounded Tier A auto-merge after three independently successful checks, while Tier B remains proposal-only.",
       "status": "implementation-pr"
     }
   ],
