@@ -12,6 +12,7 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: write
 
 concurrency:
   # GitHub retains pending runs in one FIFO lane instead of replacing them
