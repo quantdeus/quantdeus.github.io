@@ -621,8 +621,63 @@ function webhookReply(res, message, text) {
   });
 }
 
+async function retrySmokeStart(req, res) {
+  try {
+    await verifyGithubOidc(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+  } catch (error) {
+    return res.status(401).json({ ok: false, error: 'telegram_retry_smoke_auth_failed', detail: String(error.message || error) });
+  }
+
+  const update = {
+    update_id: Date.now(),
+    quantdeus_retry_smoke: true,
+    message: {
+      message_id: 1,
+      text: '/agent control-tower Ответь ровно TELEGRAM_ACTIONS_RETRY_OK.',
+      from: { id: 1, username: 'telegram-retry-smoke', is_bot: false },
+      chat: { id: 1, type: 'private' }
+    }
+  };
+  const dispatched = await dispatchTelegramRetry(update);
+  if (!dispatched) return res.status(503).json({ ok: false, error: 'telegram_retry_smoke_dispatch_failed' });
+  console.info('[telegram-retry-smoke] phase=dispatch status=ok update_id=' + update.update_id);
+  return res.status(200).json({ ok: true, status: 'dispatched', update_id: update.update_id });
+}
+
+async function retrySmokeComplete(req, res) {
+  try {
+    await verifyGithubOidc(String(req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+  } catch (error) {
+    return res.status(401).json({ ok: false, error: 'telegram_retry_smoke_callback_auth_failed', detail: String(error.message || error) });
+  }
+
+  const phase = String(req.body?.phase || '').trim();
+  if (!new Set(['actions_received', 'complete']).has(phase)) {
+    return res.status(400).json({ ok: false, error: 'telegram_retry_smoke_invalid_phase' });
+  }
+  const updateId = String(req.body?.update_id || '').slice(0, 40);
+  const telegramApiOk = req.body?.telegram_api_ok === true;
+  const llmOk = req.body?.llm_ok === true;
+  const llmDetail = String(req.body?.llm_detail || '').replace(/\s+/g, ' ').slice(0, 240);
+  console.info(
+    '[telegram-retry-smoke] phase=' + phase +
+    ' status=ok update_id=' + updateId +
+    ' telegram_api_ok=' + telegramApiOk +
+    ' llm_ok=' + llmOk +
+    (llmDetail ? ' detail=' + llmDetail : '')
+  );
+  return res.status(200).json({ ok: true, phase, telegram_api_ok: telegramApiOk, llm_ok: llmOk });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+
+  if (/^Bearer\s+/i.test(String(req.headers.authorization || '')) && req.body?.mode === 'retry_smoke') {
+    return retrySmokeStart(req, res);
+  }
+  if (/^Bearer\s+/i.test(String(req.headers.authorization || '')) && req.body?.mode === 'retry_smoke_complete') {
+    return retrySmokeComplete(req, res);
+  }
 
   if (/^Bearer\s+/i.test(String(req.headers.authorization || '')) && req.body?.mode === 'setup') {
     try {
