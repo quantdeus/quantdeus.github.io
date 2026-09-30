@@ -3,6 +3,7 @@ const assert = require('assert');
 
 const workflow = fs.readFileSync('.github/workflows/seven-priority-cycle.yml', 'utf8');
 const seven = fs.readFileSync('scripts/seven-of-nine.js', 'utf8');
+const roleCron = fs.readFileSync('.github/workflows/agent-role-cron.yml', 'utf8');
 
 assert(workflow.includes('trusted:false'));
 assert(workflow.includes("result.runtime!=='chat'"));
