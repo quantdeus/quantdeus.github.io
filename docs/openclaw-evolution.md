@@ -24,7 +24,7 @@ Trusted OpenClaw Office requests load this file into the execution prompt from f
 
 **Tier A — skill/evolution layer.** Only the skill, evolution ledger and this documentation may be changed. These PRs require human review and independent successful QA Triad + Static Smoke. Autonomous merge is disabled, including for the behavioral skill.
 
-**Tier B — core runtime.** Changes to the OpenClaw Vercel endpoint, client, validator, auth, MCP wiring or workflows remain ordinary reviewable PRs. The evolution job cannot auto-merge them.
+**Tier B — core/runtime proposal only.** The evolution agent may identify a core change, but its GitHub MCP is read-only and the deterministic apply layer will create only a proposal-record PR. It cannot automatically modify the Vercel endpoint, client, validator, auth, MCP wiring, workflows, secrets, QA, or approval controls. Actual core implementation requires a separate human/Seven-authorized change.
 
 ## Why the split exists
 
