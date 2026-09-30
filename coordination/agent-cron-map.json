@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-09-29",
+  "updated": "2026-09-30",
   "timezone": "UTC",
   "policy": {
     "source_of_truth": "coordination/agents.json",
@@ -49,11 +49,11 @@
       "department": "Executive & Strategy",
       "title": "Swarm Mediation & Diplomacy Officer",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "hourly deterministic scan + daily specialist review",
       "utc_hours": [
         1
       ],
-      "mission": "Find unresolved coordination conflict or ambiguous handoff and reduce it to one owner and one verifiable next step."
+      "mission": "Continuously scan swarm cognitive hygiene for duplicate loops, degraded retries, stale handoffs, review contention and chatter bursts; reduce any hotspot to one owner and one verifiable next step."
     },
     {
       "id": "pillar-executor",
