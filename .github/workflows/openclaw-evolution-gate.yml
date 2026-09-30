@@ -1,0 +1,53 @@
+name: QuantDeus OpenClaw Evolution Gate
+
+on:
+  workflow_run:
+    workflows:
+      - QuantDeus QA Triad 🦀
+      - QuantDeus Static Smoke
+      - QuantDeus OpenClaw Evolution PR Guard
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  checks: read
+
+concurrency:
+  group: quantdeus-openclaw-evolution-gate
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Revalidate mission guard
+        run: node scripts/mission-alignment.js
+
+      - name: Merge only fully verified Tier A evolution PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTO_MERGE_MODE: openclaw-skill
+          EXPECTED_BRANCH_PREFIX: automation/openclaw-evolution/
+        run: |
+          set -euo pipefail
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --base main --limit 50 --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("automation/openclaw-evolution/")) | .number' |
+          while read -r pr; do
+            [ -n "$pr" ] || continue
+            echo "Evaluating evolution PR #$pr"
+            PR_NUMBER="$pr" node scripts/guarded-automerge.js
+          done
