@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { validateProposal, validateChangedFiles } = require('../openclaw-evolution');
+const { normalizeNoAction, validateProposal, validateChangedFiles } = require('../openclaw-evolution');
 const { validateTierAChangeSet, validateTierBProposal } = require('../openclaw-evolution-guard');
 
 const base = 'a'.repeat(40);
@@ -271,6 +271,19 @@ test('manifest/site modes cannot bypass evolution gate; Tier A can merge only th
   assert.equal(merge.at(-1), 'c'.repeat(40));
 });
 
+test('explicit no-action explanation is bounded without granting mutation authority', () => {
+  for (const reason of ['x'.repeat(5000), undefined, '', { diagnostic: 'no change' }]) {
+    const original = { action: 'none', base_sha: base, reason, files: [{ path: 'main', content: 'unsafe' }] };
+    const normalized = normalizeNoAction(original);
+    validateProposal(normalized, base, evidence);
+    assert.equal(normalized.action, 'none');
+    assert.ok(normalized.reason.length <= 2000);
+    assert.equal(normalized.files, undefined);
+    assert.equal(original.reason, reason);
+  }
+  const actionable = proposal(); delete actionable.metric;
+  assert.throws(() => validateProposal(normalizeNoAction(actionable), base, evidence));
+});
 test('merge guard rejects skipped/neutral/failure, forged provenance, draft, semantic failure and moved head', async () => {
   for (const options of [
     { conclusion: 'skipped' },
@@ -297,3 +310,4 @@ test('merge guard rejects skipped/neutral/failure, forged provenance, draft, sem
     assert.equal(calls.some(x => x[1] === 'merge'), false);
   }
 });
+

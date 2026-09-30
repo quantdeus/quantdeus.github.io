@@ -29,6 +29,15 @@ function text(value, field, max = 2000) {
   }
   return value;
 }
+function normalizeNoAction(proposal) {
+  if (proposal?.action !== 'none') return proposal;
+  // Explicit no-op carries no files or mutation authority. Preserve the original
+  // model response in result.json, and bound only its diagnostic explanation.
+  const reason = typeof proposal.reason === 'string' && proposal.reason.trim()
+    ? proposal.reason.replace(/\u0000/g, '').slice(0, 2000)
+    : 'Model explicitly returned action=none without a valid explanation; no mutation performed.';
+  return { action: 'none', base_sha: proposal.base_sha, reason };
+}
 function semanticTierA(proposal) {
   const changedPaths = proposal.files.map(file => file.path);
   const baseByPath = {};
@@ -131,13 +140,14 @@ async function observe() {
       'Evidence snapshot:', JSON.stringify(evidence).slice(0, 18000)
     ].join('\n') }]
   });
+  fs.writeFileSync(DIR + '/result.json', JSON.stringify({ model: result.model, runtime: result.runtime, tools: result.raw?.tools || null, response: result.text }, null, 2));
   if (result.runtime !== 'openclaw-agent-exec-no-tools' || !result.raw?.tools || Object.values(result.raw.tools).some(Boolean)) {
     throw new Error('Evolution analysis must be proven no-tools');
   }
-  const proposal = JSON.parse(result.text);
+  const proposal = normalizeNoAction(JSON.parse(result.text));
   validateProposal(proposal, base, evidence);
   fs.writeFileSync(DIR + '/proposal.json', JSON.stringify(proposal, null, 2));
-  fs.writeFileSync(DIR + '/result.json', JSON.stringify({ model: result.model, runtime: result.runtime, tools: result.raw.tools, decision: proposal.action }, null, 2));
+  console.log(JSON.stringify({ runtime: result.runtime, tools: result.raw.tools, action: proposal.action, reason: proposal.action === 'none' ? proposal.reason : undefined }));
 }
 function propose() {
   if (process.env.GITHUB_REPOSITORY !== REPO || process.env.GITHUB_REF !== 'refs/heads/main' ||
@@ -242,7 +252,7 @@ function propose() {
   }
   record({ ...publication, checks_dispatched: checks });
 }
-module.exports = { validateProposal, validateChangedFiles };
+module.exports = { normalizeNoAction, validateProposal, validateChangedFiles };
 if (require.main === module) {
   const action = process.argv[2];
   Promise.resolve().then(() => {
