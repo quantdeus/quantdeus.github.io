@@ -124,6 +124,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     if (parts.length===5) {
       if (name === 'quantdeus-hourly-openclaw.yml') {
         check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
+      } else if (name === 'agent-health-daily.yml') {
+        check(parts[0] === '19' && parts[1] === '*/2', name, 'crew health uses the approved two-hour cadence: '+cron);
       } else if (name === 'qa-self-heal.yml') {
         const approvedQaSelfHeal =
           (parts[0] === '17' && parts[1] === '*/6') ||
