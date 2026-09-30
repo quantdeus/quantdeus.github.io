@@ -102,6 +102,8 @@ function runCheck(label, command) {
 
 (async () => {
   const data = await api('/repos/' + repo + '/actions/runs?branch=main&per_page=100');
+  const branchState = await api('/repos/' + repo + '/branches/main');
+  const currentMainSha = branchState?.commit?.sha || process.env.GITHUB_SHA || null;
   const cutoff = Date.now() - lookbackDays * 86400000;
   const runs = (data.workflow_runs || [])
     .filter(r => Date.parse(r.created_at) >= cutoff)
@@ -117,15 +119,20 @@ function runCheck(label, command) {
   for (const [name, workflowRuns] of byWorkflow) {
     workflowRuns.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
     const failures = workflowRuns.filter(r => failureConclusions.has(r.conclusion));
+    const latest = workflowRuns[0] || null;
+    const latestFailed = failureConclusions.has(latest?.conclusion);
+    const currentHeadFailure = latestFailed && (!currentMainSha || latest?.head_sha === currentMainSha);
     ranking.push({
       workflow: name,
       family: familyFor(name),
       failures: failures.length,
       runs: workflowRuns.length,
-      latest_conclusion: workflowRuns[0]?.conclusion || null,
-      latest_url: workflowRuns[0]?.html_url || null,
-      latest_at: workflowRuns[0]?.created_at || null,
-      unresolved: failureConclusions.has(workflowRuns[0]?.conclusion)
+      latest_conclusion: latest?.conclusion || null,
+      latest_head_sha: latest?.head_sha || null,
+      latest_url: latest?.html_url || null,
+      latest_at: latest?.created_at || null,
+      unresolved: currentHeadFailure,
+      stale_failure: latestFailed && !currentHeadFailure
     });
   }
 
@@ -173,6 +180,7 @@ function runCheck(label, command) {
   const report = {
     generated_at: new Date().toISOString(),
     repository: repo,
+    current_main_sha: currentMainSha,
     lookback_days: lookbackDays,
     trigger: {workflow: triggerWorkflow || null, conclusion: triggerConclusion || null},
     ranking,
@@ -207,7 +215,8 @@ function runCheck(label, command) {
     '- needs_repair: **' + needsRepair + '**',
     '- repair_lane: **' + repairLane + '**',
     '- failed_checks: ' + (failedChecks.map(x => x.label).join(', ') || 'none'),
-    '- unresolved_workflows: ' + (unresolved.map(x => x.workflow).join(', ') || 'none')
+    '- unresolved_workflows: ' + (unresolved.map(x => x.workflow).join(', ') || 'none'),
+    '- stale_failed_workflows: ' + (ranking.filter(x => x.stale_failure).map(x => x.workflow).join(', ') || 'none')
   ].join('\n');
 
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
