@@ -1,18 +1,19 @@
-name: QuantDeus Daily Agent Health Check 🩺
+name: QuantDeus Crew Health Check 🩺🖖
 
 on:
   schedule:
-    # Once per day at 06:17 UTC. Validates all 26 agents plus the shared post-scarcity v2 mission.
-    - cron: '17 6 * * *'
+    # Every 2 hours at :19 UTC, staggered away from Seven (:11) and hourly OpenClaw (:00).
+    - cron: '19 */2 * * *'
   workflow_dispatch:
 
 concurrency:
-  group: quantdeus-agent-health-daily
-  cancel-in-progress: false
+  group: quantdeus-crew-health
+  cancel-in-progress: true
 
 permissions:
   contents: read
   issues: write
+  actions: read
 
 jobs:
   monitor:
@@ -30,30 +31,44 @@ jobs:
           node-version: '24'
 
       - name: Validate shared post-scarcity mission
+        id: mission
         run: node scripts/mission-alignment.js
 
-      - name: Check all registered agents
+      - name: Check registered agents + bridge crew
         id: health
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: node scripts/agent-monitor.js
 
-      - name: Upload health report
+      - name: Publish bridge summary
+        if: always()
+        run: |
+          if [ -f /tmp/quantdeus-agent-health.md ]; then
+            cat /tmp/quantdeus-agent-health.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload crew health report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: quantdeus-agent-health
+          name: quantdeus-crew-health
           path: |
             /tmp/quantdeus-agent-health.json
+            /tmp/quantdeus-agent-health.md
             /tmp/quantdeus-mission-alignment.json
           if-no-files-found: ignore
 
-      - name: Create/update monitoring issue on failure
-        if: failure()
+      - name: Create or update monitoring issue on hard failure
+        if: steps.health.outcome == 'failure' || steps.mission.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue create \
-            --title "[AGENT HEALTH] Daily agent check failed" \
-            --body "Daily agent health monitoring detected one or more failed checks. See the workflow run and uploaded health report for details." \
-            --label "coord:human" || true
+          title="[AGENT HEALTH] Crew health check failed"
+          existing="$(gh issue list --state open --search \"$title in:title\" --json number --jq '.[].number' | head -n 1)"
+          body="Crew health monitoring detected a hard failure. See this workflow run and the uploaded crew-health artifact for exact evidence."
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body" || true
+          else
+            gh issue create --title "$title" --body "$body" --label "coord:human" || true
+          fi
