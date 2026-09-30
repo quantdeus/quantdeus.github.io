@@ -1,10 +1,7 @@
 'use strict';
 
 const { execFileSync } = require('node:child_process');
-const {
-  TIER_A_ALLOWED,
-  validateTierAChangeSet
-} = require('./openclaw-evolution-guard');
+const { TIER_A_ALLOWED, validateTierAChangeSet } = require('./openclaw-evolution-guard');
 
 const repo = process.env.GITHUB_REPOSITORY;
 const prNumber = Number(process.env.PR_NUMBER || 0);
@@ -31,7 +28,6 @@ function readAt(ref, path) {
   if (!data?.content) throw new Error('unable to read ' + path + ' at ' + ref);
   return Buffer.from(String(data.content).replace(/\n/g,''), 'base64').toString('utf8');
 }
-
 function allowedSitePath(path) {
   return path === 'index.html' ||
     path === 'README.md' ||
@@ -46,11 +42,44 @@ function allowedSitePath(path) {
     path.startsWith('docs/') ||
     path.startsWith('coordination/growth/');
 }
+function verifiedChecks(sha, names) {
+  const expectedPath = {
+    qa: '.github/workflows/qa-triad.yml',
+    smoke: '.github/workflows/static-smoke.yml',
+    'evolution-guard': '.github/workflows/openclaw-evolution-pr-guard.yml'
+  };
+  const checks = ghJson(['api','repos/' + repo + '/commits/' + sha + '/check-runs'])?.check_runs || [];
+  const selected = new Map();
+
+  for (const name of names) {
+    for (const check of checks.filter(x => x.name === name && x.app?.slug === 'github-actions')) {
+      const match = String(check.details_url || check.html_url || '').match(/\/actions\/runs\/(\d+)(?:\/job\/\d+)?/);
+      if (!match) continue;
+      const run = ghJson(['api', 'repos/' + repo + '/actions/runs/' + match[1]]);
+      if (run.head_sha !== sha || run.path !== expectedPath[name] || !['workflow_dispatch','pull_request'].includes(run.event)) continue;
+      if (check.status === 'completed' && check.conclusion !== 'success') {
+        return { failed: name + ' concluded ' + String(check.conclusion), selected };
+      }
+      if (check.status === 'completed' && check.conclusion === 'success') {
+        selected.set(name, { check, run });
+        break;
+      }
+    }
+  }
+  return { failed: null, selected };
+}
 
 (async () => {
-  const meta = ghJson(['pr','view',String(prNumber),'--repo',repo,'--json','state,baseRefName,headRefName,headRefOid,files,isCrossRepository,headRepositoryOwner']);
+  const meta = ghJson(['pr','view',String(prNumber),'--repo',repo,'--json','state,baseRefName,headRefName,headRefOid,files,isCrossRepository,isDraft']);
   if (!meta || meta.state !== 'OPEN' || meta.baseRefName !== 'main') throw new Error('PR must be open against main');
   if (!String(meta.headRefName || '').startsWith(expectedPrefix)) throw new Error('unexpected PR branch');
+
+  const evolutionBranch = String(meta.headRefName || '').startsWith('automation/openclaw-evolution/');
+  if (evolutionBranch && mode !== 'openclaw-skill') {
+    console.log('Evolution PR cannot merge through manifest/site modes.');
+    return;
+  }
+
   const files = (meta.files || []).map(f => f.path);
   if (!files.length || files.length > 8) throw new Error('automerge file count outside bounded range');
 
@@ -59,71 +88,60 @@ function allowedSitePath(path) {
       console.log('Manifest PR touches non-living-manifest paths; leaving open for human review.');
       return;
     }
-  } else if (mode === 'openclaw-skill') {
-    if (meta.isCrossRepository) throw new Error('OpenClaw evolution auto-merge forbids cross-repository heads');
-    if (files.some(p => !TIER_A_ALLOWED.has(p))) {
-      console.log('OpenClaw evolution PR is not Tier A; leaving open for Seven/human review.');
+  } else if (mode === 'site') {
+    if (files.some(p => !allowedSitePath(p))) {
+      console.log('Site PR touches a non-content/non-site path; leaving open for human review.');
       return;
     }
-    if (files.length > 3) throw new Error('OpenClaw Tier A automerge exceeds 3-file bound');
+  } else {
+    if (!evolutionBranch || meta.isCrossRepository || meta.isDraft) {
+      console.log('Tier A evolution auto-merge requires same-repository non-draft evolution PR.');
+      return;
+    }
+    if (files.length > 3 || files.some(p => !TIER_A_ALLOWED.has(p))) {
+      console.log('Evolution PR is not bounded Tier A; leaving open for human/Seven review.');
+      return;
+    }
 
-    const mainRef = ghJson(['api','repos/' + repo + '/git/ref/heads/main'])?.object?.sha;
-    if (!mainRef) throw new Error('unable to resolve current main');
+    const currentMain = ghJson(['api','repos/' + repo + '/git/ref/heads/main'])?.object?.sha;
+    if (!currentMain) throw new Error('unable to resolve current main');
     const baseByPath = {};
     const candidateByPath = {};
     for (const path of files) {
-      baseByPath[path] = readAt(mainRef, path);
+      baseByPath[path] = readAt(currentMain, path);
       candidateByPath[path] = readAt(meta.headRefOid, path);
     }
     validateTierAChangeSet({ changedPaths: files, baseByPath, candidateByPath });
     console.log('Tier A strict path + semantic envelope revalidated against current main.');
-  } else if (files.some(p => !allowedSitePath(p))) {
-    console.log('Site PR touches a non-content/non-site path; leaving open for human review.');
-    return;
   }
 
   const sha = meta.headRefOid;
-  const requiredChecks = mode === 'openclaw-skill' ? ['qa','smoke','evolution-guard'] : ['qa','smoke'];
+  const required = mode === 'openclaw-skill' ? ['qa','smoke','evolution-guard'] : ['qa','smoke'];
   const maxAttempts = mode === 'openclaw-skill' ? 1 : 24;
 
-  for (let attempt=0; attempt<maxAttempts; attempt++) {
-    const checks = ghJson(['api','repos/' + repo + '/commits/' + sha + '/check-runs'])?.check_runs || [];
-    const selected = new Map();
-
-    for (const name of requiredChecks) {
-      const matches = checks.filter(x => x.name === name);
-      const failed = matches.some(x => x.status === 'completed' && x.conclusion !== 'success');
-      if (failed) {
-        console.log(name + ' did not conclude success; leaving PR open.');
-        return;
-      }
-      const successful = matches.find(x => x.status === 'completed' && x.conclusion === 'success');
-      if (successful) selected.set(name, successful);
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const verified = verifiedChecks(sha, required);
+    if (verified.failed) {
+      console.log(verified.failed + '; leaving PR open.');
+      return;
     }
 
-    if (requiredChecks.every(name => selected.has(name))) {
+    if (required.every(name => verified.selected.has(name))) {
       if (mode === 'openclaw-skill') {
-        const qaSuite = selected.get('qa')?.check_suite?.id;
-        const smokeSuite = selected.get('smoke')?.check_suite?.id;
-        const guardSuite = selected.get('evolution-guard')?.check_suite?.id;
-        if (!qaSuite || !smokeSuite || !guardSuite || new Set([qaSuite, smokeSuite, guardSuite]).size !== 3) {
-          throw new Error('QA, Smoke, and Evolution Guard must come from three independent check suites');
-        }
+        const runIds = required.map(name => verified.selected.get(name).run.id);
+        if (new Set(runIds).size !== required.length) throw new Error('QA, Smoke, and Evolution Guard must be independent workflow runs');
       }
-
-      const latest = ghJson(['pr','view',String(prNumber),'--repo',repo,'--json','headRefOid,files']);
-      if (latest.headRefOid !== sha) throw new Error('PR head moved during verification');
+      const latest = ghJson(['pr','view',String(prNumber),'--repo',repo,'--json','headRefOid,files,isDraft']);
+      if (latest.headRefOid !== sha || latest.isDraft) throw new Error('PR head/draft state moved during verification');
       const latestFiles = (latest.files || []).map(f => f.path);
       if (JSON.stringify(latestFiles) !== JSON.stringify(files)) throw new Error('PR file set moved during verification');
-
-      gh(['pr','merge',String(prNumber),'--repo',repo,'--squash','--delete-branch']);
+      gh(['pr','merge',String(prNumber),'--repo',repo,'--squash','--delete-branch','--match-head-commit',sha]);
       console.log('Merged guarded ' + mode + ' PR #' + prNumber + ' after required successful checks.');
       return;
     }
 
     if (attempt + 1 < maxAttempts) await sleep(20000);
   }
-
   console.log('Required successful checks are not all present yet; leaving PR open.');
 })().catch(error => {
   console.error(error.stack || error.message || error);
