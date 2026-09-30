@@ -507,6 +507,7 @@ async function openClawInternalReply(agentId, requestedAgentId, system, user) {
 async function homunculusReply(message) {
   const data = await registry();
   const agents = data.agents || [];
+  const collectiveDirective = String(data.collective_cognition?.runtime_directive || '').trim();
   const byId = new Map(agents.map(agent => [agent.id, agent]));
   const resolveActiveAgentId = agentId => {
     const candidate = byId.get(agentId);
@@ -545,6 +546,7 @@ async function homunculusReply(message) {
     `Canonical id: ${agent.id}. Role: ${agent.role || agent.startup_title || 'QuantDeus agent'}.`,
     agent.department ? `Department: ${agent.department}.` : '',
     agent.kpi ? `KPI/context: ${agent.kpi}.` : '',
+    collectiveDirective ? `Collective cognition: ${collectiveDirective}` : '',
     requestedAgentId !== agentId ? `EMH medbay delegation: requested role ${requestedAgentId} is temporarily inactive; you are the verified delegate. Preserve the requested role's mission without claiming to be that agent.` : '',
     'Answer the Telegram user directly and usefully. Default to Russian when the user writes in Russian.',
     'Be concise but substantive. Do not claim you changed GitHub, deployed code, sent messages, or performed external actions unless the current request itself provides evidence that it happened.',
