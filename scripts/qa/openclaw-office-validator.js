@@ -30,6 +30,17 @@ for (const [ok, message] of [
   [route.includes("https://api.githubcopilot.com/mcp/") && route.includes("@playwright/mcp@latest"), 'trusted office wires GitHub and Playwright MCP'],
   [route.includes("include: smokePhase === 'github' ? ['list_branches', 'get_file_contents'] : hourlyOffice ? [") && route.includes("'create_pull_request', 'update_issue', 'update_pull_request'"), 'GitHub MCP exposes bounded read-only smoke tools, enforced hourly read-only, and bounded interactive write surfaces'],
   [route.includes('function hourlyOfficeRequest') && route.includes('hourly_read_only: hourlyOffice') && route.includes('github_write: !hourlyOffice && !smokePhase'), 'hourly OpenClaw lane is externally marked and enforced read-only'],
+  [(() => {
+    const start = route.indexOf('function autonomousWorkerRequest(');
+    const end = route.indexOf('async function probeChatCandidate(', start);
+    const worker = start >= 0 && end > start ? route.slice(start, end) : '';
+    const octet = worker.indexOf('octet-squad');
+    const scheduleGate = worker.indexOf("if (!new Set(['schedule', 'workflow_dispatch']).has(eventName)) return false;");
+    return octet >= 0 && scheduleGate >= 0 && octet < scheduleGate &&
+      worker.includes("source === 'quantdeus-octet-herald'") &&
+      worker.includes("new Set(['issues', 'workflow_dispatch']).has(eventName)");
+  })(), 'Octet Herald accepts signed issues/workflow_dispatch before the schedule-only worker gate'],
+  [route.includes("octetHerald ? [") && route.includes("'search_pull_requests', 'get_pull_request', 'create_pull_request'"), 'Octet Herald executor is restricted to PR lookup/create tools'],
   [route.includes("include: smokePhase === 'playwright'") && route.includes("? ['browser_navigate']") && route.includes("['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']"), 'Playwright MCP exposes one-tool smoke surface plus scoped navigation, snapshot, find and close tools'],
   [route.includes('trustedOfficeRequest') && route.includes('openclaw-admin-smoke') && route.includes('telegram-bot') && route.includes('site-agent-replies') && route.includes("eventName === 'issue_comment'") && route.includes('metadata.admin_authorized === true'), 'trusted tools are workflow-gated and owner/admin site actions require signed issue-comment metadata'],
   [route.includes('const effectivePrompt = prompt;') && !route.includes('OPENCLAW SELF-EVOLUTION SKILL FROM FRESH MAIN'), 'mutable self-evolution skill is not injected into trusted write-capable Office prompts'],
