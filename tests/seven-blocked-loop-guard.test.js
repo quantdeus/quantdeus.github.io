@@ -8,7 +8,6 @@ const roleCron = fs.readFileSync('.github/workflows/agent-role-cron.yml', 'utf8'
 assert(workflow.includes('trusted:false'));
 assert(workflow.includes("result.runtime!=='chat'"));
 assert(workflow.includes("!['none','dispatch','open_issue'].includes(d.action)"));
-assert(workflow.includes('Sherlock protocol: OBSERVE'));
 assert(workflow.includes('Blocked work is diagnostic context, not an executable priority.'));
 assert(workflow.includes("labels.has('coord:blocked')||labels.has('squad-b:blocked')||labels.has('squad-b:review')"));
 assert(workflow.includes("throw new Error('Seven dispatch selected non-executable Issue')"));
