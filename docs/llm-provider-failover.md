@@ -10,6 +10,7 @@ A configured provider is not considered healthy merely because an API key exists
 - Trusted OpenClaw lane: the model must complete a two-step function-calling round trip and finish with the exact `PROBE_DONE` marker.
 - Failed providers are excluded from both the primary model and OpenClaw fallback list.
 - Provider probes run in parallel. Healthy routes are ordered by curated quality/speed/capacity priority, with measured probe latency as the tie-breaker.
+- Successful probe certification is cached for 5 minutes; failures are cached for only 30 seconds. Cache keys separate trusted tool-capability from public text health and include a non-secret API-key fingerprint, preserving provider limits while still recovering quickly.
 - If no provider passes the required capability probe, the endpoint fails closed with `openclaw_no_healthy_model_route`.
 
 ## Provider catalog
