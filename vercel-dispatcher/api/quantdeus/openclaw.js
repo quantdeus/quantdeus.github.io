@@ -130,15 +130,15 @@ function autonomousWorkerRequest(req, claims) {
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
   const source = String(req.body?.metadata?.source || '');
   const eventName = String(claims.event_name || '');
+  if (/\.github\/workflows\/octet-squad\.yml(?:@|$)/.test(workflowRef)) {
+    return source === 'quantdeus-octet-herald' && new Set(['issues', 'workflow_dispatch']).has(eventName);
+  }
   if (!new Set(['schedule', 'workflow_dispatch']).has(eventName)) return false;
   if (/\.github\/workflows\/agent-role-cron\.yml(?:@|$)/.test(workflowRef)) {
     return source === 'quantdeus-agent-role-cron';
   }
   if (/\.github\/workflows\/qa-self-heal\.yml(?:@|$)/.test(workflowRef)) {
     return source === 'quantdeus-qa-self-heal';
-  }
-  if (/\.github\/workflows\/octet-squad\.yml(?:@|$)/.test(workflowRef)) {
-    return source === 'quantdeus-octet-herald' && new Set(['issues', 'workflow_dispatch']).has(eventName);
   }
   return false;
 }
