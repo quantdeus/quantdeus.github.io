@@ -223,6 +223,10 @@ check(!/^\s*schedule\s*:/m.test(telegramWorkflow), 'telegram-bot.yml', 'Telegram
 check(telegramWorkflow.includes('telegram_update_b64') && telegramWorkflow.includes('scripts/telegram-webhook-setup.js'), 'telegram-bot.yml', 'Telegram workflow accepts webhook-dispatched updates and can configure the webhook');
 check(!telegramSource.includes("getUpdates") && !telegramSource.includes("deleteWebhook"), 'scripts/telegram-bot.js', 'Telegram bot never polls or deletes the production webhook');
 check(telegramSource.includes('TELEGRAM_UPDATE_B64'), 'scripts/telegram-bot.js', 'Telegram bot consumes one dispatched webhook update');
+const telegramTransientRetries = (telegramSource.match(/retryTransient:\s*true/g) || []).length;
+check(telegramTransientRetries === 2, 'scripts/telegram-bot.js', 'only the two read-only Telegram chat lanes enable one transient OpenClaw retry');
+const adminTaskBlock = telegramSource.slice(telegramSource.indexOf("if (/^\\/task"), telegramSource.indexOf("if (/^\\/agent"));
+check(!adminTaskBlock.includes('retryTransient: true'), 'scripts/telegram-bot.js', 'trusted Telegram admin mutation lane never retries automatically');
 check(telegramSetupSource.includes('quantdeus-vercel-telegram'), 'scripts/telegram-webhook-setup.js', 'Webhook setup uses dedicated GitHub OIDC audience');
 check(fs.existsSync(telegramBridgePath), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Vercel Telegram webhook bridge exists');
 if (fs.existsSync(telegramBridgePath)) {
@@ -253,6 +257,16 @@ if (fs.existsSync(telegramBridgePath)) {
     telegramBridge.includes('requested_agent_id: requestedAgentId'),
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'Telegram OpenClaw lane passes the requested agent id explicitly instead of relying on an out-of-scope variable'
+  );
+  check(
+    telegramBridge.includes('async function dispatchTelegramRetry(update)') &&
+    telegramBridge.includes("actions/workflows/telegram-bot.yml/dispatches") &&
+    telegramBridge.includes('telegram_update_b64') &&
+    telegramBridge.includes('telegram_update_id') &&
+    telegramBridge.includes('[telegram-retry] status=dispatched') &&
+    telegramBridge.includes('await homunculusReply(message, update)'),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Telegram bridge hands exhausted non-live chat to the existing GitHub Actions retry lane'
   );
 }
 
