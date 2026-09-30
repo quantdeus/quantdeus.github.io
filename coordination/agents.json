@@ -124,7 +124,12 @@
       "group": "growth-marketing",
       "startup_title": "Head of Partnerships & Community Growth",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "qualified contributor leads / first-PR conversion / active contributors"
+      "kpi": "qualified contributor leads / first-PR conversion / active contributors",
+      "operational_status": "medbay",
+      "temporary_delegate": "herald",
+      "medbay_reason": "EMH stress test 2026-09-30: strict JSON contract failure; behavioral retest required",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
     },
     {
       "id": "space",
@@ -157,7 +162,12 @@
       "group": "growth-marketing",
       "startup_title": "Brand & Creative Director",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "contributor campaign conversion / brand consistency"
+      "kpi": "contributor campaign conversion / brand consistency",
+      "operational_status": "medbay",
+      "temporary_delegate": "archivist",
+      "medbay_reason": "EMH stress test 2026-09-30: OpenClaw 502 degradation; behavioral retest required",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
     },
     {
       "id": "control-tower",
@@ -245,7 +255,11 @@
       "group": "growth-marketing",
       "startup_title": "SEO & Content Operations Lead",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "organic contributor discovery / onboarding completion"
+      "kpi": "organic contributor discovery / onboarding completion",
+      "operational_status": "active",
+      "acting_for": [
+        "synthesis"
+      ]
     },
     {
       "id": "herald",
@@ -256,7 +270,11 @@
       "group": "growth-marketing",
       "startup_title": "PR & Communications Manager",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "qualified invitations / response rate / first-PR conversion"
+      "kpi": "qualified invitations / response rate / first-PR conversion",
+      "operational_status": "active",
+      "acting_for": [
+        "unity"
+      ]
     },
     {
       "id": "qa-syntax",
@@ -267,7 +285,12 @@
       "group": "quality-reliability",
       "startup_title": "QA Automation Engineer",
       "department": "Quality & Reliability",
-      "kpi": "syntax/config defects caught pre-merge"
+      "kpi": "syntax/config defects caught pre-merge",
+      "operational_status": "medbay",
+      "temporary_delegate": "qa-repair",
+      "medbay_reason": "EMH stress test 2026-09-30: OpenClaw timeout; behavioral retest required",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
     },
     {
       "id": "qa-contract",
@@ -278,7 +301,12 @@
       "group": "quality-reliability",
       "startup_title": "Integration & Compliance QA Engineer",
       "department": "Quality & Reliability",
-      "kpi": "contract drift detected"
+      "kpi": "contract drift detected",
+      "operational_status": "medbay",
+      "temporary_delegate": "qa-repair",
+      "medbay_reason": "EMH stress test 2026-09-30: OpenClaw timeout; behavioral retest required",
+      "rejoin_condition": "two consecutive PASS results in QuantDeus EMH Marketing + QA Stress Test",
+      "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml"
     },
     {
       "id": "qa-repair",
@@ -289,7 +317,12 @@
       "group": "quality-reliability",
       "startup_title": "QA Lead & Site Reliability Engineer",
       "department": "Quality & Reliability",
-      "kpi": "mean time to repair / escaped defects"
+      "kpi": "mean time to repair / escaped defects",
+      "operational_status": "active",
+      "acting_for": [
+        "qa-syntax",
+        "qa-contract"
+      ]
     }
   ],
   "doctrine": {

@@ -25,6 +25,15 @@ if (!telegramToken) {
 const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
 const agents = registry.agents || [];
 const byId = new Map(agents.map(agent => [agent.id, agent]));
+
+function resolveActiveAgentId(agentId) {
+  const agent = byId.get(agentId);
+  if (agent?.operational_status === 'medbay' && agent.temporary_delegate && byId.has(agent.temporary_delegate)) {
+    return agent.temporary_delegate;
+  }
+  return agentId;
+}
+
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
 function gh(args) {
@@ -309,7 +318,8 @@ async function handleMessage(message) {
   }
 
   if (/^\/propose(?:@[A-Za-z0-9_]+)?\s+/i.test(text)) {
-    const agentId = explicitAgent(text);
+    const requestedAgentId = explicitAgent(text);
+    const agentId = requestedAgentId ? resolveActiveAgentId(requestedAgentId) : null;
     const idea = stripCommand(text);
     if (!agentId || !idea) {
       await send(chatId, 'Формат: /propose <agent-id> <идея>', replyId);
@@ -321,7 +331,8 @@ async function handleMessage(message) {
   }
 
   if (/^\/task(?:@[A-Za-z0-9_]+)?\s+/i.test(text)) {
-    const agentId = explicitAgent(text);
+    const requestedAgentId = explicitAgent(text);
+    const agentId = requestedAgentId ? resolveActiveAgentId(requestedAgentId) : null;
     const task = stripCommand(text);
     if (!agentId || !task) {
       await send(chatId, 'Формат: /task <agent-id> <задача>', replyId);
@@ -351,7 +362,8 @@ async function handleMessage(message) {
   }
 
   if (/^\/agent(?:@[A-Za-z0-9_]+)?\s+/i.test(text)) {
-    const agentId = explicitAgent(text);
+    const requestedAgentId = explicitAgent(text);
+    const agentId = requestedAgentId ? resolveActiveAgentId(requestedAgentId) : null;
     if (!agentId) {
       await send(chatId, 'Не знаю такой роли. /agents покажет канонические ID.', replyId);
       return;
@@ -362,7 +374,7 @@ async function handleMessage(message) {
         const result = await openclawOffice.ask({
           profile: agentId,
           messages: [{ role: 'user', content: query }],
-          metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo }
+          metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId || agentId, delegated_from: requestedAgentId && requestedAgentId !== agentId ? requestedAgentId : '' }
         });
         await send(chatId, result.text, replyId);
         return;
@@ -374,13 +386,14 @@ async function handleMessage(message) {
     return;
   }
 
-  const agentId = autoAgent(text);
+  const requestedAgentId = autoAgent(text);
+  const agentId = resolveActiveAgentId(requestedAgentId);
   if (openclawOffice.configured()) {
     try {
       const result = await openclawOffice.ask({
         profile: agentId,
         messages: [{ role: 'user', content: text }],
-        metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo }
+        metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId, delegated_from: requestedAgentId !== agentId ? requestedAgentId : '' }
       });
       await send(chatId, result.text, replyId);
       return;
@@ -388,7 +401,7 @@ async function handleMessage(message) {
       console.error('OpenClaw Office auto-route fallback:', error.message || error);
     }
   }
-  await send(chatId, '🔀 Авто-роль: ' + agentId + '\n\n' + advisory(agentId, text), replyId);
+  await send(chatId, '🔀 Авто-роль: ' + agentId + (requestedAgentId !== agentId ? ' (временно за ' + requestedAgentId + ')' : '') + '\n\n' + advisory(agentId, text), replyId);
 }
 
 function decodeWebhookUpdate() {

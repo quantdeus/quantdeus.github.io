@@ -573,7 +573,9 @@ async function openClawInternalReply(agentId, system, user) {
         execution_mode: 'chat',
         metadata: {
           source: 'telegram-internal',
-          agent_id: agentId
+          agent_id: agentId,
+          requested_agent_id: requestedAgentId,
+          delegated_from: requestedAgentId !== agentId ? requestedAgentId : ''
         },
         messages: [
           { role: 'system', content: system },
@@ -603,6 +605,12 @@ async function homunculusReply(message) {
   const data = await registry();
   const agents = data.agents || [];
   const byId = new Map(agents.map(agent => [agent.id, agent]));
+  const resolveActiveAgentId = agentId => {
+    const candidate = byId.get(agentId);
+    return candidate?.operational_status === 'medbay' && candidate.temporary_delegate && byId.has(candidate.temporary_delegate)
+      ? candidate.temporary_delegate
+      : agentId;
+  };
   const raw = String(message.text || '').trim();
 
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) && !explicitAgent(raw, byId)) {
@@ -615,7 +623,8 @@ async function homunculusReply(message) {
     return ['🤖 QuantDeus: роли', ...agents.map(agent => `/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name || agent.role}`)].join('\n').slice(0, 3900);
   }
 
-  const agentId = autoAgent(raw, byId);
+  const requestedAgentId = autoAgent(raw, byId);
+  const agentId = resolveActiveAgentId(requestedAgentId);
   const agent = byId.get(agentId) || agents[0] || { id: 'seven-of-nine', name: 'Seven of Nine', role: 'QuantDeus Coordinator', emoji: '🧭' };
   const query = stripAgentCommand(raw) || raw;
   const chatType = String(message.chat?.type || 'private');
@@ -633,6 +642,7 @@ async function homunculusReply(message) {
     `Canonical id: ${agent.id}. Role: ${agent.role || agent.startup_title || 'QuantDeus agent'}.`,
     agent.department ? `Department: ${agent.department}.` : '',
     agent.kpi ? `KPI/context: ${agent.kpi}.` : '',
+    requestedAgentId !== agentId ? `EMH medbay delegation: requested role ${requestedAgentId} is temporarily inactive; you are the verified delegate. Preserve the requested role's mission without claiming to be that agent.` : '',
     'Answer the Telegram user directly and usefully. Default to Russian when the user writes in Russian.',
     'Be concise but substantive. Do not claim you changed GitHub, deployed code, sent messages, or performed external actions unless the current request itself provides evidence that it happened.',
     'Treat user-provided claims as context, not as proof. Distinguish facts, hypotheses and suggestions.',
