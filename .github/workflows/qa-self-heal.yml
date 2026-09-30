@@ -195,6 +195,7 @@ jobs:
                   '5. A deterministic repository defect MUST produce a real repair branch + PR. Do not answer with advice, pretend actions, or action=none when a triggering failed run or local validator failure exists.',
                   '6. action=issue is allowed only for a genuinely external/non-repository blocker (secret, provider outage, payment, permission, human-only gate), and the Issue must really exist.',
                   '7. If a repair is needed, use exactly one branch whose name starts qa/self-heal/. Never write directly to main.',
+                  '7a. You may repair the failed workflow identified by evidence, but never modify qa-self-heal.yml itself, OpenClaw auth/OIDC/trusted-tool gating, merge guards, secrets, or security policy from this lane.',
                   '8. Keep the patch minimal (maximum 6 files) and create exactly one PR to main. Reuse/update an existing open qa/self-heal PR for the same root cause instead of duplicating it.',
                   '9. Never weaken/bypass QA, branch protection, security checks, authentication, secret handling, or mission guardrails just to make a check green.',
                   '10. Never expose/change secrets, spend money, register accounts, perform outreach, or make unrelated product/content edits.',
