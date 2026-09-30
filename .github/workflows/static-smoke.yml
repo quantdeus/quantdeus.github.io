@@ -60,6 +60,18 @@ jobs:
       - name: Verify Browser Homunculus contract
         run: node --test scripts/qa/browser-homunculus.test.js
 
+      - name: Validate daily swarm learning guardrails
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const w=fs.readFileSync('.github/workflows/daily-swarm-learning.yml','utf8');
+          for(const x of ["cron: '17 6 * * *'","permissions:","contents: read","actions: write","id-token: write","profile: 'sherlock'","mode: 'research-only'","DO NOT mutate GitHub","Upload learning evidence","quantdeus-hourly-openclaw.yml"]) {
+            if(!w.includes(x)) throw new Error('daily learning invariant missing: '+x);
+          }
+          if(/contents:\s*write/.test(w) || /issues:\s*write/.test(w) || /pull-requests:\s*write/.test(w)) throw new Error('daily learning lane has repository mutation permission');
+          console.log('daily swarm learning guardrails: OK');
+          NODE
+
       - name: Validate OpenClaw Office contract
         run: node scripts/qa/openclaw-office-validator.js
 
