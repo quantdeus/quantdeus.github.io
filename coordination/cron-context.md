@@ -26,7 +26,8 @@
 - exit_rule: `чем сильнее технология влияет на человека/данные/идентичность, тем проще и надёжнее должен быть добровольный EXIT`
 - coordinator: `seven-of-nine / QuantDeus Coordinator / AI Chief of Staff`
 - swarm_secretary: `coordinator / Swarm Secretary / Coordination Clerk`
-- swarm_diplomat: `emh / Swarm Mediation & Diplomacy Officer`
+- swarm_diplomat: `emh / Swarm Cognitive Hygiene, Mediation & Diplomacy Officer`
+- swarm_cognitive_hygiene: `EMH deterministic scan runs hourly inside QuantDeus Hourly OpenClaw Swarm and on Coordination Hub events; measures synaptic heat from duplicate-output loops, degraded retries, stale blockers/handoffs, review contention and chatter bursts; emits /tmp/quantdeus-emh-cognitive-health.json and posts to Hub only when state class changes`
 - science_officer: `sherlock / Science Officer / Scientific Investigation Lead`
 - deputy_science_officer: `tuvok / Deputy Science Officer / Logic & Epistemic Integrity Officer`
 - human_ai_rule: `люди задают ценности, направление и финальную ответственность; AI-агенты ускоряют исследование, прототипирование, код, координацию и аудит`
@@ -58,7 +59,7 @@
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:42 UTC — QuantDeus Contributor Growth`
   - `06:47 UTC — QuantDeus QA Triad`
-  - `hourly at minute 0 — QuantDeus Hourly OpenClaw Swarm`
+  - `hourly at minute 0 — QuantDeus Hourly OpenClaw Swarm + deterministic EMH cognitive-hygiene scan`
   - `00:17/06:17/12:17/18:17 UTC — QuantDeus QA Self-Heal / site lane`
   - `03:47/09:47/15:47/21:47 UTC — QuantDeus QA Self-Heal / Actions lane`
   - `23 minutes past 00-14 UTC — QuantDeus Agent Role Cron / one scheduled specialist per hour`
@@ -66,7 +67,7 @@
   - `every 6 hours at :41 — News → Living Manifest / world + Russia + science/technology/economics`
   - `every 4 hours at :53 — Growth + Site Cycle / unity → synthesis → archivist → herald → tasksmith → control-tower`
   - `02:31 UTC daily — OpenClaw Self-Evolution / observe → diagnose → hypothesize → bounded PR → QA → compare`
-- cron_cadence_rule: `Telegram is webhook/event-driven rather than cron-polled; OpenClaw swarm hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h; OpenClaw self-evolution runs daily at 02:31 UTC`
+- cron_cadence_rule: `Telegram is webhook/event-driven rather than cron-polled; OpenClaw swarm + EMH cognitive-hygiene scan hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h; OpenClaw self-evolution runs daily at 02:31 UTC`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`
