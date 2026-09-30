@@ -43,19 +43,26 @@ jobs:
           node <<'NODE'
           const office = require('./scripts/openclaw-office-client');
           (async () => {
-            const result = await office.ask({
-              profile: 'seven-of-nine',
-              trusted: true,
-              messages: [{
-                role: 'user',
-                content: 'Read-only smoke. Use only github__list_branches, exactly once, for owner quantdeus and repo quantdeus.github.io. Do not call any other tool, do not call Playwright, and do not mutate GitHub. After the tool returns, reply OPENCLAW_GITHUB_MCP_OK.'
-              }],
-              metadata: { source: 'openclaw-admin-smoke', phase: 'github', repository: process.env.GITHUB_REPOSITORY }
-            });
-            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
-            const summary = result.raw?.tool_summary;
-            if (!summary || !Array.isArray(summary.tools) || !summary.tools.includes('github__list_branches') || Number(summary.failures || 0) !== 0) {
-              throw new Error('GitHub MCP tool trace missing/failed: ' + JSON.stringify(summary));
+            const passes = [];
+            for (let attempt = 1; attempt <= 2; attempt += 1) {
+              const result = await office.ask({
+                profile: 'seven-of-nine',
+                trusted: true,
+                messages: [{
+                  role: 'user',
+                  content: 'Read-only regression smoke. Use only github__get_file_contents, exactly once, to read README.md from owner quantdeus and repo quantdeus.github.io on main. Do not call any other tool, do not call Playwright, and do not mutate GitHub. After the tool returns, reply exactly OPENCLAW_GITHUB_MCP_OK.'
+                }],
+                metadata: { source: 'openclaw-admin-smoke', phase: 'github', repository: process.env.GITHUB_REPOSITORY, regression_attempt: attempt }
+              });
+              if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
+              const summary = result.raw?.tool_summary;
+              if (!summary || !Array.isArray(summary.tools) || !summary.tools.includes('github__get_file_contents') || Number(summary.failures || 0) !== 0) {
+                throw new Error('GitHub MCP regression trace missing/failed on pass ' + attempt + ': ' + JSON.stringify(summary));
+              }
+              if (String(result.text || '').trim() !== 'OPENCLAW_GITHUB_MCP_OK') {
+                throw new Error('GitHub MCP regression final response mismatch on pass ' + attempt + ': ' + String(result.text || '').slice(0, 300));
+              }
+              passes.push({ attempt, model: result.model, tool_summary: summary });
             }
             const branch = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/branches/main', {
               headers: {
@@ -65,7 +72,7 @@ jobs:
               }
             });
             if (!branch.ok) throw new Error('Direct GitHub branch verification failed: ' + branch.status + ' ' + (await branch.text()).slice(0, 500));
-            console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, tool_summary: summary, smoke: result.text }));
+            console.log(JSON.stringify({ ok: true, consecutive_github_mcp_passes: passes.length, passes }));
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
@@ -103,7 +110,7 @@ jobs:
           - commit: ${GITHUB_SHA}
           - run: ${GITHUB_RUN_ID}
           - verified_at_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          - GitHub MCP: OPENCLAW_GITHUB_MCP_OK
+          - GitHub MCP: OPENCLAW_GITHUB_MCP_OK (2 consecutive get_file_contents passes)
           - Playwright MCP: OPENCLAW_PLAYWRIGHT_MCP_OK
           - production endpoint: https://quantdeus.vercel.app/api/quantdeus/openclaw
           EOF
