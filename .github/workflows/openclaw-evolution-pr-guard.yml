@@ -1,0 +1,28 @@
+name: QuantDeus OpenClaw Evolution PR Guard
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  evolution-guard:
+    if: startsWith(github.head_ref, 'automation/openclaw-evolution/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch current main
+        run: git fetch origin main --depth=1
+
+      - name: Validate mission on candidate
+        run: node scripts/mission-alignment.js
+
+      - name: Validate evolution path and semantic envelope
+        run: node scripts/openclaw-evolution-guard.js --git
