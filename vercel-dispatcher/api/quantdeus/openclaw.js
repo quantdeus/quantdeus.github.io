@@ -16,6 +16,9 @@ let vercelJwksAt = 0;
 const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 let jwksCache = [];
 let jwksAt = 0;
+const providerProbeCache = new Map();
+const PROVIDER_PROBE_OK_TTL_MS = 5 * 60 * 1000;
+const PROVIDER_PROBE_FAIL_TTL_MS = 30 * 1000;
 
 function jsonPart(s) { return JSON.parse(Buffer.from(s, 'base64url').toString('utf8')); }
 async function jwks() {
@@ -136,17 +139,23 @@ async function probeChatCandidate(candidate, requireTools = false) {
     };
 
     if (!requireTools) {
-      const { response, raw } = await request({
+      const { response, raw, data } = await request({
         model: candidate.model,
         messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
         temperature: 0,
         max_tokens: 8
       });
+      const finalText = typeof data?.choices?.[0]?.message?.content === 'string'
+        ? data.choices[0].message.content.trim()
+        : '';
+      const ok = response.ok && finalText === 'OK';
       return {
         ref: candidate.ref,
-        ok: response.ok,
+        ok,
         status: response.status,
-        detail: response.ok ? 'ok' : raw.slice(0, 300)
+        detail: ok
+          ? 'http_200_exact_ok'
+          : (response.ok ? 'http_200_but_exact_ok_missing' : raw.slice(0, 300))
       };
     }
 
@@ -276,6 +285,38 @@ async function probeChatCandidate(candidate, requireTools = false) {
     clearTimeout(timer);
   }
 }
+function providerProbeCacheKey(candidate, requireTools) {
+  const keyFingerprint = crypto
+    .createHash('sha256')
+    .update(String(candidate.key || ''))
+    .digest('hex')
+    .slice(0, 12);
+  return (requireTools ? 'tools' : 'text') + ':' + candidate.ref + ':' + keyFingerprint;
+}
+
+async function cachedProbeChatCandidate(candidate, requireTools = false) {
+  const cacheKey = providerProbeCacheKey(candidate, requireTools);
+  const now = Date.now();
+  const cached = providerProbeCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return { ...cached.result, cached: true };
+  }
+
+  const result = await probeChatCandidate(candidate, requireTools);
+  providerProbeCache.set(cacheKey, {
+    expiresAt: now + (result.ok ? PROVIDER_PROBE_OK_TTL_MS : PROVIDER_PROBE_FAIL_TTL_MS),
+    result
+  });
+
+  if (providerProbeCache.size > 100) {
+    for (const [key, value] of providerProbeCache) {
+      if (value.expiresAt <= now) providerProbeCache.delete(key);
+    }
+  }
+
+  return { ...result, cached: false };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   let sandbox;
@@ -313,29 +354,180 @@ export default async function handler(req, res) {
     if (trustedOffice && !githubToken) {
       return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
     }
-    const providerDefs = {
-      'quantdeus-pollinations': {
-        baseUrl: 'https://text.pollinations.ai/openai',
-        api: 'openai-completions',
-        apiKey: { source: 'env', provider: 'default', id: 'POLLINATIONS_API_KEY' },
-        models: [{ id: 'openai', name: 'openai', input: ['text'], contextWindow: 131072, maxTokens: 8192 }]
-      }
-    };
-    const modelCandidates = ['quantdeus-pollinations/openai'];
-    const probeCandidates = [{
-      ref: 'quantdeus-pollinations/openai',
-      endpoint: 'https://text.pollinations.ai/openai/chat/completions',
-      key: 'anonymous',
-      model: 'openai'
-    }];
+    const providerDefs = {};
+    const probeCandidates = [];
+    const providerRuntimeEnv = {};
 
-    const probeResults = [];
-    const healthyRefs = [];
-    for (const candidate of probeCandidates) {
-      const probe = await probeChatCandidate(candidate, trustedOffice);
-      probeResults.push(probe);
-      if (probe.ok) healthyRefs.push(candidate.ref);
-    }
+    const addProvider = ({
+      id,
+      keyEnv,
+      key,
+      model,
+      baseUrl,
+      contextWindow = 131072,
+      maxTokens = 8192,
+      priority = 100
+    }) => {
+      const apiKey = String(key || '').trim();
+      const modelId = String(model || '').trim();
+      const normalizedBaseUrl = String(baseUrl || '').trim().replace(/\/+$/, '');
+      if (!apiKey || !modelId || !normalizedBaseUrl) return;
+
+      providerDefs[id] = {
+        baseUrl: normalizedBaseUrl,
+        api: 'openai-completions',
+        apiKey: { source: 'env', provider: 'default', id: keyEnv },
+        models: [{
+          id: modelId,
+          name: modelId,
+          input: ['text'],
+          contextWindow,
+          maxTokens
+        }]
+      };
+      providerRuntimeEnv[keyEnv] = apiKey;
+      probeCandidates.push({
+        ref: id + '/' + modelId,
+        endpoint: normalizedBaseUrl + '/chat/completions',
+        key: apiKey,
+        keyEnv,
+        model: modelId,
+        priority
+      });
+    };
+
+    // Curated quality/speed/capacity pool. A provider is never admitted merely
+    // because it is configured: it must pass the live HTTP/text or tool roundtrip
+    // probe below. Model env vars allow hot model swaps without code changes.
+    addProvider({
+      id: 'quantdeus-cerebras',
+      keyEnv: 'CEREBRAS_API_KEY',
+      key: process.env.CEREBRAS_API_KEY,
+      model: process.env.CEREBRAS_MODEL || 'gpt-oss-120b',
+      baseUrl: 'https://api.cerebras.ai/v1',
+      contextWindow: 131072,
+      priority: 10
+    });
+    addProvider({
+      id: 'quantdeus-groq',
+      keyEnv: 'GROQ_API_KEY',
+      key: process.env.GROQ_API_KEY,
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      baseUrl: 'https://api.groq.com/openai/v1',
+      contextWindow: 131072,
+      priority: 20
+    });
+    addProvider({
+      id: 'quantdeus-fireworks',
+      keyEnv: 'FIREWORKS_API_KEY',
+      key: process.env.FIREWORKS_API_KEY,
+      model: process.env.FIREWORKS_MODEL || 'accounts/fireworks/models/glm-5p3-flash',
+      baseUrl: 'https://api.fireworks.ai/inference/v1',
+      contextWindow: 1048576,
+      priority: 30
+    });
+    addProvider({
+      id: 'quantdeus-deepinfra',
+      keyEnv: 'DEEPINFRA_API_KEY',
+      key: process.env.DEEPINFRA_API_KEY || process.env.DEEPINFRA_TOKEN,
+      model: process.env.DEEPINFRA_MODEL || 'XiaomiMiMo/MiMo-V2.6-Flash',
+      baseUrl: 'https://api.deepinfra.com/v1/openai',
+      contextWindow: 1048576,
+      priority: 40
+    });
+    addProvider({
+      id: 'quantdeus-together',
+      keyEnv: 'TOGETHER_API_KEY',
+      key: process.env.TOGETHER_API_KEY,
+      model: process.env.TOGETHER_MODEL || 'MiniMaxAI/MiniMax-M3',
+      baseUrl: 'https://api.together.ai/v1',
+      contextWindow: 524288,
+      priority: 50
+    });
+    addProvider({
+      id: 'quantdeus-gemini',
+      keyEnv: 'GEMINI_API_KEY',
+      key: process.env.GEMINI_API_KEY,
+      model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      contextWindow: 1048576,
+      priority: 60
+    });
+    addProvider({
+      id: 'quantdeus-nvidia',
+      keyEnv: 'NVIDIA_API_KEY',
+      key: process.env.NVIDIA_API_KEY,
+      model: process.env.NVIDIA_MODEL || 'openai/gpt-oss-120b',
+      baseUrl: 'https://integrate.api.nvidia.com/v1',
+      contextWindow: 131072,
+      priority: 70
+    });
+    addProvider({
+      id: 'quantdeus-xai',
+      keyEnv: 'XAI_API_KEY',
+      key: process.env.XAI_API_KEY,
+      model: process.env.XAI_MODEL || 'grok-4.7',
+      baseUrl: 'https://api.x.ai/v1',
+      contextWindow: 131072,
+      priority: 80
+    });
+
+    const cloudflareAccount = String(process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+    addProvider({
+      id: 'quantdeus-cloudflare',
+      keyEnv: 'CLOUDFLARE_API_KEY',
+      key: process.env.CLOUDFLARE_API_KEY,
+      model: process.env.CLOUDFLARE_MODEL || '@cf/zai-org/glm-4.7-flash',
+      baseUrl: cloudflareAccount
+        ? 'https://api.cloudflare.com/client/v4/accounts/' + cloudflareAccount + '/ai/v1'
+        : '',
+      contextWindow: 256000,
+      priority: 90
+    });
+    addProvider({
+      id: 'quantdeus-openrouter',
+      keyEnv: 'OPENROUTER_API_KEY',
+      key: process.env.OPENROUTER_API_KEY,
+      model: process.env.OPENROUTER_MODEL || process.env.QD_LLM_MODEL || 'openrouter/free',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      contextWindow: 131072,
+      priority: 100
+    });
+
+    // Anonymous emergency route stays last. It still must pass the same live
+    // capability gate as every keyed provider.
+    addProvider({
+      id: 'quantdeus-pollinations',
+      keyEnv: 'POLLINATIONS_API_KEY',
+      key: process.env.POLLINATIONS_API_KEY || 'anonymous',
+      model: process.env.POLLINATIONS_MODEL || 'openai',
+      baseUrl: 'https://text.pollinations.ai/openai',
+      contextWindow: 131072,
+      priority: 1000
+    });
+
+    const modelCandidates = probeCandidates.map(candidate => candidate.ref);
+    const probeRows = await Promise.all(probeCandidates.map(async candidate => {
+      const startedAt = Date.now();
+      const probe = await cachedProbeChatCandidate(candidate, trustedOffice);
+      return {
+        candidate,
+        probe: {
+          ...probe,
+          latency_ms: Date.now() - startedAt,
+          routing_priority: candidate.priority
+        }
+      };
+    }));
+    const probeResults = probeRows.map(row => row.probe);
+    const healthyRefs = probeRows
+      .filter(row => row.probe.ok)
+      .sort((a, b) =>
+        a.candidate.priority - b.candidate.priority ||
+        a.probe.latency_ms - b.probe.latency_ms
+      )
+      .map(row => row.candidate.ref);
+
     if (!healthyRefs.length) {
       console.warn('[openclaw-routing] no healthy provider passed the required probe');
       return res.status(503).json({ ok: false, error: 'openclaw_no_healthy_model_route', probes: probeResults });
@@ -464,9 +656,9 @@ export default async function handler(req, res) {
     const effectivePrompt = prompt;
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(effectivePrompt) }]);
     const runtimeEnv = {
-      POLLINATIONS_API_KEY: 'anonymous'
+      ...providerRuntimeEnv,
+      OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5'
     };
-    runtimeEnv.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS = '5';
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
       probes: probeResults,
