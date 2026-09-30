@@ -218,6 +218,27 @@ check(siteReplySource.includes('trusted: trustedAction') && siteReplySource.incl
 const telegramWorkflow = fs.readFileSync(path.join(root,'.github','workflows','telegram-bot.yml'),'utf8');
 const telegramSource = fs.readFileSync(path.join(root,'scripts','telegram-bot.js'),'utf8');
 const telegramSetupSource = fs.readFileSync(path.join(root,'scripts','telegram-webhook-setup.js'),'utf8');
+const githubOidcPath = path.join(root,'scripts','github-oidc.js');
+check(fs.existsSync(githubOidcPath), 'scripts/github-oidc.js', 'shared GitHub OIDC retry helper exists');
+if (fs.existsSync(githubOidcPath)) {
+  const githubOidcSource = fs.readFileSync(githubOidcPath,'utf8');
+  check(
+    githubOidcSource.includes('TRANSIENT_OIDC_STATUS') &&
+    githubOidcSource.includes('[429, 500, 502, 503, 504]') &&
+    githubOidcSource.includes('attempts || 3') &&
+    githubOidcSource.includes('recovered after transient failure'),
+    'scripts/github-oidc.js',
+    'OIDC helper retries only bounded transient HTTP/network failures'
+  );
+}
+check(
+  telegramSource.includes("require('./github-oidc')") &&
+  telegramSetupSource.includes("require('./github-oidc')") &&
+  fs.readFileSync(path.join(root,'scripts','telegram-retry-smoke.js'),'utf8').includes("require('./github-oidc')") &&
+  fs.readFileSync(path.join(root,'scripts','openclaw-office-client.js'),'utf8').includes("require('./github-oidc')"),
+  'GitHub OIDC consumers',
+  'Telegram and OpenClaw Actions paths share the bounded OIDC retry helper'
+);
 const telegramBridgePath = path.join(root,'vercel-dispatcher','api','quantdeus','telegram.js');
 check(!/^\s*schedule\s*:/m.test(telegramWorkflow), 'telegram-bot.yml', 'Telegram ingress is webhook-driven and has no polling cron');
 check(telegramWorkflow.includes('telegram_update_b64') && telegramWorkflow.includes('scripts/telegram-webhook-setup.js'), 'telegram-bot.yml', 'Telegram workflow accepts webhook-dispatched updates and can configure the webhook');
