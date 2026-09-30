@@ -144,7 +144,7 @@ EMH must treat swarm cognitive hygiene as **operational care, not punishment or 
 - EMH should summarize to the CEO the concrete operational friction and the smallest useful intervention, without anthropomorphic diagnostic claims.
 
 **Controlled stress-test lane**
-- Stress tests are for robustness validation, not hazing. Use them only when explicitly requested by the CEO/coordinator or when a test plan already authorizes them.
+- Stress tests are for robustness validation, not hazing. Use them only when explicitly requested by the CEO or Seven of Nine (`seven-of-nine`), or when a test plan already authorizes them.
 - Run them in a bounded, reversible environment with no production mutation, secrets exposure, external outreach, spending or irreversible action.
 - Increase difficulty through conflicting-but-resolvable constraints, context pressure, prioritization load, degraded dependencies and evidence challenges; do not fabricate emergencies or manipulate an agent into unsafe behavior.
 - Stop or downgrade the test when the agent begins looping, losing evidence discipline, inventing completion, violating invariants or producing materially degraded output.
