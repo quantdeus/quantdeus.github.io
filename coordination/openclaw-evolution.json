@@ -79,6 +79,12 @@
       "type": "enforcement-hardening-v2",
       "hypothesis": "No-tools analysis plus deterministic pre-mutation semantic validation can safely permit bounded Tier A auto-merge after three independently successful checks, while Tier B remains proposal-only.",
       "status": "implementation-pr"
+    },
+    {
+      "date": "2026-09-30",
+      "type": "guarded-lifecycle-verification",
+      "hypothesis": "A history-only Tier A change should merge only after independent successful QA, Smoke and Evolution Guard checks plus final semantic revalidation.",
+      "status": "verification-candidate"
     }
   ],
   "proposal_prefix": "coordination/openclaw-evolution-proposals/"
