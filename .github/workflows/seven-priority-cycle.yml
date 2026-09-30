@@ -35,7 +35,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/qd-seven
-          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 60 --json number,title,labels,updatedAt,author,url > /tmp/qd-seven/issues.json
+          gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title,body,labels,updatedAt,author,url > /tmp/qd-seven/issues.json
           gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 40 --json number,title,headRefName,updatedAt,author,url,statusCheckRollup > /tmp/qd-seven/prs.json
           gh run list --repo "$GITHUB_REPOSITORY" --limit 40 --json databaseId,workflowName,status,conclusion,createdAt,headSha,url > /tmp/qd-seven/actions.json
           gh api "repos/$GITHUB_REPOSITORY/contributors?per_page=30" > /tmp/qd-seven/contributors.json
@@ -68,8 +68,11 @@ jobs:
                 'ACTIONS='+read('/tmp/qd-seven/actions.json'),
                 'CONTRIBUTORS='+read('/tmp/qd-seven/contributors.json'),
                 '',
-                'Priority order: (1) broken production/Actions/security, (2) blocked human contributors and community needs, (3) active manifesto commitments and measured outcomes, (4) stale/high-value PRs or execution gaps, (5) growth/site opportunities backed by real artifacts.',
-                'Choose at most ONE action. You may create/update one Issue or create one branch+PR via GitHub MCP. PR branch must start automation/seven/.',
+                'Priority order: (1) broken production/Actions/security, (2) unfinished coord:active/coord:ready work with a concrete owner, (3) blocked human contributors and community needs, (4) active manifesto commitments and measured outcomes, (5) stale/high-value PRs or execution gaps, (6) growth/site opportunities backed by real artifacts.',
+                'Act as the coordinator, not as another implementer: before opening new work, inspect unfinished coord:active/coord:ready Issues and their body/labels. If an actionable Issue has a quantdeus-target-agent marker or agent:<id> label and no open implementation PR, prefer dispatching agent-role-cron.yml with inputs.agent_id=<id> to wake that homunculus.',
+                'Do not repeatedly ping the same task when an implementation PR already exists, the Issue is blocked, or a recent agent action already addresses it.',
+                'Choose at most ONE action. You may update one existing Issue or create one branch+PR via GitHub MCP. PR branch must start automation/seven/.',
+                'For a NEW Issue, do NOT call create_issue through MCP. Return action=open_issue with a bounded proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.',
                 'Alternatively request ONE safe workflow dispatch from this allowlist: qa-triad.yml, static-smoke.yml, qa-self-heal.yml, contributor-growth.yml, quantdeus-pulse.yml, agent-role-cron.yml, news-manifest-cycle.yml, growth-site-cycle.yml, openclaw-evolution.yml.',
                 'Do not merge PRs, weaken guardrails, expose secrets, spend money, mass-message people or manufacture urgency/community activity.',
                 'Political/civic signals can affect neutral research and operational risk analysis but never become party/candidate endorsement, voter targeting or persuasion.',
@@ -77,6 +80,7 @@ jobs:
                 'Return ONLY strict JSON:',
                 '{"action":"none","reason":"..."}',
                 'or {"action":"dispatch","workflow":"qa-triad.yml","inputs":{},"reason":"..."}',
+                'or {"action":"open_issue","issue":{"title":"...","body":"Goal...\\n\\nAcceptance criteria...","labels":["coord:task","coord:ready"],"target_agent":"tasksmith"},"reason":"..."}',
                 'or {"action":"issue","issue_number":123,"reason":"..."}',
                 'or {"action":"pr","pr_number":123,"branch":"automation/seven/...","reason":"..."}'
               ].join('\n')}],
@@ -84,16 +88,37 @@ jobs:
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Seven cycle lacks trusted OpenClaw tools');
             const d=parse(result.text);
-            if(!['none','dispatch','issue','pr'].includes(d.action)) throw new Error('Unsupported Seven action');
+            if(!['none','dispatch','open_issue','issue','pr'].includes(d.action)) throw new Error('Unsupported Seven action');
             if(d.action==='pr'&&!String(d.branch||'').startsWith('automation/seven/')) throw new Error('Seven PR outside automation/seven/*');
             if(d.action==='dispatch'){
               fs.appendFileSync(process.env.GITHUB_OUTPUT,'workflow='+String(d.workflow||'')+'\n');
               fs.appendFileSync(process.env.GITHUB_OUTPUT,'inputs='+Buffer.from(JSON.stringify(d.inputs||{})).toString('base64')+'\n');
             }
+            if(d.action==='open_issue'){
+              const issue=d.issue||{};
+              const proposal={
+                title:String(issue.title||'').trim(),
+                body:String(issue.body||'').trim(),
+                labels:Array.isArray(issue.labels)?issue.labels.map(String):[],
+                target_agent:String(issue.target_agent||'').trim()
+              };
+              if(proposal.title.length<8 || proposal.title.length>120) throw new Error('Seven open_issue title outside 8..120 chars');
+              if(proposal.body.length<30 || proposal.body.length>20000) throw new Error('Seven open_issue body outside 30..20000 chars');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'issue_proposal='+Buffer.from(JSON.stringify(proposal)).toString('base64')+'\n');
+            }
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
             console.log(JSON.stringify({model:result.model,decision:d},null,2));
           })().catch(e=>{console.error(e.stack||e);process.exit(1);});
           NODE
+      - name: Publish Seven-proposed Issue deterministically
+        if: steps.seven.outputs.action == 'open_issue'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_PROPOSAL_B64: ${{ steps.seven.outputs.issue_proposal }}
+          ISSUE_SOURCE_AGENT: seven-of-nine
+          ISSUE_SOURCE_WORKFLOW: seven-priority-cycle.yml
+        run: node scripts/publish-agent-issue.js
+
       - name: Dispatch Seven-selected safe workflow
         if: steps.seven.outputs.action == 'dispatch'
         env:

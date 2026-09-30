@@ -120,9 +120,22 @@ check(doctrine.cron_policy?.required_check === 'node scripts/mission-alignment.j
 const governance = fs.readFileSync(path.join(root,'scripts/governance-gate.js'),'utf8');
 for (const id of ids) check(governance.includes("'agent:"+id+"'"), id, 'governance label declared');
 
+const issuePublisherPath = path.join(root,'scripts','publish-agent-issue.js');
+check(fs.existsSync(issuePublisherPath), 'scripts/publish-agent-issue.js', 'deterministic agent Issue publisher exists');
+if (fs.existsSync(issuePublisherPath)) {
+  const issuePublisher = fs.readFileSync(issuePublisherPath,'utf8');
+  check(issuePublisher.includes("method: 'POST'") && issuePublisher.includes("'/repos/' + repo + '/issues'") && issuePublisher.includes("status: 'duplicate'") && issuePublisher.includes('Created Issue failed verification'), 'scripts/publish-agent-issue.js', 'Issue publisher creates, deduplicates and verifies GitHub Issues');
+  check(issuePublisher.includes("coord:task") && issuePublisher.includes("coord:ready") && issuePublisher.includes('quantdeus-target-agent:'), 'scripts/publish-agent-issue.js', 'Issue publisher preserves coordination labels and target-agent routing');
+}
+
+const sevenPriorityWorkflow = fs.readFileSync(path.join(root,'.github','workflows','seven-priority-cycle.yml'),'utf8');
+check(sevenPriorityWorkflow.includes('unfinished coord:active/coord:ready') && sevenPriorityWorkflow.includes('agent-role-cron.yml') && sevenPriorityWorkflow.includes('to wake that homunculus'), 'seven-priority-cycle.yml', 'Seven prioritizes unfinished work and can wake the owning homunculus');
+check(sevenPriorityWorkflow.includes('action=open_issue') && sevenPriorityWorkflow.includes('scripts/publish-agent-issue.js') && sevenPriorityWorkflow.includes('body,labels'), 'seven-priority-cycle.yml', 'Seven new-Issue path is deterministic and receives Issue body/ownership context');
+
 const roleCronWorkflow = fs.readFileSync(path.join(root,'.github','workflows','agent-role-cron.yml'),'utf8');
 check(roleCronWorkflow.includes("agent.id==='emh'") && roleCronWorkflow.includes('EMH TREATMENT LANE') && roleCronWorkflow.includes('AGENTS.md only') && roleCronWorkflow.includes('/pulls/') && roleCronWorkflow.includes("names[0] !== 'AGENTS.md'"), 'agent-role-cron.yml', 'EMH treatment cron is runtime-guarded to AGENTS.md-only PRs');
 check(roleCronWorkflow.includes("pr.head?.ref !== expectedBranch") && roleCronWorkflow.includes("pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY") && roleCronWorkflow.includes("pr.base?.ref !== 'main'"), 'agent-role-cron.yml', 'EMH treatment PR number is bound to the declared canonical branch targeting main');
+check(roleCronWorkflow.includes('action=open_issue') && roleCronWorkflow.includes('scripts/publish-agent-issue.js') && roleCronWorkflow.includes('issue_proposal='), 'agent-role-cron.yml', 'role-agent new-Issue proposals use the deterministic publisher instead of relying on an LLM MCP mutation');
 check(agentsReadme.includes('Seven of Nine (\`seven-of-nine\`)'), 'AGENTS.md', 'Seven is explicitly named as stress-test authority');
 const qaTriadWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-triad.yml'),'utf8');
 const staticSmokeWorkflow = fs.readFileSync(path.join(root,'.github','workflows','static-smoke.yml'),'utf8');

@@ -41,6 +41,7 @@ jobs:
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
       - name: Run due role agent
+        id: role
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_AGENT_ID: ${{ inputs.agent_id }}
@@ -97,7 +98,8 @@ jobs:
                 '',
                 'Read fresh main first, including coordination/civilization-doctrine.json, coordination/manifesto-living.md, coordination/cron-context.md, open Issues/PRs and recent Actions relevant to your role.',
                 'Inspect public QuantDeus surfaces with Playwright only when useful.',
-                'Choose at most ONE bounded, high-value artifact inside your role: a verified Issue/comment, or a branch + PR.',
+                'Choose at most ONE bounded, high-value artifact inside your role: a verified comment, a branch + PR, or a NEW Issue proposal.',
+                'For a NEW Issue, do NOT call create_issue through MCP. Return action=open_issue with a proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.',
                 'For a PR use branch prefix automation/role/'+agent.id+'/ and keep it minimal.',
                 'Do not merge your own PR. Do not weaken QA/security/mission rules, expose secrets, spend money, mass-message people, fabricate community activity, or perform unrelated work.',
                 'For political/civic material remain factual and neutral; no party/candidate endorsement, voter targeting or persuasion.',
@@ -106,6 +108,7 @@ jobs:
                 '',
                 'After any GitHub mutation, verify it exists and return ONLY strict JSON:',
                 '{"action":"none","reason":"..."}',
+                'or {"action":"open_issue","issue":{"title":"...","body":"Goal...\\n\\nAcceptance criteria...","labels":["coord:task","coord:ready"],"target_agent":"'+agent.id+'"},"summary":"..."}',
                 'or {"action":"issue","issue_number":123,"summary":"..."}',
                 'or {"action":"comment","issue_number":123,"summary":"..."}',
                 'or {"action":"pr","pr_number":123,"branch":"automation/role/'+agent.id+'/...","summary":"..."}'
@@ -114,7 +117,7 @@ jobs:
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Role cron lacks trusted OpenClaw tools');
             const decision=parse(result.text);
-            if(!['none','issue','comment','pr'].includes(decision.action)) throw new Error('Unsupported role action');
+            if(!['none','open_issue','issue','comment','pr'].includes(decision.action)) throw new Error('Unsupported role action');
             if(decision.action==='pr' && !String(decision.branch||'').startsWith('automation/role/'+agent.id+'/')) throw new Error('Role PR branch outside allowed prefix');
             if(agent.id==='emh' && !['none','pr'].includes(decision.action)) {
               throw new Error('EMH treatment lane permits only action=none or an AGENTS.md PR');
@@ -139,6 +142,20 @@ jobs:
               if(names.length !== 1 || names[0] !== 'AGENTS.md') throw new Error('EMH treatment PR must change AGENTS.md only; got: ' + names.join(', '));
               console.log('EMH treatment PR scope verified: AGENTS.md only; independent QA/Smoke required.');
             }
+            if(decision.action==='open_issue') {
+              const issue=decision.issue||{};
+              const proposal={
+                title:String(issue.title||'').trim(),
+                body:String(issue.body||'').trim(),
+                labels:Array.isArray(issue.labels)?issue.labels.map(String):[],
+                target_agent:String(issue.target_agent||agent.id).trim() || agent.id
+              };
+              if(proposal.title.length<8 || proposal.title.length>120) throw new Error('Role open_issue title outside 8..120 chars');
+              if(proposal.body.length<30 || proposal.body.length>20000) throw new Error('Role open_issue body outside 30..20000 chars');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'issue_proposal='+Buffer.from(JSON.stringify(proposal)).toString('base64')+'\n');
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+decision.action+'\n');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'source_agent='+agent.id+'\n');
             console.log(JSON.stringify({agent:agent.id,model:result.model,decision},null,2));
           })().catch(e=>{
             if(office.isTransientError(e)){
@@ -150,6 +167,16 @@ jobs:
             process.exit(1);
           });
           NODE
+
+
+      - name: Publish role-agent Issue deterministically
+        if: steps.role.outputs.action == 'open_issue'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_PROPOSAL_B64: ${{ steps.role.outputs.issue_proposal }}
+          ISSUE_SOURCE_AGENT: ${{ steps.role.outputs.source_agent }}
+          ISSUE_SOURCE_WORKFLOW: agent-role-cron.yml
+        run: node scripts/publish-agent-issue.js
 
 
   smoke-all-agents:
