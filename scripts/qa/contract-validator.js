@@ -22,6 +22,11 @@ check(ids.length === 26, 'coordination/agents.json', 'expected exactly 26 regist
 check(new Set(ids).size === ids.length, 'coordination/agents.json', 'agent ids unique');
 check(new Set(homIds).size === homIds.length, 'coordination/homunculi.json', 'homunculus ids unique');
 check(JSON.stringify([...ids].sort()) === JSON.stringify([...homIds].sort()), 'registries', 'agents.json and homunculi.json contain identical ids');
+const cognitionVersion = 'borg-collective-v1';
+check(registry.collective_cognition?.version === cognitionVersion && registry.collective_cognition?.inheritance === 'all-26-agents', 'coordination/agents.json', 'Borg collective cognition protocol declared for all 26 agents');
+check(hom.collective_cognition?.version === cognitionVersion && hom.collective_cognition?.inheritance === 'all-26-agents', 'coordination/homunculi.json', 'homunculi registry mirrors Borg collective cognition protocol');
+check((registry.agents || []).every(a => a.cognitive_protocol === cognitionVersion), 'coordination/agents.json', 'all 26 agents inherit borg-collective-v1');
+check((hom.agents || []).every(a => a.cognitive_protocol === cognitionVersion), 'coordination/homunculi.json', 'all 26 homunculi inherit borg-collective-v1');
 check(startupOrg.workforce?.ai_agents === 26, 'coordination/startup-org.json', 'startup org declares 26 AI agents');
 check(startupOrg.departments?.length === 5, 'coordination/startup-org.json', 'startup org declares 5 departments');
 const orgIds = (startupOrg.departments || []).flatMap(d => d.agents || []);
@@ -42,6 +47,13 @@ const agentsReadme = fs.readFileSync(path.join(root,'AGENTS.md'),'utf8');
 check(agentsReadme.includes('### EMH operational treatment loop'), 'AGENTS.md', 'EMH AGENTS.md treatment lane is declared');
 check(agentsReadme.includes('QA watches the doctor'), 'AGENTS.md', 'independent QA oversight of EMH treatment is declared');
 check(agentsReadme.includes('The treatment PR must change **`AGENTS.md` only**'), 'AGENTS.md', 'EMH treatment document scope is AGENTS.md only');
+check(agentsReadme.includes('## Collective cognition — Borg efficiency protocol') && agentsReadme.includes('OBSERVE → DEDUCE → INDUCE → ABDUCE → FALSIFY'), 'AGENTS.md', 'all-agent Borg cognition protocol and reasoning loop are documented');
+const cognitiveSitePrompt = fs.readFileSync(path.join(root,'scripts','site-agent-reply.js'),'utf8');
+const cognitiveOpenClawClient = fs.readFileSync(path.join(root,'scripts','openclaw-office-client.js'),'utf8');
+const cognitiveTelegram = fs.readFileSync(path.join(root,'vercel-dispatcher','api','quantdeus','telegram.js'),'utf8');
+check(cognitiveSitePrompt.includes('registry.collective_cognition?.runtime_directive') && cognitiveSitePrompt.includes('Collective cognition:'), 'scripts/site-agent-reply.js', 'website agent prompt consumes canonical collective cognition directive');
+check(cognitiveOpenClawClient.includes('agentRegistry.collective_cognition?.runtime_directive') && cognitiveOpenClawClient.includes('Collective cognition:'), 'scripts/openclaw-office-client.js', 'OpenClaw Office consumes canonical collective cognition directive');
+check(cognitiveTelegram.includes('data.collective_cognition?.runtime_directive') && cognitiveTelegram.includes('Collective cognition:'), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram homunculus prompt consumes canonical collective cognition directive');
 
 for (const department of startupOrg.departments || []) {
   for (const id of department.agents || []) {
