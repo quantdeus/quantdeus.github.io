@@ -47,8 +47,6 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/contributors?per_page=30" > /tmp/qd-seven/contributors.json
       - name: Let Seven choose one priority action
         id: seven
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node <<'NODE'
           const fs=require('fs');
@@ -65,7 +63,7 @@ jobs:
           (async()=>{
             const result=await office.ask({
               profile:'seven-of-nine',
-              trusted:true,
+              trusted:false,
               messages:[{role:'user',content:[
                 'Seven of Nine priority cycle for QuantDeus.',
                 'Before acting, read the canonical doctrine, the living manifesto, agent cron map, contributor-growth contract and fresh main.',
@@ -79,7 +77,8 @@ jobs:
                 'Act as the coordinator, not as another implementer: before opening new work, inspect unfinished coord:active/coord:ready Issues and their body/labels. If an actionable Issue has a quantdeus-target-agent marker or agent:<id> label and no open implementation PR, prefer dispatching agent-role-cron.yml with inputs.agent_id=<id> to wake that homunculus.',
                 'Classify blockers as human_decision, external_environment, technical, or dependency. A blocked Issue is diagnostic context, not an executable action: never return action=issue for an Issue carrying coord:blocked or squad-b:blocked. Escalate a human_decision only when the smallest unresolved question is genuinely required from a human; external_environment gaps get an exact handoff; technical/dependency blockers route to an executable ready/active task or safe workflow. Do not repeatedly ping the same task when an implementation PR already exists, the Issue is blocked, or a recent agent action already addresses it.',
                 'Choose at most ONE action. You may update one existing Issue or create one branch+PR via GitHub MCP. PR branch must start automation/seven/.',
-                'For a NEW Issue, do NOT call create_issue through MCP. Return action=open_issue with a bounded proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.',
+                'You are a planner in a tool-free lane. Do not mutate GitHub yourself. Choose at most ONE proposal; the workflow applies only validated proposals deterministically.',
+                'For a NEW Issue, return action=open_issue with a bounded proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.'
                 'Alternatively request ONE safe workflow dispatch from this allowlist: qa-triad.yml, static-smoke.yml, qa-self-heal.yml, contributor-growth.yml, quantdeus-pulse.yml, agent-role-cron.yml, news-manifest-cycle.yml, growth-site-cycle.yml, openclaw-evolution.yml.',
                 'Do not merge PRs, weaken guardrails, expose secrets, spend money, mass-message people or manufacture urgency/community activity.',
                 'Political/civic signals can affect neutral research and operational risk analysis but never become party/candidate endorsement, voter targeting or persuasion.',
@@ -88,28 +87,31 @@ jobs:
                 '{"action":"none","reason":"..."}',
                 'or {"action":"dispatch","workflow":"qa-triad.yml","inputs":{},"reason":"..."}',
                 'or {"action":"open_issue","issue":{"title":"...","body":"Goal...\\n\\nAcceptance criteria...","labels":["coord:task","coord:ready"],"target_agent":"tasksmith"},"reason":"..."}',
-                'or {"action":"issue","issue_number":123,"reason":"..."}',
-                'or {"action":"pr","pr_number":123,"branch":"automation/seven/...","reason":"..."}'
+
               ].join('\n')}],
               metadata:{source:'quantdeus-seven-priority-cycle',repository:process.env.GITHUB_REPOSITORY}
             });
-            if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Seven cycle lacks trusted OpenClaw tools');
+            if(result.runtime!=='chat') throw new Error('Seven planner must run with mutation tools disabled');
             const d=parse(result.text);
-            if(!['none','dispatch','open_issue','issue','pr'].includes(d.action)) throw new Error('Unsupported Seven action');
-            if(d.action==='issue'){
-              const issueNumber=Number(d.issue_number);
-              const issues=readJson('/tmp/qd-seven/issues.json');
-              const selected=issues.find(i=>Number(i.number)===issueNumber);
-              if(!selected) throw new Error('Seven selected Issue outside fresh snapshot');
-              const labels=new Set((selected.labels||[]).map(x=>typeof x==='string'?x:x.name));
-              if(labels.has('coord:blocked')||labels.has('squad-b:blocked')){
-                throw new Error('Seven selected blocked Issue as executable action');
-              }
-            }
-            if(d.action==='pr'&&!String(d.branch||'').startsWith('automation/seven/')) throw new Error('Seven PR outside automation/seven/*');
+            if(!['none','dispatch','open_issue'].includes(d.action)) throw new Error('Unsupported Seven proposal');
             if(d.action==='dispatch'){
-              fs.appendFileSync(process.env.GITHUB_OUTPUT,'workflow='+String(d.workflow||'')+'\n');
-              fs.appendFileSync(process.env.GITHUB_OUTPUT,'inputs='+Buffer.from(JSON.stringify(d.inputs||{})).toString('base64')+'\n');
+              const workflow=String(d.workflow||'');
+              const inputs=d.inputs||{};
+              if(workflow==='agent-role-cron.yml'){
+                const issueNumber=Number(inputs.issue_number);
+                const issues=readJson('/tmp/qd-seven/issues.json');
+                const selected=issues.find(i=>Number(i.number)===issueNumber);
+                if(!selected) throw new Error('Seven dispatch selected Issue outside fresh snapshot');
+                const labels=new Set((selected.labels||[]).map(x=>typeof x==='string'?x:x.name));
+                if(labels.has('coord:blocked')||labels.has('squad-b:blocked')||labels.has('squad-b:review')){
+                  throw new Error('Seven dispatch selected non-executable Issue');
+                }
+                if(!labels.has('coord:ready')&&!labels.has('coord:active')){
+                  throw new Error('Seven dispatch selected Issue without ready/active state');
+                }
+              }
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'workflow='+workflow+'\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'inputs='+Buffer.from(JSON.stringify(inputs)).toString('base64')+'\n');
             }
             if(d.action==='open_issue'){
               const issue=d.issue||{};
@@ -199,6 +201,16 @@ jobs:
           const workflow=String(process.env.WORKFLOW||'');
           if(!allowed.has(workflow)) throw new Error('Workflow not in Seven dispatch allowlist');
           const inputs=JSON.parse(Buffer.from(process.env.INPUTS_B64||'e30=','base64').toString('utf8'));
+          if(workflow==='agent-role-cron.yml'){
+            const issueNumber=String(inputs.issue_number||'');
+            if(!/^\d+$/.test(issueNumber)) throw new Error('agent-role dispatch requires numeric issue_number');
+            const raw=execFileSync('gh',['issue','view',issueNumber,'--repo',process.env.GITHUB_REPOSITORY,'--json','labels,state'],{encoding:'utf8',env:{...process.env,GH_TOKEN:process.env.GH_TOKEN}});
+            const issue=JSON.parse(raw);
+            const labels=new Set((issue.labels||[]).map(x=>typeof x==='string'?x:x.name));
+            if(String(issue.state||'').toUpperCase()!=='OPEN') throw new Error('agent-role dispatch Issue is not open');
+            if(labels.has('coord:blocked')||labels.has('squad-b:blocked')||labels.has('squad-b:review')) throw new Error('agent-role dispatch rejected non-executable Issue');
+            if(!labels.has('coord:ready')&&!labels.has('coord:active')) throw new Error('agent-role dispatch Issue lacks ready/active state');
+          }
           const args=['workflow','run',workflow,'--repo',process.env.GITHUB_REPOSITORY,'--ref','main'];
           for(const [k,v] of Object.entries(inputs)){
             if(workflow==='qa-self-heal.yml' && k==='lane' && ['full','site','actions'].includes(String(v))) args.push('-f',k+'='+v);
