@@ -122,8 +122,17 @@ jobs:
             if(agent.id==='emh' && decision.action==='pr') {
               const num = Number(decision.pr_number);
               if(!Number.isInteger(num) || num < 1) throw new Error('EMH treatment PR number missing/invalid');
-              const url = 'https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/pulls/' + num + '/files?per_page=100';
-              const response = await fetch(url, {headers:{authorization:'Bearer ' + process.env.GITHUB_TOKEN,accept:'application/vnd.github+json','x-github-api-version':'2022-11-28'}});
+              const expectedBranch = String(decision.branch || '');
+              const headers = {authorization:'Bearer ' + process.env.GITHUB_TOKEN,accept:'application/vnd.github+json','x-github-api-version':'2022-11-28'};
+              const prUrl = 'https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/pulls/' + num;
+              const prResponse = await fetch(prUrl, {headers});
+              if(!prResponse.ok) throw new Error('Unable to verify EMH treatment PR metadata: HTTP ' + prResponse.status);
+              const pr = await prResponse.json();
+              if(pr.head?.ref !== expectedBranch) throw new Error('EMH treatment PR head does not match declared branch: ' + String(pr.head?.ref || 'missing'));
+              if(pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY) throw new Error('EMH treatment PR must originate from the canonical repository');
+              if(pr.base?.ref !== 'main') throw new Error('EMH treatment PR must target main');
+              const url = prUrl + '/files?per_page=100';
+              const response = await fetch(url, {headers});
               if(!response.ok) throw new Error('Unable to verify EMH treatment PR files: HTTP ' + response.status);
               const files = await response.json();
               const names = files.map(x=>x.filename);
