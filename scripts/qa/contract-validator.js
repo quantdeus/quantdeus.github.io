@@ -228,6 +228,21 @@ check(telegramTransientRetries === 2, 'scripts/telegram-bot.js', 'only the two r
 const adminTaskBlock = telegramSource.slice(telegramSource.indexOf("if (/^\\/task"), telegramSource.indexOf("if (/^\\/agent"));
 check(!adminTaskBlock.includes('retryTransient: true'), 'scripts/telegram-bot.js', 'trusted Telegram admin mutation lane never retries automatically');
 check(telegramSetupSource.includes('quantdeus-vercel-telegram'), 'scripts/telegram-webhook-setup.js', 'Webhook setup uses dedicated GitHub OIDC audience');
+const telegramRetrySmokePath = path.join(root,'scripts','telegram-retry-smoke.js');
+check(fs.existsSync(telegramRetrySmokePath), 'scripts/telegram-retry-smoke.js', 'Telegram retry-lane smoke starter exists');
+if (fs.existsSync(telegramRetrySmokePath)) {
+  const telegramRetrySmoke = fs.readFileSync(telegramRetrySmokePath,'utf8');
+  check(telegramRetrySmoke.includes("mode: 'retry_smoke'") && telegramRetrySmoke.includes('quantdeus-vercel-telegram'), 'scripts/telegram-retry-smoke.js', 'Retry smoke starts through GitHub OIDC and never needs a Telegram chat id');
+}
+check(
+  telegramSource.includes('update.quantdeus_retry_smoke === true') &&
+  telegramSource.includes("telegram('getMe')") &&
+  telegramSource.includes("source: 'telegram-retry-smoke'") &&
+  telegramSource.includes("mode: 'retry_smoke_complete'") &&
+  telegramSource.indexOf('update.quantdeus_retry_smoke === true') < telegramSource.indexOf('await handleMessage(message)'),
+  'scripts/telegram-bot.js',
+  'Synthetic retry smoke exits before user-visible Telegram send path while checking Bot API and read-only OpenClaw'
+);
 check(fs.existsSync(telegramBridgePath), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Vercel Telegram webhook bridge exists');
 if (fs.existsSync(telegramBridgePath)) {
   const telegramBridge = fs.readFileSync(telegramBridgePath,'utf8');
@@ -267,6 +282,15 @@ if (fs.existsSync(telegramBridgePath)) {
     telegramBridge.includes('await homunculusReply(message, update)'),
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'Telegram bridge hands exhausted non-live chat to the existing GitHub Actions retry lane'
+  );
+  check(
+    telegramBridge.includes('async function retrySmokeStart(req, res)') &&
+    telegramBridge.includes('async function retrySmokeComplete(req, res)') &&
+    telegramBridge.includes('quantdeus_retry_smoke: true') &&
+    telegramBridge.includes('[telegram-retry-smoke] phase=dispatch') &&
+    telegramBridge.includes("req.body?.mode === 'retry_smoke_complete'"),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'OIDC-authenticated retry smoke dispatch and evidence callback are implemented without exposing a public bypass'
   );
 }
 
