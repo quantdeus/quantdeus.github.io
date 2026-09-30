@@ -55,6 +55,7 @@ if (!body || body.includes('<!-- qd-agent-reply -->')) process.exit(0);
 const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
 const doctrine = JSON.parse(fs.readFileSync('coordination/civilization-doctrine.json', 'utf8'));
 const agents = registry.agents || [];
+const collectiveDirective = String(registry.collective_cognition?.runtime_directive || '').trim();
 const byId = new Map(agents.map(a => [a.id, a]));
 
 function resolveActiveAgentId(agentId) {
@@ -319,6 +320,7 @@ function buildSystemPrompt(agent, context, snapshot) {
     'Role: ' + agent.role,
     'KPI: ' + agent.kpi,
     'Source file: ' + agent.source,
+    collectiveDirective ? 'Collective cognition: ' + collectiveDirective : '',
     '',
     'Reply naturally and specifically to the human message, in the language used by the human.',
     'Answer the user\'s actual question first. Do not force task counts, blockers, Issues, KPIs, swarm status, or repository summaries into an answer unless the user asked for them or they are directly necessary to answer.',
