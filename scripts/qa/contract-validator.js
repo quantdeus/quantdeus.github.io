@@ -225,7 +225,7 @@ check(!telegramSource.includes("getUpdates") && !telegramSource.includes("delete
 check(telegramSource.includes('TELEGRAM_UPDATE_B64'), 'scripts/telegram-bot.js', 'Telegram bot consumes one dispatched webhook update');
 const telegramTransientRetries = (telegramSource.match(/retryTransient:\s*true/g) || []).length;
 check(telegramTransientRetries === 3, 'scripts/telegram-bot.js', 'only two read-only Telegram chat lanes plus the isolated synthetic smoke enable one transient OpenClaw retry');
-const retrySmokeBlock = telegramSource.slice(telegramSource.indexOf('async function runRetrySmoke'), telegramSource.indexOf('const ghEnv'));
+const retrySmokeBlock = telegramSource.slice(telegramSource.indexOf('async function runRetrySmoke'), telegramSource.indexOf('function gh(args)'));
 check(retrySmokeBlock.includes('retryTransient: true'), 'scripts/telegram-bot.js', 'synthetic retry smoke uses the same bounded transient retry policy');
 const adminTaskBlock = telegramSource.slice(telegramSource.indexOf("if (/^\\/task"), telegramSource.indexOf("if (/^\\/agent"));
 check(!adminTaskBlock.includes('retryTransient: true'), 'scripts/telegram-bot.js', 'trusted Telegram admin mutation lane never retries automatically');
