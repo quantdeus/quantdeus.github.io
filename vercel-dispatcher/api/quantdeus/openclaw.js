@@ -283,6 +283,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   let sandbox;
   let ephemeralFiles = [];
+  let ephemeralDirs = [];
   try {
     const authToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     let claims;
@@ -432,25 +433,21 @@ export default async function handler(req, res) {
     sandbox = await Sandbox.getOrCreate({ name: SANDBOX, image: 'vercel/sandbox/universal', resources: { vcpus: 2 }, timeout: 15 * 60 * 1000, persistent: true, snapshotExpiration: 30 * 24 * 60 * 60 * 1000, keepLastSnapshots: { count: 2 }, resume: true, tags: { app: 'quantdeus', runtime: 'openclaw-office' } });
     const home = await text(await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'printf %s "$HOME"'] }));
     const workdir = `${home}/quantdeus`;
-    const repoDir = `${workdir}/repo`;
+    const requestId = crypto.randomUUID();
+    const repoDir = `${workdir}/repo-${requestId}`;
     const install = await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'command -v openclaw >/dev/null 2>&1 || npm install --global openclaw@2026.9.6 --allow-scripts=openclaw'] });
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
     if (trustedOffice && !smokePhase) {
-      const gitCheck = await sandbox.runCommand({ cmd: 'test', args: ['-d', `${repoDir}/.git`] });
-      if (gitCheck.exitCode !== 0) {
-        await checked(sandbox, {
-          cmd: 'git',
-          args: ['clone', '--depth', '1', 'https://github.com/quantdeus/quantdeus.github.io.git', repoDir]
-        }, 'openclaw_repo_clone');
-      } else {
-        await checked(sandbox, { cmd: 'git', args: ['-C', repoDir, 'fetch', 'origin', 'main', '--depth', '1'] }, 'openclaw_repo_fetch');
-        await checked(sandbox, { cmd: 'git', args: ['-C', repoDir, 'reset', '--hard', 'origin/main'] }, 'openclaw_repo_reset');
-        await sandbox.runCommand({ cmd: 'git', args: ['-C', repoDir, 'clean', '-fd'] });
-      }
+      // Fresh per-request shallow checkout avoids concurrent mutation of shared
+      // .git/shallow metadata inside the persistent Vercel Sandbox.
+      await checked(sandbox, {
+        cmd: 'git',
+        args: ['clone', '--depth', '1', '--branch', 'main', 'https://github.com/quantdeus/quantdeus.github.io.git', repoDir]
+      }, 'openclaw_repo_clone');
+      ephemeralDirs.push(repoDir);
     }
     const agentCwd = trustedOffice && !smokePhase ? repoDir : workdir;
-    const requestId = crypto.randomUUID();
     const requestsDir = `${home}/.openclaw/requests`;
     const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
     const promptPath = `${requestsDir}/quantdeus-prompt-${requestId}.txt`;
@@ -471,7 +468,7 @@ export default async function handler(req, res) {
     const trustedTools = smokePhase === 'github' ? {
       profile: 'full',
       codeMode: false,
-      allow: ['bundle-mcp', 'github__list_branches'],
+      allow: ['bundle-mcp', 'github__list_branches', 'github__get_file_contents'],
       deny: trustedDeny
     } : smokePhase === 'playwright' ? {
       profile: 'full',
@@ -497,7 +494,7 @@ export default async function handler(req, res) {
       url: 'https://api.githubcopilot.com/mcp/',
       headers: { Authorization: 'Bearer ' + githubToken },
       toolFilter: {
-        include: smokePhase === 'github' ? ['list_branches'] : hourlyOffice ? [
+        include: smokePhase === 'github' ? ['list_branches', 'get_file_contents'] : hourlyOffice ? [
           'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
           'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
           'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status'
@@ -671,6 +668,20 @@ export default async function handler(req, res) {
     if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: ${raw.slice(-1800)}`);
     const result = JSON.parse(raw);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
+    const toolSummary = result.toolSummary || null;
+    if (trustedOffice) {
+      const structuredToolEvidence = JSON.stringify({
+        error: result.error || null,
+        toolSummary
+      }).toLowerCase();
+      const toolFailures = Number(toolSummary?.failures || 0);
+      const incompleteToolTurn =
+        structuredToolEvidence.includes('incomplete_turn') ||
+        structuredToolEvidence.includes('incomplete or malformed tool call');
+      if (toolFailures > 0 || incompleteToolTurn) {
+        throw new Error(`openclaw_trusted_tool_execution_failed: failures=${toolFailures} evidence=${structuredToolEvidence.slice(0, 1200)}`);
+      }
+    }
     await sandbox.stop();
     return res.status(200).json({
       ok: true,
@@ -682,7 +693,7 @@ export default async function handler(req, res) {
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-no-tools',
       tools: trustedOffice ? { filesystem: true, github_mcp: true, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, shell: false } : { filesystem: false, github_mcp: false, github_write: false, playwright_mcp: false, shell: false },
       doctor,
-      tool_summary: result.toolSummary || null,
+      tool_summary: toolSummary,
       assistant_turns: result.assistantTurns ?? null,
       text: result.final.trim(),
       github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository }
@@ -695,6 +706,7 @@ export default async function handler(req, res) {
   } finally {
     if (sandbox) {
       if (ephemeralFiles.length) { try { await sandbox.runCommand({ cmd: 'rm', args: ['-f', ...ephemeralFiles] }); } catch {} }
+      if (ephemeralDirs.length) { try { await sandbox.runCommand({ cmd: 'rm', args: ['-rf', ...ephemeralDirs] }); } catch {} }
       try { await sandbox.stop(); } catch {}
     }
   }
