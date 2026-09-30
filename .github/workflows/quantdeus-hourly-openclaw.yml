@@ -33,6 +33,11 @@ jobs:
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
+      - name: EMH continuous swarm cognitive hygiene scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/emh.js
+
       - name: Run one guarded OpenClaw swarm tick
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -145,3 +150,11 @@ jobs:
             process.exit(1);
           });
           NODE
+
+      - name: Upload EMH cognitive health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-emh-cognitive-health
+          path: /tmp/quantdeus-emh-cognitive-health.json
+          if-no-files-found: ignore
