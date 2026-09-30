@@ -36,6 +36,80 @@ function resolveActiveAgentId(agentId) {
 
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
+const RETRY_SMOKE_AUDIENCE = 'quantdeus-vercel-telegram';
+const RETRY_SMOKE_ENDPOINT = process.env.TELEGRAM_RETRY_SMOKE_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
+
+async function getGithubOidcToken(audience) {
+  const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+  const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+  if (!requestUrl || !requestToken) throw new Error('GITHUB_OIDC_UNAVAILABLE');
+  const separator = requestUrl.includes('?') ? '&' : '?';
+  const response = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent(audience), {
+    headers: { authorization: 'Bearer ' + requestToken, accept: 'application/json' }
+  });
+  const raw = await response.text();
+  if (!response.ok) throw new Error('GitHub OIDC ' + response.status + ': ' + raw.slice(0, 500));
+  const data = JSON.parse(raw);
+  if (!data?.value) throw new Error('GitHub OIDC returned no token');
+  return data.value;
+}
+
+async function reportRetrySmoke(payload) {
+  const oidc = await getGithubOidcToken(RETRY_SMOKE_AUDIENCE);
+  const response = await fetch(RETRY_SMOKE_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + oidc,
+      'content-type': 'application/json',
+      accept: 'application/json'
+    },
+    body: JSON.stringify({ mode: 'retry_smoke_complete', ...payload })
+  });
+  const raw = await response.text();
+  if (!response.ok) throw new Error('retry smoke callback ' + response.status + ': ' + raw.slice(0, 500));
+}
+
+async function runRetrySmoke(update) {
+  const me = await telegram('getMe');
+  await reportRetrySmoke({
+    phase: 'actions_received',
+    update_id: update.update_id,
+    telegram_api_ok: Boolean(me?.id),
+    llm_ok: false,
+    llm_detail: 'actions_lane_received'
+  });
+
+  let llmOk = false;
+  let llmDetail = '';
+  try {
+    const result = await openclawOffice.ask({
+      profile: 'control-tower',
+      messages: [{ role: 'user', content: 'Reply exactly TELEGRAM_ACTIONS_RETRY_OK.' }],
+      metadata: { source: 'telegram-retry-smoke', update_id: update.update_id, repository: repo },
+      retryTransient: true
+    });
+    llmDetail = String(result.text || '').replace(/\s+/g, ' ').slice(0, 200);
+    llmOk = /TELEGRAM_ACTIONS_RETRY_OK/.test(llmDetail);
+  } catch (error) {
+    llmDetail = String(error?.message || error).replace(/\s+/g, ' ').slice(0, 200);
+  }
+
+  await reportRetrySmoke({
+    phase: 'complete',
+    update_id: update.update_id,
+    telegram_api_ok: Boolean(me?.id),
+    llm_ok: llmOk,
+    llm_detail: llmDetail || 'empty'
+  });
+  console.log('Telegram retry smoke completed:', JSON.stringify({
+    update_id: update.update_id,
+    telegram_api_ok: Boolean(me?.id),
+    llm_ok: llmOk,
+    llm_detail: llmDetail
+  }));
+}
+
+
 function gh(args) {
   return execFileSync('gh', args, {
     encoding: 'utf8',
@@ -419,6 +493,10 @@ function decodeWebhookUpdate() {
 
 async function main() {
   const { update, message } = decodeWebhookUpdate();
+  if (update.quantdeus_retry_smoke === true) {
+    await runRetrySmoke(update);
+    return;
+  }
   if (!message) {
     console.log(`Telegram webhook update ignored: update_id=${update.update_id}, reason=no_message`);
     return;
