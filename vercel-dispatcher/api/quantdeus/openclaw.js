@@ -546,23 +546,7 @@ export default async function handler(req, res) {
       ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
       agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
     };
-    let effectivePrompt = prompt;
-    if (trustedOffice && !smokePhase) {
-      const evolutionSkillPath = `${repoDir}/.openclaw/skills/quantdeus-self-evolution/SKILL.md`;
-      const evolutionSkill = await sandbox.runCommand({ cmd: 'cat', args: [evolutionSkillPath] });
-      if (evolutionSkill.exitCode === 0) {
-        const skillText = (await evolutionSkill.stdout()).trim();
-        if (skillText) {
-          effectivePrompt = [
-            'OPENCLAW SELF-EVOLUTION SKILL FROM FRESH MAIN:',
-            skillText.slice(0, 12000),
-            '',
-            'ACTIVE REQUEST:',
-            prompt
-          ].join('\n').slice(0, 98000);
-        }
-      }
-    }
+    const effectivePrompt = prompt;
     await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(effectivePrompt) }]);
     const runtimeEnv = {};
     if (vercelOidcToken) runtimeEnv.AI_GATEWAY_API_KEY = vercelOidcToken;

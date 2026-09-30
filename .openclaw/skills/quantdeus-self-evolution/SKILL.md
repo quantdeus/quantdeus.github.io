@@ -30,17 +30,17 @@ May autonomously improve only:
 - `coordination/openclaw-evolution.json`
 - `docs/openclaw-evolution.md`
 
-Use branch `automation/openclaw-evolution/*`. All Tier A PRs require human review and successful independent QA Triad + Static Smoke. Autonomous merge is disabled because the behavioral skill can change later trusted execution instructions.
+Use branch `automation/openclaw-evolution/*`. Automated Tier A may change only the bounded mutable sections below (or append one evolution-ledger history entry). A deterministic semantic guard runs before any GitHub mutation. Tier A may auto-merge only after independent successful QA Triad + Static Smoke + Evolution Guard checks and one final semantic/path revalidation. The mutable skill is not injected into trusted write-capable OpenClaw requests.
 
-### Tier B — runtime/core
+### Tier B — runtime/core proposal only
 
-May propose a PR for evidence-backed improvements to:
+May identify evidence-backed improvements involving:
 - `vercel-dispatcher/api/quantdeus/openclaw.js`
 - `scripts/openclaw-office-client.js`
 - `scripts/qa/openclaw-office-validator.js`
 - OpenClaw-specific workflow/config files
 
-Tier B never auto-merges from the evolution loop. It remains open for Seven/human review.
+The automated evolution lane cannot write those core files. It can create only a proposal-record PR naming approved core paths and evidence. Actual runtime/core implementation requires a separate human/Seven-authorized change. Tier B never auto-merges.
 
 ## Hard invariants
 
@@ -74,5 +74,12 @@ Record accepted evolution hypotheses and outcomes in `coordination/openclaw-evol
 
 ## Output discipline
 
-The analysis job has no tools or GitHub credential. Return one structured proposal with evidence URLs, base SHA, problem, hypothesis, metric, falsifier and complete file replacements. A separate deterministic broker enforces exact paths and file counts before creating one draft PR. It never merges. If evidence is weak, return no action.
+The analysis job has no tools or GitHub credential. Return one structured proposal with evidence URLs, base SHA, problem, hypothesis, metric and falsifier. Tier A may include complete replacements only for the three Tier A files, but automated changes are accepted only inside the bounded mutable sections/history. Tier B returns suggested core paths only—never generated core code. A separate deterministic broker validates everything before creating a PR. If evidence is weak, return no action.
 
+## Adaptive learning notes
+
+Only the bounded section below is mutable by automated Tier A evolution. It may contain low-risk operational heuristics, never control-plane instructions.
+
+<!-- QD_EVOLUTION_MUTABLE_START -->
+- Prefer reproducible failures, measurable outcomes and explicit falsifiers.
+<!-- QD_EVOLUTION_MUTABLE_END -->
