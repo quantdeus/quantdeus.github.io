@@ -76,6 +76,14 @@ check(cronContext.includes('telegram_transport: `Telegram webhook → Vercel /ap
 check(cronContext.includes('Манифест Неонового Горизонта'),'cron-context','Neon Horizon manifest recorded');
 check(cronContext.includes('Эпидемия Добра'),'cron-context','Epidemic of Good recorded');
 
+const emhAgent=(agents.agents||[]).find(a=>a.id==='emh');
+check(Boolean(emhAgent),'emh','EMH agent registered');
+check(emhAgent?.source==='scripts/emh.js','emh','EMH source remains scripts/emh.js');
+check(String(emhAgent?.role||'').includes('перегрев агентного контура'),'emh','EMH cognitive-hygiene role invariant preserved');
+const hourlyOpenClaw=fs.readFileSync(path.join(root,'.github','workflows','quantdeus-hourly-openclaw.yml'),'utf8');
+check(hourlyOpenClaw.includes('node scripts/emh.js'),'quantdeus-hourly-openclaw.yml','hourly deterministic EMH cognitive-hygiene scan active');
+check(cronContext.includes('swarm_cognitive_hygiene:'),'cron-context','EMH cognitive-hygiene cadence recorded');
+
 const report={timestamp:new Date().toISOString(),doctrine_version:doctrine.version,agent_count:(agents.agents||[]).length,source_streams:sourceIds,manifest_sources:manifestIds,scheduled_workflows:scheduledWorkflows,failures,checks};
 fs.writeFileSync('/tmp/quantdeus-mission-alignment.json',JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
