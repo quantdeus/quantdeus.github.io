@@ -90,7 +90,7 @@ function pillarOf(issue) {
   const names = (issue.labels || []).map(l => typeof l === 'string' ? l : l.name);
   const agentLabel = names.find(n => n.startsWith('agent:'));
   if (agentLabel) return agentLabel.slice('agent:'.length);
-  const marker = String(issue.body || '').match(/<!--\\s*quantdeus-target-agent:([a-z0-9-]+)\\s*-->/i);
+  const marker = String(issue.body || '').match(/<!--\s*quantdeus-target-agent:([a-z0-9-]+)\s*-->/i);
   if (marker) return marker[1];
   const label = names.find(n => n.startsWith('pillar-') || n.startsWith('pillar:'));
   if (label) return label.replace(/^pillar[:-]?/i, '');
