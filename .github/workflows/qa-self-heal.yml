@@ -30,7 +30,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  actions: read
+  actions: write
   checks: read
   id-token: write
 
@@ -195,6 +195,7 @@ jobs:
                   '5. A deterministic repository defect MUST produce a real repair branch + PR. Do not answer with advice, pretend actions, or action=none when a triggering failed run or local validator failure exists.',
                   '6. action=issue is allowed only for a genuinely external/non-repository blocker (secret, provider outage, payment, permission, human-only gate), and the Issue must really exist.',
                   '7. If a repair is needed, use exactly one branch whose name starts qa/self-heal/. Never write directly to main.',
+                  '7a. You may repair the failed workflow identified by evidence, but never modify qa-self-heal.yml itself, OpenClaw auth/OIDC/trusted-tool gating, merge guards, secrets, or security policy from this lane.',
                   '8. Keep the patch minimal (maximum 6 files) and create exactly one PR to main. Reuse/update an existing open qa/self-heal PR for the same root cause instead of duplicating it.',
                   '9. Never weaken/bypass QA, branch protection, security checks, authentication, secret handling, or mission guardrails just to make a check green.',
                   '10. Never expose/change secrets, spend money, register accounts, perform outreach, or make unrelated product/content edits.',
@@ -296,6 +297,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.heal.outputs.issue_number }}
         run: gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json number,state,title >/dev/null
+
+      - name: Dispatch independent QA after automated repair PR
+        if: steps.heal.outputs.action == 'pr'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.heal.outputs.pr_number }}
+          EXPECTED_BRANCH: ${{ steps.heal.outputs.branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          meta="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,baseRefName,headRefName)"
+          test "$(jq -r .state <<<"$meta")" = "OPEN"
+          test "$(jq -r .baseRefName <<<"$meta")" = "main"
+          test "$(jq -r .headRefName <<<"$meta")" = "$EXPECTED_BRANCH"
+          [[ "$EXPECTED_BRANCH" == qa/self-heal/* ]]
+          gh workflow run qa-triad.yml --repo "$GITHUB_REPOSITORY" --ref "$EXPECTED_BRANCH"
+          gh workflow run static-smoke.yml --repo "$GITHUB_REPOSITORY" --ref "$EXPECTED_BRANCH"
+          echo "Dispatched QA Triad + Static Smoke for automated repair PR #$PR_NUMBER"
 
       - name: Guarded merge after independent green checks
         if: steps.heal.outputs.action == 'pr'

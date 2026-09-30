@@ -9,7 +9,7 @@ permissions:
   contents: read
   issues: write
   pull-requests: read
-  actions: read
+  actions: write
   checks: read
   id-token: write
 
@@ -81,13 +81,17 @@ jobs:
                   'Hourly QuantDeus swarm tick.',
                   'Read fresh main and coordination/agents.json first.',
                   'Inspect open Issues and PRs in quantdeus/quantdeus.github.io.',
-                  'GitHub MCP is READ-ONLY in this hourly lane. Do not attempt any mutation through tools.',
+                  'Inspect recent failed/degraded GitHub Actions runs when deciding whether qa-self-heal should be dispatched.',
+                  'GitHub MCP remains READ-ONLY in this coordinator lane. Do not mutate repository state through MCP here; dispatch a constrained executor instead.',
                   'Choose at most ONE highest-priority actionable coord:active or coord:ready Issue that is not already represented by an open implementation PR.',
                   'Respect any explicit target-agent or pillar ownership and act as Seven of Nine coordinating that specialist role.',
                   'Return ONLY strict JSON in one of these forms:',
                   '{"action":"comment","issue_number":123,"comment":"verified finding / concrete next bounded step with artifact references"}',
+                  '{"action":"dispatch_role","issue_number":123,"agent_id":"registered-agent-id","reason":"why this owner should execute now"}',
+                  '{"action":"repair_actions","run_id":123456789,"workflow":"Workflow name","reason":"evidence-backed failed Actions run"}',
+                  '{"action":"dispatch_squad","issue_number":123,"reason":"privileged implementation requires Squad B"}',
                   '{"action":"none","reason":"NO_SAFE_ACTION: concrete blocker"}',
-                  'Do not request merge/deploy/spending/secrets/security-role changes/sensitive outreach/account registration.',
+                  'Never dispatch merge/deploy/spending/secrets/security-role changes/sensitive outreach/account registration. Workflow/governance implementation requires an Issue carrying squad-b:privileged.',
                   'Do not mark DONE unless acceptance criteria are actually verified.'
                 ].join('\n')
               }],
@@ -114,27 +118,79 @@ jobs:
             }, null, 2));
 
             if (decision.action === 'none') return;
-            if (decision.action !== 'comment') throw new Error('Unsupported hourly action: ' + decision.action);
-
-            const issueNumber = Number(decision.issue_number);
-            const comment = String(decision.comment || '').trim();
-            if (!Number.isInteger(issueNumber) || issueNumber <= 0) throw new Error('Invalid issue_number');
-            if (comment.length < 20 || comment.length > 6000) throw new Error('Comment length outside guarded bounds');
 
             const repository = process.env.GITHUB_REPOSITORY;
             if (repository !== 'quantdeus/quantdeus.github.io') throw new Error('Unexpected repository');
-            const issue = await github(`/repos/${repository}/issues/${issueNumber}`);
-            if (issue.state !== 'open' || issue.pull_request) throw new Error('Target must be an open Issue, not a PR');
-            const labels = new Set((issue.labels || []).map(x => typeof x === 'string' ? x : x.name));
-            if (!labels.has('coord:active') && !labels.has('coord:ready')) {
-              throw new Error('Target Issue is not coord:active or coord:ready');
+
+            async function verifiedIssue(issueNumber) {
+              if (!Number.isInteger(issueNumber) || issueNumber <= 0) throw new Error('Invalid issue_number');
+              const issue = await github(`/repos/${repository}/issues/${issueNumber}`);
+              if (issue.state !== 'open' || issue.pull_request) throw new Error('Target must be an open Issue, not a PR');
+              const labels = new Set((issue.labels || []).map(x => typeof x === 'string' ? x : x.name));
+              if (!labels.has('coord:active') && !labels.has('coord:ready')) {
+                throw new Error('Target Issue is not coord:active or coord:ready');
+              }
+              return { issue, labels };
             }
 
-            const posted = await github(`/repos/${repository}/issues/${issueNumber}/comments`, {
-              method: 'POST',
-              body: JSON.stringify({ body: comment })
-            });
-            console.log(JSON.stringify({ mutation: 'issue_comment', issue_number: issueNumber, comment_url: posted.html_url }, null, 2));
+            async function dispatch(workflow, inputs) {
+              await github(`/repos/${repository}/actions/workflows/${workflow}/dispatches`, {
+                method: 'POST',
+                body: JSON.stringify({ ref: 'main', inputs })
+              });
+              console.log(JSON.stringify({ mutation: 'workflow_dispatch', workflow, inputs }, null, 2));
+            }
+
+            if (decision.action === 'comment') {
+              const issueNumber = Number(decision.issue_number);
+              const comment = String(decision.comment || '').trim();
+              await verifiedIssue(issueNumber);
+              if (comment.length < 20 || comment.length > 6000) throw new Error('Comment length outside guarded bounds');
+              const posted = await github(`/repos/${repository}/issues/${issueNumber}/comments`, {
+                method: 'POST',
+                body: JSON.stringify({ body: comment })
+              });
+              console.log(JSON.stringify({ mutation: 'issue_comment', issue_number: issueNumber, comment_url: posted.html_url }, null, 2));
+              return;
+            }
+
+            if (decision.action === 'dispatch_role') {
+              const issueNumber = Number(decision.issue_number);
+              await verifiedIssue(issueNumber);
+              const agentId = String(decision.agent_id || '').trim();
+              const registry = require('./coordination/agents.json');
+              const knownAgents = new Set((registry.agents || []).map(x => String(x.id || '').trim()).filter(Boolean));
+              if (!knownAgents.has(agentId)) throw new Error('Unknown registered agent_id: ' + agentId);
+              await dispatch('agent-role-cron.yml', { agent_id: agentId, issue_number: String(issueNumber) });
+              return;
+            }
+
+            if (decision.action === 'repair_actions') {
+              const runId = Number(decision.run_id);
+              if (!Number.isInteger(runId) || runId <= 0) throw new Error('Invalid failed Actions run_id');
+              const run = await github(`/repos/${repository}/actions/runs/${runId}`);
+              if (run.status !== 'completed' || !['failure','timed_out','action_required','startup_failure'].includes(String(run.conclusion || ''))) {
+                throw new Error('repair_actions requires a completed failed run');
+              }
+              await dispatch('qa-self-heal.yml', {
+                lane: 'actions',
+                trigger_run_id: String(runId),
+                trigger_workflow: String(decision.workflow || run.name || '').slice(0, 120)
+              });
+              return;
+            }
+
+            if (decision.action === 'dispatch_squad') {
+              const issueNumber = Number(decision.issue_number);
+              const { labels } = await verifiedIssue(issueNumber);
+              if (!labels.has('coord:task') || !labels.has('squad-b:privileged')) {
+                throw new Error('Squad B autonomous dispatch requires coord:task + squad-b:privileged');
+              }
+              await dispatch('octet-squad.yml', { issue_number: String(issueNumber) });
+              return;
+            }
+
+            throw new Error('Unsupported hourly action: ' + decision.action);
           })().catch(error => {
             if (office.isTransientError(error)) {
               console.warn('Hourly OpenClaw tick degraded by transient provider failure; no mutation performed.');

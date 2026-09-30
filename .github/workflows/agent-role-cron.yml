@@ -22,7 +22,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  actions: read
+  actions: write
   checks: read
   id-token: write
 
@@ -110,6 +110,7 @@ jobs:
                 'Choose at most ONE bounded, high-value artifact inside your role: a verified comment, a branch + PR, or a NEW Issue proposal.',
                 'For a NEW Issue, do NOT call create_issue through MCP. Return action=open_issue with a proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.',
                 'For a PR use branch prefix automation/role/'+agent.id+'/ and keep it minimal.',
+                'Workflow files under .github/workflows/** may be created or repaired only for an explicit assigned Issue carrying squad-b:privileged; protected executor/auth/merge-guard files remain off-limits in this lane.',
                 'Do not merge your own PR. Do not weaken QA/security/mission rules, expose secrets, spend money, mass-message people, fabricate community activity, or perform unrelated work.',
                 'For political/civic material remain factual and neutral; no party/candidate endorsement, voter targeting or persuasion.',
                 ...emhTreatmentInstructions,
@@ -151,6 +152,46 @@ jobs:
               if(names.length !== 1 || names[0] !== 'AGENTS.md') throw new Error('EMH treatment PR must change AGENTS.md only; got: ' + names.join(', '));
               console.log('EMH treatment PR scope verified: AGENTS.md only; independent QA/Smoke required.');
             }
+            if(decision.action==='pr') {
+              const num = Number(decision.pr_number);
+              const branchName = String(decision.branch || '').trim();
+              if(!Number.isInteger(num) || num < 1) throw new Error('Role PR number missing/invalid');
+              if(!branchName.startsWith('automation/role/'+agent.id+'/')) throw new Error('Role PR branch outside allowed prefix');
+              const headers = {authorization:'Bearer ' + process.env.GITHUB_TOKEN,accept:'application/vnd.github+json','x-github-api-version':'2022-11-28'};
+              const prUrl = 'https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/pulls/' + num;
+              const prResponse = await fetch(prUrl, {headers});
+              if(!prResponse.ok) throw new Error('Unable to verify role PR metadata: HTTP ' + prResponse.status);
+              const pr = await prResponse.json();
+              if(pr.head?.ref !== branchName) throw new Error('Role PR head does not match declared branch');
+              if(pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY) throw new Error('Role PR must originate from canonical repository');
+              if(pr.base?.ref !== 'main') throw new Error('Role PR must target main');
+              const filesResponse = await fetch(prUrl + '/files?per_page=100', {headers});
+              if(!filesResponse.ok) throw new Error('Unable to verify role PR files: HTTP ' + filesResponse.status);
+              const files = await filesResponse.json();
+              const names = files.map(x=>String(x.filename || ''));
+              const protectedPaths = new Set([
+                '.github/workflows/agent-role-cron.yml',
+                '.github/workflows/qa-self-heal.yml',
+                '.github/workflows/openclaw-evolution.yml',
+                '.github/workflows/openclaw-evolution-gate.yml',
+                'vercel-dispatcher/api/quantdeus/openclaw.js',
+                'scripts/openclaw-evolution-guard.js',
+                'scripts/guarded-automerge.js'
+              ]);
+              const forbidden = names.filter(name => protectedPaths.has(name));
+              if(forbidden.length) throw new Error('Role PR touched protected execution-plane file(s): ' + forbidden.join(', '));
+              const workflowFiles = names.filter(name => name.startsWith('.github/workflows/'));
+              if(workflowFiles.length) {
+                if(!explicitIssue) throw new Error('Workflow mutation requires an explicit assigned Issue');
+                const issueResponse = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/issues/' + explicitIssue, {headers});
+                if(!issueResponse.ok) throw new Error('Unable to verify privileged Issue: HTTP ' + issueResponse.status);
+                const issue = await issueResponse.json();
+                const labels = new Set((issue.labels || []).map(x => typeof x === 'string' ? x : x.name));
+                if(!labels.has('squad-b:privileged')) throw new Error('Workflow mutation requires squad-b:privileged');
+              }
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'pr_number='+num+'\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'branch='+branchName+'\n');
+            }
             if(decision.action==='open_issue') {
               const issue=decision.issue||{};
               const proposal={
@@ -186,6 +227,26 @@ jobs:
           ISSUE_SOURCE_AGENT: ${{ steps.role.outputs.source_agent }}
           ISSUE_SOURCE_WORKFLOW: agent-role-cron.yml
         run: node scripts/publish-agent-issue.js
+
+
+      - name: Verify role-agent PR and dispatch independent QA
+        if: steps.role.outputs.action == 'pr'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.role.outputs.pr_number }}
+          EXPECTED_BRANCH: ${{ steps.role.outputs.branch }}
+          SOURCE_AGENT: ${{ steps.role.outputs.source_agent }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          meta="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,baseRefName,headRefName)"
+          test "$(jq -r .state <<<"$meta")" = "OPEN"
+          test "$(jq -r .baseRefName <<<"$meta")" = "main"
+          test "$(jq -r .headRefName <<<"$meta")" = "$EXPECTED_BRANCH"
+          [[ "$EXPECTED_BRANCH" == "automation/role/$SOURCE_AGENT/"* ]]
+          gh workflow run qa-triad.yml --repo "$GITHUB_REPOSITORY" --ref "$EXPECTED_BRANCH"
+          gh workflow run static-smoke.yml --repo "$GITHUB_REPOSITORY" --ref "$EXPECTED_BRANCH"
+          echo "Dispatched QA Triad + Static Smoke for $EXPECTED_BRANCH"
 
 
   smoke-all-agents:
