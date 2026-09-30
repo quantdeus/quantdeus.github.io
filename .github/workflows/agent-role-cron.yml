@@ -64,7 +64,7 @@ jobs:
             ? map.agents.filter(a => a.id === manual)
             : map.agents.filter(a => a.workflow === 'agent-role-cron.yml' && a.utc_hours.includes(hour));
           if (manual && due.length !== 1) throw new Error('Unknown agent id: ' + manual);
-          if (explicitIssue && !/^\\d+$/.test(explicitIssue)) throw new Error('Invalid explicit Issue number: ' + explicitIssue);
+          if (explicitIssue && !/^\d+$/.test(explicitIssue)) throw new Error('Invalid explicit Issue number: ' + explicitIssue);
           if (!due.length) {
             console.log(JSON.stringify({ok:true,action:'none',reason:'no role agent due at UTC hour '+hour}));
             process.exit(0);
