@@ -17,6 +17,7 @@ on:
       - '.github/workflows/telegram-bot.yml'
       - 'scripts/telegram-bot.js'
       - 'scripts/telegram-webhook-setup.js'
+      - 'scripts/telegram-retry-smoke.js'
       - 'vercel-dispatcher/api/quantdeus/telegram.js'
       - 'coordination/agents.json'
 
@@ -52,6 +53,10 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
         run: node scripts/telegram-webhook-setup.js
+
+      - name: Verify Vercel → Actions retry lane
+        if: ${{ github.event_name == 'push' }}
+        run: node scripts/telegram-retry-smoke.js
 
       - name: Route Telegram update to QuantDeus homunculi
         if: ${{ inputs.telegram_update_b64 != '' }}

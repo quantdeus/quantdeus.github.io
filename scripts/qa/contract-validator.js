@@ -221,6 +221,14 @@ const telegramSetupSource = fs.readFileSync(path.join(root,'scripts','telegram-w
 const telegramBridgePath = path.join(root,'vercel-dispatcher','api','quantdeus','telegram.js');
 check(!/^\s*schedule\s*:/m.test(telegramWorkflow), 'telegram-bot.yml', 'Telegram ingress is webhook-driven and has no polling cron');
 check(telegramWorkflow.includes('telegram_update_b64') && telegramWorkflow.includes('scripts/telegram-webhook-setup.js'), 'telegram-bot.yml', 'Telegram workflow accepts webhook-dispatched updates and can configure the webhook');
+check(
+  telegramWorkflow.includes("'scripts/telegram-retry-smoke.js'") &&
+  telegramWorkflow.includes('Verify Vercel → Actions retry lane') &&
+  telegramWorkflow.includes("github.event_name == 'push'") &&
+  telegramWorkflow.includes('node scripts/telegram-retry-smoke.js'),
+  'telegram-bot.yml',
+  'Telegram runtime pushes automatically exercise the deployed Vercel-to-Actions retry lane'
+);
 check(!telegramSource.includes("getUpdates") && !telegramSource.includes("deleteWebhook"), 'scripts/telegram-bot.js', 'Telegram bot never polls or deletes the production webhook');
 check(telegramSource.includes('TELEGRAM_UPDATE_B64'), 'scripts/telegram-bot.js', 'Telegram bot consumes one dispatched webhook update');
 const telegramTransientRetries = (telegramSource.match(/retryTransient:\s*true/g) || []).length;
