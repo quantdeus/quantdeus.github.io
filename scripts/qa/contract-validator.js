@@ -196,6 +196,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   if (name === 'quantdeus-coordinator.yml') {
     check(/group:\s*quantdeus-coordinator\s/.test(text) && /cancel-in-progress:\s*false/.test(text), name, 'Coordinator command events share a non-cancelling FIFO lane');
     check(text.includes("issue_comment:\n    types: [created]"), name, 'Coordinator receives every new Issue comment for command draining');
+    check(/id-token:\s*write/.test(text) && text.includes('/tmp/quantdeus-seven-reasoning.json'), name, 'Seven Hub briefing receives OIDC and preserves inference evidence');
     check(text.indexOf('node scripts/seven-of-nine.js') < text.indexOf('node scripts/coordinator.js'), name, 'Seven of Nine runs before the Swarm Secretary');
   }
   if (scheduledMissionWorkflows.has(name)) {

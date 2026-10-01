@@ -48,6 +48,9 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/openclaw.js
           node --check vercel-dispatcher/api/quantdeus/telegram.js
 
+      - name: Verify Seven LLM briefing and degraded contract
+        run: node --test scripts/qa/seven-reasoning.test.js
+
       - name: Run QA syntax validator
         run: node scripts/qa/syntax-validator.js
 
