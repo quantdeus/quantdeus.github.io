@@ -1,4 +1,4 @@
-import { publicTelegramUser, requestTelegramIdentity, roleForTelegramId } from "../../lib/telegram-auth.js";
+import { publicTelegramUser, requestTelegramIdentity, roleForTelegramId, telegramAuthHealth } from "../../lib/telegram-auth.js";
 
 const json = (res, status, body) => res.status(status).json(body);
 function cors(req, res) {
@@ -20,6 +20,10 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return json(res, 405, { ok: false, error: "method_not_allowed" });
   try {
+    if (req.query?.health === "1") {
+      const health = await telegramAuthHealth();
+      return json(res, 200, { ok: true, ...health });
+    }
     const user = await requestTelegramIdentity(req);
     return json(res, 200, {
       ok: true,
@@ -28,6 +32,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     const code = String(error?.message || "telegram_auth_invalid");
+    console.warn("[telegram-auth]", code);
     const status = ["telegram_auth_unavailable", "telegram_oidc_unavailable", "telegram_oidc_unconfigured"].includes(code) ? 503 : 401;
     return json(res, status, { ok: false, error: code });
   }
