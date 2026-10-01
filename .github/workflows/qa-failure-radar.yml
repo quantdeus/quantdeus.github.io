@@ -48,6 +48,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOOKBACK_DAYS: ${{ inputs.lookback_days || '7' }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id || '' }}
           TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name || '' }}
           TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
         run: node scripts/qa/failure-radar.js
@@ -61,8 +62,8 @@ jobs:
           echo "Failure radar found an unresolved problem; dispatching QA self-heal lane=$REPAIR_LANE"
           gh workflow run qa-self-heal.yml --repo "$GITHUB_REPOSITORY" --ref main \
             -f lane="$REPAIR_LANE" \
-            -f trigger_run_id="${{ github.event.workflow_run.id || '' }}" \
-            -f trigger_workflow="${{ github.event.workflow_run.name || '' }}"
+            -f trigger_run_id="${{ steps.radar.outputs.repair_trigger_run_id }}" \
+            -f trigger_workflow="${{ steps.radar.outputs.repair_trigger_workflow }}"
 
       - name: Upload radar evidence
         if: always()
