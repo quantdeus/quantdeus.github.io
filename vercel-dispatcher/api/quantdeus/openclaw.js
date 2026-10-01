@@ -141,6 +141,17 @@ function trustedOfficeRequest(req, claims) {
   return siteOwnerAction || octetHeraldAction;
 }
 
+function githubSiteFastChatRequest(req, claims) {
+  if (req.body?.execution_mode !== 'chat') return false;
+  const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  const eventName = String(claims.event_name || '');
+  const metadata = req.body?.metadata || {};
+  return /\.github\/workflows\/site-agent-replies\.yml(?:@|$)/.test(workflowRef) &&
+    eventName === 'issue_comment' &&
+    metadata.source === 'github-command-center-fast' &&
+    String(claims.repository || '') === REPOSITORY;
+}
+
 function hourlyOfficeRequest(req, claims) {
   if (!trustedOfficeRequest(req, claims)) return false;
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
@@ -392,6 +403,7 @@ export default async function handler(req, res) {
       };
     }
     const trustedOffice = vercelInternal ? false : trustedOfficeRequest(req, claims);
+    const githubSiteFastChat = !vercelInternal && !trustedOffice && githubSiteFastChatRequest(req, claims);
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
     const octetHerald = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-octet-herald';
@@ -675,12 +687,10 @@ export default async function handler(req, res) {
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
     if (!prompt) return res.status(400).json({ ok: false, error: 'messages_required' });
 
-    // Telegram's Vercel-internal lane is chat-only and has no tools. After the
-    // existing exact-OK admission probe, use at most two short generation attempts
-    // across healthy routes (or retry the sole route once). This keeps the whole
-    // Telegram -> internal OpenClaw turn inside the outer 45s webhook budget while
-    // tolerating transient provider stalls.
-    if (vercelInternal) {
+    // Fast no-tools chat lanes bypass the persistent OpenClaw agent lock after
+    // provider admission. They are available only to Vercel-internal Telegram or
+    // the GitHub-OIDC-authenticated Site Agent fallback contract above.
+    if (vercelInternal || githubSiteFastChat) {
       const FAST_CHAT_TOTAL_BUDGET_MS = 26000;
       const FAST_CHAT_ATTEMPT_MS = 12000;
       const fastRoutes = healthyRefs
@@ -711,10 +721,14 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
               model: selected.model,
-              messages: messages.map(message => ({
-                role: String(message?.role || 'user'),
-                content: String(message?.content || '').slice(0, 16000)
-              })),
+              messages: messages.map(message => {
+                const role = String(message?.role || 'user');
+                const limit = role === 'system' ? 50000 : 16000;
+                return {
+                  role,
+                  content: String(message?.content || '').slice(0, limit)
+                };
+              }),
               temperature: 0.2,
               max_tokens: 1000
             }),
@@ -734,7 +748,10 @@ export default async function handler(req, res) {
               model: selected.ref,
               tool_summary: null,
               assistant_turns: 1,
-              mode: 'vercel-internal-fast',
+              mode: githubSiteFastChat ? 'github-oidc-fast' : 'vercel-internal-fast',
+              execution_mode: 'openclaw-agent-exec-no-tools-fast',
+              tools: { filesystem: false, github_mcp: false, github_write: false, playwright_mcp: false, shell: false },
+              model_provider: selected.ref.split('/')[0] || null,
               attempts
             });
           }
