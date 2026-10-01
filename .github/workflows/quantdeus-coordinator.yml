@@ -16,13 +16,22 @@ permissions:
   id-token: write
 
 concurrency:
-  # GitHub retains pending runs in one FIFO lane instead of replacing them
-  # across per-Issue concurrency groups during comment bursts.
+  # One serialized coordination lane for schedule/manual/Issue-state events.
+  # Ordinary chat comments belong to Site Agent Replies and must not start a second control plane.
   group: quantdeus-coordinator
   cancel-in-progress: false
 
 jobs:
   coordinate:
+    # Keep the canonical issue_comment intake, but ordinary chat belongs to Site Agent Replies.
+    # Only explicit coordinator commands enter the full governance/bridge-crew control plane.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      startsWith(github.event.comment.body, '/coord ') ||
+      github.event.comment.body == '/coord' ||
+      startsWith(github.event.comment.body, '/coordinate ') ||
+      github.event.comment.body == '/coordinate' ||
+      startsWith(github.event.comment.body, '@coordinator ')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
