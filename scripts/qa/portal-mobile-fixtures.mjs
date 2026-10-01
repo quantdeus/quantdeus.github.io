@@ -64,7 +64,8 @@ const forum = fs.readFileSync(path.join(root, "forum/index.html"), "utf8");
 fs.writeFileSync(path.join(out, "forum/index.html"), inject(forum, forumStub));
 
 const store = fs.readFileSync(path.join(root, "store/index.html"), "utf8");
-fs.writeFileSync(path.join(out, "store/admin.html"), inject(store, storeStub));
+const adminTail = `<script>setTimeout(()=>document.getElementById("adminPanel")?.scrollIntoView({block:"start"}),500);</script>`;
+fs.writeFileSync(path.join(out, "store/admin.html"), inject(store, storeStub, adminTail));
 const checkoutTail = `<script>setTimeout(()=>document.querySelector('[data-product="mobile-qa-product"]')?.click(),350);</script>`;
 fs.writeFileSync(path.join(out, "store/checkout.html"), inject(store, storeStub, checkoutTail));
 
