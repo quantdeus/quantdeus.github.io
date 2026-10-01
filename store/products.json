@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "products": [
+    {
+      "id": "binaural-exe",
+      "name": "Binaural.exe",
+      "category": "Цифровые продукты",
+      "description": "Аудиомодуль QuantDeus для фокуса и Y2K-настроения.",
+      "status": "Настройка каталога",
+      "price_rub": null,
+      "available": false,
+      "image": null
+    },
+    {
+      "id": "children-of-eltan",
+      "name": "Дети Эльтана",
+      "category": "Игровые проекты",
+      "description": "Новости мода, лор, расы и карта рукава галактики.",
+      "status": "В разработке",
+      "price_rub": null,
+      "available": false,
+      "image": null
+    },
+    {
+      "id": "warp-research",
+      "name": "Варп-исследования",
+      "category": "Исследования",
+      "description": "Пульс исследований SubWarp и статусы проверяемых прогонов.",
+      "status": "Открытые материалы",
+      "price_rub": null,
+      "available": false,
+      "image": null
+    }
+  ]
+}
