@@ -258,9 +258,12 @@ jobs:
           grep -q 'Frutiger Aero' index.html || grep -q 'var(--lime)' index.html
           grep -q 'data-qd-auth' index.html
           grep -q 'data-qd-auth' forum/index.html
+          if grep -Fq '\\n  <script' store/index.html forum/index.html; then echo 'literal \\n found in portal HTML'; exit 1; fi
+          if grep -q 'if(!initData)' store/index.html; then echo 'stale initData reference found in store'; exit 1; fi
+          grep -q 'needs_user_send' vercel-dispatcher/api/quantdeus/orders.js
+          grep -q 'DEFAULT_CLIENT_ID = "8122160274"' vercel-dispatcher/lib/telegram-auth.js
           grep -q 'Регистрация не нужна' store/index.html
           grep -q 'anonymous_web' vercel-dispatcher/api/quantdeus/orders.js
-          grep -q 'telegram_oidc_unconfigured' vercel-dispatcher/lib/telegram-auth.js
           node -e "const c=require('./telegram-public.json'); if(!c.configured||!c.client_id||!c.username) throw new Error('Telegram public auth config is incomplete')"
 
       - name: Validate agent registry

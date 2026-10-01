@@ -21,11 +21,17 @@ async function hmac(keyBytes, message) {
 }
 const roleFor = roleForTelegramId;
 async function github(path, options = {}) {
-  const token = process.env.QUANTDEUS_GITHUB_TOKEN;
-  if (!token) throw new Error("github_storage_unconfigured");
+  const token = String(process.env.QUANTDEUS_GITHUB_TOKEN || "").trim();
+  const method = String(options.method || "GET").toUpperCase();
+  if (!token && method !== "GET") throw new Error("github_storage_unconfigured");
   const response = await fetch(`https://api.github.com/repos/${REPO}${path}`, {
     ...options,
-    headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", Authorization: `Bearer ${token}`, ...(options.headers || {}) }
+    headers: {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    }
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(`github_${response.status}`);

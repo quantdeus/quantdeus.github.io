@@ -49,12 +49,20 @@
         const form=new FormData(e.currentTarget);
         try{
           const data=await request(API,{method:"POST",body:JSON.stringify({action:"create",product_id:product.id,note:String(form.get("note")||""),contact:String(form.get("contact")||""),website:String(form.get("website")||"")})});
+          if(data.needs_user_send&&data.telegram_url){showTelegramFallback(data,product);return}
           showOrder(data.order,data.payment);
         }catch(err){
           const message=err.message==="contact_required"?"Укажи Telegram, телефон или email для ответа.":err.message==="inquiry_rate_limited"?"Слишком много заявок за короткое время. Попробуй немного позже.":err.message;
           notice("Заявка не отправлена: "+message,"qd-error")
         }
       };
+    }
+
+    function showTelegramFallback(data,product){
+      $("modalTitle").textContent="Заявка подготовлена";
+      const url=String(data.telegram_url||"");
+      $("checkoutBody").innerHTML=`<div class="qd-notice qd-success">Заявка сформирована без регистрации. Остался один шаг: открыть чат QuantDeus и нажать «Отправить».</div><p><b>${esc(product.name)}</b><br>Номер: <code>${esc(data.order?.id||"")}</code></p><div class="qd-toolbar"><a class="qd-button" id="telegramSend" href="${esc(url)}">✈️ Отправить в Telegram</a><button class="qd-button secondary" id="copyInquiry" type="button">Скопировать ссылку</button></div><div class="qd-notice">Это резервный маршрут на случай, если приватное серверное хранилище временно не подключено.</div>`;
+      $("copyInquiry")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(url);notice("Ссылка на заявку скопирована.","qd-success")}catch{}});
     }
 
     async function createFixedOrder(productId){
@@ -80,7 +88,8 @@
     }
 
     async function adminOrders(){
-      if(!initData)return;
+      await window.QDAuth?.init?.();
+      if(!window.QDAuth?.authenticated?.())return;
       try{
         const data=await request(API+"?admin=1");state.role="admin";$("adminPanel").hidden=false;
         $("orders").innerHTML=data.orders.length?data.orders.map(o=>{

@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { anonymousCustomerRef, requestTelegramIdentity, roleForTelegramId } from "../../lib/telegram-auth.js";
 
 const PUBLIC_REPO = "quantdeus/quantdeus.github.io";
@@ -45,6 +46,18 @@ function decodeContent(value) {
   return JSON.parse(Buffer.from(String(value).replace(/\n/g, ""), "base64").toString("utf8"));
 }
 async function catalog() {
+  const hasGithubToken = Boolean(String(process.env.QUANTDEUS_GITHUB_TOKEN || "").trim());
+  if (hasGithubToken) {
+    try {
+      const ref = encodeURIComponent(process.env.VERCEL_GIT_COMMIT_REF || "main");
+      const file = await github(PUBLIC_REPO, `/contents/store/products.json?ref=${ref}`, {}, { requireToken: false });
+      return decodeContent(file.content).products || [];
+    } catch {}
+  }
+  try {
+    const local = JSON.parse(await readFile(new URL("../../public/store/products.json", import.meta.url), "utf8"));
+    if (Array.isArray(local?.products)) return local.products;
+  } catch {}
   const ref = encodeURIComponent(process.env.VERCEL_GIT_COMMIT_REF || "main");
   const file = await github(PUBLIC_REPO, `/contents/store/products.json?ref=${ref}`, {}, { requireToken: false });
   return decodeContent(file.content).products || [];
@@ -134,6 +147,47 @@ function contactFor(user, provided) {
     freeform
   };
 }
+function inquiryMessage(order) {
+  const contact = order.contact?.freeform || (order.contact?.telegram_username ? "@" + order.contact.telegram_username : order.contact?.telegram_user_id ? "Telegram ID " + order.contact.telegram_user_id : "не указан");
+  return [
+    "🚀 Новая заявка QuantDeus",
+    "",
+    "Услуга: " + order.product_name,
+    "ID: " + order.id,
+    "Контакт: " + contact,
+    "",
+    order.request_note
+  ].join("\n").slice(0, 3900);
+}
+function telegramDraftUrl(order) {
+  return "https://t.me/QuantDeus_bot?text=" + encodeURIComponent(inquiryMessage(order));
+}
+async function deliverInquiryFallback(order) {
+  const botToken = String(process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN || "").trim();
+  const chatId = String(process.env.TELEGRAM_CHAT_ID || process.env.QUANTDEUS_TELEGRAM_CHAT_ID || "").trim();
+  if (botToken && chatId) {
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: inquiryMessage(order), disable_web_page_preview: true })
+      });
+      if (response.ok) return "telegram_server";
+    } catch {}
+  }
+  const webhook = String(process.env.QUANTDEUS_GENERIC_WEBHOOK || "").trim();
+  if (webhook) {
+    try {
+      const response = await fetch(webhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "quantdeus_service_inquiry", order })
+      });
+      if (response.ok) return "generic_webhook";
+    } catch {}
+  }
+  return null;
+}
 function canManage(order, user, role) {
   if (role === "owner" || role === "admin") return true;
   if (!user) return false;
@@ -151,6 +205,14 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET" && req.query?.products === "1") {
       return json(res, 200, { ok: true, products: await catalog() });
+    }
+    if (req.method === "GET" && req.query?.health === "1") {
+      return json(res, 200, {
+        ok: true,
+        persistent_storage: Boolean(String(process.env.QUANTDEUS_GITHUB_TOKEN || "").trim()),
+        server_delivery: Boolean((process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN) && (process.env.TELEGRAM_CHAT_ID || process.env.QUANTDEUS_TELEGRAM_CHAT_ID)) || Boolean(process.env.QUANTDEUS_GENERIC_WEBHOOK),
+        client_fallback: "https://t.me/QuantDeus_bot"
+      });
     }
 
     if (req.method === "GET") {
@@ -238,9 +300,38 @@ export default async function handler(req, res) {
       };
 
       const repo = process.env.QUANTDEUS_ORDERS_REPOSITORY || DEFAULT_PRIVATE_REPO;
-      await writeOrder(repo, `quantdeus-store/orders/${id}.json`, order);
-      return json(res, 201, {
+      let delivery = "github_private";
+      if (String(process.env.QUANTDEUS_GITHUB_TOKEN || "").trim()) {
+        await writeOrder(repo, `quantdeus-store/orders/${id}.json`, order);
+      } else if (quote) {
+        delivery = await deliverInquiryFallback(order);
+        if (!delivery) {
+          order.status = "needs_user_send";
+          return json(res, 202, {
+            ok: true,
+            needs_user_send: true,
+            delivery: "telegram_draft",
+            telegram_url: telegramDraftUrl(order),
+            order: {
+              id,
+              product_id: product.id,
+              product_name: product.name,
+              pricing_mode: order.pricing_mode,
+              amount: order.amount,
+              status: order.status,
+              anonymous: !user,
+              request_note: order.request_note
+            },
+            payment: null
+          });
+        }
+        order.status = "inquiry_forwarded";
+      } else {
+        throw new Error("github_storage_unconfigured");
+      }
+      return json(res, delivery === "github_private" ? 201 : 202, {
         ok: true,
+        delivery,
         order: {
           id,
           product_id: product.id,

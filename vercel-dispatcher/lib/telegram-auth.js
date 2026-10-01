@@ -6,7 +6,8 @@ import {
   verify as verifySignature
 } from "node:crypto";
 
-const PUBLIC_REPO = "quantdeus/quantdeus.github.io";
+const DEFAULT_CLIENT_ID = "8122160274";
+const DEFAULT_BOT_USERNAME = "QuantDeus_bot";
 const CONFIG_TTL_MS = 5 * 60 * 1000;
 const JWKS_TTL_MS = 60 * 60 * 1000;
 let configCache = null;
@@ -77,48 +78,70 @@ export async function verifyMiniAppInitData(raw) {
 
 export async function telegramPublicConfig() {
   const envClientId = clean(process.env.QUANTDEUS_TELEGRAM_CLIENT_ID);
+  const envUsername = clean(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME);
   if (envClientId) return {
     configured: true,
     client_id: envClientId,
-    username: clean(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME) || null
+    username: envUsername || DEFAULT_BOT_USERNAME
   };
 
   if (configCache && Date.now() - configCachedAt < CONFIG_TTL_MS) return configCache;
-  const ref = encodeURIComponent(process.env.QUANTDEUS_TELEGRAM_CONFIG_REF || process.env.VERCEL_GIT_COMMIT_REF || "main");
-  let response;
-  try {
-    response = await fetch(`https://api.github.com/repos/${PUBLIC_REPO}/contents/telegram-public.json?ref=${ref}`, {
-      headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
-    });
-  } catch {
-    throw new Error("telegram_oidc_unconfigured");
-  }
-  if (!response.ok) throw new Error("telegram_oidc_unconfigured");
-  const file = await response.json().catch(() => null);
-  let data = null;
-  try { data = JSON.parse(Buffer.from(String(file?.content || "").replace(/\\n/g, ""), "base64").toString("utf8")); }
-  catch { throw new Error("telegram_oidc_unconfigured"); }
-  if (!data?.configured || !clean(data.client_id)) throw new Error("telegram_oidc_unconfigured");
+  // Client ID and bot username are public identifiers. Keep a canonical local
+  // fallback so production auth does not depend on GitHub API availability or
+  // unauthenticated GitHub rate limits during cold starts.
   configCache = {
     configured: true,
-    client_id: clean(data.client_id),
-    username: clean(data.username) || null
+    client_id: DEFAULT_CLIENT_ID,
+    username: DEFAULT_BOT_USERNAME
   };
   configCachedAt = Date.now();
   return configCache;
 }
 
+async function fetchJson(url) {
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "QuantDeus/1.0 (+https://quantdeus.github.io)"
+      }
+    });
+  } catch {
+    throw new Error("telegram_oidc_unavailable");
+  }
+  if (!response.ok) throw new Error("telegram_oidc_unavailable");
+  const data = await response.json().catch(() => null);
+  if (!data) throw new Error("telegram_oidc_unavailable");
+  return data;
+}
+
 async function telegramJwks() {
   if (jwksCache && Date.now() - jwksCachedAt < JWKS_TTL_MS) return jwksCache;
-  const response = await fetch("https://oauth.telegram.org/.well-known/jwks.json", {
-    headers: { Accept: "application/json" }
-  });
-  if (!response.ok) throw new Error("telegram_oidc_unavailable");
-  const data = await response.json();
-  if (!Array.isArray(data?.keys)) throw new Error("telegram_oidc_unavailable");
+  let data;
+  try {
+    data = await fetchJson("https://oauth.telegram.org/.well-known/jwks.json");
+  } catch {
+    // Discovery fallback keeps us compatible if Telegram changes the JWKS URI.
+    const discovery = await fetchJson("https://oauth.telegram.org/.well-known/openid-configuration");
+    if (!clean(discovery?.jwks_uri)) throw new Error("telegram_oidc_unavailable");
+    data = await fetchJson(discovery.jwks_uri);
+  }
+  if (!Array.isArray(data?.keys) || data.keys.length === 0) throw new Error("telegram_oidc_unavailable");
   jwksCache = data;
   jwksCachedAt = Date.now();
   return data;
+}
+
+export async function telegramAuthHealth() {
+  const config = await telegramPublicConfig();
+  const jwks = await telegramJwks();
+  return {
+    configured: Boolean(config?.configured && config?.client_id),
+    client_id: String(config.client_id),
+    username: config.username || null,
+    jwks_keys: jwks.keys.length
+  };
 }
 
 function decodePart(part) {
