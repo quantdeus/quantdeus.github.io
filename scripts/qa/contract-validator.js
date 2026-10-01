@@ -55,6 +55,23 @@ check(cognitiveSitePrompt.includes('registry.collective_cognition?.runtime_direc
 check(cognitiveOpenClawClient.includes('agentRegistry.collective_cognition?.runtime_directive') && cognitiveOpenClawClient.includes('Collective cognition:'), 'scripts/openclaw-office-client.js', 'OpenClaw Office consumes canonical collective cognition directive');
 check(cognitiveTelegram.includes('data.collective_cognition?.runtime_directive') && cognitiveTelegram.includes('Collective cognition:'), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram homunculus prompt consumes canonical collective cognition directive');
 
+check(
+  cognitiveTelegram.includes('quantdeusSnapshot(agentId)') &&
+  cognitiveTelegram.includes('CURRENT_QUANTDEUS_REPOSITORY_GROUNDING') &&
+  cognitiveTelegram.includes('Never invent operational metrics') &&
+  cognitiveTelegram.includes("githubRead('/actions/runs?branch=main&per_page=20')"),
+  'vercel-dispatcher/api/quantdeus/telegram.js',
+  'all Telegram homunculi receive live read-only QuantDeus commit/Issue/PR/Actions grounding with anti-fabrication contract'
+);
+check(
+  cognitiveSitePrompt.includes("gh('/actions/runs?branch=main&per_page=20')") &&
+  cognitiveSitePrompt.includes("gh('/commits/main')") &&
+  cognitiveSitePrompt.includes('UNKNOWN / not measured'),
+  'scripts/site-agent-reply.js',
+  'website agents ground operational reports in current main, Issues, PRs and Actions instead of invented KPIs'
+);
+
+
 for (const department of startupOrg.departments || []) {
   for (const id of department.agents || []) {
     const agent = registry.agents.find(a => a.id === id);
