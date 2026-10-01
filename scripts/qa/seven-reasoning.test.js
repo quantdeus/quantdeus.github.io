@@ -9,7 +9,7 @@ test('briefing actually invokes Seven LLM with supplied state and no tools',asyn
   let calls=0;
   const office={configured:()=>true,isTransientError:()=>false,ask:async options=>{
     calls++; assert.equal(options.profile,'seven-of-nine'); assert.equal(options.trusted,false);
-    assert.equal(options.retryTransient,true); assert.equal(options.timeoutMs,75000);
+    assert.equal(options.retryTransient,true); assert.equal(options.timeoutMs,110000);
     assert.equal(JSON.parse(options.messages[1].content).tasks[0].number,12);
     assert.match(options.messages[0].content,/untrusted data/);
     return {text:JSON.stringify(decision),runtime:'openclaw-agent-exec-no-tools',model:'test-model',assistantTurns:1};
