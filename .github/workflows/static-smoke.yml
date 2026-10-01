@@ -66,6 +66,9 @@ jobs:
 
           const site=read('scripts/site-agent-reply.js');
           const telegram=read('vercel-dispatcher/api/quantdeus/telegram.js');
+          const llmBridge=read('vercel-dispatcher/api/quantdeus/llm.js');
+          must(llmBridge.includes("role === 'system' ? 50000 : 16000"), 'OIDC fallback must accept the bounded repo-grounded system prompt');
+          must(llmBridge.includes('total > 90000'), 'OIDC fallback total prompt budget must remain bounded');
           for(const [name,src] of [['site',site],['telegram',telegram]]) {
             must(src.includes('STRICT_REPOSITORY_STATUS_CONTRACT'), name+' missing strict repository status contract');
             must(src.includes('validateRepositoryStatusOutput'), name+' missing deterministic status validator');
@@ -83,6 +86,9 @@ jobs:
           must(seven.includes('trusted:false'), 'Seven priority planner must be no-tools');
           must(seven.includes("result.runtime!=='openclaw-agent-exec-no-tools'"), 'Seven priority planner must verify no-tools runtime');
           must(seven.includes('Seven dispatch selected non-executable Issue'), 'Seven must reject blocked/review Issues before dispatch');
+          must(seven.includes('Seven dispatch selected Issue already has an open implementation PR'), 'Seven snapshot preflight must reject already represented Issues');
+          must(seven.includes('agent-role dispatch Issue already has an open implementation PR'), 'Seven fresh dispatch preflight must reject already represented Issues');
+          must(seven.includes("new RegExp('(?:^|[-_/])'+n+'(?:[-_/]|$)'"), 'Seven must recognize issue numbers embedded in implementation branch names');
           must(!seven.includes('or {"action":"issue"'), 'Seven planner must not directly request Issue mutation');
           must(!seven.includes('or {"action":"pr"'), 'Seven planner must not directly request PR mutation');
 

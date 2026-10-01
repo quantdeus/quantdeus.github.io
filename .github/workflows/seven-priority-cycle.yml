@@ -53,6 +53,14 @@ jobs:
           const office=require('./scripts/openclaw-office-client');
           const read=p=>{try{return fs.readFileSync(p,'utf8').slice(0,40000)}catch{return ''}};
           const readJson=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const representsIssue=(pr,number)=>{
+            const n=String(number);
+            const title=String(pr.title||'');
+            const branch=String(pr.headRefName||pr.head?.ref||'');
+            return new RegExp('#'+n+'\\b','i').test(title) ||
+              new RegExp('issue[-_/ ]'+n+'(?:\\b|[-_/])','i').test(title+'\n'+branch) ||
+              new RegExp('(?:^|[-_/])'+n+'(?:[-_/]|$)','i').test(branch);
+          };
           function parse(text){
             const raw=String(text||'').trim();
             try{return JSON.parse(raw)}catch{}
@@ -101,8 +109,12 @@ jobs:
                 const issueNumber=Number(inputs.issue_number);
                 if(!Number.isInteger(issueNumber) || issueNumber < 1) throw new Error('Seven agent-role dispatch requires numeric issue_number');
                 const issues=readJson('/tmp/qd-seven/issues.json');
+                const prs=readJson('/tmp/qd-seven/prs.json');
                 const selected=issues.find(i=>Number(i.number)===issueNumber);
                 if(!selected) throw new Error('Seven dispatch selected Issue outside fresh snapshot');
+                if(prs.some(pr=>representsIssue(pr,issueNumber))) {
+                  throw new Error('Seven dispatch selected Issue already has an open implementation PR');
+                }
                 const labels=new Set((selected.labels||[]).map(x=>typeof x==='string'?x:x.name));
                 if(labels.has('coord:blocked')||labels.has('squad-b:blocked')||labels.has('squad-b:review')){
                   throw new Error('Seven dispatch selected non-executable Issue');
@@ -145,10 +157,7 @@ jobs:
                 const target=String(byLabel||byMarker||'').trim();
                 return known.has(target)?target:'';
               };
-              const represented=i=>prs.some(pr=>{
-                const hay=[pr.title,pr.body,pr.headRefName].filter(Boolean).join('\n');
-                return new RegExp(`(?:#|issue[-_/ ])${i.number}(?:\\b|$)`,'i').test(hay);
-              });
+              const represented=i=>prs.some(pr=>representsIssue(pr,i.number));
               const candidates=issues.filter(i=>{
                 const labels=labelsOf(i);
                 return labels.has('coord:task') &&
@@ -209,6 +218,17 @@ jobs:
             const issue=JSON.parse(raw);
             const labels=new Set((issue.labels||[]).map(x=>typeof x==='string'?x:x.name));
             if(String(issue.state||'').toUpperCase()!=='OPEN') throw new Error('agent-role dispatch Issue is not open');
+            const prsRaw=execFileSync('gh',['pr','list','--repo',process.env.GITHUB_REPOSITORY,'--state','open','--limit','100','--json','number,title,headRefName'],{encoding:'utf8',env:{...process.env,GH_TOKEN:process.env.GH_TOKEN}});
+            const openPrs=JSON.parse(prsRaw);
+            const represented=openPrs.some(pr=>{
+              const n=issueNumber;
+              const title=String(pr.title||'');
+              const branch=String(pr.headRefName||'');
+              return new RegExp('#'+n+'\\b','i').test(title) ||
+                new RegExp('issue[-_/ ]'+n+'(?:\\b|[-_/])','i').test(title+'\n'+branch) ||
+                new RegExp('(?:^|[-_/])'+n+'(?:[-_/]|$)','i').test(branch);
+            });
+            if(represented) throw new Error('agent-role dispatch Issue already has an open implementation PR');
             if(labels.has('coord:blocked')||labels.has('squad-b:blocked')||labels.has('squad-b:review')) throw new Error('agent-role dispatch rejected non-executable Issue');
             if(!labels.has('coord:ready')&&!labels.has('coord:active')) throw new Error('agent-role dispatch Issue lacks ready/active state');
           }

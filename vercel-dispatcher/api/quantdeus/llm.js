@@ -82,9 +82,10 @@ function normalizeMessages(input) {
     if (!['system', 'user', 'assistant'].includes(role)) {
       throw new Error('unsupported_message_role_at_' + index);
     }
-    if (!content || content.length > 16000) throw new Error('invalid_message_content_at_' + index);
+    const perMessageLimit = role === 'system' ? 50000 : 16000;
+    if (!content || content.length > perMessageLimit) throw new Error('invalid_message_content_at_' + index);
     total += content.length;
-    if (total > 70000) throw new Error('messages_total_too_large');
+    if (total > 90000) throw new Error('messages_total_too_large');
     return { role, content };
   });
 }
