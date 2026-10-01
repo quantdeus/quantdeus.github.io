@@ -128,6 +128,10 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
     return {
       text: String(data.text).trim(),
       model: data.model || profile,
+      provider: data.model_provider || null,
+      assistantTurns: data.assistant_turns ?? null,
+      usage: data.usage || null,
+      toolSummary: data.tool_summary || null,
       profile: data.profile || profile,
       raw: data,
       runtime: data.execution_mode || 'openclaw-agent-exec'
