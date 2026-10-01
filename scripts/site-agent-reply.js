@@ -147,6 +147,75 @@ function compactIssue(i) {
   };
 }
 
+function isRepositoryStatusRequest(text) {
+  return /(?:\bstatus\b|\breport\b|\bswarm\b|\bhealth\b|current\s+state|статус|отч[её]т|состояни|здоровь|рой)/i.test(String(text || ''));
+}
+
+function repositoryStatusContract(snapshot) {
+  const h = snapshot?.action_health || {};
+  return [
+    'STRICT_REPOSITORY_STATUS_CONTRACT',
+    'For this status/report request, preserve LLM analysis but emit the following raw evidence lines EXACTLY once under a VERIFIED section:',
+    'main_sha=' + String(snapshot?.main?.sha || 'UNKNOWN'),
+    'task_counts total=' + String(snapshot?.task_counts?.total ?? 'UNKNOWN') +
+      ' ready=' + String(snapshot?.task_counts?.ready ?? 'UNKNOWN') +
+      ' active=' + String(snapshot?.task_counts?.active ?? 'UNKNOWN') +
+      ' blocked=' + String(snapshot?.task_counts?.blocked ?? 'UNKNOWN'),
+    'open_issues=' + String(snapshot?.open_issue_count ?? 'UNKNOWN'),
+    'open_prs=' + String(snapshot?.open_pr_count ?? 'UNKNOWN'),
+    'action_health sampled=' + String(h.sampled_main_runs ?? 'UNKNOWN') +
+      ' success=' + String(h.success ?? 'UNKNOWN') +
+      ' failure=' + String(h.failure ?? 'UNKNOWN') +
+      ' in_progress=' + String(h.in_progress ?? 'UNKNOWN'),
+    'The response MUST contain the headings VERIFIED, INFERRED, and UNKNOWN.',
+    'Do not emit percentages or derived KPI arithmetic. Do not rename Issues as incidents.',
+    'Do not mention Slack, Jira, stand-ups, sprints, WIP, throughput, latency, duplicate-rate, pomodoro, or CQ unless one of those literal terms exists in the repository snapshot.',
+    'If a requested metric is absent, put it under UNKNOWN as not measured.',
+    'END_STRICT_REPOSITORY_STATUS_CONTRACT'
+  ].join('\n');
+}
+
+function validateRepositoryStatusOutput(text, snapshot, enabled) {
+  if (!enabled) return { ok: true, reasons: [] };
+  const value = String(text || '');
+  const h = snapshot?.action_health || {};
+  const required = [
+    'VERIFIED',
+    'INFERRED',
+    'UNKNOWN',
+    'main_sha=' + String(snapshot?.main?.sha || 'UNKNOWN'),
+    'task_counts total=' + String(snapshot?.task_counts?.total ?? 'UNKNOWN') +
+      ' ready=' + String(snapshot?.task_counts?.ready ?? 'UNKNOWN') +
+      ' active=' + String(snapshot?.task_counts?.active ?? 'UNKNOWN') +
+      ' blocked=' + String(snapshot?.task_counts?.blocked ?? 'UNKNOWN'),
+    'open_issues=' + String(snapshot?.open_issue_count ?? 'UNKNOWN'),
+    'open_prs=' + String(snapshot?.open_pr_count ?? 'UNKNOWN'),
+    'action_health sampled=' + String(h.sampled_main_runs ?? 'UNKNOWN') +
+      ' success=' + String(h.success ?? 'UNKNOWN') +
+      ' failure=' + String(h.failure ?? 'UNKNOWN') +
+      ' in_progress=' + String(h.in_progress ?? 'UNKNOWN')
+  ];
+  const reasons = required.filter(item => !value.includes(item)).map(item => 'missing:' + item);
+  if (/%/.test(value)) reasons.push('percentages_forbidden');
+  const snapshotText = JSON.stringify(snapshot || {}).toLowerCase();
+  const unsupported = [
+    ['slack', /\bslack\b/i],
+    ['jira', /\bjira\b/i],
+    ['stand-up', /\bstand-?ups?\b/i],
+    ['sprint', /\bsprints?\b/i],
+    ['wip', /\bWIP\b/],
+    ['throughput', /\bthroughput\b/i],
+    ['latency', /\blatency\b/i],
+    ['duplicate-rate', /duplicate[- ]?rate/i],
+    ['pomodoro', /\bpomodoro\b/i],
+    ['cq', /\bCQ\b/]
+  ];
+  for (const [term, pattern] of unsupported) {
+    if (!snapshotText.includes(term) && pattern.test(value)) reasons.push('unsupported_term:' + term);
+  }
+  return { ok: reasons.length === 0, reasons };
+}
+
 function commandReply() {
   if (/^\/start\b/i.test(body)) {
     return [
@@ -528,9 +597,11 @@ async function buildReply(agentId, query) {
   ]);
 
   const issueRequest = isCreateIssueRequest(normalizedQuery);
+  const statusRequest = isRepositoryStatusRequest(normalizedQuery);
   const context = localContext(agent.id);
   const messages = [
     { role: 'system', content: buildSystemPrompt(agent, context, snapshot) },
+    ...(statusRequest ? [{ role: 'system', content: repositoryStatusContract(snapshot) }] : []),
     ...history,
     { role: 'user', content: normalizedQuery },
   ];
@@ -566,6 +637,10 @@ async function buildReply(agentId, query) {
         }
       });
       if (result) {
+        const validation = validateRepositoryStatusOutput(result.text, snapshot, statusRequest);
+        if (!validation.ok) {
+          throw new Error('repository_status_grounding_failed:' + validation.reasons.slice(0, 8).join(','));
+        }
         activeProvider = result.runtime || 'openclaw-agent-exec';
         activeModel = result.model || agent.id;
         return { text: result.text, llm: true, agent, action: 'openclaw_office' };
@@ -576,6 +651,8 @@ async function buildReply(agentId, query) {
   }
 
   const text = await callModel(messages);
+  const validation = validateRepositoryStatusOutput(text, snapshot, statusRequest);
+  if (!validation.ok) throw new Error('repository_status_grounding_failed:' + validation.reasons.slice(0, 8).join(','));
   return { text, llm: true, agent };
 }
 
