@@ -50,6 +50,9 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/telegram.js
           node --check vercel-dispatcher/api/quantdeus/community.js
           node --check vercel-dispatcher/api/quantdeus/orders.js
+          node --check vercel-dispatcher/api/quantdeus/auth.js
+          node --check vercel-dispatcher/lib/telegram-auth.js
+          node --check assets/telegram-auth.js
 
       - name: Test forum and store API authorization and order flow
         run: node --test vercel-dispatcher/tests/portal-api.test.mjs
@@ -223,6 +226,9 @@ jobs:
           test -f vercel-dispatcher/api/quantdeus/telegram.js
           test -f vercel-dispatcher/api/quantdeus/community.js
           test -f vercel-dispatcher/api/quantdeus/orders.js
+          test -f vercel-dispatcher/api/quantdeus/auth.js
+          test -f vercel-dispatcher/lib/telegram-auth.js
+          test -f assets/telegram-auth.js
           test -f vercel-dispatcher/tests/portal-api.test.mjs
           test -f forum/index.html
           test -f store/index.html
@@ -250,6 +256,12 @@ jobs:
           grep -q 'Cosmic Frutiger Aero' telegram/index.html
           grep -q 'Автоматизация бизнеса' telegram/index.html
           grep -q 'Концерт Ксении Чередниковой' telegram/index.html
+          grep -q 'data-qd-auth-button' index.html
+          grep -q 'data-qd-auth-button' forum/index.html
+          grep -q 'data-qd-auth-button' store/index.html
+          grep -q 'Регистрация не нужна' store/index.html
+          grep -q 'authenticateTelegramRequest' vercel-dispatcher/api/quantdeus/community.js
+          grep -q 'actor_role: "guest"' vercel-dispatcher/api/quantdeus/orders.js
           grep -q '>Услуги<' telegram/index.html
           if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
           grep -q 'Frutiger Aero' index.html || grep -q 'var(--lime)' index.html
