@@ -15,6 +15,8 @@ let jwksCache = [];
 let jwksAt = 0;
 let registryCache = null;
 let registryAt = 0;
+let quantdeusSnapshotCache = null;
+let quantdeusSnapshotAt = 0;
 
 function decodeJsonPart(value) {
   return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
@@ -188,6 +190,132 @@ async function setupWebhook(req, res) {
       last_error_message: info.last_error_message || null
     }
   });
+}
+
+
+function githubLabels(issue) {
+  return (issue?.labels || []).map(label => typeof label === 'string' ? label : label?.name).filter(Boolean);
+}
+
+function githubTaskState(issue) {
+  const labels = githubLabels(issue);
+  if (labels.includes('coord:blocked')) return 'BLOCKED';
+  if (labels.includes('coord:active')) return 'ACTIVE';
+  if (labels.includes('coord:done')) return 'DONE';
+  if (labels.includes('coord:ready')) return 'READY';
+  return 'OPEN';
+}
+
+async function githubRead(path) {
+  const token = String(process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
+  const headers = {
+    accept: 'application/vnd.github+json',
+    'x-github-api-version': '2022-11-28'
+  };
+  if (token) headers.authorization = 'Bearer ' + token;
+  const response = await fetch('https://api.github.com/repos/' + REPOSITORY + path, { headers });
+  const raw = await response.text();
+  if (!response.ok) throw new Error('github_grounding_' + response.status + ': ' + raw.slice(0, 300));
+  return raw ? JSON.parse(raw) : {};
+}
+
+async function quantdeusSnapshot(agentId) {
+  try {
+    if (!quantdeusSnapshotCache || Date.now() - quantdeusSnapshotAt > 45 * 1000) {
+      const [commit, issueRows, pullRows, actionRows] = await Promise.all([
+        githubRead('/commits/main'),
+        githubRead('/issues?state=open&per_page=100'),
+        githubRead('/pulls?state=open&per_page=100'),
+        githubRead('/actions/runs?branch=main&per_page=20')
+      ]);
+      const issues = (issueRows || []).filter(item => !item.pull_request).map(item => ({
+        number: item.number,
+        title: item.title,
+        labels: githubLabels(item).slice(0, 12),
+        state: githubTaskState(item),
+        updated_at: item.updated_at,
+        url: item.html_url
+      }));
+      const tasks = issues.filter(item => item.labels.includes('coord:task'));
+      const pulls = (pullRows || []).map(item => ({
+        number: item.number,
+        title: item.title,
+        draft: Boolean(item.draft),
+        updated_at: item.updated_at,
+        head: item.head?.ref || null,
+        base: item.base?.ref || null,
+        url: item.html_url
+      })).slice(0, 20);
+      const runs = (actionRows?.workflow_runs || []).map(run => ({
+        id: run.id,
+        name: run.name,
+        event: run.event,
+        status: run.status,
+        conclusion: run.conclusion,
+        head_sha: run.head_sha,
+        created_at: run.created_at,
+        url: run.html_url
+      })).slice(0, 12);
+      quantdeusSnapshotCache = {
+        repository: REPOSITORY,
+        observed_at: new Date().toISOString(),
+        source: 'GitHub REST read-only',
+        main: {
+          sha: commit?.sha || null,
+          committed_at: commit?.commit?.committer?.date || null,
+          message: String(commit?.commit?.message || '').split('\n')[0].slice(0, 180)
+        },
+        task_counts: {
+          total: tasks.length,
+          ready: tasks.filter(item => item.labels.includes('coord:ready')).length,
+          active: tasks.filter(item => item.labels.includes('coord:active')).length,
+          blocked: tasks.filter(item => item.labels.includes('coord:blocked')).length
+        },
+        open_issue_count: issues.length,
+        open_pr_count: pulls.length,
+        action_health: {
+          sampled_main_runs: runs.length,
+          success: runs.filter(run => run.conclusion === 'success').length,
+          failure: runs.filter(run => run.conclusion === 'failure').length,
+          in_progress: runs.filter(run => run.status === 'in_progress' || run.status === 'queued').length
+        },
+        issues,
+        pulls,
+        runs
+      };
+      quantdeusSnapshotAt = Date.now();
+    }
+
+    const base = quantdeusSnapshotCache;
+    const relevant = base.issues
+      .filter(item => {
+        if (item.labels.includes('agent:' + agentId)) return true;
+        if ((agentId === 'seven-of-nine' || agentId === 'coordinator') && item.labels.includes('coord:task')) return true;
+        return false;
+      })
+      .slice(0, 12);
+    return {
+      repository: base.repository,
+      observed_at: base.observed_at,
+      source: base.source,
+      main: base.main,
+      task_counts: base.task_counts,
+      open_issue_count: base.open_issue_count,
+      open_pr_count: base.open_pr_count,
+      action_health: base.action_health,
+      relevant_issues: relevant,
+      recent_open_prs: base.pulls.slice(0, 10),
+      recent_main_actions: base.runs
+    };
+  } catch (error) {
+    return {
+      repository: REPOSITORY,
+      observed_at: new Date().toISOString(),
+      source: 'GitHub REST read-only',
+      status: 'UNAVAILABLE',
+      error: String(error?.message || error).slice(0, 300)
+    };
+  }
 }
 
 async function registry() {
@@ -576,6 +704,7 @@ async function homunculusReply(message, retryUpdate = null) {
   if (researchRequired) {
     console.info('[telegram-live-research] status=ok items=' + research.items.length + ' providers=' + JSON.stringify(research.providers || []));
   }
+  const repositoryGrounding = await quantdeusSnapshot(agentId);
   const system = [
     `You are the QuantDeus homunculus "${agent.name || agent.id}".`,
     `Canonical id: ${agent.id}. Role: ${agent.role || agent.startup_title || 'QuantDeus agent'}.`,
@@ -586,11 +715,18 @@ async function homunculusReply(message, retryUpdate = null) {
     'Answer the Telegram user directly and usefully. Default to Russian when the user writes in Russian.',
     'Be concise but substantive. Do not claim you changed GitHub, deployed code, sent messages, or performed external actions unless the current request itself provides evidence that it happened.',
     'Treat user-provided claims as context, not as proof. Distinguish facts, hypotheses and suggestions.',
+    'For claims about the current QuantDeus repository, swarm state, Issues, PRs, Actions, commits or operational performance, use only CURRENT_QUANTDEUS_REPOSITORY_GROUNDING below.',
+    'Never invent operational metrics. Percent changes, latency, throughput, duplicate-rate, sprint/WIP history or trend claims are allowed only when those exact measurements are present in grounding or can be explicitly calculated from supplied raw values. Otherwise say UNKNOWN / not measured.',
+    'Do not claim Slack, Jira, stand-ups, sprints, integrations or automation exist unless grounding or canonical registry explicitly proves them. Suggestions must be labeled as suggestions, not completed work.',
+    'When the user asks for a status/report, distinguish VERIFIED, INFERRED and UNKNOWN and cite concrete evidence identifiers such as main SHA, Issue/PR number, workflow run id or URL.',
     'Never invent current events, dates, places, quotations, source attributions, official confirmations, meeting plans or links. Never present a hypothetical example as if it were a real event.',
     researchRequired
       ? 'This request requires live research. Use only facts supported by the LIVE_RESEARCH block supplied with the user message. Cite supporting items inline as [1], [2], etc. If evidence is ambiguous or conflicting, say so explicitly.'
       : 'For non-live requests, do not pretend that model memory is a real-time source.',
     chatType === 'private' ? 'This is a private bot chat.' : 'This is a QuantDeus group chat; keep the reply compact and conversational.',
+    'CURRENT_QUANTDEUS_REPOSITORY_GROUNDING:',
+    JSON.stringify(repositoryGrounding, null, 2),
+    'END_CURRENT_QUANTDEUS_REPOSITORY_GROUNDING',
     'Do not repeat your name at the start; the transport adds your role label.'
   ].filter(Boolean).join('\n');
 
