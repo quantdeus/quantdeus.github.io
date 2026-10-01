@@ -261,7 +261,7 @@ jobs:
           grep -q 'data-qd-auth-button' store/index.html
           grep -q 'Регистрация не нужна' store/index.html
           grep -q 'authenticateTelegramRequest' vercel-dispatcher/api/quantdeus/community.js
-          grep -q 'actor_role: "guest"' vercel-dispatcher/api/quantdeus/orders.js
+          grep -q 'auth: "guest"' vercel-dispatcher/api/quantdeus/orders.js
           grep -q '>Услуги<' telegram/index.html
           if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
           grep -q 'Frutiger Aero' index.html || grep -q 'var(--lime)' index.html
