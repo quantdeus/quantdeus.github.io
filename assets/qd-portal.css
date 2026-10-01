@@ -10,3 +10,5 @@
 .qd-auth-control.authenticated{background:linear-gradient(125deg,#aaf6e929,#9cddff1f)}
 .qd-auth-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--qd-line)}
 @media(max-width:720px){.qd-auth-control{max-width:160px;padding:7px 10px;font-size:12px}.qd-auth-control:not(.authenticated) span{display:none}}
+
+.qd-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
