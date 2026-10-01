@@ -41,11 +41,12 @@ function normalizedMessages(messages, metadata, trusted = false) {
 
 const TRANSIENT_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
-function officeError(message, { code = 'OPENCLAW_OFFICE_ERROR', status = null, transient = false } = {}) {
+function officeError(message, { code = 'OPENCLAW_OFFICE_ERROR', status = null, transient = false, retrySafe = false } = {}) {
   const error = new Error(message);
   error.code = code;
   error.status = status;
   error.transient = Boolean(transient);
+  error.retrySafe = Boolean(retrySafe);
   return error;
 }
 
@@ -95,7 +96,10 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
           profile,
           messages: normalizedMessages(messages, metadata, trusted),
           metadata,
-          execution_mode: trusted ? 'trusted-office' : 'chat'
+          execution_mode: trusted ? 'trusted-office' : 'chat',
+          // Give the server a slightly shorter budget than the caller so it can
+          // terminate cleanly instead of leaving a zombie Sandbox turn behind.
+          request_timeout_ms: Math.max(15000, Math.min(285000, timeoutMs - 5000))
         }),
         signal: controller.signal
       });
@@ -114,10 +118,13 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
 
     const raw = await response.text();
     if (!response.ok) {
+      let errorData = null;
+      try { errorData = JSON.parse(raw); } catch {}
       throw officeError('OpenClaw Office ' + response.status + ': ' + raw.slice(0, 1600), {
         code: looksTransient(response.status, raw) ? 'OPENCLAW_TRANSIENT' : 'OPENCLAW_HTTP_ERROR',
         status: response.status,
-        transient: looksTransient(response.status, raw)
+        transient: looksTransient(response.status, raw),
+        retrySafe: errorData?.retry_safe === true
       });
     }
 
@@ -150,7 +157,8 @@ async function ask(options) {
       return await askOnce(options);
     } catch (error) {
       lastError = error;
-      if (!retryTransient || !isTransientError(error) || attempt >= attempts) throw error;
+      const retryAllowed = options?.trusted !== true || error?.retrySafe === true;
+      if (!retryTransient || !isTransientError(error) || !retryAllowed || attempt >= attempts) throw error;
       console.warn('[openclaw-office] transient failure; retrying once', {
         attempt,
         code: error.code || null,

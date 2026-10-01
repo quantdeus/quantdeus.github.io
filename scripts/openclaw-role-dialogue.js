@@ -8,7 +8,7 @@ function parseJson(text) {
   return JSON.parse(raw);
 }
 
-async function reasonRole({ profile, role, context, protocol, repository, trusted = false, timeoutMs = 60000, client = office }) {
+async function reasonRole({ profile, role, context, protocol, repository, trusted = false, timeoutMs = 100000, client = office }) {
   if (!client.configured()) {
     return { status: 'DEGRADED', runtime: null, model: null, error_code: 'OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE' };
   }
