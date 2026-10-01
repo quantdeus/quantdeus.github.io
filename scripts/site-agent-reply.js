@@ -483,7 +483,7 @@ async function buildSnapshot(agent) {
   };
 }
 
-async function getGitHubOidcToken() {
+async function getGitHubOidcToken(audience = 'quantdeus-vercel-llm') {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
   const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
   if (!requestUrl || !requestToken) {
@@ -491,7 +491,7 @@ async function getGitHubOidcToken() {
   }
 
   const separator = requestUrl.includes('?') ? '&' : '?';
-  const r = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent('quantdeus-vercel-llm'), {
+  const r = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent(audience), {
     headers: {
       authorization: 'Bearer ' + requestToken,
       accept: 'application/json'
@@ -503,6 +503,51 @@ async function getGitHubOidcToken() {
   const data = JSON.parse(raw);
   if (!data?.value) throw new Error('GitHub OIDC returned no token');
   return data.value;
+}
+
+async function callOpenClawFastBridge(messages) {
+  const oidc = await getGitHubOidcToken('quantdeus-vercel-openclaw');
+  const r = await fetch('https://quantdeus.vercel.app/api/quantdeus/openclaw', {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + oidc,
+      'content-type': 'application/json',
+      accept: 'application/json'
+    },
+    body: JSON.stringify({
+      profile: 'seven-of-nine',
+      messages,
+      metadata: {
+        source: 'github-command-center-fast',
+        repository: repo,
+        room: room.key,
+        thread: issue.number
+      },
+      execution_mode: 'chat',
+      request_timeout_ms: 35000
+    })
+  });
+
+  const raw = await r.text();
+  if (!r.ok) throw new Error('OpenClaw fast bridge ' + r.status + ': ' + raw.slice(0, 1000));
+
+  let data;
+  try { data = JSON.parse(raw); }
+  catch { throw new Error('OpenClaw fast bridge returned non-JSON: ' + raw.slice(0, 300)); }
+
+  if (data.execution_mode !== 'openclaw-agent-exec-no-tools-fast') {
+    throw new Error('OpenClaw fast bridge returned unexpected execution mode');
+  }
+  if (!data?.tools || Object.values(data.tools).some(Boolean)) {
+    throw new Error('OpenClaw fast bridge must be proven no-tools');
+  }
+  if (!data?.text || !String(data.text).trim()) {
+    throw new Error('OpenClaw fast bridge returned an empty response');
+  }
+
+  activeProvider = 'openclaw-fast-oidc';
+  activeModel = data.model || activeModel;
+  return String(data.text).trim();
 }
 
 async function callVercelOidcBridge(messages) {
@@ -576,9 +621,9 @@ async function callModel(messages) {
     activeModel = openRouterModel;
     return callProvider('https://openrouter.ai/api/v1/chat/completions', openRouterKey, 'OpenRouter', openRouterModel, messages);
   }
-  activeProvider = 'oidc-bridge';
+  activeProvider = 'openclaw-fast-oidc';
   activeModel = 'runtime-configured';
-  return callVercelOidcBridge(messages);
+  return callOpenClawFastBridge(messages);
 }
 
 async function buildReply(agentId, query) {
@@ -661,6 +706,7 @@ async function postReply(result) {
     activeProvider === 'openclaw-agent-exec-trusted-tools' ? 'OpenClaw Office (trusted GitHub MCP)' :
     activeProvider === 'openclaw-agent-exec-no-tools' ? 'OpenClaw Office (tools disabled)' :
     activeProvider === 'openrouter' ? 'OpenRouter' :
+    activeProvider === 'openclaw-fast-oidc' ? 'OpenClaw fast no-tools' :
     activeProvider === 'oidc-bridge' ? 'Authenticated provider bridge' :
     'OpenClaw Office';
   const footer = result.llm
