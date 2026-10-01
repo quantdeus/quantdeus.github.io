@@ -6,7 +6,7 @@ import orders from "../api/quantdeus/orders.js";
 
 globalThis.crypto ||= webcrypto;
 const botToken = "test-bot-token";
-const product = { id: "sample", name: "Sample", price_rub: 120, available: true };
+const product = { id: "sample", name: "Sample", price_rub: 120, available: true };\nconst quoteProduct = { id: "business-automation", name: "Автоматизация бизнеса", pricing_mode: "quote", price_rub: null, available: true };
 let savedOrder = null, writes = 0;
 
 function resMock() {
@@ -31,7 +31,7 @@ function mockFetch() {
   globalThis.fetch = async (url, options = {}) => {
     const parsed = new URL(url), path = "/" + parsed.pathname.split("/").slice(4).join("/");
     if (path === "/contents/store/products.json") {
-      return Response.json({ content: Buffer.from(JSON.stringify({ products: [product] })).toString("base64"), sha: "catalog" });
+      return Response.json({ content: Buffer.from(JSON.stringify({ products: [product, quoteProduct] })).toString("base64"), sha: "catalog" });
     }
     if (path.startsWith("/contents/quantdeus-store/orders/") && options.method === "PUT") {
       writes++;
@@ -80,7 +80,45 @@ test("order amount comes from the server catalog and buyer cannot confirm paymen
   assert.equal(writes, 1);
 });
 
-test("payment submitted is idempotent and never marks an order paid", async () => {
+
+
+test("quote service creates an inquiry with no payment amount and persists contact context", async () => {
+  mockFetch();
+  const initData = await signedInitData(1234), created = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-telegram-init-data": initData },
+    body: { action: "create", product_id: "business-automation", note: "Нужно автоматизировать обработку заявок и отчётность." }
+  }, created);
+  assert.equal(created.statusCode, 201, JSON.stringify(created.body));
+  assert.equal(created.body.order.pricing_mode, "quote");
+  assert.equal(created.body.order.status, "inquiry_created");
+  assert.equal(created.body.order.amount, null);
+  assert.equal(created.body.payment, null);
+  assert.equal(savedOrder.amount, null);
+  assert.equal(savedOrder.status, "inquiry_created");
+  assert.match(savedOrder.request_note, /автоматизировать/);
+  assert.equal(savedOrder.contact.telegram_user_id, "1234");
+
+  const pay = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-telegram-init-data": initData },
+    body: { action: "payment_submitted", order_id: created.body.order.id }
+  }, pay);
+  assert.equal(pay.statusCode, 409);
+  assert.equal(pay.body.error, "payment_not_applicable");
+
+  const cancel = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-telegram-init-data": initData },
+    body: { action: "cancel", order_id: created.body.order.id }
+  }, cancel);
+  assert.equal(cancel.statusCode, 200, JSON.stringify(cancel.body));
+  assert.equal(cancel.body.order.status, "cancelled");
+});
+\ntest("payment submitted is idempotent and never marks an order paid", async () => {
   mockFetch();
   const initData = await signedInitData(1234), created = resMock();
   await orders({ method: "POST", headers: { "x-telegram-init-data": initData }, body: { action: "create", product_id: "sample" } }, created);
