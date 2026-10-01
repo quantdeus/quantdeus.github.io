@@ -247,6 +247,12 @@ jobs:
           grep -q '26 специализированных ИИ-агентов' README.md
           grep -q 'sitemap.xml' robots.txt
           grep -q '/coordination/' telegram/index.html
+          grep -q 'Cosmic Frutiger Aero' telegram/index.html
+          grep -q 'Автоматизация бизнеса' telegram/index.html
+          grep -q 'Концерт Ксении Чередниковой' telegram/index.html
+          grep -q '>Услуги<' telegram/index.html
+          if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
+          grep -q 'Frutiger Aero' index.html || grep -q 'var(--lime)' index.html
 
       - name: Validate agent registry
         run: |
