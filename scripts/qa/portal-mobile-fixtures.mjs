@@ -6,6 +6,7 @@ const out = "/tmp/quantdeus-portal-mobile";
 fs.rmSync(out, { recursive: true, force: true });
 for (const dir of ["assets", "forum", "store", "telegram"]) fs.mkdirSync(path.join(out, dir), { recursive: true });
 fs.copyFileSync(path.join(root, "assets/qd-portal.css"), path.join(out, "assets/qd-portal.css"));
+fs.copyFileSync(path.join(root, "assets/telegram-auth.js"), path.join(out, "assets/telegram-auth.js"));
 
 const stripTelegram = html => html.replace(/\s*<script src="https:\/\/telegram\.org\/js\/telegram-web-app\.js"><\/script>/, "");
 
