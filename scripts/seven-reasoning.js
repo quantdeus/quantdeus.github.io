@@ -22,7 +22,7 @@ function parseDecision(text) {
 }
 async function reason({office,context,persona,doctrine,repository}) {
   if (!office.configured()) return {status:'DEGRADED',runtime:null,model:null,error_code:'OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE'};
-  const budget = turnBudget(75000,true);
+  const budget = turnBudget(110000,true);
   if (budget.timeoutMs < 1000) return {status:'DEGRADED',runtime:null,model:null,error_code:'DIALOGUE_BUDGET_EXHAUSTED'};
   try {
     const result = await office.ask({
