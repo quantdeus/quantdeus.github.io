@@ -360,7 +360,11 @@ jobs:
             if (result.profile !== agent.id) {
               throw new Error('Profile mismatch: expected ' + agent.id + ', got ' + result.profile);
             }
-            const summary = result.raw?.tool_summary;
+            if (!Number.isInteger(result.assistantTurns) || result.assistantTurns < 1) {
+              throw new Error('No completed LLM assistant turn evidence for ' + agent.id + ': ' + result.assistantTurns);
+            }
+            if (!String(result.model || '').trim()) throw new Error('No model evidence for ' + agent.id);
+            const summary = result.toolSummary;
             if (!summary || !Array.isArray(summary.tools) || !summary.tools.includes('github__list_branches') || Number(summary.failures || 0) !== 0) {
               throw new Error('GitHub MCP smoke trace missing/failed: ' + JSON.stringify(summary));
             }
@@ -373,20 +377,16 @@ jobs:
               agent: agent.id,
               name: agent.name,
               model: result.model,
+              provider: result.provider,
               runtime: result.runtime,
+              assistant_turns: result.assistantTurns,
+              usage: result.usage,
               tool_summary: summary,
               response: decision
             }, null, 2));
           })().catch(error => {
             if (office.isTransientError(error)) {
-              console.warn('Agent smoke degraded by transient OpenClaw failure; read-only contract checks were not completed.');
-              console.log(JSON.stringify({
-                ok: true,
-                degraded: true,
-                agent_id: process.env.AGENT_ID,
-                reason: 'TRANSIENT_OPENCLAW: ' + String(error.message || error).slice(0, 500)
-              }, null, 2));
-              return;
+              console.error('STRICT_LLM_SMOKE_FAILED: transient OpenClaw failure means this agent has no verified LLM turn in this run.');
             }
             console.error(error.stack || error.message || error);
             process.exit(1);
