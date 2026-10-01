@@ -57,6 +57,65 @@ jobs:
       - name: Run QA contract validator
         run: node scripts/qa/contract-validator.js
 
+      - name: Validate remaining runtime-gap guardrails
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const read=p=>fs.readFileSync(p,'utf8');
+          const must=(condition,message)=>{ if(!condition) throw new Error(message); };
+
+          const site=read('scripts/site-agent-reply.js');
+          const telegram=read('vercel-dispatcher/api/quantdeus/telegram.js');
+          for(const [name,src] of [['site',site],['telegram',telegram]]) {
+            must(src.includes('STRICT_REPOSITORY_STATUS_CONTRACT'), name+' missing strict repository status contract');
+            must(src.includes('validateRepositoryStatusOutput'), name+' missing deterministic status validator');
+            must(src.includes('percentages_forbidden'), name+' status validator does not reject derived percentages');
+            must(src.includes('task_counts total='), name+' status validator does not pin exact task counts');
+            must(src.includes('action_health sampled='), name+' status validator does not pin exact Actions counts');
+          }
+
+          const coordinator=read('.github/workflows/quantdeus-coordinator.yml');
+          must(!/^\s{2}issue_comment:/m.test(coordinator), 'full coordinator must not run on ordinary issue comments');
+
+          const seven=read('.github/workflows/seven-priority-cycle.yml');
+          must(seven.includes('trusted:false'), 'Seven priority planner must be no-tools');
+          must(seven.includes("result.runtime!=='openclaw-agent-exec-no-tools'"), 'Seven priority planner must verify no-tools runtime');
+          must(seven.includes('Seven dispatch selected non-executable Issue'), 'Seven must reject blocked/review Issues before dispatch');
+          must(!seven.includes('or {"action":"issue"'), 'Seven planner must not directly request Issue mutation');
+          must(!seven.includes('or {"action":"pr"'), 'Seven planner must not directly request PR mutation');
+
+          const daily=read('.github/workflows/daily-swarm-learning.yml');
+          for(const invariant of [
+            "cron: '17 6 * * *'",
+            'contents: read',
+            'actions: write',
+            'id-token: write',
+            'trusted: false',
+            "result.runtime !== 'openclaw-agent-exec-no-tools'",
+            'delete process.env.GITHUB_TOKEN',
+            'delete process.env.GH_TOKEN',
+            'quantdeus-hourly-openclaw.yml'
+          ]) must(daily.includes(invariant), 'daily learning invariant missing: '+invariant);
+          must(!/contents:\s*write/.test(daily), 'daily learning has contents write');
+          must(!/issues:\s*write/.test(daily), 'daily learning has issues write');
+          must(!/pull-requests:\s*write/.test(daily), 'daily learning has PR write');
+
+          const evo=read('scripts/openclaw-evolution.js');
+          const evoWorkflow=read('.github/workflows/openclaw-evolution.yml');
+          for(const invariant of [
+            'failClosedNoOp',
+            'TRANSIENT_OPENCLAW_GENERATION',
+            'MALFORMED_GENERATION_OUTPUT',
+            'INVALID_GENERATION_ENVELOPE',
+            'TRANSIENT_OPENCLAW_MATERIALIZATION',
+            'MALFORMED_MATERIALIZATION_OUTPUT'
+          ]) must(evo.includes(invariant), 'evolution fail-closed invariant missing: '+invariant);
+          must(evoWorkflow.includes("github.event_name != 'push'"), 'evolution push self-test must never publish');
+          must(evoWorkflow.includes("branches: [main]"), 'evolution self-test must stay scoped to main');
+
+          console.log('remaining runtime-gap guardrails: OK');
+          NODE
+
       - name: Verify evolution boundaries and merge guard behavior
         run: node --test scripts/qa/openclaw-evolution.test.js
 
@@ -86,6 +145,7 @@ jobs:
           test -f scripts/qa/hermes-office-validator.js
           test -f scripts/qa/openclaw-office-validator.js
           test -f .github/workflows/openclaw-evolution.yml
+          test -f .github/workflows/daily-swarm-learning.yml
           test -f .github/workflows/openclaw-evolution-pr-guard.yml
           test -f .github/workflows/openclaw-evolution-gate.yml
           test -f scripts/openclaw-evolution.js
