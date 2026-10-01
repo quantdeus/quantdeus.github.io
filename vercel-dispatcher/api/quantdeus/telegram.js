@@ -621,6 +621,75 @@ async function dispatchTelegramRetry(update) {
   return false;
 }
 
+function isRepositoryStatusRequest(text) {
+  return /(?:\bstatus\b|\breport\b|\bswarm\b|\bhealth\b|current\s+state|статус|отч[её]т|состояни|здоровь|рой)/i.test(String(text || ''));
+}
+
+function repositoryStatusContract(snapshot) {
+  const h = snapshot?.action_health || {};
+  return [
+    'STRICT_REPOSITORY_STATUS_CONTRACT',
+    'For this status/report request, preserve LLM analysis but emit these raw evidence lines EXACTLY once under VERIFIED:',
+    'main_sha=' + String(snapshot?.main?.sha || 'UNKNOWN'),
+    'task_counts total=' + String(snapshot?.task_counts?.total ?? 'UNKNOWN') +
+      ' ready=' + String(snapshot?.task_counts?.ready ?? 'UNKNOWN') +
+      ' active=' + String(snapshot?.task_counts?.active ?? 'UNKNOWN') +
+      ' blocked=' + String(snapshot?.task_counts?.blocked ?? 'UNKNOWN'),
+    'open_issues=' + String(snapshot?.open_issue_count ?? 'UNKNOWN'),
+    'open_prs=' + String(snapshot?.open_pr_count ?? 'UNKNOWN'),
+    'action_health sampled=' + String(h.sampled_main_runs ?? 'UNKNOWN') +
+      ' success=' + String(h.success ?? 'UNKNOWN') +
+      ' failure=' + String(h.failure ?? 'UNKNOWN') +
+      ' in_progress=' + String(h.in_progress ?? 'UNKNOWN'),
+    'The response MUST contain VERIFIED, INFERRED and UNKNOWN sections.',
+    'Do not emit percentages or derived KPI arithmetic. Do not rename Issues as incidents.',
+    'Do not mention Slack, Jira, stand-ups, sprints, WIP, throughput, latency, duplicate-rate, pomodoro, or CQ unless the literal term exists in grounding.',
+    'If a requested measurement is absent, say UNKNOWN / not measured.',
+    'END_STRICT_REPOSITORY_STATUS_CONTRACT'
+  ].join('\n');
+}
+
+function validateRepositoryStatusOutput(text, snapshot, enabled) {
+  if (!enabled) return { ok: true, reasons: [] };
+  const value = String(text || '');
+  const h = snapshot?.action_health || {};
+  const required = [
+    'VERIFIED',
+    'INFERRED',
+    'UNKNOWN',
+    'main_sha=' + String(snapshot?.main?.sha || 'UNKNOWN'),
+    'task_counts total=' + String(snapshot?.task_counts?.total ?? 'UNKNOWN') +
+      ' ready=' + String(snapshot?.task_counts?.ready ?? 'UNKNOWN') +
+      ' active=' + String(snapshot?.task_counts?.active ?? 'UNKNOWN') +
+      ' blocked=' + String(snapshot?.task_counts?.blocked ?? 'UNKNOWN'),
+    'open_issues=' + String(snapshot?.open_issue_count ?? 'UNKNOWN'),
+    'open_prs=' + String(snapshot?.open_pr_count ?? 'UNKNOWN'),
+    'action_health sampled=' + String(h.sampled_main_runs ?? 'UNKNOWN') +
+      ' success=' + String(h.success ?? 'UNKNOWN') +
+      ' failure=' + String(h.failure ?? 'UNKNOWN') +
+      ' in_progress=' + String(h.in_progress ?? 'UNKNOWN')
+  ];
+  const reasons = required.filter(item => !value.includes(item)).map(item => 'missing:' + item);
+  if (/%/.test(value)) reasons.push('percentages_forbidden');
+  const snapshotText = JSON.stringify(snapshot || {}).toLowerCase();
+  const unsupported = [
+    ['slack', /\bslack\b/i],
+    ['jira', /\bjira\b/i],
+    ['stand-up', /\bstand-?ups?\b/i],
+    ['sprint', /\bsprints?\b/i],
+    ['wip', /\bWIP\b/],
+    ['throughput', /\bthroughput\b/i],
+    ['latency', /\blatency\b/i],
+    ['duplicate-rate', /duplicate[- ]?rate/i],
+    ['pomodoro', /\bpomodoro\b/i],
+    ['cq', /\bCQ\b/]
+  ];
+  for (const [term, pattern] of unsupported) {
+    if (!snapshotText.includes(term) && pattern.test(value)) reasons.push('unsupported_term:' + term);
+  }
+  return { ok: reasons.length === 0, reasons };
+}
+
 async function openClawInternalReply(agentId, requestedAgentId, system, user) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
@@ -695,6 +764,7 @@ async function homunculusReply(message, retryUpdate = null) {
   const agent = byId.get(agentId) || agents[0] || { id: 'seven-of-nine', name: 'Seven of Nine', role: 'QuantDeus Coordinator', emoji: '🧭' };
   const query = stripAgentCommand(raw) || raw;
   const chatType = String(message.chat?.type || 'private');
+  const statusRequest = isRepositoryStatusRequest(query);
   const researchRequired = needsLiveResearch(query);
   const research = researchRequired ? await liveNewsResearch(query) : null;
   if (researchRequired && !research?.ok) {
@@ -724,6 +794,7 @@ async function homunculusReply(message, retryUpdate = null) {
       ? 'This request requires live research. Use only facts supported by the LIVE_RESEARCH block supplied with the user message. Cite supporting items inline as [1], [2], etc. If evidence is ambiguous or conflicting, say so explicitly.'
       : 'For non-live requests, do not pretend that model memory is a real-time source.',
     chatType === 'private' ? 'This is a private bot chat.' : 'This is a QuantDeus group chat; keep the reply compact and conversational.',
+    statusRequest ? repositoryStatusContract(repositoryGrounding) : '',
     'CURRENT_QUANTDEUS_REPOSITORY_GROUNDING:',
     JSON.stringify(repositoryGrounding, null, 2),
     'END_CURRENT_QUANTDEUS_REPOSITORY_GROUNDING',
@@ -733,7 +804,26 @@ async function homunculusReply(message, retryUpdate = null) {
   const groundedQuery = researchRequired
     ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
     : query.slice(0, 7000);
-  const answer = await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery);
+  let answer = await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery);
+  if (answer && statusRequest) {
+    let validation = validateRepositoryStatusOutput(answer, repositoryGrounding, true);
+    if (!validation.ok) {
+      console.warn('[telegram-grounding] first status answer rejected: ' + validation.reasons.slice(0, 8).join(','));
+      const retryQuery = [
+        groundedQuery,
+        '',
+        'Your previous status answer failed the deterministic repository-grounding validator.',
+        repositoryStatusContract(repositoryGrounding),
+        'Return a corrected answer only.'
+      ].join('\n');
+      answer = await openClawInternalReply(agentId, requestedAgentId, system, retryQuery);
+      validation = validateRepositoryStatusOutput(answer, repositoryGrounding, true);
+      if (!validation.ok) {
+        console.warn('[telegram-grounding] corrected status answer rejected: ' + validation.reasons.slice(0, 8).join(','));
+        answer = '';
+      }
+    }
+  }
   if (!answer) {
     if (researchRequired && research?.ok) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${groundedResearchFallback(research)}`;
