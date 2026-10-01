@@ -6,8 +6,6 @@ on:
   workflow_dispatch:
   issues:
     types: [opened, edited, reopened, closed, labeled, unlabeled]
-  issue_comment:
-    types: [created]
 
 permissions:
   contents: read
@@ -16,8 +14,8 @@ permissions:
   id-token: write
 
 concurrency:
-  # GitHub retains pending runs in one FIFO lane instead of replacing them
-  # across per-Issue concurrency groups during comment bursts.
+  # One serialized coordination lane for schedule/manual/Issue-state events.
+  # Ordinary chat comments belong to Site Agent Replies and must not start a second control plane.
   group: quantdeus-coordinator
   cancel-in-progress: false
 
