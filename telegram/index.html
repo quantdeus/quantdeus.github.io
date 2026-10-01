@@ -1,848 +1,293 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QuantDeus — мини-приложение Telegram</title>
-    <style>
-:root {
-  color-scheme: light;
-  --bg: #eaf7ff;
-  --panel: #ffffff;
-  --panel-strong: #d9f2ff;
-  --text: #112231;
-  --muted: #5d7383;
-  --line: rgba(17, 34, 49, 0.12);
-  --accent: #00a6ff;
-  --accent-2: #7ddfff;
-  --shadow: 0 18px 50px rgba(26, 113, 170, 0.18);
-}
-
-body.dark {
-  color-scheme: dark;
-  --bg: #07131d;
-  --panel: #102333;
-  --panel-strong: #17364c;
-  --text: #edf9ff;
-  --muted: #9fc1d6;
-  --line: rgba(237, 249, 255, 0.12);
-  --accent: #39c2ff;
-  --accent-2: #b4eeff;
-  --shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(125, 223, 255, 0.55), transparent 30rem),
-    linear-gradient(135deg, var(--bg), var(--panel-strong));
-  color: var(--text);
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  border: 0;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #00131f;
-  cursor: pointer;
-  font-weight: 800;
-  min-height: 42px;
-  padding: 0 18px;
-}
-
-select {
-  min-height: 42px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--text);
-  padding: 0 12px;
-}
-
-.app-shell {
-  width: min(100%, 720px);
-  min-height: 100vh;
-  margin: 0 auto;
-  padding: 18px;
-}
-
-.topbar,
-.status-panel,
-.hero,
-.tabs,
-.product-card,
-.settings-block,
-.roadmap {
-  box-shadow: var(--shadow);
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px;
-}
-
-.topbar,
-.status-panel,
-.hero,
-.product-card,
-.settings-block,
-.roadmap,
-dialog form {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-}
-
-.eyebrow,
-.tag {
-  margin: 0 0 4px;
-  color: var(--accent);
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-h1,
-h2,
-p {
-  margin-top: 0;
-}
-
-h1 {
-  margin-bottom: 0;
-  font-size: clamp(1.8rem, 8vw, 2.6rem);
-  line-height: 1;
-}
-
-h2 {
-  margin-bottom: 8px;
-}
-
-.icon-button {
-  width: 44px;
-  padding: 0;
-  border: 1px solid var(--line);
-  background: var(--panel-strong);
-  color: var(--text);
-}
-
-.status-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 12px 14px;
-  color: var(--muted);
-}
-
-.status-panel > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #33d17a;
-  box-shadow: 0 0 0 4px rgba(51, 209, 122, 0.18);
-}
-
-.hero {
-  margin-top: 16px;
-  padding: 22px;
-  background:
-    linear-gradient(135deg, rgba(0, 166, 255, 0.18), transparent),
-    var(--panel);
-}
-
-.hero p {
-  color: var(--muted);
-  font-size: 1.08rem;
-  line-height: 1.45;
-}
-
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin: 16px 0;
-  padding: 6px;
-  border-radius: 8px;
-  background: var(--panel);
-}
-
-.tab {
-  background: transparent;
-  color: var(--muted);
-}
-
-.tab.active {
-  background: var(--panel-strong);
-  color: var(--text);
-}
-
-.tab-panel {
-  display: none;
-}
-
-.tab-panel.active {
-  display: grid;
-  gap: 12px;
-}
-
-.product-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
-}
-
-.product-card p:not(.tag) {
-  margin-bottom: 0;
-  color: var(--muted);
-  line-height: 1.4;
-}
-
-.featured {
-  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
-  background: linear-gradient(135deg, var(--panel), var(--panel-strong));
-}
-
-.binaural-player {
-  display: grid;
-  gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(0, 166, 255, 0.2), transparent 52%),
-    var(--panel);
-  box-shadow: var(--shadow);
-}
-
-.player-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.player-head p {
-  margin-bottom: 0;
-  color: var(--muted);
-}
-
-#timerDisplay {
-  font-size: clamp(2rem, 12vw, 3.4rem);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.preset-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.preset {
-  display: grid;
-  gap: 2px;
-  min-height: 68px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--text);
-}
-
-.preset.active {
-  border-color: var(--accent);
-  background: var(--panel-strong);
-}
-
-.preset small {
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.control-row {
-  display: grid;
-  grid-template-columns: 96px 1fr;
-  align-items: center;
-  gap: 12px;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.control-row input[type="range"] {
-  width: 100%;
-  accent-color: var(--accent);
-}
-
-.player-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.secondary-button {
-  border: 1px solid var(--line);
-  background: var(--panel-strong);
-  color: var(--text);
-}
-
-.signal-card {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.signal-line {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--panel-strong);
-}
-
-.signal-line span {
-  display: block;
-  width: 35%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  transform: translateX(-100%);
-}
-
-.signal-line.playing span {
-  animation: signal-flow 1.4s linear infinite;
-}
-
-@keyframes signal-flow {
-  to {
-    transform: translateX(300%);
-  }
-}
-
-.settings-block {
-  padding: 18px;
-}
-
-.settings-block label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 0;
-  border-top: 1px solid var(--line);
-}
-
-.settings-block input {
-  width: 22px;
-  height: 22px;
-  accent-color: var(--accent);
-}
-
-.roadmap {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 18px;
-  list-style: none;
-}
-
-.roadmap li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--muted);
-}
-
-.roadmap span {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--panel-strong);
-  color: var(--accent-2);
-  font-weight: 900;
-}
-
-dialog {
-  width: min(92vw, 420px);
-  border: 0;
-  background: transparent;
-  color: var(--text);
-}
-
-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.45);
-}
-
-dialog form {
-  padding: 22px;
-}
-
-dialog p {
-  color: var(--muted);
-}
-
-@media (max-width: 520px) {
-  .app-shell {
-    padding: 12px;
-  }
-
-  .product-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .product-card button,
-  .hero button {
-    width: 100%;
-  }
-
-  .tabs,
-  .preset-grid,
-  .player-actions {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .player-head,
-  .control-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-    </style>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  </head>
-  <body>
-    <main class="app-shell">
-      <section class="topbar">
-        <div>
-          <p class="eyebrow">QuantDeus</p>
-          <h1>Магазин мини-приложений</h1>
-        </div>
-        <button id="themeToggle" class="icon-button" type="button" aria-label="Сменить тему">◐</button>
-      </section>
-
-      <section class="status-panel">
-        <div>
-          <span class="status-dot"></span>
-          <span id="tgStatus">Telegram режим проверяется</span>
-        </div>
-        <strong id="userName">Гость</strong>
-      </section>
-
-      <section class="hero">
-        <p>Личный пульт QuantDeus: микропродукты, Y2K-мотивация и игровые хабы в одном Telegram интерфейсе.</p>
-        <button id="mainAction" type="button">Открыть первый модуль</button>
-        <button id="coordinationAction" class="secondary-button" type="button" style="margin-left:8px">🧭 Центр координации</button>
-      </section>
-
-      <nav class="tabs" aria-label="Разделы QuantDeus">
-        <button class="tab active" type="button" data-tab="store">Магазин</button>
-        <button class="tab" type="button" data-tab="binaural">Бинауральное</button>
-        <button class="tab" type="button" data-tab="personal">Личный</button>
-        <button class="tab" type="button" data-tab="roadmap">План</button>
-      </nav>
-
-      <section id="store" class="tab-panel active">
-        <article class="product-card featured">
-          <div>
-            <p class="tag">Первый запуск</p>
-            <h2>Binaural.exe</h2>
-            <p>Мини-продукт для фокуса, сна и цифрового ноотропного вайба.</p>
-          </div>
-          <button type="button" data-open="binaural">Запустить</button>
-        </article>
-
-        <article class="product-card">
-          <div>
-            <p class="tag">Игровой хаб</p>
-            <h2>Дети Эльтана</h2>
-            <p>Новости мода, лор, расы, карта рукава галактики и патчноуты.</p>
-          </div>
-          <button type="button" data-open="eltan">Открыть</button>
-        </article>
-
-        <article class="product-card">
-          <div>
-            <p class="tag">Скоро</p>
-            <h2>Варп-исследования</h2>
-            <p>Пульс исследований SubWarp, Lentz/Krasnikov и статусы прогонов.</p>
-          </div>
-          <button type="button" data-open="warp">В план</button>
-        </article>
-      </section>
-
-      <section id="binaural" class="tab-panel">
-        <article class="binaural-player">
-          <div class="player-head">
-            <div>
-              <p class="tag">Аудиомодуль</p>
-              <h2>Binaural.exe</h2>
-              <p id="presetDescription">Выбери режим и запускай мягкий бинауральный поток.</p>
-            </div>
-            <strong id="timerDisplay">05:00</strong>
-          </div>
-
-          <div class="preset-grid" aria-label="Пресеты Binaural.exe">
-            <button class="preset active" type="button" data-preset="focus">
-              <span>Фокус</span>
-              <small>14 Hz</small>
-            </button>
-            <button class="preset" type="button" data-preset="sleep">
-              <span>Сон</span>
-              <small>4 Hz</small>
-            </button>
-            <button class="preset" type="button" data-preset="cooldown">
-              <span>Перезагрузка</span>
-              <small>8 Hz</small>
-            </button>
-          </div>
-
-          <label class="control-row">
-            <span>Время</span>
-            <select id="durationSelect">
-              <option value="300">5 минут</option>
-              <option value="600">10 минут</option>
-              <option value="900">15 минут</option>
-              <option value="1800">30 минут</option>
-            </select>
-          </label>
-
-          <label class="control-row">
-            <span>Громкость</span>
-            <input id="volumeControl" type="range" min="0" max="0.16" value="0.06" step="0.01" />
-          </label>
-
-          <div class="player-actions">
-            <button id="playBinaural" type="button">Старт</button>
-            <button id="stopBinaural" class="secondary-button" type="button">Стоп</button>
-          </div>
-
-          <div class="signal-card">
-            <span id="leftFrequency">220 Hz</span>
-            <div class="signal-line" aria-hidden="true"><span id="signalPulse"></span></div>
-            <span id="rightFrequency">234 Hz</span>
-          </div>
-        </article>
-      </section>
-
-      <section id="personal" class="tab-panel">
-        <article class="settings-block">
-          <h2>2 уровня персонализации</h2>
-          <label>
-            <span>Личный профиль владельца</span>
-            <input type="checkbox" checked />
-          </label>
-          <label>
-            <span>Профиль пользователей QuantDeus</span>
-            <input type="checkbox" checked />
-          </label>
-          <label>
-            <span>Y2K затравка между результатами</span>
-            <input type="checkbox" checked />
-          </label>
-        </article>
-      </section>
-
-      <section id="roadmap" class="tab-panel">
-        <ol class="roadmap">
-          <li><span>01</span> Оболочка магазина и Telegram SDK</li>
-          <li><span>02</span> Минимальная версия Binaural.exe</li>
-          <li><span>03</span> Хаб «Дети Эльтана»</li>
-          <li><span>04</span> API-шлюз и пользовательские профили</li>
-        </ol>
-      </section>
-
-      <dialog id="moduleDialog">
-        <form method="dialog">
-          <h2 id="dialogTitle">Модуль</h2>
-          <p id="dialogText"></p>
-          <button type="submit">Закрыть</button>
-        </form>
-      </dialog>
-    </main>
-
-    <script>
-const tg = window.Telegram?.WebApp;
-
-const modules = {
-  binaural: {
-    title: "Binaural.exe",
-    text: "Минимальная версия: режимы «Фокус», «Сон», «Перезагрузка», таймер и мягкая монетизация через рекламу."
-  },
-  eltan: {
-    title: "Дети Эльтана",
-    text: "Хаб мода: новости, расы, лор, карта соседнего рукава и ссылки на сборки."
-  },
-  warp: {
-    title: "Варп-исследования",
-    text: "Следующий слой: статусы прогонов, SubWarp v12, Lentz/Krasnikov и отчеты."
-  }
-};
-
-const presets = {
-  focus: {
-    label: "Фокус",
-    base: 220,
-    beat: 14,
-    description: "Фокус: бодрый слой 14 Гц для работы, кода и сборки идей."
-  },
-  sleep: {
-    label: "Сон",
-    base: 174,
-    beat: 4,
-    description: "Сон: медленный слой 4 Гц для вечернего сброса оборотов."
-  },
-  cooldown: {
-    label: "Перезагрузка",
-    base: 196,
-    beat: 8,
-    description: "Перезагрузка: ровный слой 8 Гц для охлаждения головы и перезапуска."
-  }
-};
-
-const binauralState = {
-  audioContext: null,
-  gain: null,
-  leftOscillator: null,
-  rightOscillator: null,
-  merger: null,
-  activePreset: "focus",
-  durationSeconds: 300,
-  remainingSeconds: 300,
-  timerId: null,
-  isPlaying: false
-};
-
-function initTelegram() {
-  const status = document.querySelector("#tgStatus");
-  const userName = document.querySelector("#userName");
-
-  if (!tg) {
-    status.textContent = "Обычный браузер";
-    return;
-  }
-
-  tg.ready();
-  tg.expand();
-  status.textContent = "Мини-приложение Telegram активно";
-
-  const user = tg.initDataUnsafe?.user;
-  if (user?.first_name) {
-    userName.textContent = user.first_name;
-  }
-
-  if (tg.colorScheme === "dark") {
-    document.body.classList.add("dark");
-  }
-}
-
-function activateTab(tabName) {
-  document.querySelectorAll(".tab").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.tab === tabName);
-  });
-
-  document.querySelectorAll(".tab-panel").forEach((panel) => {
-    panel.classList.toggle("active", panel.id === tabName);
-  });
-}
-
-function openModule(moduleName) {
-  if (moduleName === "binaural") {
-    activateTab("binaural");
-    tg?.HapticFeedback?.impactOccurred("light");
-    return;
-  }
-
-  const module = modules[moduleName];
-  if (!module) return;
-
-  const dialog = document.querySelector("#moduleDialog");
-  document.querySelector("#dialogTitle").textContent = module.title;
-  document.querySelector("#dialogText").textContent = module.text;
-
-  if (typeof dialog.showModal === "function") {
-    dialog.showModal();
-  } else {
-    alert(`${module.title}\n\n${module.text}`);
-  }
-
-  tg?.HapticFeedback?.impactOccurred("light");
-}
-
-function formatTime(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
-  const seconds = Math.floor(totalSeconds % 60).toString().padStart(2, "0");
-  return `${minutes}:${seconds}`;
-}
-
-function updateBinauralView() {
-  const preset = presets[binauralState.activePreset];
-  document.querySelector("#presetDescription").textContent = preset.description;
-  document.querySelector("#timerDisplay").textContent = formatTime(binauralState.remainingSeconds);
-  document.querySelector("#leftFrequency").textContent = `${preset.base} Гц`;
-  document.querySelector("#rightFrequency").textContent = `${preset.base + preset.beat} Гц`;
-  document.querySelector("#playBinaural").textContent = binauralState.isPlaying ? "Пауза" : "Старт";
-  document.querySelector(".signal-line").classList.toggle("playing", binauralState.isPlaying);
-
-  document.querySelectorAll(".preset").forEach((button) => {
-    button.classList.toggle("active", button.dataset.preset === binauralState.activePreset);
-  });
-}
-
-function stopBinaural(shouldReset = true) {
-  clearInterval(binauralState.timerId);
-  binauralState.timerId = null;
-
-  binauralState.leftOscillator?.stop();
-  binauralState.rightOscillator?.stop();
-
-  binauralState.leftOscillator = null;
-  binauralState.rightOscillator = null;
-  binauralState.merger = null;
-  binauralState.isPlaying = false;
-
-  if (shouldReset) {
-    binauralState.remainingSeconds = binauralState.durationSeconds;
-  }
-
-  updateBinauralView();
-}
-
-function startBinaural() {
-  if (binauralState.isPlaying) {
-    stopBinaural(false);
-    return;
-  }
-
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) {
-    alert("Web Audio API недоступен в этом браузере.");
-    return;
-  }
-
-  if (!binauralState.audioContext) {
-    binauralState.audioContext = new AudioContext();
-    binauralState.gain = binauralState.audioContext.createGain();
-    binauralState.gain.connect(binauralState.audioContext.destination);
-  }
-
-  const context = binauralState.audioContext;
-  const preset = presets[binauralState.activePreset];
-  const left = context.createOscillator();
-  const right = context.createOscillator();
-  const merger = context.createChannelMerger(2);
-
-  left.frequency.value = preset.base;
-  right.frequency.value = preset.base + preset.beat;
-  left.type = "sine";
-  right.type = "sine";
-
-  left.connect(merger, 0, 0);
-  right.connect(merger, 0, 1);
-  merger.connect(binauralState.gain);
-  binauralState.gain.gain.value = Number(document.querySelector("#volumeControl").value);
-
-  left.start();
-  right.start();
-
-  binauralState.leftOscillator = left;
-  binauralState.rightOscillator = right;
-  binauralState.merger = merger;
-  binauralState.isPlaying = true;
-
-  binauralState.timerId = setInterval(() => {
-    binauralState.remainingSeconds -= 1;
-    if (binauralState.remainingSeconds <= 0) {
-      stopBinaural(true);
-      tg?.HapticFeedback?.notificationOccurred("success");
-      return;
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#071629" />
+  <meta name="description" content="QuantDeus Portal — Telegram-интерфейс услуг, форума, координации и личных модулей." />
+  <title>QuantDeus Portal — Telegram</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{
+      color-scheme:dark;
+      --space:#06101f;
+      --space2:#0b2140;
+      --sky:#73e8ff;
+      --aqua:#70ffd7;
+      --pink:#ff8de8;
+      --violet:#a99cff;
+      --text:#f5fbff;
+      --muted:#b8cde0;
+      --glass:rgba(13,41,68,.66);
+      --glass2:rgba(218,248,255,.12);
+      --line:rgba(181,240,255,.22);
+      --shadow:0 22px 70px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.12);
     }
-    updateBinauralView();
-  }, 1000);
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;background:var(--space)}
+    body{
+      margin:0;min-height:100vh;color:var(--text);
+      font:16px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 18% 8%,rgba(83,232,255,.30),transparent 24rem),
+        radial-gradient(circle at 88% 4%,rgba(171,123,255,.30),transparent 22rem),
+        radial-gradient(circle at 80% 68%,rgba(107,255,211,.13),transparent 25rem),
+        linear-gradient(180deg,#071225 0%,#0b2140 48%,#06101f 100%);
+      overflow-x:hidden;
+    }
+    body:before,body:after{
+      content:"";position:fixed;border-radius:50%;pointer-events:none;filter:blur(2px);z-index:-1
+    }
+    body:before{width:190px;height:190px;right:-70px;top:220px;background:radial-gradient(circle at 30% 28%,#fff 0 3%,#81f4ff 4% 14%,#5e75ff 36%,rgba(84,51,177,.15) 67%,transparent 70%);box-shadow:0 0 70px rgba(99,219,255,.35)}
+    body:after{width:140px;height:140px;left:-62px;top:640px;background:radial-gradient(circle at 35% 30%,#fff 0 2%,#88ffd8 6% 17%,#65b9ff 38%,rgba(40,134,217,.12) 68%,transparent 72%)}
+    a{color:inherit;text-decoration:none}
+    button,select,input,textarea{font:inherit}
+    button{cursor:pointer}
+    .shell{width:min(100%,760px);margin:auto;padding:14px 14px 44px}
+    .glass{
+      border:1px solid var(--line);border-radius:26px;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(9,36,61,.64));
+      box-shadow:var(--shadow);backdrop-filter:blur(22px) saturate(135%);-webkit-backdrop-filter:blur(22px) saturate(135%)
+    }
+    .topbar{display:flex;align-items:center;gap:12px;padding:13px 15px;position:sticky;top:10px;z-index:20}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:950;letter-spacing:.02em;margin-right:auto}
+    .planet{width:38px;height:38px;border-radius:50%;position:relative;background:radial-gradient(circle at 32% 27%,#fff 0 5%,#8ffaff 11%,#5b6df1 48%,#0f214e 72%);box-shadow:0 0 28px rgba(115,232,255,.55)}
+    .planet:after{content:"";position:absolute;inset:14px -8px;border:1.5px solid #ff9bea;border-radius:50%;transform:rotate(-12deg)}
+    .toplinks{display:flex;gap:7px}
+    .toplink,.iconbtn{
+      border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--text);min-height:38px;border-radius:999px;padding:0 13px;font-weight:800
+    }
+    .iconbtn{width:40px;padding:0}
+    .status{margin-top:12px;display:flex;justify-content:space-between;gap:12px;padding:12px 15px;color:var(--muted)}
+    .status div{display:flex;align-items:center;gap:8px}
+    .dot{width:10px;height:10px;border-radius:50%;background:#58ffab;box-shadow:0 0 0 5px rgba(88,255,171,.12),0 0 20px rgba(88,255,171,.6)}
+    .hero{margin-top:14px;padding:26px;overflow:hidden;position:relative}
+    .hero:after{content:"";position:absolute;width:220px;height:220px;right:-80px;bottom:-105px;border-radius:50%;background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.94) 0 2%,rgba(119,244,255,.66) 8%,rgba(117,121,255,.30) 35%,transparent 67%);pointer-events:none}
+    .kicker{color:var(--sky);font-size:.76rem;text-transform:uppercase;letter-spacing:.18em;font-weight:950}
+    h1,h2,h3,p{margin-top:0}
+    h1{font-size:clamp(2.25rem,10vw,4.4rem);line-height:.94;letter-spacing:-.055em;margin:13px 0 16px;max-width:620px}
+    h1 span{background:linear-gradient(90deg,var(--sky),#fff 48%,var(--pink));-webkit-background-clip:text;color:transparent}
+    .lead{color:#d1e2f0;font-size:1.07rem;max-width:590px;margin-bottom:22px}
+    .hero-actions,.toolbar{display:flex;gap:9px;flex-wrap:wrap}
+    .btn{
+      min-height:46px;border:1px solid rgba(255,255,255,.28);border-radius:16px;padding:0 17px;font-weight:950;color:#06121e;
+      background:linear-gradient(125deg,var(--aqua),var(--sky) 50%,#f29ce7);box-shadow:0 10px 30px rgba(81,219,255,.23),inset 0 1px 0 #fff
+    }
+    .btn.secondary{color:var(--text);background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(10,44,70,.72));box-shadow:none}
+    .portal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+    .portal-card{padding:15px;min-height:118px;position:relative;overflow:hidden}
+    .portal-card strong{display:block;font-size:1rem;margin-top:8px}
+    .portal-card p{font-size:.82rem;color:var(--muted);margin:5px 0 0}
+    .portal-icon{font-size:1.45rem}
+    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0;padding:6px}
+    .tab{min-height:44px;border:0;border-radius:15px;background:transparent;color:var(--muted);font-weight:900}
+    .tab.active{background:linear-gradient(145deg,rgba(130,242,255,.22),rgba(255,255,255,.09));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+    .panel{display:none}.panel.active{display:grid;gap:12px}
+    .service-card,.module-card,.settings,.roadmap-card,.player{padding:19px}
+    .service-card{position:relative;overflow:hidden}
+    .service-card:before{content:"";position:absolute;width:110px;height:110px;border-radius:50%;right:-44px;top:-46px;background:radial-gradient(circle,rgba(123,250,255,.35),transparent 68%)}
+    .tag{color:var(--sky);font-size:.73rem;letter-spacing:.12em;text-transform:uppercase;font-weight:950;margin-bottom:5px}
+    .service-card h2,.module-card h2{margin-bottom:7px;font-size:1.42rem}
+    .service-card p,.module-card p,.settings p,.roadmap-card p{color:var(--muted)}
+    .service-meta{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+    .chip{border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:.75rem;color:#d8f6ff;background:rgba(255,255,255,.06)}
+    .module-card{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .module-card .btn{min-width:112px}
+    .player{display:grid;gap:15px}
+    .player-head{display:flex;justify-content:space-between;gap:16px}
+    #timerDisplay{font-size:2.25rem;font-weight:950;font-variant-numeric:tabular-nums}
+    .preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .preset{min-height:68px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.06);color:var(--text);font-weight:900}
+    .preset small{display:block;color:var(--muted);margin-top:2px}
+    .preset.active{background:linear-gradient(145deg,rgba(112,255,215,.22),rgba(115,232,255,.16));border-color:rgba(115,232,255,.55)}
+    .control{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;color:var(--muted);font-weight:850}
+    .control select,.control input{width:100%}
+    select{min-height:42px;border:1px solid var(--line);border-radius:14px;background:#0c2741;color:#fff;padding:0 12px}
+    input[type=range]{accent-color:#72e8ff}
+    .signal{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;color:var(--muted);font-weight:850}
+    .signal-line{height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+    .signal-line span{display:block;width:34%;height:100%;background:linear-gradient(90deg,var(--aqua),var(--sky),var(--pink));transform:translateX(-110%)}
+    .signal-line.playing span{animation:signal 1.3s linear infinite}
+    @keyframes signal{to{transform:translateX(310%)}}
+    .settings label{display:flex;justify-content:space-between;gap:18px;padding:13px 0;border-top:1px solid rgba(255,255,255,.08)}
+    .settings input{width:22px;height:22px;accent-color:var(--sky)}
+    .roadmap{display:grid;gap:11px;margin:0;padding:0;list-style:none}
+    .roadmap li{display:grid;grid-template-columns:38px 1fr;align-items:center;gap:10px;color:var(--muted)}
+    .roadmap span{display:grid;place-items:center;width:38px;height:38px;border-radius:13px;background:rgba(115,232,255,.13);color:var(--sky);font-weight:950}
+    dialog{width:min(92vw,440px);border:0;background:transparent;color:var(--text)}
+    dialog::backdrop{background:rgba(2,9,18,.72);backdrop-filter:blur(6px)}
+    dialog form{padding:22px}
+    .footer{padding:22px 8px 8px;color:#88a8c1;text-align:center;font-size:.78rem}
+    @media(max-width:560px){
+      .shell{padding:10px 10px 32px}.toplinks .hide-mobile{display:none}.hero{padding:22px 18px}.portal-grid{grid-template-columns:1fr}.portal-card{min-height:auto}
+      .tabs{grid-template-columns:1fr 1fr}.module-card{align-items:stretch;flex-direction:column}.module-card .btn,.service-card .btn,.hero .btn{width:100%}
+      .preset-grid{grid-template-columns:1fr 1fr 1fr}.player-head{display:block}.control{grid-template-columns:1fr}.status{font-size:.87rem}
+    }
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar glass">
+      <a class="brand" href="/"><span class="planet"></span><span>QuantDeus</span></a>
+      <div class="toplinks">
+        <a class="toplink hide-mobile" href="/forum/">Форум</a>
+        <a class="toplink" href="/store/">Услуги</a>
+        <button id="themePulse" class="iconbtn" type="button" aria-label="Подсветить интерфейс">✦</button>
+      </div>
+    </header>
 
-  tg?.HapticFeedback?.impactOccurred("medium");
-  updateBinauralView();
-}
+    <section class="status glass">
+      <div><span class="dot"></span><span id="tgStatus">Проверяю Telegram-сессию</span></div>
+      <strong id="userName">Гость</strong>
+    </section>
 
-document.querySelector("#themeToggle").addEventListener("click", () => {
-  document.body.classList.toggle("dark");
-});
+    <section class="hero glass">
+      <div class="kicker">Cosmic Frutiger Aero · QuantDeus Portal</div>
+      <h1>Пульт для <span>людей, проектов и агентов.</span></h1>
+      <p class="lead">Услуги QuantDeus, форум, координация роя и личные Y2K-модули теперь живут в одном космическом Telegram-интерфейсе.</p>
+      <div class="hero-actions">
+        <a class="btn" href="/store/">🧩 Открыть услуги</a>
+        <a class="btn secondary" href="/coordination/">🧭 Центр координации</a>
+      </div>
+    </section>
 
-document.querySelector("#mainAction").addEventListener("click", () => {
-  openModule("binaural");
-});
+    <section class="portal-grid" aria-label="Главные разделы">
+      <a class="portal-card glass" href="/store/"><span class="portal-icon">🤖</span><strong>Услуги</strong><p>Автоматизация бизнеса и концертные заявки.</p></a>
+      <a class="portal-card glass" href="/forum/"><span class="portal-icon">💬</span><strong>Форум</strong><p>Обсуждения, идеи и сообщество QuantDeus.</p></a>
+      <a class="portal-card glass" href="/coordination/"><span class="portal-icon">🛰️</span><strong>Рой</strong><p>Статус агентов и центр координации.</p></a>
+    </section>
 
-document.querySelector("#coordinationAction").addEventListener("click", () => {
-  window.location.href = "/coordination/";
-});
+    <nav class="tabs glass" aria-label="Разделы мини-приложения">
+      <button class="tab active" type="button" data-tab="services">Услуги</button>
+      <button class="tab" type="button" data-tab="binaural">Binaural</button>
+      <button class="tab" type="button" data-tab="personal">Личный</button>
+      <button class="tab" type="button" data-tab="roadmap">План</button>
+    </nav>
 
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => activateTab(tab.dataset.tab));
-});
+    <section id="services" class="panel active">
+      <article class="service-card glass">
+        <p class="tag">QuantDeus Automation</p>
+        <h2>Автоматизация бизнеса</h2>
+        <p>ИИ-агенты, интеграции, автоматизация рутинных процессов, цифровые диспетчеры и рабочие контуры под конкретную задачу.</p>
+        <div class="service-meta"><span class="chip">ИИ-агенты</span><span class="chip">интеграции</span><span class="chip">workflow</span><span class="chip">по запросу</span></div>
+        <a class="btn" href="/store/">Оставить заявку</a>
+      </article>
 
-document.querySelectorAll("[data-open]").forEach((button) => {
-  button.addEventListener("click", () => openModule(button.dataset.open));
-});
+      <article class="service-card glass">
+        <p class="tag">Live / Music</p>
+        <h2>Концерт Ксении Чередниковой</h2>
+        <p>Заявка на выступление: город, дата, площадка, формат и стоимость согласуются индивидуально.</p>
+        <div class="service-meta"><span class="chip">концерт</span><span class="chip">мероприятие</span><span class="chip">индивидуальный расчёт</span></div>
+        <a class="btn" href="/store/">Оставить заявку</a>
+      </article>
+    </section>
 
-document.querySelectorAll(".preset").forEach((button) => {
-  button.addEventListener("click", () => {
-    const wasPlaying = binauralState.isPlaying;
-    stopBinaural(false);
-    binauralState.activePreset = button.dataset.preset;
-    binauralState.remainingSeconds = binauralState.durationSeconds;
-    updateBinauralView();
-    if (wasPlaying) startBinaural();
-  });
-});
+    <section id="binaural" class="panel">
+      <article class="player glass">
+        <div class="player-head">
+          <div><p class="tag">Личный экспериментальный модуль</p><h2>Binaural.exe</h2><p id="presetDescription">Выбери режим и запускай мягкий бинауральный поток.</p></div>
+          <strong id="timerDisplay">05:00</strong>
+        </div>
+        <div class="preset-grid">
+          <button class="preset active" type="button" data-preset="focus">Фокус<small>14 Hz</small></button>
+          <button class="preset" type="button" data-preset="sleep">Сон<small>4 Hz</small></button>
+          <button class="preset" type="button" data-preset="cooldown">Перезагрузка<small>8 Hz</small></button>
+        </div>
+        <label class="control"><span>Время</span><select id="durationSelect"><option value="300">5 минут</option><option value="600">10 минут</option><option value="900">15 минут</option><option value="1800">30 минут</option></select></label>
+        <label class="control"><span>Громкость</span><input id="volumeControl" type="range" min="0" max="0.16" value="0.06" step="0.01" /></label>
+        <div class="toolbar"><button id="playBinaural" class="btn" type="button">Старт</button><button id="stopBinaural" class="btn secondary" type="button">Стоп</button></div>
+        <div class="signal"><span id="leftFrequency">220 Гц</span><div class="signal-line"><span></span></div><span id="rightFrequency">234 Гц</span></div>
+      </article>
+    </section>
 
-document.querySelector("#durationSelect").addEventListener("change", (event) => {
-  binauralState.durationSeconds = Number(event.target.value);
-  binauralState.remainingSeconds = binauralState.durationSeconds;
-  stopBinaural(true);
-});
+    <section id="personal" class="panel">
+      <article class="settings glass">
+        <p class="tag">Личный контур</p><h2>Персонализация</h2><p>Личные Y2K-модули отделены от коммерческих услуг QuantDeus.</p>
+        <label><span>Личный профиль владельца</span><input type="checkbox" checked /></label>
+        <label><span>Профиль пользователей QuantDeus</span><input type="checkbox" checked /></label>
+        <label><span>Y2K-затравка между результатами</span><input type="checkbox" checked /></label>
+      </article>
+    </section>
 
-document.querySelector("#volumeControl").addEventListener("input", (event) => {
-  if (binauralState.gain) {
-    binauralState.gain.gain.value = Number(event.target.value);
-  }
-});
+    <section id="roadmap" class="panel">
+      <article class="roadmap-card glass">
+        <p class="tag">Portal roadmap</p><h2>Следующие слои</h2>
+        <ol class="roadmap">
+          <li><span>01</span><div>Услуги и заявки</div></li>
+          <li><span>02</span><div>Форум и роли сообщества</div></li>
+          <li><span>03</span><div>Личные Y2K-модули</div></li>
+          <li><span>04</span><div>Единый профиль и уведомления</div></li>
+        </ol>
+      </article>
+    </section>
 
-document.querySelector("#playBinaural").addEventListener("click", startBinaural);
-document.querySelector("#stopBinaural").addEventListener("click", () => stopBinaural(true));
+    <footer class="footer">QuantDeus Portal · cosmic Frutiger Aero · human-controlled AI infrastructure</footer>
+  </main>
 
-initTelegram();
-updateBinauralView();
+  <script>
+    const tg=window.Telegram?.WebApp;
+    const presets={
+      focus:{base:220,beat:14,description:"Фокус: бодрый слой 14 Гц для работы и сборки идей."},
+      sleep:{base:174,beat:4,description:"Сон: медленный слой 4 Гц для вечернего снижения темпа."},
+      cooldown:{base:196,beat:8,description:"Перезагрузка: ровный слой 8 Гц для короткого отдыха."}
+    };
+    const state={audioContext:null,gain:null,left:null,right:null,merger:null,preset:"focus",duration:300,remaining:300,timer:null,playing:false};
 
-    </script>
-  </body>
+    function initTelegram(){
+      const status=document.querySelector("#tgStatus"),userName=document.querySelector("#userName");
+      if(!tg){status.textContent="Обычный браузер";return}
+      try{tg.ready();tg.expand()}catch{}
+      status.textContent="Telegram Mini App активен";
+      const user=tg.initDataUnsafe?.user;
+      if(user?.first_name)userName.textContent=user.first_name;
+    }
+    function activateTab(name){
+      document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===name));
+      document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id===name));
+      tg?.HapticFeedback?.impactOccurred?.("light");
+    }
+    function formatTime(v){const m=Math.floor(v/60).toString().padStart(2,"0"),s=Math.floor(v%60).toString().padStart(2,"0");return m+":"+s}
+    function updatePlayer(){
+      const p=presets[state.preset];
+      document.querySelector("#presetDescription").textContent=p.description;
+      document.querySelector("#timerDisplay").textContent=formatTime(state.remaining);
+      document.querySelector("#leftFrequency").textContent=p.base+" Гц";
+      document.querySelector("#rightFrequency").textContent=(p.base+p.beat)+" Гц";
+      document.querySelector("#playBinaural").textContent=state.playing?"Пауза":"Старт";
+      document.querySelector(".signal-line").classList.toggle("playing",state.playing);
+      document.querySelectorAll(".preset").forEach(x=>x.classList.toggle("active",x.dataset.preset===state.preset));
+    }
+    function stop(reset=true){
+      clearInterval(state.timer);state.timer=null;
+      try{state.left?.stop();state.right?.stop()}catch{}
+      state.left=state.right=state.merger=null;state.playing=false;
+      if(reset)state.remaining=state.duration;
+      updatePlayer();
+    }
+    function start(){
+      if(state.playing){stop(false);return}
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC){alert("Web Audio API недоступен в этом браузере.");return}
+      if(!state.audioContext){state.audioContext=new AC();state.gain=state.audioContext.createGain();state.gain.connect(state.audioContext.destination)}
+      const c=state.audioContext,p=presets[state.preset];
+      c.resume?.();
+      const left=c.createOscillator(),right=c.createOscillator(),merger=c.createChannelMerger(2),leftGain=c.createGain(),rightGain=c.createGain();
+      left.frequency.value=p.base;right.frequency.value=p.base+p.beat;
+      left.connect(leftGain);right.connect(rightGain);leftGain.connect(merger,0,0);rightGain.connect(merger,0,1);merger.connect(state.gain);
+      state.gain.gain.value=Number(document.querySelector("#volumeControl").value);
+      left.start();right.start();state.left=left;state.right=right;state.merger=merger;state.playing=true;
+      state.timer=setInterval(()=>{state.remaining=Math.max(0,state.remaining-1);if(state.remaining<=0)stop(true);else updatePlayer()},1000);
+      updatePlayer();
+    }
+
+    document.querySelectorAll(".tab").forEach(x=>x.onclick=()=>activateTab(x.dataset.tab));
+    document.querySelectorAll(".preset").forEach(x=>x.onclick=()=>{if(state.playing)stop(false);state.preset=x.dataset.preset;updatePlayer()});
+    document.querySelector("#durationSelect").onchange=e=>{state.duration=Number(e.target.value);state.remaining=state.duration;updatePlayer()};
+    document.querySelector("#volumeControl").oninput=e=>{if(state.gain)state.gain.gain.value=Number(e.target.value)};
+    document.querySelector("#playBinaural").onclick=start;
+    document.querySelector("#stopBinaural").onclick=()=>stop(true);
+    document.querySelector("#themePulse").onclick=()=>{document.body.animate([{filter:"brightness(1)"},{filter:"brightness(1.16)"},{filter:"brightness(1)"}],{duration:520});tg?.HapticFeedback?.impactOccurred?.("light")};
+    initTelegram();updatePlayer();
+  </script>
+</body>
 </html>
