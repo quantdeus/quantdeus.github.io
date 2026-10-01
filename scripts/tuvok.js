@@ -1,6 +1,6 @@
 'use strict';
 const { execFileSync } = require('child_process');
-const crypto = require('crypto');
+const {issueContext,digest:stateDigest,skipDialogue} = require('./dialogue-state');
 const fs = require('fs');
 const { reasonRole, renderRole } = require('./openclaw-role-dialogue');
 const repo=process.env.GITHUB_REPOSITORY, token=process.env.GITHUB_TOKEN;
@@ -16,12 +16,12 @@ const labels=i=>(i.labels||[]).map(x=>typeof x==='string'?x:x.name);
    issues.find(i=>labels(i).includes('coord:blocked')&&labels(i).some(l=>l.startsWith('pillar-')))||
    issues.find(i=>labels(i).some(l=>l.startsWith('pillar-')));
  if(!target){console.log('Tuvok: no evidence case.');return;}
- const context={issue:{number:target.number,title:target.title,body:String(target.body||'').slice(0,12000),labels:labels(target),updatedAt:target.updatedAt}};
- const digest=crypto.createHash('sha256').update(JSON.stringify(context)).digest('hex').slice(0,12);
+ const context={issue:issueContext(target)};
+ const digest=stateDigest(context);
  const marker='<!-- qd-tuvok-digest:'+digest+' -->';
  const hub=j(['issue','view',String(hubIssue),'--json','comments']);
- if([...(hub.comments||[])].reverse().some(c=>String(c.body||'').includes(marker))) return;
+ if(skipDialogue(hub.comments,marker)) return;
  const result=await reasonRole({profile:'tuvok',role:'Tuvok — Logic & Epistemic Integrity Officer',context,repository:repo,protocol:'Audit premises, assumptions, contradictions, uncertainty and falsifiability. Plausibility is not verification. Produce a reasoned judgment, not a checklist template.'});
  fs.writeFileSync('/tmp/quantdeus-tuvok-reasoning.json',JSON.stringify({context,result},null,2));
- gh(['issue','comment',String(hubIssue),'--body',renderRole({heading:'🖖 **Tuvok — OpenClaw Logic Officer**',result,marker})]);
+ if (result.status !== 'DEGRADED' || !skipDialogue(hub.comments,marker,'issue_comment')) gh(['issue','comment',String(hubIssue),'--body',renderRole({heading:'🖖 **Tuvok — OpenClaw Logic Officer**',result,marker})]);
 })().catch(e=>{console.error(e);process.exitCode=1});
