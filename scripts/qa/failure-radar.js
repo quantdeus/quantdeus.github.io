@@ -8,6 +8,8 @@ const repo = process.env.GITHUB_REPOSITORY || 'quantdeus/quantdeus.github.io';
 const lookbackDays = Math.max(1, Math.min(30, Number(process.env.LOOKBACK_DAYS || 7)));
 const triggerWorkflow = String(process.env.TRIGGER_WORKFLOW || '');
 const triggerConclusion = String(process.env.TRIGGER_CONCLUSION || '');
+const triggerRunId = String(process.env.TRIGGER_RUN_ID || '');
+const eventName = String(process.env.GITHUB_EVENT_NAME || '');
 
 if (!token) throw new Error('GH_TOKEN is required');
 
@@ -125,6 +127,7 @@ function runCheck(label, command) {
     ranking.push({
       workflow: name,
       family: familyFor(name),
+      latest_id: latest?.id || null,
       failures: failures.length,
       runs: workflowRuns.length,
       latest_conclusion: latest?.conclusion || null,
@@ -170,19 +173,51 @@ function runCheck(label, command) {
 
   const checkResults = queue.map(item => ({...runCheck(item.label, item.command), source: item.source}));
   const failedChecks = checkResults.filter(x => !x.ok);
-  const unresolved = ranking.filter(x => x.unresolved);
+  const unresolved = ranking
+    .filter(x => x.unresolved)
+    .sort((a, b) => Date.parse(b.latest_at || 0) - Date.parse(a.latest_at || 0));
   const triggerFailed = failureConclusions.has(triggerConclusion);
-  const needsRepair = failedChecks.length > 0 || unresolved.length > 0 || triggerFailed;
+  const reactiveWorkflowRun = eventName === 'workflow_run';
 
-  const topFamily = familyRanking[0]?.family || 'core-qa';
-  const repairLane = ['web', 'site-agent'].includes(topFamily) ? 'site' : 'actions';
+  // Reactive workflow_run events may repair only the run that triggered them.
+  // A successful run must never wake Self-Heal merely because some unrelated
+  // historical/current workflow is unresolved. Scheduled/manual Radar scans may
+  // select one current unresolved run for repair.
+  const scanUnresolved = !reactiveWorkflowRun;
+  const needsRepair = failedChecks.length > 0 || triggerFailed || (scanUnresolved && unresolved.length > 0);
+
+  let repairTarget = null;
+  if (triggerFailed && triggerRunId) {
+    repairTarget = {
+      run_id: triggerRunId,
+      workflow: triggerWorkflow || null,
+      conclusion: triggerConclusion,
+      source: 'trigger'
+    };
+  } else if (scanUnresolved && unresolved.length) {
+    const candidate = unresolved[0];
+    repairTarget = {
+      run_id: String(candidate.latest_id || ''),
+      workflow: candidate.workflow,
+      conclusion: candidate.latest_conclusion,
+      source: 'unresolved-scan'
+    };
+  }
+
+  const failedCheckFamily = String(failedChecks[0]?.source || '').replace(/^frequency:/, '');
+  const repairFamily = repairTarget?.workflow
+    ? familyFor(repairTarget.workflow)
+    : (failedCheckFamily || 'core-qa');
+  const repairLane = ['web', 'site-agent'].includes(repairFamily) ? 'site' : 'actions';
 
   const report = {
     generated_at: new Date().toISOString(),
     repository: repo,
     current_main_sha: currentMainSha,
     lookback_days: lookbackDays,
-    trigger: {workflow: triggerWorkflow || null, conclusion: triggerConclusion || null},
+    event_name: eventName || null,
+    trigger: {run_id: triggerRunId || null, workflow: triggerWorkflow || null, conclusion: triggerConclusion || null},
+    repair_target: repairTarget,
     ranking,
     family_ranking: familyRanking,
     execution_order: queue.map(x => ({label:x.label, source:x.source})),
@@ -214,6 +249,7 @@ function runCheck(label, command) {
     '',
     '- needs_repair: **' + needsRepair + '**',
     '- repair_lane: **' + repairLane + '**',
+    '- repair_target: ' + (repairTarget ? JSON.stringify(repairTarget) : 'none'),
     '- failed_checks: ' + (failedChecks.map(x => x.label).join(', ') || 'none'),
     '- unresolved_workflows: ' + (unresolved.map(x => x.workflow).join(', ') || 'none'),
     '- stale_failed_workflows: ' + (ranking.filter(x => x.stale_failure).map(x => x.workflow).join(', ') || 'none')
@@ -223,7 +259,9 @@ function runCheck(label, command) {
   if (process.env.GITHUB_OUTPUT) {
     fs.appendFileSync(process.env.GITHUB_OUTPUT, 'needs_repair=' + (needsRepair ? 'true' : 'false') + '\n');
     fs.appendFileSync(process.env.GITHUB_OUTPUT, 'repair_lane=' + repairLane + '\n');
-    fs.appendFileSync(process.env.GITHUB_OUTPUT, 'top_family=' + topFamily + '\n');
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, 'repair_trigger_run_id=' + String(repairTarget?.run_id || '') + '\n');
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, 'repair_trigger_workflow=' + String(repairTarget?.workflow || '') + '\n');
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, 'repair_trigger_conclusion=' + String(repairTarget?.conclusion || '') + '\n');
   }
 
   console.log(summary);
