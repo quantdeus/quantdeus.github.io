@@ -225,7 +225,28 @@ async function observe() {
     }
   };
 
-  const generation = await office.ask({
+  const failClosedNoOp = (reason, details = {}) => {
+    const proposal = normalizeNoAction({
+      action: 'none',
+      base_sha: base,
+      reason: String(reason || 'Evolution inference degraded; no mutation performed').slice(0, 1900)
+    });
+    validateProposal(proposal, base, evidence);
+    fs.writeFileSync(DIR + '/proposal.json', JSON.stringify(proposal, null, 2));
+    fs.writeFileSync(DIR + '/result.json', JSON.stringify({
+      degraded: true,
+      action: 'none',
+      reason: proposal.reason,
+      ...details
+    }, null, 2));
+    console.warn('Evolution inference failed closed to no-op:', proposal.reason);
+    console.log(JSON.stringify({ action: 'none', degraded: true, reason: proposal.reason }));
+    return proposal;
+  };
+
+  let generation;
+  try {
+    generation = await office.ask({
     profile: 'control-tower', trusted: false,
     metadata: { source: 'quantdeus-openclaw-evolution', repository: REPO, phase: 'darwin-generation' },
     messages: [{ role: 'user', content: [
@@ -246,11 +267,32 @@ async function observe() {
       'Base repository snapshot:', context,
       'Evidence snapshot:', JSON.stringify(evidence).slice(0, 18000)
     ].join('\n') }]
-  });
+    });
+  } catch (error) {
+    if (!office.isTransientError(error)) throw error;
+    failClosedNoOp(
+      'TRANSIENT_OPENCLAW_GENERATION: ' + String(error.message || error).slice(0, 1200) + '; no mutation performed',
+      { phase: 'darwin-generation', error_code: error.code || null }
+    );
+    return;
+  }
   noTools(generation, 'Darwin generation');
-  const envelope = JSON.parse(generation.text);
+  let envelope;
+  try {
+    envelope = JSON.parse(generation.text);
+  } catch (error) {
+    failClosedNoOp(
+      'MALFORMED_GENERATION_OUTPUT: ' + String(error.message || error).slice(0, 1200) + '; no mutation performed',
+      { phase: 'darwin-generation', model: generation.model, runtime: generation.runtime }
+    );
+    return;
+  }
   if (!Array.isArray(envelope.population) || envelope.population.length !== POPULATION_SIZE) {
-    throw new Error('Darwin generation must return exactly ' + POPULATION_SIZE + ' candidates');
+    failClosedNoOp(
+      'INVALID_GENERATION_ENVELOPE: expected exactly ' + POPULATION_SIZE + ' candidates; no mutation performed',
+      { phase: 'darwin-generation', model: generation.model, runtime: generation.runtime }
+    );
+    return;
   }
   const ranked = envelope.population.map((candidate, index) => {
     try {
@@ -287,7 +329,9 @@ async function observe() {
   const materialContext = champion.tier === 'skill'
     ? champion.target_paths.map(path => path + '\n' + fs.readFileSync(path, 'utf8')).join('\n\n').slice(0, 65000)
     : 'Tier B is proposal-only; no core file body may be generated.';
-  const materialized = await office.ask({
+  let materialized;
+  try {
+    materialized = await office.ask({
     profile: 'control-tower', trusted: false,
     metadata: { source: 'quantdeus-openclaw-evolution', repository: REPO, phase: 'darwin-materialize', champion_index: championRow.index },
     messages: [{ role: 'user', content: [
@@ -301,9 +345,27 @@ async function observe() {
       'Tier B schema: {"action":"proposal","base_sha":"' + base + '","tier":"core","problem":"...","hypothesis":"...","summary":"...","metric":"...","falsifier":"...","evidence":["snapshot URL"],"suggested_paths":["selected path"]}.',
       'Selected base snapshot:', materialContext
     ].join('\n') }]
-  });
+    });
+  } catch (error) {
+    if (!office.isTransientError(error)) throw error;
+    failClosedNoOp(
+      'TRANSIENT_OPENCLAW_MATERIALIZATION: ' + String(error.message || error).slice(0, 1200) + '; no mutation performed',
+      { phase: 'darwin-materialize', champion_index: championRow.index, error_code: error.code || null }
+    );
+    return;
+  }
   noTools(materialized, 'Darwin materialization');
-  const proposal = normalizeNoAction(JSON.parse(materialized.text));
+  let parsedProposal;
+  try {
+    parsedProposal = JSON.parse(materialized.text);
+  } catch (error) {
+    failClosedNoOp(
+      'MALFORMED_MATERIALIZATION_OUTPUT: ' + String(error.message || error).slice(0, 1200) + '; no mutation performed',
+      { phase: 'darwin-materialize', champion_index: championRow.index, model: materialized.model, runtime: materialized.runtime }
+    );
+    return;
+  }
+  const proposal = normalizeNoAction(parsedProposal);
   validateProposal(proposal, base, evidence);
   assertMaterializedChampion(proposal, champion);
   fs.writeFileSync(DIR + '/result.json', JSON.stringify({
