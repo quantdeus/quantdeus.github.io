@@ -1,0 +1,55 @@
+name: Bootstrap Telegram public auth config
+
+on:
+  push:
+    branches:
+      - feat/telegram-web-auth-anonymous-inquiries
+    paths:
+      - '.github/workflows/telegram-public-auth-bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/telegram-web-auth-anonymous-inquiries
+
+      - name: Read bot identity and publish non-secret OIDC config
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TELEGRAM_BOT_TOKEN:-}" ]; then
+            echo "Telegram bot secret is unavailable"
+            exit 1
+          fi
+          curl -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe" > /tmp/getme.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/getme.json'))
+          assert data.get('ok') is True, data.get('description','getMe failed')
+          bot=data['result']
+          out={
+            'configured': True,
+            'bot_id': bot.get('id'),
+            'client_id': bot.get('id'),
+            'username': bot.get('username'),
+            'name': bot.get('first_name')
+          }
+          open('telegram-public.json','w').write(json.dumps(out,ensure_ascii=False)+'\n')
+          print('public Telegram auth config generated for @'+str(bot.get('username') or 'bot'))
+          PY
+          git config user.name "quantdeus-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add telegram-public.json
+          if git diff --cached --quiet; then
+            echo "telegram-public.json already current"
+            exit 0
+          fi
+          git commit -m "chore(auth): publish Telegram OIDC public config"
+          git push origin HEAD:feat/telegram-web-auth-anonymous-inquiries
