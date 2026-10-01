@@ -4,10 +4,15 @@ import path from "node:path";
 const root = process.cwd();
 const out = "/tmp/quantdeus-portal-mobile";
 fs.rmSync(out, { recursive: true, force: true });
-for (const dir of ["assets", "forum", "store"]) fs.mkdirSync(path.join(out, dir), { recursive: true });
+for (const dir of ["assets", "forum", "store", "telegram"]) fs.mkdirSync(path.join(out, dir), { recursive: true });
 fs.copyFileSync(path.join(root, "assets/qd-portal.css"), path.join(out, "assets/qd-portal.css"));
 
 const stripTelegram = html => html.replace(/\s*<script src="https:\/\/telegram\.org\/js\/telegram-web-app\.js"><\/script>/, "");
+
+const telegramStub = `
+<script>
+window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{first_name:"Anton"}},ready(){},expand(){},HapticFeedback:{impactOccurred(){}}}};
+</script>`;
 
 const forumStub = `
 <script>
@@ -59,6 +64,9 @@ function inject(html, stub, tail="") {
   return html;
 }
 
+const telegram = fs.readFileSync(path.join(root, "telegram/index.html"), "utf8");
+fs.writeFileSync(path.join(out, "telegram/index.html"), inject(telegram, telegramStub));
+
 const forum = fs.readFileSync(path.join(root, "forum/index.html"), "utf8");
 fs.writeFileSync(path.join(out, "forum/index.html"), inject(forum, forumStub));
 
@@ -68,4 +76,4 @@ fs.writeFileSync(path.join(out, "store/admin.html"), inject(store, storeStub, ad
 const checkoutTail = `<script>setTimeout(()=>document.querySelector('[data-product="business-automation"]')?.click(),350);</script>`;
 fs.writeFileSync(path.join(out, "store/checkout.html"), inject(store, storeStub, checkoutTail));
 
-console.log(JSON.stringify({ok:true,out,fixtures:["forum/index.html","store/admin.html","store/checkout.html"]}));
+console.log(JSON.stringify({ok:true,out,fixtures:["telegram/index.html","forum/index.html","store/admin.html","store/checkout.html"]}));
