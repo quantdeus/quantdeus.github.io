@@ -1040,6 +1040,8 @@ export default async function handler(req, res) {
       provider: 'quantdeus-openclaw-vercel-sandbox',
       runtime: 'openclaw',
       model: result.model || model,
+      model_provider: result.provider || null,
+      usage: result.usage || null,
       configured_primary: model,
       configured_fallbacks: fallbackModels,
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-no-tools',
