@@ -1,6 +1,6 @@
 # QuantDeus LLM failover pool
 
-Updated: 2026-09-30
+Updated: 2026-10-01
 
 ## Admission rule
 
@@ -32,3 +32,12 @@ A configured provider is not considered healthy merely because an API key exists
 Only configured keyed routes are added. Pollinations remains the final emergency route and must pass the same capability gate.
 
 The retired Mistral route is intentionally not restored.
+
+
+## Proven trusted-route baseline
+
+Production evidence from the 2026-09-30 all-agent smoke showed real `openclaw-agent-exec-trusted-tools` responses with model `openai` for 25 of 26 registered profiles. The lone coordinator failure was a repository shallow-state race, not a model-turn success.
+
+For the trusted 26-agent OpenClaw lane, Pollinations `openai` therefore gets first routing priority only after it passes the same sequential tool-call capability probe as every other provider. Other healthy routes remain fallbacks. Public/no-tools chat still treats Pollinations as the final emergency route.
+
+Normal role cycles are strict: a transient inference outage cannot be reported as green/degraded. No verified assistant turn means the role job fails visibly.

@@ -7,6 +7,7 @@ const site = fs.readFileSync('scripts/site-agent-reply.js', 'utf8');
 const telegram = fs.readFileSync('scripts/telegram-bot.js', 'utf8');
 const vercel = JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json', 'utf8'));
 const adminSmokeWorkflow = fs.readFileSync('.github/workflows/openclaw-admin-smoke.yml', 'utf8');
+const roleWorkflow = fs.readFileSync('.github/workflows/agent-role-cron.yml', 'utf8');
 const siteWorkflow = fs.readFileSync('.github/workflows/site-agent-replies.yml', 'utf8');
 const qaSelfHealWorkflow = fs.readFileSync('.github/workflows/qa-self-heal.yml', 'utf8');
 const qaFailureRadarWorkflow = fs.readFileSync('.github/workflows/qa-failure-radar.yml', 'utf8');
@@ -58,6 +59,8 @@ for (const [ok, message] of [
   [client.includes("execution_mode: trusted ? 'trusted-office' : 'chat'") && client.includes('trusted = false'), 'client can request trusted office explicitly'],
   [telegram.includes('trusted: true') && telegram.includes('telegram-admin-task'), 'Telegram admin task lane invokes trusted office only after admin gate'],
   [route.includes('CEREBRAS_API_KEY') && route.includes('GROQ_API_KEY') && route.includes('FIREWORKS_API_KEY') && route.includes('DEEPINFRA_API_KEY') && route.includes('TOGETHER_API_KEY') && route.includes('GEMINI_API_KEY') && route.includes('NVIDIA_API_KEY') && route.includes('XAI_API_KEY') && route.includes('CLOUDFLARE_API_KEY') && route.includes('OPENROUTER_API_KEY') && route.includes('POLLINATIONS_API_KEY') && !route.includes('MISTRAL_API_KEY'), 'OpenClaw exposes a broad current provider pool without restoring the retired Mistral route'],
+  [route.includes("model: process.env.POLLINATIONS_MODEL || 'openai'") && route.includes('priority: trustedOffice ? 5 : 1000'), 'trusted OpenClaw prefers the historically proven Pollinations openai route only after the normal live capability probe'],
+  [roleWorkflow.includes('turnEvidence(result,true)') && roleWorkflow.includes('STRICT_LLM_ROLE_FAILED') && !roleWorkflow.includes('Role cron exhausted transient OpenClaw retries; degrade cleanly'), 'all 26 role cycles require verified LLM turn evidence and transient inference outages fail instead of reporting green/degraded'],
   [route.includes('...providerRuntimeEnv') && route.includes("OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5'"), 'only configured provider credentials are passed into the OpenClaw sandbox runtime'],
   [route.includes('quantdeus_probe_step_one') && route.includes('quantdeus_probe_step_two') && route.includes('PROBE_DONE') && route.includes('sequential_tool_roundtrip_ok') && route.includes('cachedProbeChatCandidate(candidate, trustedOffice)') && route.includes('const orderedModels = [...healthyRefs]'), 'trusted Office selects only models that pass the required capability probe'],
   [route.includes('Promise.all(probeCandidates.map(async candidate =>') && route.includes('.filter(row => row.probe.ok)') && route.includes('a.candidate.priority - b.candidate.priority') && route.includes('a.probe.latency_ms - b.probe.latency_ms') && route.includes('const fallbackModels = healthyRefs.slice(1)'), 'all failover routes are live-probed in parallel, fail closed, and are ordered by curated route priority with measured latency as tie-breaker'],
