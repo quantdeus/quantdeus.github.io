@@ -75,7 +75,9 @@ jobs:
           }
 
           const coordinator=read('.github/workflows/quantdeus-coordinator.yml');
-          must(!/^\s{2}issue_comment:/m.test(coordinator), 'full coordinator must not run on ordinary issue comments');
+          must(/^\s{2}issue_comment:/m.test(coordinator), 'coordinator must preserve canonical comment intake');
+          must(coordinator.includes("github.event_name != 'issue_comment'"), 'coordinator comment intake must have an explicit-command job gate');
+          must(coordinator.includes("startsWith(github.event.comment.body, '/coord ')"), 'coordinator must require an explicit /coord command for ordinary comments');
 
           const seven=read('.github/workflows/seven-priority-cycle.yml');
           must(seven.includes('trusted:false'), 'Seven priority planner must be no-tools');
