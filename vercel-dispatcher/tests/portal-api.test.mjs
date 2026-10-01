@@ -1,11 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { webcrypto } from "node:crypto";
+import { generateKeyPairSync, sign as cryptoSign, webcrypto } from "node:crypto";
 import forum from "../api/quantdeus/community.js";
 import orders from "../api/quantdeus/orders.js";
+import auth from "../api/quantdeus/auth.js";
 
 globalThis.crypto ||= webcrypto;
 const botToken = "test-bot-token";
+const oidcClientId = "8122160274";
+const oidcKeys = generateKeyPairSync("rsa", { modulusLength: 2048 });
+const oidcJwk = { ...oidcKeys.publicKey.export({ format: "jwk" }), kid: "quantdeus-test-key", alg: "RS256", use: "sig" };
 const product = { id: "sample", name: "Sample", price_rub: 120, available: true };
 const quoteProduct = { id: "business-automation", name: "Автоматизация бизнеса", pricing_mode: "quote", price_rub: null, available: true };
 let savedOrder = null, writes = 0;
@@ -28,6 +32,27 @@ async function signedInitData(id) {
   params.set("hash", Buffer.from(sig).toString("hex"));
   return params.toString();
 }
+function signedOidcToken(id, extra = {}) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: oidcJwk.kid })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({
+    iss: "https://oauth.telegram.org",
+    aud: oidcClientId,
+    sub: String(id),
+    iat: now,
+    exp: now + 3600,
+    name: "OIDC Test",
+    preferred_username: "oidc_test",
+    ...extra
+  })).toString("base64url");
+  const signingInput = header + "." + payload;
+  const signature = cryptoSign("RSA-SHA256", Buffer.from(signingInput), oidcKeys.privateKey).toString("base64url");
+  return signingInput + "." + signature;
+}
+function oidcJwksResponse() {
+  return Response.json({ keys: [oidcJwk] });
+}
+
 function mockFetch() {
   globalThis.fetch = async (url, options = {}) => {
     const parsed = new URL(url), path = "/" + parsed.pathname.split("/").slice(4).join("/");
@@ -55,7 +80,86 @@ test.beforeEach(() => {
   process.env.QUANTDEUS_ADMIN_TELEGRAM_IDS = "9002";
   process.env.QUANTDEUS_MODERATOR_TELEGRAM_IDS = "9003";
   process.env.QUANTDEUS_ORDERS_REPOSITORY = "quantdeus/quantdeus_core.pulse";
+  process.env.QUANTDEUS_TELEGRAM_CLIENT_ID = oidcClientId;
   savedOrder = null; writes = 0;
+});
+
+test("website Telegram OIDC session is verified server-side", async () => {
+  globalThis.fetch = async url => {
+    if (String(url).includes("oauth.telegram.org/.well-known/jwks.json")) return oidcJwksResponse();
+    throw new Error("unexpected fetch " + url);
+  };
+  const res = resMock();
+  await auth({ method: "GET", headers: { authorization: "Bearer " + signedOidcToken(1234) } }, res);
+  assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+  assert.equal(res.body.user.id, "1234");
+  assert.equal(res.body.user.auth_kind, "oidc");
+  assert.equal(res.body.role, "member");
+});
+
+test("website Telegram OIDC user can create a persisted forum thread", async () => {
+  let issue = null;
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).includes("oauth.telegram.org/.well-known/jwks.json")) return oidcJwksResponse();
+    const parsed = new URL(url), path = "/" + parsed.pathname.split("/").slice(4).join("/");
+    if (path === "/issues" && options.method === "POST") {
+      const body = JSON.parse(options.body);
+      issue = { number: 776, title: body.title, body: body.body, state: "open", html_url: "https://github.test/issues/776" };
+      return Response.json(issue);
+    }
+    return Response.json({ message: "Not Found" }, { status: 404 });
+  };
+  const res = resMock();
+  await forum({
+    method: "POST",
+    headers: { authorization: "Bearer " + signedOidcToken(1234) },
+    body: { action: "thread", title: "OIDC browser topic", category: "community", text: "Website Telegram login can publish safely." }
+  }, res);
+  assert.equal(res.statusCode, 201, JSON.stringify(res.body));
+  assert.equal(res.body.thread.number, 776);
+  assert.match(issue.body, /OIDC Test/);
+});
+
+test("anonymous visitor can submit quote inquiry with contact and no registration", async () => {
+  mockFetch();
+  delete process.env.QUANTDEUS_ORDER_HMAC_SECRET;
+  const created = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.10", "user-agent": "portal-test" },
+    body: {
+      action: "create",
+      product_id: "business-automation",
+      note: "Нужно автоматизировать обработку заявок и ежедневные отчёты.",
+      contact: "@anonymous_client",
+      website: ""
+    }
+  }, created);
+  assert.equal(created.statusCode, 201, JSON.stringify(created.body));
+  assert.equal(created.body.order.status, "inquiry_created");
+  assert.equal(created.body.order.anonymous, true);
+  assert.equal(savedOrder.source, "anonymous_web");
+  assert.equal(savedOrder.contact.freeform, "@anonymous_client");
+  assert.equal(savedOrder.amount, null);
+});
+
+test("anonymous quote inquiry requires a reply contact", async () => {
+  mockFetch();
+  const created = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.11", "user-agent": "portal-test-missing-contact" },
+    body: {
+      action: "create",
+      product_id: "business-automation",
+      note: "Нужно автоматизировать обработку заявок и ежедневные отчёты.",
+      contact: "",
+      website: ""
+    }
+  }, created);
+  assert.equal(created.statusCode, 400, JSON.stringify(created.body));
+  assert.equal(created.body.error, "contact_required");
+  assert.equal(writes, 0);
 });
 
 test("guest cannot moderate a forum thread", async () => {
