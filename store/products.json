@@ -1,34 +1,26 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "products": [
     {
-      "id": "binaural-exe",
-      "name": "Binaural.exe",
-      "category": "Цифровые продукты",
-      "description": "Аудиомодуль QuantDeus для фокуса и Y2K-настроения.",
-      "status": "Настройка каталога",
+      "id": "business-automation",
+      "name": "Автоматизация бизнеса",
+      "category": "Автоматизация",
+      "description": "Проектирование и внедрение ИИ-агентов, автоматизаций, интеграций, рабочих процессов и цифровых контуров под задачи бизнеса.",
+      "status": "Расчёт после заявки",
+      "pricing_mode": "quote",
       "price_rub": null,
-      "available": false,
+      "available": true,
       "image": null
     },
     {
-      "id": "children-of-eltan",
-      "name": "Дети Эльтана",
-      "category": "Игровые проекты",
-      "description": "Новости мода, лор, расы и карта рукава галактики.",
-      "status": "В разработке",
+      "id": "ksenia-cherednikova-concert",
+      "name": "Концерт Ксении Чередниковой",
+      "category": "Концерты",
+      "description": "Заявка на концертное выступление Ксении Чередниковой. Формат, дата, площадка, город и стоимость согласуются индивидуально.",
+      "status": "Стоимость по запросу",
+      "pricing_mode": "quote",
       "price_rub": null,
-      "available": false,
-      "image": null
-    },
-    {
-      "id": "warp-research",
-      "name": "Варп-исследования",
-      "category": "Исследования",
-      "description": "Пульс исследований SubWarp и статусы проверяемых прогонов.",
-      "status": "Открытые материалы",
-      "price_rub": null,
-      "available": false,
+      "available": true,
       "image": null
     }
   ]
