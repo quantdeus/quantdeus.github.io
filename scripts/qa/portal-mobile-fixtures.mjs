@@ -24,7 +24,7 @@ window.fetch=async (url)=>{
 
 const telegramStub = `
 <script>
-window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{first_name:"Anton"}},ready(){},expand(){},HapticFeedback:{impactOccurred(){}}}};
+window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{id:910000001,first_name:"Anton",username:"mobile_anton"}},ready(){},expand(){},HapticFeedback:{impactOccurred(){}}}};
 </script>`;
 
 const forumStub = `
@@ -68,7 +68,7 @@ window.fetch=async (url,options={})=>{
   }
   return send({ok:true});
 };
-</script>`
+</script>`;
 
 const storeGuestStub = storeStub.replace(
   'window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{id:9002,first_name:"Admin",username:"mobile_qa"}},ready(){},expand(){}}};',
