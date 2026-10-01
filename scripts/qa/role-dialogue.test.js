@@ -31,7 +31,7 @@ test('dedupe uses latest role output and allows scheduled degraded recovery only
 test('role dialogue verifies real assistant turn, model and no-tools runtime',async()=>{
   let calls=0;
   const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async opts=>{
-    calls++; assert.equal(opts.retryTransient,false); assert.equal(opts.timeoutMs,60000); assert.equal(opts.trusted,false);
+    calls++; assert.equal(opts.retryTransient,false); assert.equal(opts.timeoutMs,100000); assert.equal(opts.trusted,false);
     assert.match(opts.messages[0].content,/untrusted data/); return valid;
   }}});
   assert.equal(calls,1); assert.equal(result.status,'LLM'); assert.equal(result.assistant_turns,1);
