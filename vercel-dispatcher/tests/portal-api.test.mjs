@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import forum from "../api/quantdeus/community.js";
 import orders from "../api/quantdeus/orders.js";
+import { issueWebSession, verifyWebSession } from "../lib/telegram-auth.js";
 
 globalThis.crypto ||= webcrypto;
 const botToken = "test-bot-token";
@@ -50,6 +51,7 @@ test.beforeEach(() => {
   process.env.TELEGRAM_BOT_TOKEN = botToken;
   process.env.QUANTDEUS_GITHUB_TOKEN = "test-github-token";
   process.env.QUANTDEUS_ORDER_HMAC_SECRET = "test-hmac-secret-long-enough";
+  process.env.QUANTDEUS_SESSION_SECRET = "test-session-secret-long-enough";
   process.env.VERCEL_ENV = "production";
   process.env.QUANTDEUS_OWNER_TELEGRAM_IDS = "9001";
   process.env.QUANTDEUS_ADMIN_TELEGRAM_IDS = "9002";
@@ -82,6 +84,59 @@ test("order amount comes from the server catalog and buyer cannot confirm paymen
 });
 
 
+
+test("guest can submit a quote inquiry without registration", async () => {
+  mockFetch();
+  const created = resMock();
+  await orders({
+    method: "POST",
+    headers: {},
+    body: {
+      action: "create",
+      product_id: "business-automation",
+      contact_name: "Guest Client",
+      contact: "@guest_client",
+      note: "Нужно автоматизировать входящие заявки без регистрации на сайте."
+    }
+  }, created);
+  assert.equal(created.statusCode, 201, JSON.stringify(created.body));
+  assert.equal(created.body.guest, true);
+  assert.equal(created.body.order.status, "inquiry_created");
+  assert.equal(created.body.order.amount, null);
+  assert.equal(savedOrder.contact.auth, "guest");
+  assert.equal(savedOrder.contact.display_name, "Guest Client");
+  assert.equal(savedOrder.contact.reply_to, "@guest_client");
+  assert.match(savedOrder.customer_ref, /^guest:/);
+  assert.equal(savedOrder.audit.at(-1).actor_role, "guest");
+});
+
+test("guest quote inquiry requires a reply contact and fixed-price purchase still requires Telegram", async () => {
+  mockFetch();
+  const missing = resMock();
+  await orders({
+    method: "POST",
+    headers: {},
+    body: { action: "create", product_id: "business-automation", contact_name: "Guest", note: "Нужна автоматизация." }
+  }, missing);
+  assert.equal(missing.statusCode, 400);
+  assert.equal(missing.body.error, "contact_required");
+
+  const fixed = resMock();
+  await orders({ method: "POST", headers: {}, body: { action: "create", product_id: "sample" } }, fixed);
+  assert.equal(fixed.statusCode, 401);
+  assert.equal(fixed.body.error, "telegram_auth_required");
+});
+
+test("signed browser Telegram session is accepted by forum RBAC", async () => {
+  const token = issueWebSession({ id: "9003", first_name: "Browser", username: "browser_mod" });
+  const decoded = verifyWebSession(token);
+  assert.equal(decoded.id, "9003");
+  const res = resMock();
+  await forum({ method: "GET", query: { me: "1" }, headers: { authorization: "Bearer " + token } }, res);
+  assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+  assert.equal(res.body.role, "moderator");
+  assert.equal(res.body.method, "web_session");
+});
 
 test("quote service creates an inquiry with no payment amount and persists contact context", async () => {
   mockFetch();
