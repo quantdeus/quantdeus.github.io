@@ -1020,6 +1020,9 @@ export default async function handler(req, res) {
     if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: ${raw.slice(-1800)}`);
     if (!result) throw new Error(`openclaw_agent_invalid_json: ${raw.slice(-1000)}`);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
+    if (!Number.isInteger(result.assistantTurns) || result.assistantTurns < 1 || !String(result.model || '').trim()) {
+      throw new Error('openclaw_unverified_llm_turn');
+    }
     const toolSummary = result.toolSummary || null;
     if (trustedOffice) {
       const structuredToolEvidence = JSON.stringify({
@@ -1039,7 +1042,9 @@ export default async function handler(req, res) {
       ok: true,
       provider: 'quantdeus-openclaw-vercel-sandbox',
       runtime: 'openclaw',
-      model: result.model || model,
+      model: result.model,
+      model_provider: result.provider || null,
+      usage: result.usage || null,
       configured_primary: model,
       configured_fallbacks: fallbackModels,
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-no-tools',

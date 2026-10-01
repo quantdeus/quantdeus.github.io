@@ -49,6 +49,7 @@ jobs:
           QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
         run: |
           node scripts/governance-gate.js
+          export QUANTDEUS_DIALOGUE_DEADLINE_MS=$(node -e 'process.stdout.write(String(Date.now()+240000))')
           node scripts/seven-of-nine.js
           node scripts/coordinator.js
           node scripts/emh.js
@@ -56,11 +57,15 @@ jobs:
           node scripts/tuvok.js
           node scripts/strategic-hub.js
 
-      - name: Preserve Seven inference evidence
+      - name: Preserve bridge crew inference evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: seven-reasoning-${{ github.run_id }}
-          path: /tmp/quantdeus-seven-reasoning.json
+          path: |
+            /tmp/quantdeus-seven-reasoning.json
+            /tmp/quantdeus-emh-cognitive-health.json
+            /tmp/quantdeus-sherlock-reasoning.json
+            /tmp/quantdeus-tuvok-reasoning.json
           if-no-files-found: ignore
           retention-days: 7

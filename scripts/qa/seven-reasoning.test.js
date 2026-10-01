@@ -12,7 +12,7 @@ test('briefing actually invokes Seven LLM with supplied state and no tools',asyn
     assert.equal(options.retryTransient,true); assert.equal(options.timeoutMs,75000);
     assert.equal(JSON.parse(options.messages[1].content).tasks[0].number,12);
     assert.match(options.messages[0].content,/untrusted data/);
-    return {text:JSON.stringify(decision),runtime:'openclaw-agent-exec-no-tools',model:'test-model'};
+    return {text:JSON.stringify(decision),runtime:'openclaw-agent-exec-no-tools',model:'test-model',assistantTurns:1};
   }};
   const result=await reason({...args,office}); assert.equal(calls,1); assert.equal(result.status,'LLM');
   assert.match(render(context,result,'marker'),/Finish portal/); assert.match(render(context,result,'marker'),/model: `test-model`/);
@@ -57,7 +57,7 @@ test('real Seven script publishes LLM prose once and skips unchanged bot chatter
     };
     const office=require(${JSON.stringify(path.join(root,'scripts/openclaw-office-client.js'))});
     office.configured=()=>true;
-    office.ask=async()=>{fs.appendFileSync(dir+'/calls.txt','call\\n');return {text:${JSON.stringify(JSON.stringify(decision))},runtime:'openclaw-agent-exec-no-tools',model:'integration-model'}};
+    office.ask=async()=>{fs.appendFileSync(dir+'/calls.txt','call\\n');return {text:${JSON.stringify(JSON.stringify(decision))},runtime:'openclaw-agent-exec-no-tools',model:'integration-model',assistantTurns:1}};
   `);
   try {
     const options={cwd:root,env:{...process.env,GITHUB_REPOSITORY:'quantdeus/quantdeus.github.io',GITHUB_TOKEN:'fixture',GITHUB_EVENT_NAME:'issue_comment',GITHUB_STEP_SUMMARY:''},encoding:'utf8'};

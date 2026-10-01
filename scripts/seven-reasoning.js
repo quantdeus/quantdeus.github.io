@@ -1,5 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
+const {turnBudget,turnEvidence} = require('./dialogue-state');
 
 function inputDigest(context) {
   // Timestamps and generated prose are not meaningful new work.
@@ -21,9 +22,11 @@ function parseDecision(text) {
 }
 async function reason({office,context,persona,doctrine,repository}) {
   if (!office.configured()) return {status:'DEGRADED',runtime:null,model:null,error_code:'OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE'};
+  const budget = turnBudget(75000,true);
+  if (budget.timeoutMs < 1000) return {status:'DEGRADED',runtime:null,model:null,error_code:'DIALOGUE_BUDGET_EXHAUSTED'};
   try {
     const result = await office.ask({
-      profile:'seven-of-nine', trusted:false, timeoutMs:75000, retryTransient:true,
+      profile:'seven-of-nine', trusted:false, ...budget,
       messages:[{role:'system',content:[
         'Write a concise Russian Seven coordination briefing. Choose the priority by reasoning over the supplied snapshot, not fixed templates.',
         'Compare at least two plausible bottlenecks; explain which observable facts distinguish them. State uncertainty and one falsifiable next step.',
@@ -36,7 +39,7 @@ async function reason({office,context,persona,doctrine,repository}) {
       metadata:{source:'quantdeus-seven-hub-briefing',repository}
     });
     if (result.runtime !== 'openclaw-agent-exec-no-tools') throw new Error('SEVEN_UNEXPECTED_RUNTIME');
-    return {status:'LLM',runtime:result.runtime,model:result.model,...parseDecision(result.text)};
+    return {status:'LLM',...turnEvidence(result),...parseDecision(result.text)};
   } catch (error) {
     // No raw provider body/credentials in public evidence. Contract errors remain failures.
     if (!office.isTransientError(error)) throw error;

@@ -127,7 +127,11 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
     if (!data?.text || !String(data.text).trim()) throw new Error('OpenClaw Office returned an empty response');
     return {
       text: String(data.text).trim(),
-      model: data.model || profile,
+      model: data.model || null,
+      provider: data.model_provider || null,
+      assistantTurns: data.assistant_turns ?? null,
+      usage: data.usage || null,
+      toolSummary: data.tool_summary || null,
       profile: data.profile || profile,
       raw: data,
       runtime: data.execution_mode || 'openclaw-agent-exec'
