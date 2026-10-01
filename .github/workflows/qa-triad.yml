@@ -30,6 +30,8 @@ jobs:
         run: |
           node --check vercel-dispatcher/api/quantdeus/community.js
           node --check vercel-dispatcher/api/quantdeus/orders.js
+          node --check vercel-dispatcher/api/quantdeus/auth.js
+          node --check vercel-dispatcher/lib/telegram-auth.js
           node --test vercel-dispatcher/tests/portal-api.test.mjs
 
       - name: 🌐 Validate shared post-scarcity mission
