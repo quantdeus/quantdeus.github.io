@@ -14,6 +14,15 @@ The loop is:
 
 `OBSERVE → DIAGNOSE → HYPOTHESIS → ONE BOUNDED PR → QA → COMPARE → KEEP/REVERT`
 
+
+### Darwinian selection
+
+Each daily cycle first creates a **population of three candidate genomes** over the same immutable evidence snapshot. The candidates cover three different mutation lenses: reliability/recovery, latency/tool efficiency, and coordination/observability. A deterministic selector—not the model—scores each valid candidate using evidence strength, novelty against recorded evolution history, reversibility/blast radius, and the safer Tier A/Tier B boundary.
+
+Only the highest-fitness surviving candidate is materialized into the existing Tier A/Tier B proposal format. The materialization step is cryptographically/equality-bound at the broker level to the selected problem, hypothesis, metric, falsifier, evidence, tier and exact target paths; if any of those change, publication fails closed.
+
+The full generation and fitness table is stored in `population.json` inside the evolution artifact. Losing candidates are evidence only: they receive no branch, PR or mutation authority. Existing QA Triad, Static Smoke, Evolution Guard and guarded merge rules remain the final selection pressure before any Tier A change can reach `main`.
+
 The active behavioral skill is:
 
 `.openclaw/skills/quantdeus-self-evolution/SKILL.md`
