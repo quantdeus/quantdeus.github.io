@@ -61,9 +61,11 @@
       el.textContent=prefix;
     });
     document.querySelectorAll("[data-qd-auth-button]").forEach(btn=>{
-      btn.textContent=user?"Выйти":"✈ Войти через Telegram";
+      const mini=Boolean(user&&method==="mini_app");
+      btn.textContent=mini?"Telegram ✓":user?"Выйти":"✈ Войти через Telegram";
+      btn.disabled=mini;
       btn.setAttribute("aria-pressed",user?"true":"false");
-      btn.onclick=user?logout:login;
+      btn.onclick=mini?null:user?logout:login;
     });
     document.querySelectorAll("[data-qd-auth-state]").forEach(el=>{
       el.textContent=user?(method==="mini_app"?"Telegram Mini App":"Telegram ✓"):"Гость";
