@@ -6,7 +6,7 @@ import {
   verify as verifySignature
 } from "node:crypto";
 
-const PUBLIC_CONFIG_URL = "https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/telegram-public.json";
+const PUBLIC_REPO = "quantdeus/quantdeus.github.io";
 const CONFIG_TTL_MS = 5 * 60 * 1000;
 const JWKS_TTL_MS = 60 * 60 * 1000;
 let configCache = null;
@@ -84,14 +84,20 @@ export async function telegramPublicConfig() {
   };
 
   if (configCache && Date.now() - configCachedAt < CONFIG_TTL_MS) return configCache;
+  const ref = encodeURIComponent(process.env.QUANTDEUS_TELEGRAM_CONFIG_REF || process.env.VERCEL_GIT_COMMIT_REF || "main");
   let response;
   try {
-    response = await fetch(PUBLIC_CONFIG_URL, { headers: { Accept: "application/json" } });
+    response = await fetch(`https://api.github.com/repos/${PUBLIC_REPO}/contents/telegram-public.json?ref=${ref}`, {
+      headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
+    });
   } catch {
     throw new Error("telegram_oidc_unconfigured");
   }
   if (!response.ok) throw new Error("telegram_oidc_unconfigured");
-  const data = await response.json().catch(() => null);
+  const file = await response.json().catch(() => null);
+  let data = null;
+  try { data = JSON.parse(Buffer.from(String(file?.content || "").replace(/\\n/g, ""), "base64").toString("utf8")); }
+  catch { throw new Error("telegram_oidc_unconfigured"); }
   if (!data?.configured || !clean(data.client_id)) throw new Error("telegram_oidc_unconfigured");
   configCache = {
     configured: true,
