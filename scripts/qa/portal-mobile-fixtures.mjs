@@ -29,7 +29,7 @@ window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{first_name:"
 
 const forumStub = `
 <script>
-window.Telegram={WebApp:{initData:"mobile-qa",ready(){},expand(){}}};
+window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{id:9003,first_name:"Forum",username:"forum_mod"}},ready(){},expand(){}}};
 window.prompt=()=>"Mobile QA reason";
 const qdForumThreads=[
   {number:9001,title:"Portal mobile review",body:"Проверяем карточку темы, длинный текст и переносы на узком Android viewport.",category:"community",created_at:"2026-10-01T10:00:00Z",updated_at:"2026-10-01T12:00:00Z",comments:3,state:"open",pinned:true,hidden:false},
@@ -48,7 +48,7 @@ window.fetch=async (url,options={})=>{
 
 const storeStub = `
 <script>
-window.Telegram={WebApp:{initData:"mobile-qa",ready(){},expand(){}}};
+window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{id:9002,first_name:"Admin",username:"mobile_qa"}},ready(){},expand(){}}};
 window.prompt=()=>"Mobile QA audit note";
 const qdProducts=[
   {id:"business-automation",name:"Автоматизация бизнеса",category:"Автоматизация",description:"Проектирование и внедрение ИИ-агентов, интеграций и рабочих процессов под задачи бизнеса.",status:"Расчёт после заявки",pricing_mode:"quote",price_rub:null,available:true},
@@ -70,9 +70,16 @@ window.fetch=async (url,options={})=>{
 };
 </script>`
 
+const storeGuestStub = storeStub.replace(
+  'window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{id:9002,first_name:"Admin",username:"mobile_qa"}},ready(){},expand(){}}};',
+  ''
+);
+
 function inject(html, stub, tail="") {
   html = stripTelegram(html);
-  html = html.replace("</head>", stub + "\n</head>");
+  const authScript = /<script src="[^"]*assets\/telegram-auth\.js"><\/script>/;
+  if (authScript.test(html)) html = html.replace(authScript, match => stub + "\n" + match);
+  else html = html.replace("</head>", stub + "\n</head>");
   if (tail) html = html.replace("</body>", tail + "\n</body>");
   return html;
 }
@@ -90,6 +97,6 @@ const store = fs.readFileSync(path.join(root, "store/index.html"), "utf8");
 const adminTail = `<style>.qd-heading,#systemNotice,#products{display:none!important}</style><script>setTimeout(()=>window.scrollTo(0,0),250);</script>`;
 fs.writeFileSync(path.join(out, "store/admin.html"), inject(store, storeStub, adminTail));
 const checkoutTail = `<script>setTimeout(()=>document.querySelector('[data-product="business-automation"]')?.click(),350);</script>`;
-fs.writeFileSync(path.join(out, "store/checkout.html"), inject(store, storeStub, checkoutTail));
+fs.writeFileSync(path.join(out, "store/checkout.html"), inject(store, storeGuestStub, checkoutTail));
 
 console.log(JSON.stringify({ok:true,out,fixtures:["index.html","telegram/index.html","forum/index.html","store/admin.html","store/checkout.html"]}));
