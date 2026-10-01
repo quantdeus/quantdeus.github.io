@@ -29,7 +29,7 @@ async function signedInitData(id) {
 }
 function mockFetch() {
   globalThis.fetch = async (url, options = {}) => {
-    const parsed = new URL(url), path = parsed.pathname.replace(/^\/repos\/[^/]+\/[^/]+/, "");
+    const parsed = new URL(url), path = "/" + parsed.pathname.split("/").slice(4).join("/");
     if (path === "/contents/store/products.json") {
       return Response.json({ content: Buffer.from(JSON.stringify({ products: [product] })).toString("base64"), sha: "catalog" });
     }
@@ -134,7 +134,7 @@ test("two authenticated users can create then reply to one persisted forum threa
   let issue = null;
   const comments = [];
   globalThis.fetch = async (url, options = {}) => {
-    const parsed = new URL(url), path = parsed.pathname.replace(/^\\/repos\\/[^/]+\\/[^/]+/, "");
+    const parsed = new URL(url), path = "/" + parsed.pathname.split("/").slice(4).join("/");
     if (path === "/issues" && options.method === "POST") {
       const body = JSON.parse(options.body);
       issue = { number: 777, title: body.title, body: body.body, state: "open", html_url: "https://github.test/issues/777" };
@@ -164,7 +164,7 @@ test("moderator lock writes an audit marker while category move stays forbidden"
   const issue = { number: 778, title: "[FORUM] Moderation smoke", body: "Target\n\n<!-- quantdeus-forum:v1 -->\n<!-- qd:category=community -->", state: "open" };
   let patched = null;
   globalThis.fetch = async (url, options = {}) => {
-    const parsed = new URL(url), path = parsed.pathname.replace(/^\\/repos\\/[^/]+\\/[^/]+/, "");
+    const parsed = new URL(url), path = "/" + parsed.pathname.split("/").slice(4).join("/");
     if (path === "/issues/778" && (!options.method || options.method === "GET")) return Response.json(issue);
     if (path === "/issues/778" && options.method === "PATCH") {
       patched = JSON.parse(options.body);
