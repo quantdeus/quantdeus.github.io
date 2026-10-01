@@ -7,6 +7,7 @@
   <meta name="description" content="QuantDeus Portal — Telegram-интерфейс услуг, форума, координации и личных модулей." />
   <title>QuantDeus Portal — Telegram</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="../assets/telegram-auth.js"></script>
   <style>
     :root{
       color-scheme:dark;
@@ -132,6 +133,7 @@
       <div class="toplinks">
         <a class="toplink hide-mobile" href="/forum/">Форум</a>
         <a class="toplink" href="/store/">Услуги</a>
+        <button class="toplink" data-qd-auth-button type="button">✈ Войти через Telegram</button>
         <button id="themePulse" class="iconbtn" type="button" aria-label="Подсветить интерфейс">✦</button>
       </div>
     </header>
@@ -287,7 +289,7 @@
     document.querySelector("#playBinaural").onclick=start;
     document.querySelector("#stopBinaural").onclick=()=>stop(true);
     document.querySelector("#themePulse").onclick=()=>{document.body.animate([{filter:"brightness(1)"},{filter:"brightness(1.16)"},{filter:"brightness(1)"}],{duration:520});tg?.HapticFeedback?.impactOccurred?.("light")};
-    initTelegram();updatePlayer();
+    window.addEventListener("qd:auth-changed",e=>{const u=e.detail?.user;if(u)document.querySelector("#userName").textContent=u.first_name||u.username||"Telegram";else if(!tg?.initDataUnsafe?.user)document.querySelector("#userName").textContent="Гость"});initTelegram();updatePlayer();
   </script>
 </body>
 </html>
