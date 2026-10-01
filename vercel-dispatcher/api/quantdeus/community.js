@@ -104,7 +104,7 @@ export default async function handler(req, res) {
     if (action === "thread") {
       const title = safeText(body.title, 120), text = safeText(body.text, 8000), category = safeText(body.category, 30);
       if (title.length < 5 || text.length < 10 || !CATEGORIES.has(category)) return json(res, 400, { ok: false, error: "invalid_thread" });
-      const author = safeText([user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || "Участник", 80);
+      const author = safeText(user.name || [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || "Участник", 80);
       const issue = await github("/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: `[FORUM] ${title}`, body: `${text}\n\n${FORUM_MARKER}\n<!-- qd:category=${category} -->\n<!-- qd:author=${author.replace(/-->/g, "") } -->` }) });
       return json(res, 201, { ok: true, thread: { number: issue.number, url: issue.html_url } });
     }
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
       if (!Number.isInteger(id) || id <= 0 || text.length < 2) return json(res, 400, { ok: false, error: "invalid_reply" });
       const issue = await github(`/issues/${id}`);
       if (!String(issue.body || "").includes(FORUM_MARKER) || issue.state !== "open") return json(res, 409, { ok: false, error: "thread_closed" });
-      const author = safeText([user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || "Участник", 80).replace(/-->/g, "");
+      const author = safeText(user.name || [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || "Участник", 80).replace(/-->/g, "");
       const reply = await github(`/issues/${id}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: `**${author}**\n\n${text}` }) });
       return json(res, 201, { ok: true, reply: { id: reply.id, created_at: reply.created_at } });
     }
