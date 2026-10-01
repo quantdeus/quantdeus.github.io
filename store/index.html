@@ -4,10 +4,10 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#081222"><meta name="description" content="Услуги QuantDeus: автоматизация бизнеса и концертные заявки.">
   <title>Услуги — QuantDeus</title><link rel="stylesheet" href="../assets/qd-portal.css">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script><script src="../assets/telegram-auth.js"></script>
 </head>
 <body>
-  <header class="qd-top"><div class="qd-shell qd-topin"><a class="qd-brand" href="/"><span class="qd-orb"></span><span>QuantDeus</span></a><nav class="qd-links" aria-label="Разделы"><a href="/">Главная</a><a href="/forum/">Форум</a><a href="/store/" aria-current="page">Услуги</a><a href="/telegram/">Продукт</a></nav><a class="qd-pill secondary" href="/coordination/">Координация</a></div></header>
+  <header class="qd-top"><div class="qd-shell qd-topin"><a class="qd-brand" href="/"><span class="qd-orb"></span><span>QuantDeus</span></a><nav class="qd-links" aria-label="Разделы"><a href="/">Главная</a><a href="/forum/">Форум</a><a href="/store/" aria-current="page">Услуги</a><a href="/telegram/">Продукт</a></nav><div class="qd-auth"><span class="qd-auth-user" data-qd-auth-user hidden></span><button class="qd-pill secondary" data-qd-auth-button type="button">✈ Войти через Telegram</button></div><a class="qd-pill secondary" href="/coordination/">Координация</a></div></header>
   <main class="qd-shell qd-main">
     <section class="qd-heading"><div><div class="qd-kicker">QuantDeus Services</div><h1>Услуги QuantDeus</h1><p>Сейчас принимаем заявки на автоматизацию бизнеса и концертные выступления Ксении Чередниковой. Стоимость рассчитывается индивидуально после уточнения задачи.</p></div></section>
     <div id="systemNotice" class="qd-notice" role="status">Загружаю услуги…</div><div id="products" class="qd-grid" aria-live="polite"></div>
@@ -18,10 +18,10 @@
   <script>
   (()=>{
     const API=(location.hostname==="quantdeus.github.io"?"https://quantdeus.vercel.app":location.origin)+"/api/quantdeus/orders";
-    const $=id=>document.getElementById(id), tg=window.Telegram?.WebApp, initData=tg?.initData||"", state={products:[],role:"guest"};
+    const $=id=>document.getElementById(id), tg=window.Telegram?.WebApp, qdAuth=window.QuantDeusTelegramAuth, state={products:[],role:"guest"};
     const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     const notice=(text,type="")=>{$("systemNotice").className="qd-notice "+type;$("systemNotice").textContent=text};
-    async function request(url,options={}){const headers={...(options.headers||{})};if(initData)headers["x-telegram-init-data"]=initData;if(options.body)headers["content-type"]="application/json";const r=await fetch(url,{...options,headers});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`HTTP ${r.status}`);return data}
+    async function request(url,options={}){const headers={...(options.headers||{}),...(qdAuth?.authHeaders?.()||{})};if(options.body)headers["content-type"]="application/json";const r=await fetch(url,{...options,headers});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`HTTP ${r.status}`);return data}
     const quoteMode=p=>p?.pricing_mode==="quote";
     const amountLabel=o=>o?.pricing_mode==="quote"||o?.amount==null?"Стоимость по запросу":`${Number(o.amount).toLocaleString("ru-RU")} ₽`;
 
@@ -40,16 +40,16 @@
     }
 
     function openInquiry(product){
-      if(!initData){notice("Чтобы оставить заявку, открой раздел внутри Telegram Mini App QuantDeus.","qd-error");return}
+      const defaults=qdAuth?.getContactDefaults?.()||{name:"",contact:""}, authenticated=Boolean(qdAuth?.isAuthenticated?.());
       $("modalTitle").textContent="Заявка: "+product.name;
-      $("checkoutBody").innerHTML=`<form id="inquiryForm" class="qd-form"><p>${esc(product.description||"")}</p><label>Опиши задачу или мероприятие<textarea class="qd-textarea" name="note" rows="6" minlength="5" maxlength="1600" required placeholder="Например: что нужно автоматизировать / город, дата, площадка и формат концерта"></textarea></label><div class="qd-notice">Стоимость не фиксируется заранее: сначала уточняем задачу, затем согласуем условия.</div><button class="qd-button" type="submit">Отправить заявку</button></form>`;
+      $("checkoutBody").innerHTML=`<form id="inquiryForm" class="qd-form"><p>${esc(product.description||"")}</p><div class="qd-notice">${authenticated?"Telegram уже привязан к заявке. При желании укажи дополнительный контакт.":"Регистрация не нужна. Оставь имя и удобный способ связи."}</div><label>Имя<input class="qd-input" name="contact_name" maxlength="120" value="${esc(defaults.name)}" ${authenticated?"":"required"} placeholder="Как к вам обращаться"></label><label>Как связаться<input class="qd-input" name="contact" maxlength="200" value="${esc(defaults.contact)}" ${authenticated?"":"required"} placeholder="@telegram, телефон или email"></label><label>Опиши задачу или мероприятие<textarea class="qd-textarea" name="note" rows="6" minlength="5" maxlength="1600" required placeholder="Например: что нужно автоматизировать / город, дата, площадка и формат концерта"></textarea></label><div class="qd-notice">Стоимость не фиксируется заранее: сначала уточняем задачу, затем согласуем условия.</div><button class="qd-button" type="submit">Отправить заявку</button></form>`;
       $("modal").classList.add("open");
       $("inquiryForm").onsubmit=async e=>{
         e.preventDefault();
-        const note=String(new FormData(e.currentTarget).get("note")||"");
+        const form=Object.fromEntries(new FormData(e.currentTarget));
         try{
-          const data=await request(API,{method:"POST",body:JSON.stringify({action:"create",product_id:product.id,note})});
-          showOrder(data.order,data.payment);
+          const data=await request(API,{method:"POST",body:JSON.stringify({action:"create",product_id:product.id,note:form.note,contact_name:form.contact_name,contact:form.contact})});
+          showOrder(data.order,data.payment,{guest:Boolean(data.guest)});
         }catch(err){notice("Заявка не отправлена: "+err.message,"qd-error")}
       };
     }
@@ -60,11 +60,11 @@
       catch(e){notice("Заказ не создан: "+e.message,"qd-error")}
     }
 
-    function showOrder(order,payment){
+    function showOrder(order,payment,meta={}){
       const inquiry=order.pricing_mode==="quote"||order.status==="inquiry_created";
       $("modalTitle").textContent=(inquiry?"Заявка ":"Заказ ")+order.id;
       if(inquiry){
-        $("checkoutBody").innerHTML=`<p><b>${esc(order.product_name)}</b></p><p>Номер заявки: <code>${esc(order.id)}</code><br>Статус: <b>Заявка принята</b></p><div class="qd-notice qd-success">Заявка сохранена. Команда QuantDeus сможет связаться с тобой через Telegram для уточнения задачи и стоимости.</div><p>${esc(order.request_note||"")}</p><button class="qd-button secondary" id="cancelBtn" type="button">Отменить заявку</button><div id="orderNotice" class="qd-notice" role="status">Оплата на этом этапе не требуется.</div>`;
+        $("checkoutBody").innerHTML=`<p><b>${esc(order.product_name)}</b></p><p>Номер заявки: <code>${esc(order.id)}</code><br>Статус: <b>Заявка принята</b></p><div class="qd-notice qd-success">Заявка сохранена. Команда QuantDeus сможет связаться с тобой через Telegram для уточнения задачи и стоимости.</div><p>${esc(order.request_note||"")}</p>${meta.guest?"":`<button class="qd-button secondary" id="cancelBtn" type="button">Отменить заявку</button>`}<div id="orderNotice" class="qd-notice" role="status">${meta.guest?"Заявка отправлена без регистрации. Сохрани номер заявки.":"Оплата на этом этапе не требуется."}</div>`;
       }else{
         const pay=payment?`<div class="qd-sbp"><b>Оплата по СБП</b><p>Получатель: ${esc(payment.recipient)}<br>Банк: ${esc(payment.bank)}<br>Телефон: <span id="phone">${esc(payment.phone)}</span><br>Сумма: <span id="amount">${Number(order.amount).toLocaleString("ru-RU")} ₽</span></p><div class="qd-toolbar"><button class="qd-button secondary" id="copyPhone" type="button">Скопировать телефон</button><button class="qd-button secondary" id="copyAmount" type="button">Скопировать сумму</button></div></div>`:`<div class="qd-notice qd-error">СБП-реквизиты не настроены. Заказ сохранён, но платить пока не нужно.</div>`;
         $("checkoutBody").innerHTML=`<p><b>${esc(order.product_name)}</b></p><p>Номер заказа: <code>${esc(order.id)}</code><br>Статус: <b>${esc(order.status)}</b></p>${pay}<button class="qd-button" id="paidBtn" ${payment&&order.status==="created"?"":"disabled"} type="button">Я оплатил</button>${order.status==="created"?`<button class="qd-button secondary" id="cancelBtn" type="button">Отменить заказ</button>`:""}<div id="orderNotice" class="qd-notice" role="status">Кнопка изменит статус на «ожидает проверки». Она не подтверждает поступление денег.</div>`;
@@ -77,11 +77,11 @@
     }
 
     async function adminOrders(){
-      if(!initData)return;
+      if(!qdAuth?.isAuthenticated?.())return;
       try{
         const data=await request(API+"?admin=1");state.role="admin";$("adminPanel").hidden=false;
         $("orders").innerHTML=data.orders.length?data.orders.map(o=>{
-          const contact=o.contact?(o.contact.telegram_username?`@${esc(o.contact.telegram_username)}`:`Telegram ID ${esc(o.contact.telegram_user_id)}`):"";
+          const contact=o.contact?(o.contact.reply_to?esc(o.contact.reply_to):o.contact.telegram_username?`@${esc(o.contact.telegram_username)}`:o.contact.telegram_user_id?`Telegram ID ${esc(o.contact.telegram_user_id)}`:""):"";
           const details=o.request_note?`<div class="qd-reply">${esc(o.request_note)}</div>`:"";
           return `<article class="qd-order"><b>${esc(o.product_name)}</b> · ${amountLabel(o)}<br><small>${esc(o.id)} · ${esc(o.status)}</small>${contact?`<div class="qd-meta">Контакт: ${contact}</div>`:""}${details}${o.status==="payment_pending"?`<div class="qd-toolbar"><button class="qd-button" data-confirm="${esc(o.id)}">Подтвердить оплату</button><button class="qd-button secondary" data-reject="${esc(o.id)}">Отклонить</button></div>`:""}</article>`;
         }).join(""):`<div class="qd-empty">Новых заявок нет.</div>`;
@@ -97,7 +97,7 @@
     }
 
     $("closeModal").onclick=()=>$("modal").classList.remove("open");
-    if(tg){try{tg.ready();tg.expand()}catch{}}
+    if(tg){try{tg.ready();tg.expand()}catch{}}window.addEventListener("qd:auth-changed",()=>adminOrders());
     request(API+"?products=1").then(data=>{state.products=data.products||[];notice(state.products.length?`Доступно предложений: ${state.products.length}`:"Список услуг пока пуст.");render()}).catch(async()=>{try{const r=await fetch("products.json"),data=await r.json();state.products=data.products||[];render();notice("Показан каталог из репозитория. Отправка заявок включится после настройки сервера.")}catch(e){notice("Не удалось загрузить услуги: "+e.message,"qd-error")}});
     adminOrders();
   })();
