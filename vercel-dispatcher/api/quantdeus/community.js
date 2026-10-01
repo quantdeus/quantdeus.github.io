@@ -72,29 +72,49 @@ export default async function handler(req, res) {
         const user = await telegramUser(req.headers["x-telegram-init-data"]);
         return json(res, 200, { ok: true, role: roleFor(user.id) });
       }
-      const issues = await github("/issues?state=all&per_page=100&sort=updated&direction=desc");
+      const staffRoles = new Set(["owner", "admin", "moderator"]);
       const includeHidden = req.query?.moderation === "1";
+      let moderationRole = null;
       if (includeHidden) {
         const user = await telegramUser(req.headers["x-telegram-init-data"]);
-        if (!new Set(["owner", "admin", "moderator"]).has(roleFor(user.id))) return json(res, 403, { ok: false, error: "forbidden" });
+        moderationRole = roleFor(user.id);
+        if (!staffRoles.has(moderationRole)) return json(res, 403, { ok: false, error: "forbidden" });
       }
-      const threads = issues.filter(x => !x.pull_request && String(x.body || "").includes(FORUM_MARKER) && (includeHidden || !String(x.body || "").includes("<!-- qd:hidden -->")));
+
       const threadId = clean(req.query?.id);
+      if (threadId) {
+        const id = Number(threadId);
+        if (!Number.isInteger(id) || id <= 0) return json(res, 400, { ok: false, error: "invalid_thread_id" });
+        const issue = await github(`/issues/${id}`).catch(error => error.message === "github_404" ? null : Promise.reject(error));
+        if (!issue || issue.pull_request || !String(issue.body || "").includes(FORUM_MARKER)) {
+          return json(res, 404, { ok: false, error: "thread_not_found" });
+        }
+        const hidden = String(issue.body || "").includes("<!-- qd:hidden -->");
+        if (hidden) {
+          let role = moderationRole;
+          if (!role) {
+            try {
+              const user = await telegramUser(req.headers["x-telegram-init-data"]);
+              role = roleFor(user.id);
+            } catch {}
+          }
+          if (!staffRoles.has(role)) return json(res, 404, { ok: false, error: "thread_not_found" });
+        }
+        const comments = await github(`/issues/${id}/comments?per_page=100`);
+        return json(res, 200, { ok: true, thread: issue, replies: comments });
+      }
+
+      const issues = await github("/issues?state=all&per_page=100&sort=updated&direction=desc");
+      const threads = issues.filter(x => !x.pull_request && String(x.body || "").includes(FORUM_MARKER) && (includeHidden || !String(x.body || "").includes("<!-- qd:hidden -->")));
       if (req.query?.reports === "1") {
         const user = await telegramUser(req.headers["x-telegram-init-data"]), role = roleFor(user.id);
-        if (!new Set(["owner", "admin", "moderator"]).has(role)) return json(res, 403, { ok: false, error: "forbidden" });
+        if (!staffRoles.has(role)) return json(res, 403, { ok: false, error: "forbidden" });
         const reports = [];
         for (const issue of threads.slice(0, 50)) {
           const comments = await github(`/issues/${issue.number}/comments?per_page=100`);
           for (const comment of comments.filter(x => String(x.body || "").startsWith("**Жалоба участника**"))) reports.push({ thread_id: issue.number, title: issue.title, comment });
         }
         return json(res, 200, { ok: true, reports });
-      }
-      if (threadId) {
-        const issue = threads.find(x => String(x.number) === threadId);
-        if (!issue) return json(res, 404, { ok: false, error: "thread_not_found" });
-        const comments = await github(`/issues/${issue.number}/comments?per_page=100`);
-        return json(res, 200, { ok: true, thread: issue, replies: comments });
       }
       return json(res, 200, { ok: true, threads: threads.map(({ number, title, body, created_at, updated_at, comments, state }) => ({ number, title: String(title).replace(/^\[PINNED\]\s*/, ""), pinned: String(title).startsWith("[PINNED] "), hidden: String(body).includes("<!-- qd:hidden -->"), category: (String(body).match(/<!-- qd:category=([a-z-]+) -->/) || [])[1] || "community", body: body.split(FORUM_MARKER)[0].replace(/<!-- qd:[^>]* -->/g, "").trim(), created_at, updated_at, comments, state })).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updated_at.localeCompare(a.updated_at)) });
     } catch (error) {
