@@ -66,6 +66,9 @@ jobs:
 
           const site=read('scripts/site-agent-reply.js');
           const telegram=read('vercel-dispatcher/api/quantdeus/telegram.js');
+          const llmBridge=read('vercel-dispatcher/api/quantdeus/llm.js');
+          must(llmBridge.includes("role === 'system' ? 50000 : 16000"), 'OIDC fallback must accept the bounded repo-grounded system prompt');
+          must(llmBridge.includes('total > 90000'), 'OIDC fallback total prompt budget must remain bounded');
           for(const [name,src] of [['site',site],['telegram',telegram]]) {
             must(src.includes('STRICT_REPOSITORY_STATUS_CONTRACT'), name+' missing strict repository status contract');
             must(src.includes('validateRepositoryStatusOutput'), name+' missing deterministic status validator');
