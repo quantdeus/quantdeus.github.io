@@ -143,6 +143,31 @@ test("anonymous visitor can submit quote inquiry with contact and no registratio
   assert.equal(savedOrder.amount, null);
 });
 
+test("anonymous inquiry falls back to Telegram draft when private storage is not configured", async () => {
+  delete process.env.QUANTDEUS_GITHUB_TOKEN;
+  delete process.env.TELEGRAM_CHAT_ID;
+  delete process.env.QUANTDEUS_TELEGRAM_CHAT_ID;
+  delete process.env.QUANTDEUS_GENERIC_WEBHOOK;
+  const created = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.12", "user-agent": "portal-fallback-test" },
+    body: {
+      action: "create",
+      product_id: "business-automation",
+      note: "Нужно автоматизировать обработку заявок и ежедневные отчёты.",
+      contact: "@fallback_client",
+      website: ""
+    }
+  }, created);
+  assert.equal(created.statusCode, 202, JSON.stringify(created.body));
+  assert.equal(created.body.ok, true);
+  assert.equal(created.body.needs_user_send, true);
+  assert.equal(created.body.delivery, "telegram_draft");
+  assert.match(created.body.telegram_url, /^https:\/\/t\.me\/QuantDeus_bot\?text=/);
+  assert.equal(created.body.order.status, "needs_user_send");
+});
+
 test("anonymous quote inquiry requires a reply contact", async () => {
   mockFetch();
   const created = resMock();
