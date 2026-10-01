@@ -81,6 +81,13 @@ function sbpConfig() {
   const phone = process.env.SBP_PHONE, bank = process.env.SBP_BANK, recipient = process.env.SBP_RECIPIENT;
   return phone && bank && recipient ? { method: "СБП", phone, bank, recipient } : null;
 }
+const safeText = (value, max) => String(value || "")
+  .trim()
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+  .slice(0, max);
+function paymentFor(order) {
+  return order?.pricing_mode === "quote" ? null : sbpConfig();
+}
 function safeMessage(error) {
   if (["github_storage_unconfigured", "order_hmac_unconfigured", "telegram_auth_unavailable", "telegram_auth_invalid"].includes(error.message)) return error.message;
   if (/^github_404$/.test(error.message)) return "order_not_found";
@@ -110,20 +117,62 @@ export default async function handler(req, res) {
       if (!/^[a-f0-9-]{20,40}$/i.test(id)) return json(res, 400, { ok: false, error: "invalid_order_id" });
       const found = await readOrder(id);
       if (role !== "owner" && role !== "admin" && found.order.customer_ref !== await customerRef(user.id)) return json(res, 404, { ok: false, error: "order_not_found" });
-      return json(res, 200, { ok: true, order: found.order, payment: sbpConfig() });
+      return json(res, 200, { ok: true, order: found.order, payment: paymentFor(found.order) });
     }
     if (req.method !== "POST") return json(res, 405, { ok: false, error: "method_not_allowed" });
     const user = await telegramUser(req.headers["x-telegram-init-data"]), role = roleFor(user.id), body = req.body || {};
     if (!writesEnabled()) return json(res, 409, { ok: false, error: "preview_read_only" });
     if (body.action === "create") {
-      const products = await catalog(), product = products.find(p => p.id === body.product_id && p.available === true && Number.isInteger(p.price_rub) && p.price_rub > 0);
+      const products = await catalog();
+      const product = products.find(p => {
+        if (p.id !== body.product_id || p.available !== true) return false;
+        if (p.pricing_mode === "quote") return p.price_rub == null;
+        return Number.isInteger(p.price_rub) && p.price_rub > 0;
+      });
       if (!product) return json(res, 400, { ok: false, error: "product_unavailable" });
+
+      const quote = product.pricing_mode === "quote";
+      const requestNote = safeText(body.note, 1600);
+      if (quote && requestNote.length < 5) return json(res, 400, { ok: false, error: "inquiry_note_required" });
+
       const id = randomUUID(), now = new Date().toISOString();
       const actorRef = await customerRef(user.id);
-      const order = { id, product_id: product.id, product_name: product.name, amount: product.price_rub, currency: "RUB", status: "created", customer_ref: actorRef, created_at: now, updated_at: now, audit: [{ actor_ref: actorRef, actor_role: role, action: "created", at: now }] };
+      const order = {
+        id,
+        product_id: product.id,
+        product_name: product.name,
+        pricing_mode: quote ? "quote" : "fixed",
+        amount: quote ? null : product.price_rub,
+        currency: "RUB",
+        status: quote ? "inquiry_created" : "created",
+        customer_ref: actorRef,
+        ...(quote ? {
+          request_note: requestNote,
+          contact: {
+            telegram_user_id: String(user.id),
+            telegram_username: safeText(user.username, 64) || null,
+            display_name: safeText([user.first_name, user.last_name].filter(Boolean).join(" "), 120) || "Telegram user"
+          }
+        } : {}),
+        created_at: now,
+        updated_at: now,
+        audit: [{ actor_ref: actorRef, actor_role: role, action: quote ? "inquiry_created" : "created", at: now }]
+      };
       const repo = process.env.QUANTDEUS_ORDERS_REPOSITORY || DEFAULT_PRIVATE_REPO;
       await writeOrder(repo, `quantdeus-store/orders/${id}.json`, order);
-      return json(res, 201, { ok: true, order: { id, product_id: product.id, product_name: product.name, amount: product.price_rub, status: order.status }, payment: sbpConfig() });
+      return json(res, 201, {
+        ok: true,
+        order: {
+          id,
+          product_id: product.id,
+          product_name: product.name,
+          pricing_mode: order.pricing_mode,
+          amount: order.amount,
+          status: order.status,
+          ...(quote ? { request_note: order.request_note } : {})
+        },
+        payment: paymentFor(order)
+      });
     }
     const id = String(body.order_id || "");
     if (!/^[a-f0-9-]{20,40}$/i.test(id)) return json(res, 400, { ok: false, error: "invalid_order_id" });
@@ -133,11 +182,12 @@ export default async function handler(req, res) {
     const now = new Date().toISOString();
     if (body.action === "cancel") {
       if (order.status === "cancelled") return json(res, 200, { ok: true, order, idempotent: true });
-      if (order.status !== "created" && !(owner && order.status === "payment_pending")) return json(res, 409, { ok: false, error: "invalid_transition" });
+      if (!["created", "inquiry_created"].includes(order.status) && !(owner && order.status === "payment_pending")) return json(res, 409, { ok: false, error: "invalid_transition" });
       order.status = "cancelled";
       order.audit.push({ actor_ref: await customerRef(user.id), actor_role: role, action: "cancelled", at: now });
     } else if (body.action === "payment_submitted") {
-      if (order.status === "payment_pending") return json(res, 200, { ok: true, order, payment: sbpConfig(), idempotent: true });
+      if (order.pricing_mode === "quote") return json(res, 409, { ok: false, error: "payment_not_applicable" });
+      if (order.status === "payment_pending") return json(res, 200, { ok: true, order, payment: paymentFor(order), idempotent: true });
       if (order.status !== "created") return json(res, 409, { ok: false, error: "invalid_transition" });
       order.status = "payment_pending";
       order.audit.push({ actor_ref: await customerRef(user.id), actor_role: "member", action: "payment_submitted", at: now });
@@ -152,7 +202,7 @@ export default async function handler(req, res) {
     } else return json(res, 400, { ok: false, error: "unknown_action" });
     order.updated_at = now;
     await writeOrder(found.repo, found.path, order, found.sha);
-    return json(res, 200, { ok: true, order, payment: sbpConfig() });
+    return json(res, 200, { ok: true, order, payment: paymentFor(order) });
   } catch (error) {
     const code = safeMessage(error);
     const status = ["github_storage_unconfigured", "order_hmac_unconfigured", "telegram_auth_unavailable"].includes(code) ? 503 : code === "order_not_found" ? 404 : code === "telegram_auth_invalid" ? 401 : 502;
