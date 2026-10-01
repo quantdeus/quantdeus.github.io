@@ -147,6 +147,9 @@ test("two authenticated users can create then reply to one persisted forum threa
       comments.push(reply);
       return Response.json(reply);
     }
+    if (path === "/issues/777/comments" && (!options.method || options.method === "GET")) {
+      return Response.json(comments);
+    }
     return Response.json({ message: "Not Found" }, { status: 404 });
   };
   const creator = resMock();
@@ -158,6 +161,12 @@ test("two authenticated users can create then reply to one persisted forum threa
   assert.equal(replier.statusCode, 201, JSON.stringify(replier.body));
   assert.equal(comments.length, 1);
   assert.match(comments[0].body, /Second authenticated user replies/);
+
+  const reread = resMock();
+  await forum({ method: "GET", query: { id: "777" }, headers: {} }, reread);
+  assert.equal(reread.statusCode, 200, JSON.stringify(reread.body));
+  assert.equal(Number(reread.body.thread.number), 777);
+  assert.equal(reread.body.replies.length, 1);
 });
 
 test("moderator lock writes an audit marker while category move stays forbidden", async () => {
