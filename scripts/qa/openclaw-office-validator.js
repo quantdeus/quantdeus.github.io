@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const route = fs.readFileSync('vercel-dispatcher/api/quantdeus/openclaw.js', 'utf8');
 const client = fs.readFileSync('scripts/openclaw-office-client.js', 'utf8');
+const officeSession = fs.readFileSync('vercel-dispatcher/lib/office-session.js', 'utf8');
 const site = fs.readFileSync('scripts/site-agent-reply.js', 'utf8');
 const telegram = fs.readFileSync('scripts/telegram-bot.js', 'utf8');
 const vercel = JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json', 'utf8'));
@@ -58,6 +59,10 @@ for (const [ok, message] of [
   [evolutionGate.includes('QuantDeus QA Triad') && evolutionGate.includes('QuantDeus Static Smoke') && evolutionGate.includes('QuantDeus OpenClaw Evolution PR Guard') && evolutionGate.includes('node scripts/guarded-automerge.js'), 'independent gate reacts to QA, Smoke and Evolution Guard completion'],
   [guardedAutomerge.includes("['qa','smoke','evolution-guard']") && guardedAutomerge.includes("check.conclusion === 'success'") && guardedAutomerge.includes('validateTierAChangeSet') && guardedAutomerge.includes('--match-head-commit'), 'guarded automerge requires exact successful provenance, final semantic revalidation and atomic head match'],
   [client.includes("execution_mode: trusted ? 'trusted-office' : 'chat'") && client.includes('trusted = false'), 'client can request trusted office explicitly'],
+  [client.includes('request_timeout_ms:') && client.includes("options?.trusted !== true || error?.retrySafe === true"), 'caller gives Office a shorter server deadline and retries trusted turns only when explicitly safe'],
+  [route.includes('const requestDeadline = Date.now() + requestBudgetMs') && route.includes('agentTimeoutSeconds') && route.includes('queueWaitSeconds') && route.includes('retry_safe: retrySafe'), 'OpenClaw server bounds queue and agent execution inside the caller budget and surfaces retry safety'],
+  [route.includes('cloneRequestRepo') && route.includes('OPENCLAW_WORKSPACE_MISSING') && route.includes('workspace vanished before exec; rebuilding'), 'trusted Office repairs a vanished isolated checkout before retrying execution'],
+  [officeSession.includes('queueWaitSeconds = 45') && officeSession.includes('OPENCLAW_WORKSPACE_MISSING') && officeSession.includes('retrySafe: true'), 'Office session classifies pre-exec workspace and queue failures as safe-to-retry infrastructure failures'],
   [telegram.includes('trusted: true') && telegram.includes('telegram-admin-task'), 'Telegram admin task lane invokes trusted office only after admin gate'],
   [route.includes('CEREBRAS_API_KEY') && route.includes('GROQ_API_KEY') && route.includes('FIREWORKS_API_KEY') && route.includes('DEEPINFRA_API_KEY') && route.includes('TOGETHER_API_KEY') && route.includes('GEMINI_API_KEY') && route.includes('NVIDIA_API_KEY') && route.includes('XAI_API_KEY') && route.includes('CLOUDFLARE_API_KEY') && route.includes('OPENROUTER_API_KEY') && route.includes('POLLINATIONS_API_KEY') && !route.includes('MISTRAL_API_KEY'), 'OpenClaw exposes a broad current provider pool without restoring the retired Mistral route'],
   [route.includes("model: process.env.POLLINATIONS_MODEL || 'openai'") && route.includes('priority: trustedOffice ? 5 : 1000'), 'trusted OpenClaw prefers the historically proven Pollinations openai route only after the normal live capability probe'],
