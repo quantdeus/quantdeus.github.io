@@ -1,0 +1,40 @@
+name: QuantDeus Portal Live Forum Smoke 🧪
+
+on:
+  push:
+    branches:
+      - preview/forum-store-portal
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: quantdeus-portal-live-forum-smoke
+  cancel-in-progress: false
+
+jobs:
+  live-forum-smoke:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[portal-live-smoke]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
+      QUANTDEUS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      QD_SMOKE_RUN_ID: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require production Telegram signing secret
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
+            echo "TELEGRAM_BOT_TOKEN (or configured fallback) is missing"
+            exit 1
+          fi
+
+      - name: Validate live smoke syntax
+        run: node --check vercel-dispatcher/tests/portal-live-forum-smoke.mjs
+
+      - name: Run authenticated two-user persisted forum smoke
+        run: node vercel-dispatcher/tests/portal-live-forum-smoke.mjs
