@@ -605,6 +605,15 @@ export default async function handler(req, res) {
       priority: 100
     });
 
+    // Reuse the existing Hermes production route when configured. The values stay
+    // inside Vercel runtime; capability probing decides whether it is admitted.
+    const hermesBaseUrl = String(process.env.HERMES_LOCAL_BASE_URL || '').trim();
+    const hermesKey = String(process.env.HERMES_LOCAL_API_KEY || '').trim();
+    const hermesModel = String(process.env.HERMES_CLOUD_MODEL || process.env.HERMES_MODEL || '').trim();
+    if (hermesBaseUrl && hermesKey && hermesModel) {
+      addProvider({ id: 'quantdeus-hermes', keyEnv: 'HERMES_LOCAL_API_KEY', key: hermesKey, model: hermesModel, baseUrl: hermesBaseUrl, priority: trustedOffice ? 15 : 25 });
+    }
+
     // Reuse deployment OIDC for an explicitly configured Gateway model.
     const gatewayModel = String(process.env.OPENCLAW_GATEWAY_MODEL || process.env.LLM_BRIDGE_MODEL || process.env.BROWSER_PLANNER_MODEL || '').trim();
     if (gatewayModel) {
