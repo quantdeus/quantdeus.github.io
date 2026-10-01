@@ -397,6 +397,11 @@ export default async function handler(req, res) {
     const octetHerald = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-octet-herald';
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
     const smokePhase = trustedOffice && req.body?.metadata?.source === 'openclaw-admin-smoke' && new Set(['github', 'playwright']).has(smokePhaseRaw) ? smokePhaseRaw : null;
+    const requestedTimeoutMs = Number(req.body?.request_timeout_ms);
+    const requestBudgetMs = Number.isFinite(requestedTimeoutMs) && requestedTimeoutMs > 0
+      ? Math.max(15000, Math.min(285000, Math.floor(requestedTimeoutMs)))
+      : 245000;
+    const requestDeadline = Date.now() + requestBudgetMs;
     const callerGithubToken = String(req.headers['x-quantdeus-github-token'] || '').trim();
     const executorGithubToken = String(process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
     const githubToken = String(
@@ -660,7 +665,7 @@ export default async function handler(req, res) {
 
     if (!healthyRefs.length) {
       console.warn('[openclaw-routing] no healthy provider passed the required probe');
-      return res.status(503).json({ ok: false, error: 'openclaw_no_healthy_model_route', probes: probeResults });
+      return res.status(503).json({ ok: false, error: 'openclaw_no_healthy_model_route', retry_safe: true, probes: probeResults });
     }
     const orderedModels = [...healthyRefs];
     const model = orderedModels[0];
@@ -752,11 +757,14 @@ export default async function handler(req, res) {
     const install = await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'command -v openclaw >/dev/null 2>&1 || npm install --global openclaw@2026.9.6 --allow-scripts=openclaw'] });
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
-    if (trustedOffice && !smokePhase) {
-      // Fresh per-request shallow checkout avoids concurrent mutation of shared
-      // .git/shallow metadata inside the persistent Vercel Sandbox. Clone is
-      // read-only, so retrying it is safe and removes a transient network failure
-      // from the agent mutation path.
+
+    const cloneRequestRepo = async (force = false) => {
+      if (!trustedOffice || smokePhase) return;
+      if (!force) {
+        const existing = await sandbox.runCommand({ cmd: 'test', args: ['-d', `${repoDir}/.git`] });
+        if (existing.exitCode === 0) return;
+      }
+      await sandbox.runCommand({ cmd: 'rm', args: ['-rf', repoDir] });
       let cloneError = null;
       for (let attempt = 1; attempt <= 3; attempt += 1) {
         const clone = await sandbox.runCommand({
@@ -769,13 +777,21 @@ export default async function handler(req, res) {
           break;
         }
         const stderr = (await clone.stderr()).slice(-1200);
-        cloneError = new Error(`openclaw_repo_clone_failed: ${stderr}`);
+        cloneError = Object.assign(new Error(`openclaw_repo_clone_failed: ${stderr}`), {
+          status: 503,
+          retrySafe: true,
+          code: 'OPENCLAW_REPO_CLONE_FAILED'
+        });
         console.warn(`[openclaw-repo] clone attempt ${attempt}/3 failed: ${stderr}`);
         await sandbox.runCommand({ cmd: 'rm', args: ['-rf', repoDir] });
         if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 500 * attempt));
       }
       if (cloneError) throw cloneError;
+    };
+
+    if (trustedOffice && !smokePhase) {
       ephemeralDirs.push(repoDir);
+      await cloneRequestRepo();
     }
     const agentCwd = trustedOffice && !smokePhase ? repoDir : workdir;
     const requestsDir = `${home}/.openclaw/requests`;
@@ -998,8 +1014,38 @@ export default async function handler(req, res) {
     let run = null;
     let raw = '';
     let result = null;
+    let agentTimeoutSeconds = 0;
+    let queueWaitSeconds = 0;
     for (let attempt = 1; attempt <= 2; attempt += 1) {
-      run = await runOfficeAgent(sandbox, { lock: agentLock, args: ['agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '240', '--json', '--message-file', promptPath], cwd: agentCwd, env: runtimeEnv });
+      const remainingMs = requestDeadline - Date.now();
+      if (remainingMs < 25000) {
+        throw Object.assign(new Error('openclaw_request_budget_exhausted_before_exec'), {
+          status: 503,
+          retrySafe: true,
+          code: 'OPENCLAW_REQUEST_BUDGET_EXHAUSTED'
+        });
+      }
+      queueWaitSeconds = Math.max(3, Math.min(20, Math.floor(remainingMs / 5000)));
+      agentTimeoutSeconds = Math.floor((remainingMs - queueWaitSeconds * 1000 - 5000) / 1000);
+      agentTimeoutSeconds = Math.max(15, Math.min(210, agentTimeoutSeconds));
+      if (trustedOffice && !smokePhase) await cloneRequestRepo();
+
+      try {
+        run = await runOfficeAgent(sandbox, {
+          lock: agentLock,
+          args: ['agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', String(agentTimeoutSeconds), '--json', '--message-file', promptPath],
+          cwd: agentCwd,
+          env: runtimeEnv,
+          queueWaitSeconds
+        });
+      } catch (error) {
+        if (error?.code === 'OPENCLAW_WORKSPACE_MISSING' && trustedOffice && !smokePhase && attempt === 1) {
+          console.warn('[openclaw-repo] workspace vanished before exec; rebuilding the isolated checkout once');
+          await cloneRequestRepo(true);
+          continue;
+        }
+        throw error;
+      }
       raw = await text(run);
       result = null;
       try { result = raw ? JSON.parse(raw) : null; } catch {}
@@ -1068,6 +1114,9 @@ export default async function handler(req, res) {
       doctor,
       tool_summary: toolSummary,
       assistant_turns: result.assistantTurns ?? null,
+      request_budget_ms: requestBudgetMs,
+      agent_timeout_seconds: agentTimeoutSeconds,
+      queue_wait_seconds: queueWaitSeconds,
       text: result.final.trim(),
       github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository }
     });
@@ -1078,7 +1127,14 @@ export default async function handler(req, res) {
     const status = [400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
       ? explicitStatus
       : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502);
-    return res.status(status).json({ ok: false, error: 'openclaw_office_failed', detail: message.slice(0, 2000) });
+    const retrySafe = Boolean(error?.retrySafe) ||
+      /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted)/i.test(message);
+    return res.status(status).json({
+      ok: false,
+      error: 'openclaw_office_failed',
+      retry_safe: retrySafe,
+      detail: message.slice(0, 2000)
+    });
   } finally {
     if (sandbox) {
       await cleanupOfficeRequest(sandbox, ephemeralFiles, ephemeralDirs);
