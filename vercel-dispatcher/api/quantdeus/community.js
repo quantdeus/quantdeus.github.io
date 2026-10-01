@@ -89,14 +89,14 @@ export default async function handler(req, res) {
       }
       return json(res, 200, { ok: true, threads: threads.map(({ number, title, body, created_at, updated_at, comments, state }) => ({ number, title: String(title).replace(/^\[PINNED\]\s*/, ""), pinned: String(title).startsWith("[PINNED] "), hidden: String(body).includes("<!-- qd:hidden -->"), category: (String(body).match(/<!-- qd:category=([a-z-]+) -->/) || [])[1] || "community", body: body.split(FORUM_MARKER)[0].replace(/<!-- qd:[^>]* -->/g, "").trim(), created_at, updated_at, comments, state })).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updated_at.localeCompare(a.updated_at)) });
     } catch (error) {
-      const status = ["github_storage_unconfigured", "telegram_auth_unavailable"].includes(error.message) ? 503 : error.message === "telegram_auth_invalid" ? 401 : 502;
+      const status = ["github_storage_unconfigured", "telegram_auth_unavailable", "telegram_oidc_unavailable", "telegram_oidc_unconfigured"].includes(error.message) ? 503 : error.message === "telegram_auth_invalid" ? 401 : 502;
       return json(res, status, { ok: false, error: error.message || "forum_read_failed" });
     }
   }
   if (req.method !== "POST") return json(res, 405, { ok: false, error: "method_not_allowed" });
   let user;
   try { user = await requestTelegramIdentity(req); }
-  catch (error) { return json(res, error.message === "telegram_auth_unavailable" ? 503 : 401, { ok: false, error: error.message }); }
+  catch (error) { return json(res, ["telegram_auth_unavailable","telegram_oidc_unavailable","telegram_oidc_unconfigured"].includes(error.message) ? 503 : 401, { ok: false, error: error.message }); }
   if (!writesEnabled()) return json(res, 409, { ok: false, error: "preview_read_only" });
   const body = req.body || {};
   const action = safeText(body.action, 20);
