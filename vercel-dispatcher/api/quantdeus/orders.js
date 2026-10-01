@@ -46,6 +46,14 @@ function decodeContent(value) {
   return JSON.parse(Buffer.from(String(value).replace(/\n/g, ""), "base64").toString("utf8"));
 }
 async function catalog() {
+  const hasGithubToken = Boolean(String(process.env.QUANTDEUS_GITHUB_TOKEN || "").trim());
+  if (hasGithubToken) {
+    try {
+      const ref = encodeURIComponent(process.env.VERCEL_GIT_COMMIT_REF || "main");
+      const file = await github(PUBLIC_REPO, `/contents/store/products.json?ref=${ref}`, {}, { requireToken: false });
+      return decodeContent(file.content).products || [];
+    } catch {}
+  }
   try {
     const local = JSON.parse(await readFile(new URL("../../public/store/products.json", import.meta.url), "utf8"));
     if (Array.isArray(local?.products)) return local.products;
