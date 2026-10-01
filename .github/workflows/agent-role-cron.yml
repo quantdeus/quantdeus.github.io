@@ -124,7 +124,7 @@ jobs:
                 'or {"action":"pr","pr_number":123,"branch":"automation/role/'+agent.id+'/...","summary":"..."}'
               ].join('\n')}],
               metadata:{source:'quantdeus-agent-role-cron',repository:process.env.GITHUB_REPOSITORY,agent_id:agent.id,issue_number:explicitIssue || undefined,hour_utc:hour},
-              timeoutMs: 180000,
+              timeoutMs: 240000,
               retryTransient: true
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Role cron lacks trusted OpenClaw tools');
