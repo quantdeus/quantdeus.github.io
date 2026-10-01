@@ -77,6 +77,21 @@ jobs:
             must(src.includes('action_health sampled='), name+' status validator does not pin exact Actions counts');
           }
 
+          const failureRadar=read('scripts/qa/failure-radar.js');
+          const failureRadarWorkflow=read('.github/workflows/qa-failure-radar.yml');
+          const selfHeal=read('.github/workflows/qa-self-heal.yml');
+          must(failureRadar.includes("const reactiveWorkflowRun = eventName === 'workflow_run'"), 'Failure Radar must distinguish reactive workflow_run events');
+          must(failureRadar.includes('const scanUnresolved = !reactiveWorkflowRun'), 'Reactive success must not repair unrelated unresolved workflows');
+          must(failureRadar.includes('repair_trigger_run_id='), 'Failure Radar must output the actual repair target run id');
+          must(failureRadar.includes("source: 'unresolved-scan'"), 'Scheduled/manual Radar scans must preserve unresolved-run provenance');
+          must(failureRadarWorkflow.includes('steps.radar.outputs.repair_trigger_run_id'), 'Failure Radar workflow must dispatch the selected failing run, not the event run');
+          must(!failureRadarWorkflow.includes('-f trigger_run_id="${{ github.event.workflow_run.id'), 'Failure Radar must not blindly forward a successful event run id');
+          must(selfHeal.includes('Verify triggering run is actually repair-worthy'), 'Self-Heal must independently verify trigger conclusion');
+          must(selfHeal.includes("steps.trigger.outputs.verified_failure == 'true'"), 'Self-Heal failure logs must require a verified failed run');
+          must(selfHeal.includes("TRIGGER_VERIFIED_FAILURE"), 'Self-Heal must pass verified failure state into repair logic');
+          must(selfHeal.includes("=== 'true'"), 'Self-Heal must not treat any non-empty run id as failure');
+          must(!selfHeal.includes("Boolean(String(process.env.TRIGGER_RUN_ID || '').trim())"), 'Self-Heal must not infer failure from run id presence alone');
+
           const coordinator=read('.github/workflows/quantdeus-coordinator.yml');
           must(/^\s{2}issue_comment:/m.test(coordinator), 'coordinator must preserve canonical comment intake');
           must(coordinator.includes("github.event_name != 'issue_comment'"), 'coordinator comment intake must have an explicit-command job gate');
