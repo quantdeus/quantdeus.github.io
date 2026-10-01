@@ -1,33 +1,86 @@
 # Telegram bot + website login setup
 
-QuantDeus uses two Telegram surfaces:
+QuantDeus uses one Telegram identity layer across two surfaces:
 
-1. **Mini App menu button** → `https://quantdeus.github.io/telegram/`
-2. **Website Login** → Telegram Login / OIDC on `https://quantdeus.github.io/`
+1. **Mini App** → Telegram WebApp `initData`, verified server-side.
+2. **Normal website** → Telegram Login OIDC, verified server-side against Telegram JWKS.
 
-## Repository secret
+The shared browser client is `assets/qd-auth.js`. The Vercel verifier is
+`vercel-dispatcher/lib/telegram-auth.js`, exposed through
+`/api/quantdeus/auth`.
 
-Create the repository Actions secret:
+## Public OIDC configuration
 
-- `TELEGRAM_BOT_TOKEN` (legacy `QUANTDEUS_TELEGRAM_BOT_TOKEN` is also accepted by workflows)
+`telegram-public.json` contains only non-secret bot identity:
 
-Do not commit or paste the token into repository files.
+- `client_id` / bot ID;
+- bot username;
+- display name.
 
-After the secret exists, run the workflow **Set Telegram Mini App URL** manually. The scheduled **QuantDeus Telegram GitHub Bot** workflow uses the same secret for direct Bot API polling and replies. It validates `getMe`, applies `setChatMenuButton`, then verifies the resulting menu URL.
+The current file is generated from Telegram `getMe`; no bot token is written to
+GitHub Pages.
 
-## BotFather Login Widget
+## BotFather one-time domain binding
 
 In @BotFather:
 
-- select the QuantDeus bot;
-- open **Login Widget**;
-- add `https://quantdeus.github.io` to Allowed URLs / trusted origins.
+- select `@QuantDeus_bot`;
+- open **Login Widget / Web Login** settings;
+- allow `https://quantdeus.github.io` as the website origin.
 
-The public site loads only non-secret bot identity generated at deploy time. The bot token is never written to GitHub Pages.
+This is the only owner-side Telegram configuration that cannot be represented by
+repository code.
 
-## Runtime behavior
+## Verification contract
 
-- Inside Telegram Mini App, the UI uses Telegram WebApp user context.
-- In a normal browser, the site shows **Войти через Telegram** and uses Telegram Login OIDC.
-- Browser OIDC ID tokens are checked against Telegram JWKS before the UI marks the session `OIDC ✓`.
-- Any future privileged backend action should validate the ID token again server-side.
+Website login uses the official Telegram Login SDK. The resulting OIDC
+`id_token` is sent as `Authorization: Bearer …` to the Vercel API.
+
+The backend verifies:
+
+- JWT algorithm is RS256;
+- signature against `https://oauth.telegram.org/.well-known/jwks.json`;
+- issuer is `https://oauth.telegram.org`;
+- audience matches the canonical QuantDeus Telegram client ID;
+- expiration / issued-at bounds.
+
+Mini App requests continue to use `x-telegram-init-data` and the Telegram
+WebApp HMAC verification path.
+
+Forum writes accept either verified identity mechanism. Browser UI state by
+itself is never trusted for authorization.
+
+## Service inquiries
+
+Quote-based service inquiries are intentionally independent from registration.
+
+A visitor may submit:
+
+- service;
+- task / event description;
+- reply contact (Telegram handle, phone, or email).
+
+If the visitor is logged in through Telegram, the verified Telegram identity is
+also attached privately. If not, the inquiry is stored with
+`source: anonymous_web`.
+
+Anonymous inquiries have:
+
+- no payment amount;
+- no payment action;
+- a honeypot field and a small per-instance abuse throttle;
+- contact data only in the private order repository.
+
+## Required runtime storage
+
+The Vercel Portal backend still needs `QUANTDEUS_GITHUB_TOKEN` with the scoped
+access required to persist service inquiries into the private orders repository.
+`QUANTDEUS_ORDERS_REPOSITORY` is optional; the default remains
+`quantdeus/quantdeus_core.pulse`.
+
+For moderator audit pseudonyms and future fixed-price customer ownership,
+`QUANTDEUS_ORDER_HMAC_SECRET` should also be configured.
+
+`TELEGRAM_BOT_TOKEN` is still used by Telegram Bot / Mini App server
+verification. Website OIDC verification itself does not require the bot token at
+request time once the public client ID is configured.
