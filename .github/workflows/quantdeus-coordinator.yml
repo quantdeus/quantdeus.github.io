@@ -24,7 +24,7 @@ concurrency:
 jobs:
   coordinate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,7 +49,7 @@ jobs:
           QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
         run: |
           node scripts/governance-gate.js
-          export QUANTDEUS_DIALOGUE_DEADLINE_MS=$(node -e 'process.stdout.write(String(Date.now()+240000))')
+          export QUANTDEUS_DIALOGUE_DEADLINE_MS=$(node -e 'process.stdout.write(String(Date.now()+420000))')
           node scripts/seven-of-nine.js
           node scripts/coordinator.js
           node scripts/emh.js
