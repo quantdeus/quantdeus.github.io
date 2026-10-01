@@ -1,4 +1,5 @@
-import { timingSafeEqual as safeCompare } from "node:crypto";
+import { createHmac } from "node:crypto";
+import { requestTelegramIdentity, roleForTelegramId } from "../../lib/telegram-auth.js";
 
 const REPO = "quantdeus/quantdeus.github.io";
 const FORUM_MARKER = "<!-- quantdeus-forum:v1 -->";
@@ -13,42 +14,12 @@ function cors(req, res) {
   if (origin && (origin === "https://quantdeus.github.io" || origin === "https://quantdeus.vercel.app" || (deploymentHost && host === deploymentHost))) res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "content-type,x-telegram-init-data");
-}
-function timingSafeEqual(a, b) {
-  const x = Buffer.from(a), y = Buffer.from(b);
-  return x.length === y.length && safeCompare(x, y);
+  res.setHeader("Access-Control-Allow-Headers", "content-type,x-telegram-init-data,authorization");
 }
 async function hmac(keyBytes, message) {
-  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return Buffer.from(await crypto.subtle.sign("HMAC", key, Buffer.from(message)));
+  return createHmac("sha256", keyBytes).update(String(message)).digest();
 }
-async function telegramUser(raw) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  if (!botToken) throw new Error("telegram_auth_unavailable");
-  if (!raw) throw new Error("telegram_auth_invalid");
-  const params = new URLSearchParams(raw);
-  const hash = params.get("hash");
-  const authDate = Number(params.get("auth_date"));
-  if (!hash || !Number.isFinite(authDate) || Math.abs(Date.now() / 1000 - authDate) > 86400) throw new Error("telegram_auth_invalid");
-  const dataCheck = [...params.entries()].filter(([key]) => key !== "hash").sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join("\n");
-  const secretKey = await hmac(Buffer.from("WebAppData"), botToken);
-  const calculated = (await hmac(secretKey, dataCheck)).toString("hex");
-  if (!timingSafeEqual(calculated, hash)) throw new Error("telegram_auth_invalid");
-  let user;
-  try { user = JSON.parse(params.get("user") || "{}"); } catch { throw new Error("telegram_auth_invalid"); }
-  if (!user.id) throw new Error("telegram_auth_invalid");
-  return user;
-}
-function roleFor(id) {
-  const owners = new Set(String(process.env.QUANTDEUS_OWNER_TELEGRAM_IDS || "").split(",").map(x => x.trim()).filter(Boolean));
-  const admins = new Set(String(process.env.QUANTDEUS_ADMIN_TELEGRAM_IDS || "").split(",").map(x => x.trim()).filter(Boolean));
-  const moderators = new Set(String(process.env.QUANTDEUS_MODERATOR_TELEGRAM_IDS || "").split(",").map(x => x.trim()).filter(Boolean));
-  if (owners.has(String(id))) return "owner";
-  if (admins.has(String(id))) return "admin";
-  if (moderators.has(String(id))) return "moderator";
-  return "member";
-}
+const roleFor = roleForTelegramId;
 async function github(path, options = {}) {
   const token = process.env.QUANTDEUS_GITHUB_TOKEN;
   if (!token) throw new Error("github_storage_unconfigured");
@@ -69,14 +40,14 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       if (req.query?.me === "1") {
-        const user = await telegramUser(req.headers["x-telegram-init-data"]);
+        const user = await requestTelegramIdentity(req);
         return json(res, 200, { ok: true, role: roleFor(user.id) });
       }
       const staffRoles = new Set(["owner", "admin", "moderator"]);
       const includeHidden = req.query?.moderation === "1";
       let moderationRole = null;
       if (includeHidden) {
-        const user = await telegramUser(req.headers["x-telegram-init-data"]);
+        const user = await requestTelegramIdentity(req);
         moderationRole = roleFor(user.id);
         if (!staffRoles.has(moderationRole)) return json(res, 403, { ok: false, error: "forbidden" });
       }
@@ -94,7 +65,7 @@ export default async function handler(req, res) {
           let role = moderationRole;
           if (!role) {
             try {
-              const user = await telegramUser(req.headers["x-telegram-init-data"]);
+              const user = await requestTelegramIdentity(req);
               role = roleFor(user.id);
             } catch {}
           }
@@ -107,7 +78,7 @@ export default async function handler(req, res) {
       const issues = await github("/issues?state=all&per_page=100&sort=updated&direction=desc");
       const threads = issues.filter(x => !x.pull_request && String(x.body || "").includes(FORUM_MARKER) && (includeHidden || !String(x.body || "").includes("<!-- qd:hidden -->")));
       if (req.query?.reports === "1") {
-        const user = await telegramUser(req.headers["x-telegram-init-data"]), role = roleFor(user.id);
+        const user = await requestTelegramIdentity(req), role = roleFor(user.id);
         if (!staffRoles.has(role)) return json(res, 403, { ok: false, error: "forbidden" });
         const reports = [];
         for (const issue of threads.slice(0, 50)) {
@@ -124,7 +95,7 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return json(res, 405, { ok: false, error: "method_not_allowed" });
   let user;
-  try { user = await telegramUser(req.headers["x-telegram-init-data"]); }
+  try { user = await requestTelegramIdentity(req); }
   catch (error) { return json(res, error.message === "telegram_auth_unavailable" ? 503 : 401, { ok: false, error: error.message }); }
   if (!writesEnabled()) return json(res, 409, { ok: false, error: "preview_read_only" });
   const body = req.body || {};
