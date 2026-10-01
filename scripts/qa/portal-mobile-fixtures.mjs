@@ -9,6 +9,18 @@ fs.copyFileSync(path.join(root, "assets/qd-portal.css"), path.join(out, "assets/
 
 const stripTelegram = html => html.replace(/\s*<script src="https:\/\/telegram\.org\/js\/telegram-web-app\.js"><\/script>/, "");
 
+const landingStub = `
+<script>
+window.fetch=async (url)=>{
+  if(String(url).includes("/coordination/agents.json")) return Promise.resolve(new Response(JSON.stringify({agents:[
+    {id:"seven-of-nine",department:"Executive & Strategy",title:"Coordinator",role:"coordination"},
+    {id:"sherlock",department:"Science & R&D",title:"Science",role:"research"},
+    {id:"control-tower",department:"Product & Engineering",title:"Automation",role:"engineering"}
+  ]}),{status:200,headers:{"content-type":"application/json"}}));
+  return Promise.resolve(new Response("{}",{status:404}));
+};
+</script>`;
+
 const telegramStub = `
 <script>
 window.Telegram={WebApp:{initData:"mobile-qa",initDataUnsafe:{user:{first_name:"Anton"}},ready(){},expand(){},HapticFeedback:{impactOccurred(){}}}};
@@ -64,6 +76,9 @@ function inject(html, stub, tail="") {
   return html;
 }
 
+const landing = fs.readFileSync(path.join(root, "index.html"), "utf8");
+fs.writeFileSync(path.join(out, "index.html"), inject(landing, landingStub));
+
 const telegram = fs.readFileSync(path.join(root, "telegram/index.html"), "utf8");
 fs.writeFileSync(path.join(out, "telegram/index.html"), inject(telegram, telegramStub));
 
@@ -76,4 +91,4 @@ fs.writeFileSync(path.join(out, "store/admin.html"), inject(store, storeStub, ad
 const checkoutTail = `<script>setTimeout(()=>document.querySelector('[data-product="business-automation"]')?.click(),350);</script>`;
 fs.writeFileSync(path.join(out, "store/checkout.html"), inject(store, storeStub, checkoutTail));
 
-console.log(JSON.stringify({ok:true,out,fixtures:["telegram/index.html","forum/index.html","store/admin.html","store/checkout.html"]}));
+console.log(JSON.stringify({ok:true,out,fixtures:["index.html","telegram/index.html","forum/index.html","store/admin.html","store/checkout.html"]}));
