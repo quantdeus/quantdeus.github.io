@@ -33,25 +33,24 @@ const storeStub = `
 window.Telegram={WebApp:{initData:"mobile-qa",ready(){},expand(){}}};
 window.prompt=()=>"Mobile QA audit note";
 const qdProducts=[
-  {id:"mobile-qa-product",name:"QuantDeus Mobile QA",category:"Цифровые продукты",description:"Тестовая карточка для проверки мобильного checkout. Не является реальным предложением.",status:"QA fixture",price_rub:1234,available:true},
-  {id:"coming-soon",name:"Дети Эльтана",category:"Игровые проекты",description:"Проверка недоступного товара и переноса текста.",status:"В разработке",price_rub:null,available:false}
+  {id:"business-automation",name:"Автоматизация бизнеса",category:"Автоматизация",description:"Проектирование и внедрение ИИ-агентов, интеграций и рабочих процессов под задачи бизнеса.",status:"Расчёт после заявки",pricing_mode:"quote",price_rub:null,available:true},
+  {id:"ksenia-cherednikova-concert",name:"Концерт Ксении Чередниковой",category:"Концерты",description:"Заявка на концерт: формат, дата, город и площадка согласуются индивидуально.",status:"Стоимость по запросу",pricing_mode:"quote",price_rub:null,available:true}
 ];
-const qdOrder={id:"qa-order-390x844",product_id:"mobile-qa-product",product_name:"QuantDeus Mobile QA",amount:1234,status:"created"};
+const qdOrder={id:"qa-inquiry-390x844",product_id:"business-automation",product_name:"Автоматизация бизнеса",pricing_mode:"quote",amount:null,status:"inquiry_created",request_note:"Нужно автоматизировать приём заявок, CRM и ежедневную отчётность.",contact:{telegram_user_id:"910000001",telegram_username:"mobile_qa"}};
 window.fetch=async (url,options={})=>{
   const u=String(url);
   const method=options.method||"GET";
   const send=(data,status=200)=>Promise.resolve(new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json"}}));
   if(u.includes("?products=1")) return send({ok:true,products:qdProducts});
-  if(u.includes("?admin=1")) return send({ok:true,orders:[{...qdOrder,status:"payment_pending",created_at:"2026-10-01T12:00:00Z",audit:[]}]});
+  if(u.includes("?admin=1")) return send({ok:true,orders:[qdOrder]});
   if(method==="POST"){
     const body=JSON.parse(options.body||"{}");
-    if(body.action==="create") return send({ok:true,order:qdOrder,payment:{method:"СБП",phone:"+7 000 000-00-00",bank:"QA Bank",recipient:"QA Recipient"}},201);
-    if(body.action==="payment_submitted") return send({ok:true,order:{...qdOrder,status:"payment_pending"},payment:{method:"СБП",phone:"+7 000 000-00-00",bank:"QA Bank",recipient:"QA Recipient"}});
-    if(body.action==="confirm"||body.action==="reject") return send({ok:true,order:{...qdOrder,status:body.action==="confirm"?"paid":"rejected"}});
+    if(body.action==="create") return send({ok:true,order:{...qdOrder,request_note:body.note||qdOrder.request_note},payment:null},201);
+    if(body.action==="cancel") return send({ok:true,order:{...qdOrder,status:"cancelled"},payment:null});
   }
   return send({ok:true});
 };
-</script>`;
+</script>`
 
 function inject(html, stub, tail="") {
   html = stripTelegram(html);
@@ -66,7 +65,7 @@ fs.writeFileSync(path.join(out, "forum/index.html"), inject(forum, forumStub));
 const store = fs.readFileSync(path.join(root, "store/index.html"), "utf8");
 const adminTail = `<style>.qd-heading,#systemNotice,#products{display:none!important}</style><script>setTimeout(()=>window.scrollTo(0,0),250);</script>`;
 fs.writeFileSync(path.join(out, "store/admin.html"), inject(store, storeStub, adminTail));
-const checkoutTail = `<script>setTimeout(()=>document.querySelector('[data-product="mobile-qa-product"]')?.click(),350);</script>`;
+const checkoutTail = `<script>setTimeout(()=>document.querySelector('[data-product="business-automation"]')?.click(),350);</script>`;
 fs.writeFileSync(path.join(out, "store/checkout.html"), inject(store, storeStub, checkoutTail));
 
 console.log(JSON.stringify({ok:true,out,fixtures:["forum/index.html","store/admin.html","store/checkout.html"]}));
