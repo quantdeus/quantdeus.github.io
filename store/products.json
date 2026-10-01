@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "products": [
+    {
+      "id": "business-automation",
+      "name": "Автоматизация бизнеса",
+      "category": "Автоматизация",
+      "description": "Проектирование и внедрение ИИ-агентов, автоматизаций, интеграций, рабочих процессов и цифровых контуров под задачи бизнеса.",
+      "status": "Расчёт после заявки",
+      "pricing_mode": "quote",
+      "price_rub": null,
+      "available": true,
+      "image": null
+    },
+    {
+      "id": "ksenia-cherednikova-concert",
+      "name": "Концерт Ксении Чередниковой",
+      "category": "Концерты",
+      "description": "Заявка на концертное выступление Ксении Чередниковой. Формат, дата, площадка, город и стоимость согласуются индивидуально.",
+      "status": "Стоимость по запросу",
+      "pricing_mode": "quote",
+      "price_rub": null,
+      "available": true,
+      "image": null
+    }
+  ]
+}
