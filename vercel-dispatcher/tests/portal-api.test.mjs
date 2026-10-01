@@ -6,7 +6,8 @@ import orders from "../api/quantdeus/orders.js";
 
 globalThis.crypto ||= webcrypto;
 const botToken = "test-bot-token";
-const product = { id: "sample", name: "Sample", price_rub: 120, available: true };\nconst quoteProduct = { id: "business-automation", name: "Автоматизация бизнеса", pricing_mode: "quote", price_rub: null, available: true };
+const product = { id: "sample", name: "Sample", price_rub: 120, available: true };
+const quoteProduct = { id: "business-automation", name: "Автоматизация бизнеса", pricing_mode: "quote", price_rub: null, available: true };
 let savedOrder = null, writes = 0;
 
 function resMock() {
