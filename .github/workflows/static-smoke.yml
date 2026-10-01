@@ -227,12 +227,12 @@ jobs:
           test -f forum/index.html
           test -f store/index.html
           test -f store/products.json
-          test -f assets/qd-portal.css
+          test -f assets/qd-portal.css\n          test -f assets/qd-auth.js\n          test -f telegram-public.json
           test -f docs/PORTAL_SETUP.md
           test -f vercel-dispatcher/public/forum/index.html
           test -f vercel-dispatcher/public/store/index.html
           test -f vercel-dispatcher/public/store/products.json
-          test -f vercel-dispatcher/public/assets/qd-portal.css
+          test -f vercel-dispatcher/public/assets/qd-portal.css\n          test -f vercel-dispatcher/public/assets/qd-auth.js
           test -f scripts/telegram-webhook-setup.js
           test -f scripts/browser-homunculus.js
           test -f .github/workflows/browser-homunculus.yml
@@ -253,6 +253,12 @@ jobs:
           grep -q '>Услуги<' telegram/index.html
           if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
           grep -q 'Frutiger Aero' index.html || grep -q 'var(--lime)' index.html
+          grep -q 'data-qd-auth' index.html
+          grep -q 'data-qd-auth' forum/index.html
+          grep -q 'Регистрация не нужна' store/index.html
+          grep -q 'anonymous_web' vercel-dispatcher/api/quantdeus/orders.js
+          grep -q 'telegram_oidc_unconfigured' vercel-dispatcher/lib/telegram-auth.js
+          node -e "const c=require('./telegram-public.json'); if(!c.configured||!c.client_id||!c.username) throw new Error('Telegram public auth config is incomplete')"
 
       - name: Validate agent registry
         run: |
