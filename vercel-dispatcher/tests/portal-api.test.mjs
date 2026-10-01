@@ -119,7 +119,8 @@ test("quote service creates an inquiry with no payment amount and persists conta
   assert.equal(cancel.statusCode, 200, JSON.stringify(cancel.body));
   assert.equal(cancel.body.order.status, "cancelled");
 });
-\ntest("payment submitted is idempotent and never marks an order paid", async () => {
+
+test("payment submitted is idempotent and never marks an order paid", async () => {
   mockFetch();
   const initData = await signedInitData(1234), created = resMock();
   await orders({ method: "POST", headers: { "x-telegram-init-data": initData }, body: { action: "create", product_id: "sample" } }, created);
