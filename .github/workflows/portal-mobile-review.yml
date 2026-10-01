@@ -1,0 +1,51 @@
+name: QuantDeus Portal Mobile Review 📱
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'forum/**'
+      - 'store/**'
+      - 'assets/qd-portal.css'
+      - 'vercel-dispatcher/public/**'
+      - 'scripts/qa/portal-mobile-fixtures.mjs'
+      - '.github/workflows/portal-mobile-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build deterministic mobile fixtures
+        run: node scripts/qa/portal-mobile-fixtures.mjs
+
+      - name: Render Android-size screenshots
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v chromium-browser || command -v chromium)"
+          test -n "$CHROME"
+          mkdir -p /tmp/portal-mobile-review
+          python3 -m http.server 4173 --directory /tmp/quantdeus-portal-mobile >/tmp/portal-mobile-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          sleep 1
+          common=(--headless --no-sandbox --disable-gpu --hide-scrollbars --window-size=390,844 --virtual-time-budget=3000 --run-all-compositor-stages-before-draw)
+          "$CHROME" "${common[@]}" --screenshot=/tmp/portal-mobile-review/forum-390x844.png http://127.0.0.1:4173/forum/
+          "$CHROME" "${common[@]}" --screenshot=/tmp/portal-mobile-review/store-admin-390x844.png http://127.0.0.1:4173/store/admin.html
+          "$CHROME" "${common[@]}" --screenshot=/tmp/portal-mobile-review/store-checkout-390x844.png http://127.0.0.1:4173/store/checkout.html
+          test -s /tmp/portal-mobile-review/forum-390x844.png
+          test -s /tmp/portal-mobile-review/store-admin-390x844.png
+          test -s /tmp/portal-mobile-review/store-checkout-390x844.png
+
+      - name: Upload mobile evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-portal-mobile-review
+          path: /tmp/portal-mobile-review/*.png
+          if-no-files-found: error
