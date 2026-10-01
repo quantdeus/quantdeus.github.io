@@ -14,7 +14,9 @@
   <meta property="og:url" content="https://quantdeus.github.io/">
   <meta property="og:site_name" content="QuantDeus">
   <meta name="twitter:card" content="summary">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>\n  <script src="/assets/qd-auth.js" defer></script>\n  <script type="application/ld+json">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="/assets/qd-auth.js" defer></script>
+  <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"Organization",
@@ -35,7 +37,8 @@
     .departments{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.dept{border:1px solid var(--line);border-radius:20px;padding:18px;background:linear-gradient(145deg,#ffffff10,#0b2947a8);box-shadow:inset 0 1px 0 #ffffff10}.dept .emoji{font-size:26px}.dept h3{font-size:16px;margin:10px 0 7px}.dept p{font-size:13px;color:var(--muted);margin:0}.dept b{display:block;color:var(--lime);margin-top:14px}
     .team{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.person{padding:14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#ffffff10,#0b29478f);box-shadow:inset 0 1px 0 #ffffff0f}.person strong{display:block;font-size:14px}.person span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.person em{display:inline-block;margin-top:9px;font-style:normal;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--cyan)}
     .loop{display:flex;gap:8px;flex-wrap:wrap}.loop span{border:1px solid var(--line);padding:10px 12px;border-radius:999px;background:linear-gradient(145deg,#ffffff12,#0b29479c);color:#e9fbff;font-weight:750;font-size:13px;box-shadow:inset 0 1px 0 #ffffff10}.quote{font-size:clamp(26px,4vw,44px);line-height:1.15;letter-spacing:-.03em;border-left:3px solid var(--pink);padding-left:24px;max-width:900px}.quote small{display:block;font-size:13px;color:var(--muted);margin-top:14px;letter-spacing:0}
-    .site-auth{display:flex;align-items:center;min-width:0}.qd-auth-control{display:inline-flex;align-items:center;gap:8px;min-height:38px;max-width:210px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:linear-gradient(145deg,#ffffff14,#0b2947a8);color:var(--text);font-weight:800;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff12}.qd-auth-control span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qd-auth-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}\n    footer{border-top:1px solid #ffffff10;padding:34px 0 54px;color:var(--muted);font-size:13px}.foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+    .site-auth{display:flex;align-items:center;min-width:0}.qd-auth-control{display:inline-flex;align-items:center;gap:8px;min-height:38px;max-width:210px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:linear-gradient(145deg,#ffffff14,#0b2947a8);color:var(--text);font-weight:800;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff12}.qd-auth-control span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qd-auth-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
+    footer{border-top:1px solid #ffffff10;padding:34px 0 54px;color:var(--muted);font-size:13px}.foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     @media(max-width:900px){.hero{grid-template-columns:1fr}.departments{grid-template-columns:repeat(2,1fr)}.grid,.team{grid-template-columns:repeat(2,1fr)}.nav a:not(.brand):not(.pill){display:none}.qd-auth-control{max-width:44px;padding:8px 10px}.qd-auth-control span{display:none}}
     @media(max-width:560px){.hero{padding-top:60px}.hero h1{font-size:clamp(36px,10vw,44px);overflow-wrap:normal;word-break:normal;hyphens:none}.eyebrow{font-size:11px;letter-spacing:.14em}.actions{display:grid;grid-template-columns:1fr 1fr}.actions .btn{min-width:0;padding:12px 11px;text-align:center}.actions .btn:first-child{grid-column:1/-1}.departments,.grid,.team{grid-template-columns:1fr}.head{display:block}.head p{margin-top:12px}.status{margin-top:10px}}
   </style>
@@ -44,6 +47,7 @@
   <nav class="nav"><div class="wrap navin">
     <a class="brand" href="/"><span class="orb"></span>QuantDeus</a>
     <a href="#holding">Холдинг</a><a href="#team">Команда</a><a href="/coordination/">Координация</a><a href="/forum/">Форум</a><a href="/store/">Услуги</a>
+    <div class="site-auth qd-auth-slot" data-qd-auth></div>
     <a class="pill" href="/telegram/">Открыть портал ↗</a>
   </div></nav>
 
