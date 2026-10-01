@@ -4,8 +4,8 @@
 
 - GitHub Pages serves `/forum/`, `/store/`, and the shared Cosmic Frutiger Aero stylesheet.
 - Vercel serves `vercel-dispatcher/api/quantdeus/community.js` and `orders.js` from the existing `vercel-dispatcher` project root.
-- Forum threads and replies are public GitHub Issues/comments. Telegram Mini App `initData` is verified on the server before every write.
-- Service inquiry / order JSON files live in the private `quantdeus/quantdeus_core.pulse` repository. The public repository contains only the service catalog; Telegram contact context for quote requests stays in the private order repository.
+- Forum threads and replies are public GitHub Issues/comments. Writes accept either server-verified Telegram Mini App `initData` or a server-verified Telegram OIDC ID token from the website login.
+- Service inquiry / order JSON files live in the private `quantdeus/quantdeus_core.pulse` repository. Quote inquiries do not require registration: anonymous visitors provide a reply contact, while signed-in visitors may additionally attach their verified Telegram identity. Contact data stays in the private order repository.
 - Preview deployments can read data but reject all writes. The API enables mutations only in Vercel production (unless an explicit preview override is set for a controlled test).
 
 ## Required Vercel environment variables
@@ -46,3 +46,24 @@ node --test tests/portal-api.test.mjs
 ```
 
 The tests cover forum moderation authorization, quote-based service inquiries, server-side fixed pricing, buyer/admin payment permissions, duplicate payment notification, and read-only previews.
+
+
+## Website Telegram login
+
+The canonical landing page, Forum and Services pages load `assets/qd-auth.js`.
+In a normal browser it launches Telegram Login OIDC. In the Mini App it reuses
+Telegram WebApp `initData`.
+
+The backend identity endpoint is `/api/quantdeus/auth`; Forum and Services reuse
+the same verifier. OIDC tokens are validated against Telegram JWKS and the
+canonical client ID from `telegram-public.json`.
+
+## Anonymous service inquiry acceptance
+
+Current quote services may be submitted without a QuantDeus account. Anonymous
+submission requires a reply contact and a sufficiently detailed request. The
+backend adds a honeypot and a bounded abuse throttle before writing the inquiry
+to the private repository.
+
+Authentication remains mandatory for Forum publishing, moderation, admin order
+views, and any future fixed-price payment lifecycle.
