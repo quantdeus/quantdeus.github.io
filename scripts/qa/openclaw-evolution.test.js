@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { normalizeNoAction, validateProposal, validateChangedFiles } = require('../openclaw-evolution');
+const { normalizeNoAction, validateProposal, validateChangedFiles, validateCandidate, scoreCandidate, chooseChampion, assertMaterializedChampion } = require('../openclaw-evolution');
 const { validateTierAChangeSet, validateTierBProposal } = require('../openclaw-evolution-guard');
 
 const base = 'a'.repeat(40);
@@ -81,6 +81,95 @@ test('Tier B is proposal-only and cannot carry generated core code', () => {
   const protectedOutsideScope = clone(core);
   protectedOutsideScope.suggested_paths = ['.github/workflows/qa-triad.yml'];
   assert.throws(() => validateProposal(protectedOutsideScope, base, evidence));
+});
+
+
+test('Darwin candidates are evidence-bound and limited to approved target paths', () => {
+  const candidate = {
+    action: 'candidate',
+    base_sha: base,
+    tier: 'skill',
+    problem: 'Repeated provider stalls',
+    hypothesis: 'Prefer a bounded recovery heuristic after repeated provider failures',
+    summary: 'Refine provider recovery heuristic',
+    metric: 'Failed evolution runs per day',
+    falsifier: 'Failure recurrence does not drop after three comparable runs',
+    evidence: [evidenceUrl],
+    target_paths: ['docs/openclaw-evolution.md']
+  };
+  assert.equal(validateCandidate(candidate, base, evidence), candidate);
+
+  const unknownEvidence = clone(candidate);
+  unknownEvidence.evidence = ['https://github.com/quantdeus/quantdeus.github.io/actions/runs/999'];
+  assert.throws(() => validateCandidate(unknownEvidence, base, evidence));
+
+  const escapedPath = clone(candidate);
+  escapedPath.target_paths = ['scripts/openclaw-evolution.js'];
+  assert.throws(() => validateCandidate(escapedPath, base, evidence));
+});
+
+test('Darwin fitness favors stronger evidence, novelty and smaller reversible blast radius', () => {
+  const failureUrl = 'https://github.com/quantdeus/quantdeus.github.io/actions/runs/456';
+  const issueUrl = 'https://github.com/quantdeus/quantdeus.github.io/issues/77';
+  const snapshot = {
+    actions: [{ url: failureUrl, conclusion: 'failure' }],
+    prs: [],
+    issues: [{ url: issueUrl }]
+  };
+  const strong = {
+    action: 'candidate',
+    tier: 'skill',
+    evidence: [failureUrl],
+    hypothesis: 'Route repeated inference stalls through a bounded recovery heuristic',
+    target_paths: ['docs/openclaw-evolution.md']
+  };
+  const weak = {
+    action: 'candidate',
+    tier: 'skill',
+    evidence: [issueUrl],
+    hypothesis: 'Reuse the same old recovery heuristic',
+    target_paths: [
+      '.openclaw/skills/quantdeus-self-evolution/SKILL.md',
+      'coordination/openclaw-evolution.json',
+      'docs/openclaw-evolution.md'
+    ]
+  };
+  const history = [{ hypothesis: 'Reuse the same old recovery heuristic' }];
+  const strongFitness = scoreCandidate(strong, snapshot, history);
+  const weakFitness = scoreCandidate(weak, snapshot, history);
+  assert.ok(strongFitness.score > weakFitness.score);
+
+  const champion = chooseChampion([
+    { index: 0, valid: true, candidate: weak, fitness: weakFitness },
+    { index: 1, valid: true, candidate: strong, fitness: strongFitness },
+    { index: 2, valid: false, candidate: {}, fitness: { score: -1 }, error: 'invalid' }
+  ]);
+  assert.equal(champion.index, 1);
+});
+
+test('Darwin materialization cannot rewrite the selected champion genome', () => {
+  const final = proposal();
+  const champion = {
+    action: 'candidate',
+    base_sha: final.base_sha,
+    tier: final.tier,
+    problem: final.problem,
+    hypothesis: final.hypothesis,
+    summary: final.summary,
+    metric: final.metric,
+    falsifier: final.falsifier,
+    evidence: final.evidence,
+    target_paths: final.files.map(x => x.path)
+  };
+  assert.equal(assertMaterializedChampion(final, champion), final);
+
+  const mutatedHypothesis = clone(final);
+  mutatedHypothesis.hypothesis = 'Different hypothesis after selection';
+  assert.throws(() => assertMaterializedChampion(mutatedHypothesis, champion));
+
+  const mutatedPath = clone(final);
+  mutatedPath.files[0].path = '.openclaw/skills/quantdeus-self-evolution/SKILL.md';
+  assert.throws(() => assertMaterializedChampion(mutatedPath, champion));
 });
 
 test('semantic guard freezes Tier A control text and policy while allowing bounded notes/history', () => {
