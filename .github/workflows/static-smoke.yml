@@ -83,6 +83,9 @@ jobs:
           must(seven.includes('trusted:false'), 'Seven priority planner must be no-tools');
           must(seven.includes("result.runtime!=='openclaw-agent-exec-no-tools'"), 'Seven priority planner must verify no-tools runtime');
           must(seven.includes('Seven dispatch selected non-executable Issue'), 'Seven must reject blocked/review Issues before dispatch');
+          must(seven.includes('Seven dispatch selected Issue already has an open implementation PR'), 'Seven snapshot preflight must reject already represented Issues');
+          must(seven.includes('agent-role dispatch Issue already has an open implementation PR'), 'Seven fresh dispatch preflight must reject already represented Issues');
+          must(seven.includes("new RegExp('(?:^|[-_/])'+n+'(?:[-_/]|$)'"), 'Seven must recognize issue numbers embedded in implementation branch names');
           must(!seven.includes('or {"action":"issue"'), 'Seven planner must not directly request Issue mutation');
           must(!seven.includes('or {"action":"pr"'), 'Seven planner must not directly request PR mutation');
 
