@@ -227,12 +227,15 @@ jobs:
           test -f forum/index.html
           test -f store/index.html
           test -f store/products.json
-          test -f assets/qd-portal.css\n          test -f assets/qd-auth.js\n          test -f telegram-public.json
+          test -f assets/qd-portal.css
+          test -f assets/qd-auth.js
+          test -f telegram-public.json
           test -f docs/PORTAL_SETUP.md
           test -f vercel-dispatcher/public/forum/index.html
           test -f vercel-dispatcher/public/store/index.html
           test -f vercel-dispatcher/public/store/products.json
-          test -f vercel-dispatcher/public/assets/qd-portal.css\n          test -f vercel-dispatcher/public/assets/qd-auth.js
+          test -f vercel-dispatcher/public/assets/qd-portal.css
+          test -f vercel-dispatcher/public/assets/qd-auth.js
           test -f scripts/telegram-webhook-setup.js
           test -f scripts/browser-homunculus.js
           test -f .github/workflows/browser-homunculus.yml
