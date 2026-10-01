@@ -48,6 +48,11 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/hermes.js
           node --check vercel-dispatcher/api/quantdeus/openclaw.js
           node --check vercel-dispatcher/api/quantdeus/telegram.js
+          node --check vercel-dispatcher/api/quantdeus/community.js
+          node --check vercel-dispatcher/api/quantdeus/orders.js
+
+      - name: Test forum and store API authorization and order flow
+        run: node --test vercel-dispatcher/tests/portal-api.test.mjs
 
       - name: Verify Seven LLM briefing and degraded contract
         run: node --test scripts/qa/seven-reasoning.test.js scripts/qa/role-dialogue.test.js
@@ -216,6 +221,18 @@ jobs:
           test -f vercel-dispatcher/api/quantdeus/hermes.js
           test -f vercel-dispatcher/api/quantdeus/openclaw.js
           test -f vercel-dispatcher/api/quantdeus/telegram.js
+          test -f vercel-dispatcher/api/quantdeus/community.js
+          test -f vercel-dispatcher/api/quantdeus/orders.js
+          test -f vercel-dispatcher/tests/portal-api.test.mjs
+          test -f forum/index.html
+          test -f store/index.html
+          test -f store/products.json
+          test -f assets/qd-portal.css
+          test -f docs/PORTAL_SETUP.md
+          test -f vercel-dispatcher/public/forum/index.html
+          test -f vercel-dispatcher/public/store/index.html
+          test -f vercel-dispatcher/public/store/products.json
+          test -f vercel-dispatcher/public/assets/qd-portal.css
           test -f scripts/telegram-webhook-setup.js
           test -f scripts/browser-homunculus.js
           test -f .github/workflows/browser-homunculus.yml
@@ -224,6 +241,8 @@ jobs:
           test -f .github/workflows/telegram-bot.yml
           node -e "const fs=require('fs'); const vc=JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json','utf8')); const p=JSON.parse(fs.readFileSync('vercel-dispatcher/package.json','utf8')); if(!p.dependencies?.['@vercel/sandbox']) throw new Error('missing @vercel/sandbox'); if(!vc.functions?.['api/quantdeus/hermes.js']) throw new Error('missing Hermes maxDuration');"
           grep -q '/coordination/' index.html
+          grep -q '/forum/' index.html
+          grep -q '/store/' index.html
           grep -q 'постдефицитного' index.html
           grep -q '26 специализированных ИИ-агентов' README.md
           grep -q 'sitemap.xml' robots.txt
@@ -244,7 +263,7 @@ jobs:
         run: |
           node - <<'NODE'
           const fs=require('fs');
-          const pages=['index.html','site/index.html','telegram/index.html','homunculi/index.html','coordination/index.html'];
+          const pages=['index.html','site/index.html','telegram/index.html','homunculi/index.html','coordination/index.html','forum/index.html','store/index.html','vercel-dispatcher/public/forum/index.html','vercel-dispatcher/public/store/index.html'];
           for(const page of pages){
             const html=fs.readFileSync(page,'utf8');
             const scripts=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)]
