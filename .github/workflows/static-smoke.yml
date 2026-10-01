@@ -64,7 +64,9 @@ jobs:
         run: node --test scripts/qa/browser-homunculus.test.js
 
       - name: Validate OpenClaw Office contract
-        run: node scripts/qa/openclaw-office-validator.js
+        run: |
+          node scripts/qa/openclaw-office-validator.js
+          node --test scripts/qa/office-session.test.js
 
       - name: Validate production routes
         run: |

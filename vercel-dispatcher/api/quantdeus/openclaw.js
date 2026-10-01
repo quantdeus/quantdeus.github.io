@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import { Sandbox } from '@vercel/sandbox';
+import { getVercelOidcToken } from '@vercel/oidc';
+import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -603,6 +605,14 @@ export default async function handler(req, res) {
       priority: 100
     });
 
+    // Reuse deployment OIDC for an explicitly configured Gateway model.
+    const gatewayModel = String(process.env.OPENCLAW_GATEWAY_MODEL || process.env.LLM_BRIDGE_MODEL || process.env.BROWSER_PLANNER_MODEL || '').trim();
+    if (gatewayModel) {
+      let gatewayToken = String(process.env.AI_GATEWAY_API_KEY || '').trim();
+      if (!gatewayToken) { try { gatewayToken = await getVercelOidcToken(); } catch {} }
+      addProvider({ id: 'quantdeus-vercel-gateway', keyEnv: 'QUANTDEUS_GATEWAY_REQUEST_TOKEN', key: gatewayToken, model: gatewayModel, baseUrl: 'https://ai-gateway.vercel.sh/v1', priority: 110 });
+    }
+
     // Historical production evidence on 2026-09-30 showed the trusted 26-agent
     // OpenClaw lane completing real MCP-backed turns with the Pollinations `openai`
     // model. Prefer that proven route for trusted Office only when it passes the
@@ -724,7 +734,8 @@ export default async function handler(req, res) {
       return res.status(502).json({ ok: false, error: 'openclaw_internal_chat_failed', attempts });
     }
 
-    sandbox = await Sandbox.getOrCreate({ name: SANDBOX, image: 'vercel/sandbox/universal', resources: { vcpus: 2 }, timeout: 15 * 60 * 1000, persistent: true, snapshotExpiration: 30 * 24 * 60 * 60 * 1000, keepLastSnapshots: { count: 2 }, resume: true, tags: { app: 'quantdeus', runtime: 'openclaw-office' } });
+    sandbox = await Sandbox.getOrCreate({ name: SANDBOX, image: 'vercel/sandbox/universal', resources: { vcpus: 2 }, timeout: 15 * 60 * 1000, persistent: true, snapshotExpiration: 30 * 24 * 60 * 60 * 1000, resume: true, tags: { app: 'quantdeus', runtime: 'openclaw-office' } });
+    await ensureOfficeWindow(sandbox);
     const home = await text(await sandbox.runCommand({ cmd: 'bash', args: ['-lc', 'printf %s "$HOME"'] }));
     const workdir = `${home}/quantdeus`;
     const requestId = crypto.randomUUID();
@@ -979,12 +990,7 @@ export default async function handler(req, res) {
     let raw = '';
     let result = null;
     for (let attempt = 1; attempt <= 2; attempt += 1) {
-      run = await sandbox.runCommand({
-        cmd: 'flock',
-        args: ['-w', '45', agentLock, 'openclaw', 'agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '240', '--json', '--message-file', promptPath],
-        cwd: agentCwd,
-        env: runtimeEnv
-      });
+      run = await runOfficeAgent(sandbox, { lock: agentLock, args: ['agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', '240', '--json', '--message-file', promptPath], cwd: agentCwd, env: runtimeEnv });
       raw = await text(run);
       result = null;
       try { result = raw ? JSON.parse(raw) : null; } catch {}
@@ -1007,7 +1013,7 @@ export default async function handler(req, res) {
         attempt === 1 &&
         executionFailed &&
         !hasMutationEvidence(result) &&
-        (!raw || Boolean(result));
+        Boolean(result);
 
       if (!safeRetry) break;
       console.warn('[openclaw-agent] retrying once after a no-mutation execution failure', {
@@ -1019,7 +1025,7 @@ export default async function handler(req, res) {
     }
 
     await sandbox.runCommand({ cmd: 'rm', args: ['-f', promptPath] });
-    if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: ${raw.slice(-1800)}`);
+    if (run.exitCode !== 0) throw new Error(`openclaw_agent_failed: exit=${run.exitCode} ${(raw || await run.stderr()).slice(-1800)}`);
     if (!result) throw new Error(`openclaw_agent_invalid_json: ${raw.slice(-1000)}`);
     if (!result.ok || !String(result.final || '').trim()) throw new Error(`openclaw_empty_response: ${JSON.stringify(result.error || {}).slice(0, 1000)}`);
     if (!Number.isInteger(result.assistantTurns) || result.assistantTurns < 1 || !String(result.model || '').trim()) {
@@ -1039,7 +1045,6 @@ export default async function handler(req, res) {
         throw new Error(`openclaw_trusted_tool_execution_failed: failures=${toolFailures} evidence=${structuredToolEvidence.slice(0, 1200)}`);
       }
     }
-    await sandbox.stop();
     return res.status(200).json({
       ok: true,
       provider: 'quantdeus-openclaw-vercel-sandbox',
@@ -1061,15 +1066,13 @@ export default async function handler(req, res) {
     const message = String(error?.message || error);
     console.error('QuantDeus OpenClaw error:', message);
     const explicitStatus = Number(error?.status || 0);
-    const status = [400, 401, 403, 404, 409, 422].includes(explicitStatus)
+    const status = [400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
       ? explicitStatus
       : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502);
     return res.status(status).json({ ok: false, error: 'openclaw_office_failed', detail: message.slice(0, 2000) });
   } finally {
     if (sandbox) {
-      if (ephemeralFiles.length) { try { await sandbox.runCommand({ cmd: 'rm', args: ['-f', ...ephemeralFiles] }); } catch {} }
-      if (ephemeralDirs.length) { try { await sandbox.runCommand({ cmd: 'rm', args: ['-rf', ...ephemeralDirs] }); } catch {} }
-      try { await sandbox.stop(); } catch {}
+      await cleanupOfficeRequest(sandbox, ephemeralFiles, ephemeralDirs);
     }
   }
 }
