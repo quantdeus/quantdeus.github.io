@@ -61,8 +61,8 @@
       el.textContent=prefix;
     });
     document.querySelectorAll("[data-qd-auth-button]").forEach(btn=>{
-      const mini=Boolean(user&&method==="mini_app");
-      btn.textContent=mini?"Telegram ✓":user?"Выйти":"✈ Войти через Telegram";
+      const mini=Boolean(user&&method==="mini_app"), compact=btn.hasAttribute("data-qd-auth-compact");
+      btn.textContent=mini?"Telegram ✓":user?"Выйти":compact?"✈ Войти":"✈ Войти через Telegram";
       btn.disabled=mini;
       btn.setAttribute("aria-pressed",user?"true":"false");
       btn.onclick=mini?null:user?logout:login;
