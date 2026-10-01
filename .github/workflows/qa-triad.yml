@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Verify Seven LLM briefing and degraded contract
+        run: node --test scripts/qa/seven-reasoning.test.js
 
       - name: 🌐 Validate shared post-scarcity mission
         id: mission
