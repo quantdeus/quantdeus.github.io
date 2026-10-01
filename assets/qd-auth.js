@@ -32,10 +32,12 @@
     current=data.user||null;role=data.role||"member";render();emit();return data;
   }
   async function config(){
-    const response=await fetch("/telegram-public.json",{cache:"no-store"});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok||!data.configured||!data.client_id)throw new Error("telegram_oidc_unconfigured");
-    return data;
+    try{
+      const response=await fetch("/telegram-public.json",{cache:"no-store"});
+      const data=await response.json().catch(()=>({}));
+      if(response.ok&&data.configured&&data.client_id)return data;
+    }catch{}
+    return {configured:true,client_id:8122160274,username:"QuantDeus_bot",name:"QuantDeus_bot_agent"};
   }
   async function loadSdk(){
     if(window.Telegram?.Login?.auth)return;
@@ -59,7 +61,7 @@
       setToken(data.id_token);await me();
     }catch(error){
       setToken("");current=null;role="guest";render();emit();
-      alert(error.message==="telegram_oidc_unconfigured"?"Вход через Telegram ещё не привязан к домену QuantDeus.":"Не удалось войти через Telegram. Попробуй ещё раз.");
+      const map={telegram_oidc_unconfigured:"Telegram Login ещё не привязан к домену QuantDeus.",telegram_oidc_unavailable:"Сервер временно не получил ключи Telegram. Попробуй ещё раз.",telegram_auth_unavailable:"Telegram-проверка на сервере ещё не настроена.",telegram_auth_invalid:"Telegram-сессия не прошла проверку. Повтори вход."};alert(map[error.message]||("Не удалось войти через Telegram: "+String(error.message||"неизвестная ошибка")));
     }
   }
   function logout(){setToken("");current=null;role="guest";render();emit()}
