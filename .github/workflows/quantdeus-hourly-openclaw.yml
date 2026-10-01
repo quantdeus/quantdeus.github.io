@@ -90,8 +90,9 @@ jobs:
                   '{"action":"dispatch_role","issue_number":123,"agent_id":"registered-agent-id","reason":"why this owner should execute now"}',
                   '{"action":"repair_actions","run_id":123456789,"workflow":"Workflow name","reason":"evidence-backed failed Actions run"}',
                   '{"action":"dispatch_squad","issue_number":123,"reason":"privileged implementation requires Squad B"}',
+                  '{"action":"onboard_contributor_readonly","issue_number":123,"reason":"immutable CEO-authored read-only contributor onboarding"}',
                   '{"action":"none","reason":"NO_SAFE_ACTION: concrete blocker"}',
-                  'Never dispatch merge/deploy/spending/secrets/security-role changes/sensitive outreach/account registration. Workflow/governance implementation requires an Issue carrying squad-b:privileged.',
+                  'Never dispatch merge/deploy/spending/secrets/security-role changes/sensitive outreach/account registration. The only contributor-access exception is contributor-onboarding.yml, which is registry-only, grants no repository role, and requires an immutable CEO-authored Issue. Workflow/governance implementation requires an Issue carrying squad-b:privileged.',
                   'Do not mark DONE unless acceptance criteria are actually verified.'
                 ].join('\n')
               }],
@@ -177,6 +178,26 @@ jobs:
                 trigger_run_id: String(runId),
                 trigger_workflow: String(decision.workflow || run.name || '').slice(0, 120)
               });
+              return;
+            }
+
+            if (decision.action === 'onboard_contributor_readonly') {
+              const issueNumber = Number(decision.issue_number);
+              const { issue, labels } = await verifiedIssue(issueNumber);
+              if (String(issue.user?.login || '') !== 'quantdeus') {
+                throw new Error('Contributor onboarding requires a CEO-authored Issue');
+              }
+              if (!issue.created_at || issue.updated_at !== issue.created_at) {
+                throw new Error('Contributor onboarding approval Issue must remain unedited after creation');
+              }
+              if (!labels.has('coord:task') || !labels.has('quantdeus-target-agent:seven-of-nine')) {
+                throw new Error('Contributor onboarding requires coord:task + Seven target');
+              }
+              const body = String(issue.body || '');
+              if (!/read[- ]only/i.test(body) || !/workflow/i.test(body)) {
+                throw new Error('Contributor onboarding Issue must explicitly pin read-only + workflow restrictions');
+              }
+              await dispatch('contributor-onboarding.yml', { issue_number: String(issueNumber) });
               return;
             }
 

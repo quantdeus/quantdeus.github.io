@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus Human Contributors",
+  "access_model": {
+    "repository_owner_type": "User",
+    "repository_visibility": "public",
+    "policy": "registry membership never grants repository write/admin access",
+    "granular_read_only_collaborators": false,
+    "organization_migration_required_for_granular_repo_roles": true
+  },
+  "contributors": [
+    {
+      "github_login": "goplay1937",
+      "display_name": "Egor",
+      "status": "active",
+      "requested_access": "public-read-only",
+      "write_access_authorized": false,
+      "workflow_write_authorized": false,
+      "repository_role_mutation_by_automation": false,
+      "source_issue": 342,
+      "added": "2026-10-01"
+    }
+  ]
+}
