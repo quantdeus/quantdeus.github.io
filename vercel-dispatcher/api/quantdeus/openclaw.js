@@ -603,8 +603,10 @@ export default async function handler(req, res) {
       priority: 100
     });
 
-    // Anonymous emergency route stays last. It still must pass the same live
-    // capability gate as every keyed provider.
+    // Historical production evidence on 2026-09-30 showed the trusted 26-agent
+    // OpenClaw lane completing real MCP-backed turns with the Pollinations `openai`
+    // model. Prefer that proven route for trusted Office only when it passes the
+    // same sequential tool-capability probe; public/no-tools chat still keeps it last.
     addProvider({
       id: 'quantdeus-pollinations',
       keyEnv: 'POLLINATIONS_API_KEY',
@@ -612,7 +614,7 @@ export default async function handler(req, res) {
       model: process.env.POLLINATIONS_MODEL || 'openai',
       baseUrl: 'https://text.pollinations.ai/openai',
       contextWindow: 131072,
-      priority: 1000
+      priority: trustedOffice ? 5 : 1000
     });
 
     const modelCandidates = probeCandidates.map(candidate => candidate.ref);
