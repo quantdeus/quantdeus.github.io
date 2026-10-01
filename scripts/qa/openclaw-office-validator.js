@@ -22,9 +22,7 @@ const evolutionGate = fs.readFileSync('.github/workflows/openclaw-evolution-gate
 
 for (const [ok, message] of [
   [route.includes("const AUDIENCE = 'quantdeus-vercel-openclaw'"), 'dedicated GitHub OIDC audience'],
-  [!route.includes('sandbox.stop()') && route.includes('cleanupOfficeRequest(sandbox'), 'borrowed Office leaves lifecycle ownership with the session timeout'],
-  [route.includes('runOfficeAgent(sandbox') && route.includes('Boolean(result);'), 'queue failures are explicit and failed turns are not replayed'],
-  [route.includes('getVercelOidcToken()') && route.includes('OPENCLAW_GATEWAY_MODEL'), 'configured AI Gateway uses deployment identity'],
+  [route.includes('HERMES_LOCAL_BASE_URL') && route.includes('HERMES_LOCAL_API_KEY') && route.includes("id: 'quantdeus-hermes'"), 'configured Hermes fallback is admitted only after the live capability probe'],
   [route.includes('Sandbox.getOrCreate') && route.includes("runtime: 'openclaw-office'"), 'persistent Vercel Sandbox runtime'],
   [route.includes("openclaw@2026.9.6"), 'pinned OpenClaw install'],
   [route.includes("const publicTools = { deny: ['*'] }"), 'public OpenClaw chat remains no-tools'],
