@@ -258,7 +258,7 @@ jobs:
           grep -q 'Frutiger Aero' index.html || grep -q 'var(--lime)' index.html
           grep -q 'data-qd-auth' index.html
           grep -q 'data-qd-auth' forum/index.html
-          if grep -Fq '\\n  <script' store/index.html forum/index.html; then echo 'literal \\n found in portal HTML'; exit 1; fi
+          if grep -Fq '\n  <script' store/index.html forum/index.html; then echo 'literal \\n found in portal HTML'; exit 1; fi
           if grep -q 'if(!initData)' store/index.html; then echo 'stale initData reference found in store'; exit 1; fi
           grep -q 'needs_user_send' vercel-dispatcher/api/quantdeus/orders.js
           grep -q 'DEFAULT_CLIENT_ID = "8122160274"' vercel-dispatcher/lib/telegram-auth.js
