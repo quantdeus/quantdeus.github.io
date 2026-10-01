@@ -1,0 +1,45 @@
+name: QuantDeus Contributor Onboarding 🧑‍🚀
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Immutable CEO-authored contributor onboarding Issue number
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: quantdeus-contributor-onboarding-${{ inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  onboard:
+    if: github.repository == 'quantdeus/quantdeus.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Validate onboarding unit contract
+        run: node --test scripts/qa/contributor-onboarding.test.js
+
+      - name: Prepare read-only contributor registry PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: node scripts/contributor-onboarding.js
