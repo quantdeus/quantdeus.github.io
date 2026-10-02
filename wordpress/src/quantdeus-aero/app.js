@@ -191,7 +191,7 @@
   }
 
   async function syncGithubSession() {
-    if (currentUser || !githubBrokerUrl || window.parent === window) return false;
+    if (!githubBrokerUrl || window.parent === window) return false;
     try {
       const result = await requestGithubFromParent();
       if (!result?.assertion) return false;
@@ -206,6 +206,7 @@
         github_bridge_timeout:'GitHub bridge не ответил. Обнови страницу и повтори вход.',
         github_staff_required:'Этот GitHub-аккаунт не имеет прав модератора/администратора QuantDeus.',
         github_assertion_invalid:'GitHub-сессия истекла. Войди ещё раз.',
+        github_auth_invalid:'GitHub-проверка не прошла. Войди ещё раз.',
         github_oauth_unconfigured:'GitHub OAuth ещё не настроен на Vercel.'
       };
       qsa('[data-github-status]').forEach(el => el.textContent = map[err.message] || ('GitHub: ' + err.message));
