@@ -30,6 +30,7 @@ final class QD_Core {
         self::register_types();
         self::roles();
         self::seed_services();
+        self::seed_portal_taxonomies();
         update_option('qd_core_version', self::VERSION, false);
         flush_rewrite_rules(false);
     }
@@ -38,6 +39,7 @@ final class QD_Core {
         if ((string)get_option('qd_core_version') === self::VERSION) return;
         self::roles();
         self::seed_services();
+        self::seed_portal_taxonomies();
         update_option('qd_core_version', self::VERSION, false);
         flush_rewrite_rules(false);
     }
@@ -182,19 +184,35 @@ final class QD_Core {
             'rewrite'=>['slug'=>'pillar','with_front'=>false],
         ]);
 
+        $public_meta = ['type'=>'string','single'=>true,'show_in_rest'=>true,'auth_callback'=>fn()=>current_user_can('manage_options')];
+        foreach (['identity','mission','evidence','artifacts','metrics','replication','safety','exit','governance','human_override'] as $field) {
+            register_post_meta('qd_node','qd_'.$field,$public_meta);
+        }
+        foreach (['fact','evidence','hypothesis','unknown','next_test','falsifier','evidence_grade'] as $field) {
+            register_post_meta('qd_research','qd_'.$field,$public_meta);
+        }
+        register_post_meta('qd_project','qd_loop_stage',$public_meta);
+        register_post_meta('qd_result','qd_evidence_grade',$public_meta);
+    }
+
+    private static function seed_portal_taxonomies(): void {
         foreach ([
-            'A'=>'Grade A — independently verifiable / reproducible',
-            'B'=>'Grade B — promising early result / substantial uncertainty',
-            'C'=>'Grade C — hypothesis / concept / unverified signal',
+            'a'=>'Grade A — independently verifiable / reproducible',
+            'b'=>'Grade B — promising early result / substantial uncertainty',
+            'c'=>'Grade C — hypothesis / concept / unverified signal',
         ] as $slug=>$label) {
-            if (!term_exists($slug,'qd_evidence_grade')) wp_insert_term($label,'qd_evidence_grade',['slug'=>strtolower($slug)]);
+            if (!term_exists($slug,'qd_evidence_grade')) {
+                wp_insert_term($label,'qd_evidence_grade',['slug'=>$slug]);
+            }
         }
         foreach ([
             '2028'=>'2026–2028 · Ignition',
             '2041'=>'2026–2041 · Proto-Federation',
             '2126'=>'2026–2126 · Century Compass',
         ] as $slug=>$label) {
-            if (!term_exists($slug,'qd_horizon')) wp_insert_term($label,'qd_horizon',['slug'=>$slug]);
+            if (!term_exists($slug,'qd_horizon')) {
+                wp_insert_term($label,'qd_horizon',['slug'=>$slug]);
+            }
         }
         $pillars=[
             'life-dignity'=>'Жизнь и достоинство человека',
@@ -207,18 +225,10 @@ final class QD_Core {
             'long-horizon-space'=>'Долгий горизонт и космическая цивилизация',
         ];
         foreach ($pillars as $slug=>$label) {
-            if (!term_exists($slug,'qd_pillar')) wp_insert_term($label,'qd_pillar',['slug'=>$slug]);
+            if (!term_exists($slug,'qd_pillar')) {
+                wp_insert_term($label,'qd_pillar',['slug'=>$slug]);
+            }
         }
-
-        $public_meta = ['type'=>'string','single'=>true,'show_in_rest'=>true,'auth_callback'=>fn()=>current_user_can('manage_options')];
-        foreach (['identity','mission','evidence','artifacts','metrics','replication','safety','exit','governance','human_override'] as $field) {
-            register_post_meta('qd_node','qd_'.$field,$public_meta);
-        }
-        foreach (['fact','evidence','hypothesis','unknown','next_test','falsifier','evidence_grade'] as $field) {
-            register_post_meta('qd_research','qd_'.$field,$public_meta);
-        }
-        register_post_meta('qd_project','qd_loop_stage',$public_meta);
-        register_post_meta('qd_result','qd_evidence_grade',$public_meta);
     }
 
     private static function service_seed(): array {
