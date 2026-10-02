@@ -23,6 +23,8 @@ add_action('wp_enqueue_scripts', function(){
         'telegramBotUsername' => defined('QD_TELEGRAM_BOT_USERNAME') ? (string)QD_TELEGRAM_BOT_USERNAME : 'QuantDeus_bot',
         'loggedIn' => is_user_logged_in(),
         'userName' => is_user_logged_in() ? wp_get_current_user()->display_name : '',
+        'userRole' => is_user_logged_in() ? (wp_get_current_user()->roles[0] ?? 'qd_member') : '',
+        'authProvider' => is_user_logged_in() && get_user_meta(get_current_user_id(),'qd_github_login',true) ? 'github' : (is_user_logged_in() ? 'telegram' : ''),
         'nonce' => is_user_logged_in() ? wp_create_nonce('wp_rest') : '',
     ]);
 });
