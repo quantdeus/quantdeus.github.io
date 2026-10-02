@@ -5,7 +5,14 @@ add_action('after_setup_theme', function(){
     add_theme_support('title-tag');
     add_theme_support('post-thumbnails');
     add_theme_support('html5',['search-form','gallery','caption','style','script']);
-    register_nav_menus(['primary'=>'Primary']);
+    add_theme_support('custom-logo',[
+        'height'=>160,
+        'width'=>640,
+        'flex-height'=>true,
+        'flex-width'=>true,
+        'unlink-homepage-logo'=>false,
+    ]);
+    register_nav_menus(['primary'=>'Верхнее меню']);
 });
 
 add_action('wp_enqueue_scripts', function(){
@@ -40,3 +47,58 @@ add_action('wp_head', function(){
     echo '<meta property="og:url" content="'.esc_url(home_url('/')).'">'."\n";
     echo '<meta property="og:image" content="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG">'."\n";
 });
+
+
+function qd_aero_primary_menu_fallback(array $args=[]): void {
+    echo '<ul class="qd-menu">';
+    $items=[
+        ['Холдинг',home_url('/#holding')],
+        ['Направления',home_url('/#directions')],
+        ['Услуги',home_url('/#services')],
+        ['Ксения',home_url('/#ksenia')],
+        ['Форум',home_url('/forum/')],
+        ['Сообщество',home_url('/#community')],
+    ];
+    foreach($items as [$label,$url]){
+        echo '<li class="menu-item"><a href="'.esc_url($url).'">'.esc_html($label).'</a></li>';
+    }
+    echo '</ul>';
+}
+
+function qd_aero_ensure_primary_menu(): void {
+    $locations=get_theme_mod('nav_menu_locations',[]);
+    if (!empty($locations['primary']) && wp_get_nav_menu_object((int)$locations['primary'])) return;
+
+    $menu=wp_get_nav_menu_object('QuantDeus Primary');
+    if (!$menu) {
+        $menu_id=wp_create_nav_menu('QuantDeus Primary');
+        if (is_wp_error($menu_id)) return;
+        $menu=wp_get_nav_menu_object($menu_id);
+    }
+    if (!$menu) return;
+
+    $existing=wp_get_nav_menu_items($menu->term_id) ?: [];
+    if (!$existing) {
+        $items=[
+            ['Холдинг',home_url('/#holding')],
+            ['Направления',home_url('/#directions')],
+            ['Услуги',home_url('/#services')],
+            ['Ксения',home_url('/#ksenia')],
+            ['Форум',home_url('/forum/')],
+            ['Сообщество',home_url('/#community')],
+        ];
+        foreach($items as [$title,$url]){
+            wp_update_nav_menu_item($menu->term_id,0,[
+                'menu-item-title'=>$title,
+                'menu-item-url'=>$url,
+                'menu-item-status'=>'publish',
+                'menu-item-type'=>'custom',
+            ]);
+        }
+    }
+
+    $locations['primary']=(int)$menu->term_id;
+    set_theme_mod('nav_menu_locations',$locations);
+}
+add_action('after_switch_theme','qd_aero_ensure_primary_menu');
+add_action('init','qd_aero_ensure_primary_menu',40);
