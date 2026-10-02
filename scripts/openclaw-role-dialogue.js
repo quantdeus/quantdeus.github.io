@@ -4,20 +4,20 @@ const office = require('./openclaw-office-client');
 const {turnBudget,turnEvidence} = require('./dialogue-state');
 
 function parseJson(text) {
-  const raw = String(text || '').trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');
+  const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   try { return JSON.parse(raw); } catch (jsonError) {
-    const lines = raw.split(/\\r?\\n/).map(x => x.trim()).filter(Boolean);
+    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
     const field = name => {
-      const re = new RegExp('^' + name + '\\\\s*:\\\\s*(.+)', 'i');
+      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
       const line = lines.find(x => re.test(x));
       return line ? line.match(re)[1].trim() : '';
     };
     const findings = lines.map(x => {
-      const m = x.match(/^FINDING(?:\\s*\\d+)?\\s*:\\s*(.+)/i);
+      const m = x.match(/^FINDING(?:\s*\d+)?\s*:\s*(.+)/i);
       return m ? m[1].trim() : '';
     }).filter(Boolean);
     const summary = field('SUMMARY');
-    const nextStep = field('NEXT(?:_|\\\\s*)STEP');
+    const nextStep = field('NEXT(?:_|\\s*)STEP');
     if (summary && findings.length && nextStep) return {summary, findings, next_step: nextStep};
     jsonError.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
     throw jsonError;
