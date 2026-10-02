@@ -9,6 +9,9 @@
   const qsa = (s, root=document) => [...root.querySelectorAll(s)];
   const canonicalOrigin = String(cfg.canonicalOrigin || 'https://quantdeus.github.io').replace(/\/$/,'');
   const telegramBrokerUrl = cfg.telegramBrokerUrl || cfg.telegramMiniappUrl || '';
+  const githubBrokerUrl = cfg.githubBrokerUrl || '';
+  const githubStartUrl = cfg.githubStartUrl || '';
+  const githubConfigUrl = cfg.githubConfigUrl || '';
 
   function roleLabel(role) {
     return ({
@@ -160,36 +163,97 @@
     });
   }
 
-  function bindGithubAdmin() {
+  function requestGithubFromParent() {
+    return new Promise((resolve,reject) => {
+      if (window.parent === window) {
+        reject(new Error('canonical_origin_required'));
+        return;
+      }
+      const timeout = setTimeout(() => {
+        window.removeEventListener('message', onMessage);
+        reject(new Error('github_bridge_timeout'));
+      }, 8000);
+      function onMessage(event) {
+        if (event.source !== window.parent || event.origin !== canonicalOrigin) return;
+        const message = event.data || {};
+        if (message.type !== 'qd:github-result') return;
+        clearTimeout(timeout);
+        window.removeEventListener('message', onMessage);
+        if (!message.ok || !message.assertion) {
+          if (message.error === 'github_no_pending_assertion') return resolve(null);
+          return reject(new Error(message.error || 'github_auth_failed'));
+        }
+        resolve(message);
+      }
+      window.addEventListener('message', onMessage);
+      window.parent.postMessage({type:'qd:github-login',action:'consume'}, canonicalOrigin);
+    });
+  }
+
+  async function syncGithubSession() {
+    if (!githubBrokerUrl || window.parent === window) return false;
+    try {
+      const result = await requestGithubFromParent();
+      if (!result?.assertion) return false;
+      qsa('[data-github-status]').forEach(el => el.textContent = 'GitHub · подтверждаю права репозитория…');
+      await establish(githubBrokerUrl, {assertion:result.assertion});
+      window.parent.postMessage({type:'qd:github-consumed',ok:true}, canonicalOrigin);
+      location.reload();
+      return true;
+    } catch (err) {
+      const map = {
+        canonical_origin_required:'Открой QuantDeus через https://quantdeus.github.io/.',
+        github_bridge_timeout:'GitHub bridge не ответил. Обнови страницу и повтори вход.',
+        github_staff_required:'Этот GitHub-аккаунт не имеет прав модератора/администратора QuantDeus.',
+        github_assertion_invalid:'GitHub-сессия истекла. Войди ещё раз.',
+        github_auth_invalid:'GitHub-проверка не прошла. Войди ещё раз.',
+        github_oauth_unconfigured:'GitHub OAuth ещё не настроен на Vercel.'
+      };
+      qsa('[data-github-status]').forEach(el => el.textContent = map[err.message] || ('GitHub: ' + err.message));
+      return false;
+    }
+  }
+
+  async function bindGithubAdmin() {
     const buttons = qsa('[data-github-admin-login]');
     const status = qsa('[data-github-status]');
     if (!buttons.length) return;
-    if (!cfg.githubConfigured || !cfg.githubStartUrl) {
-      buttons.forEach(button => {
-        button.disabled = true;
-        button.setAttribute('aria-disabled','true');
-        button.title = 'GitHub OAuth ещё не подключён к server-side runtime';
-      });
-      status.forEach(el => el.textContent = 'GitHub OAuth · нужен server-side OAuth App для staff-входа');
+    buttons.forEach(button => {
+      button.disabled = true;
+      button.setAttribute('aria-disabled','true');
+    });
+    if (!githubStartUrl || !githubBrokerUrl || !githubConfigUrl) {
+      status.forEach(el => el.textContent = 'GitHub OAuth · broker не настроен');
       return;
     }
-    status.forEach(el => el.textContent = 'GitHub · права write/maintain/admin проверяются при входе');
+    let health = null;
+    try {
+      const response = await fetch(githubConfigUrl, {cache:'no-store', credentials:'omit'});
+      health = await response.json();
+      if (!response.ok || !health?.ok) throw new Error(health?.error || ('HTTP ' + response.status));
+    } catch (err) {
+      status.forEach(el => el.textContent = 'GitHub OAuth · Vercel broker недоступен');
+      return;
+    }
+    if (!health.configured) {
+      const missing = !health.oauth_configured
+        ? 'нужны OAuth Client ID/Secret'
+        : (!health.permission_verifier_configured ? 'нужен GitHub permission token' : 'не настроена подпись сессии');
+      status.forEach(el => el.textContent = 'GitHub OAuth · ' + missing);
+      return;
+    }
+    status.forEach(el => el.textContent = 'GitHub · права write/maintain/admin проверяются сервером');
     buttons.forEach(button => {
       button.disabled = false;
       button.removeAttribute('aria-disabled');
-      button.addEventListener('click', async () => {
-        const original = button.textContent;
-        button.disabled = true;
-        button.textContent = 'Проверяю GitHub…';
-        try {
-          const body = await json(cfg.githubStartUrl, {method:'POST', body:'{}'});
-          if (!body.authorize_url) throw new Error('GitHub authorize URL missing');
-          window.top.location.href = body.authorize_url;
-        } catch (err) {
-          button.disabled = false;
-          button.textContent = original;
-          status.forEach(el => el.textContent = 'GitHub: ' + err.message);
+      button.addEventListener('click', () => {
+        if (window.parent === window) {
+          status.forEach(el => el.textContent = 'Открой QuantDeus через https://quantdeus.github.io/.');
+          return;
         }
+        button.disabled = true;
+        button.textContent = 'Открываю GitHub…';
+        window.parent.postMessage({type:'qd:github-login',action:'start'}, canonicalOrigin);
       });
     });
   }
@@ -261,7 +325,9 @@
     setAuth(currentUser);
     bindPrimaryMenu();
     bindTelegramLogin();
-    bindGithubAdmin();
+    const githubRestored = await syncGithubSession();
+    if (githubRestored) return;
+    await bindGithubAdmin();
     bindInquiry();
     bindForum();
     await miniAppLogin();
