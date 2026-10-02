@@ -48,6 +48,9 @@ jobs:
           test -f wordpress/src/quantdeus-aero/style.css
           test -f wordpress/src/quantdeus-aero/functions.php
           test -f wordpress/src/quantdeus-aero/front-page.php
+          test -f wordpress/src/quantdeus-aero/header.php
+          test -f wordpress/src/quantdeus-aero/footer.php
+          test -f wordpress/src/quantdeus-aero/page-login.php
           test -f wordpress/src/quantdeus-aero/index.php
           test -f wordpress/src/quantdeus-aero/app.js
           test -f wordpress/src/quantdeus-aero/logo.svg
@@ -55,15 +58,22 @@ jobs:
           test -f wordpress/src/quantdeus-aero/single-qd_forum_thread.php
           find wordpress/src -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check wordpress/src/quantdeus-aero/app.js
-          grep -q "wp_nav_menu" wordpress/src/quantdeus-aero/front-page.php
-          grep -q "theme_location'=>'primary'" wordpress/src/quantdeus-aero/front-page.php
+          grep -q "wp_nav_menu" wordpress/src/quantdeus-aero/header.php
+          grep -q "theme_location'=>'primary'" wordpress/src/quantdeus-aero/header.php
           grep -q "register_nav_menus" wordpress/src/quantdeus-aero/functions.php
           grep -q "custom-logo" wordpress/src/quantdeus-aero/functions.php
-          if grep -q '<nav class="qd-links">' wordpress/src/quantdeus-aero/front-page.php; then echo "hard-coded header nav forbidden"; exit 1; fi
+          if grep -R -q '<nav class="qd-links">' wordpress/src/quantdeus-aero/*.php; then echo "hard-coded header nav forbidden"; exit 1; fi
           if grep -q '"step"[[:space:]]*:[[:space:]]*"login"' wordpress/blueprint.json; then echo "public WordPress admin autologin forbidden"; exit 1; fi
           if grep -n "QD_\(OWNER\|ADMIN\)_TELEGRAM_IDS.*administrator" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "Telegram must never grant administrator"; exit 1; fi
           grep -q "github_permission" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "github_admin_only" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "return 'qd_member';" wordpress/src/quantdeus-core/quantdeus-core.php
+          if grep -q "QD_MODERATOR_TELEGRAM_IDS" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "Telegram staff elevation forbidden"; exit 1; fi
+          grep -q "home_url('/login/')" wordpress/src/quantdeus-aero/header.php
+          grep -q "Войти через Telegram" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "Войти через GitHub" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "write / maintain" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "admin" wordpress/src/quantdeus-aero/page-login.php
           ! grep -RniE 'hook\.[a-z0-9.-]*make\.com|api\.make\.com|MAKE_(TOKEN|API|WEBHOOK|SCENARIO|TEAM|ORG)|scenarioId[^A-Za-z0-9]' wordpress/src wordpress/blueprint.json || {
             echo "Active Make integration detected in canonical WordPress runtime"; exit 1;
           }
@@ -111,6 +121,9 @@ jobs:
           if (!get_role('qd_agent')->has_cap('qd_agent_context')) { throw new Exception('Agent context capability missing'); }
           if (get_role('qd_moderator')->has_cap('manage_options')) { throw new Exception('Moderator must not have admin access'); }
           if (get_option('stylesheet') !== 'quantdeus-aero') { throw new Exception('QuantDeus Aero theme not active'); }
+          qd_aero_ensure_login_page();
+          $login=get_page_by_path('login',OBJECT,'page');
+          if (!$login || $login->post_status!=='publish') { throw new Exception('Login page missing'); }
           qd_aero_ensure_primary_menu();
           $locations=get_nav_menu_locations();
           if (empty($locations['primary'])) { throw new Exception('Primary WordPress menu location missing'); }
@@ -131,6 +144,9 @@ jobs:
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/style.css',data:source('wordpress/src/quantdeus-aero/style.css')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/functions.php',data:source('wordpress/src/quantdeus-aero/functions.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/front-page.php',data:source('wordpress/src/quantdeus-aero/front-page.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/header.php',data:source('wordpress/src/quantdeus-aero/header.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/footer.php',data:source('wordpress/src/quantdeus-aero/footer.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-login.php',data:source('wordpress/src/quantdeus-aero/page-login.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/index.php',data:source('wordpress/src/quantdeus-aero/index.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/app.js',data:source('wordpress/src/quantdeus-aero/app.js')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/logo.svg',data:source('wordpress/src/quantdeus-aero/logo.svg')},
