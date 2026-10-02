@@ -6,11 +6,19 @@ add_action('after_setup_theme', function(){
     add_theme_support('post-thumbnails');
     add_theme_support('html5',['search-form','gallery','caption','style','script']);
     add_theme_support('custom-logo',['height'=>160,'width'=>640,'flex-height'=>true,'flex-width'=>true,'unlink-homepage-logo'=>false]);
+    add_theme_support('align-wide');
+    add_theme_support('responsive-embeds');
+    add_theme_support('wp-block-styles');
+    add_theme_support('editor-styles');
+    add_theme_support('custom-spacing');
+    add_theme_support('custom-line-height');
+    add_editor_style('style.css');
     register_nav_menus(['primary'=>'QuantDeus Primary Menu']);
 });
 
 add_action('wp_enqueue_scripts', function(){
     $v=wp_get_theme()->get('Version');
+    wp_enqueue_style('dashicons');
     wp_enqueue_style('quantdeus-aero',get_stylesheet_uri(),[],$v);
     wp_enqueue_script('telegram-web-app','https://telegram.org/js/telegram-web-app.js',[],null,true);
     wp_enqueue_script('quantdeus-aero-app',get_template_directory_uri().'/app.js',['telegram-web-app'],$v,true);
@@ -19,7 +27,7 @@ add_action('wp_enqueue_scripts', function(){
         'forumUrl'=>rest_url('quantdeus/v1/forum'),'telegramMiniappUrl'=>rest_url('quantdeus/v1/telegram/miniapp'),
         'telegramLoginUrl'=>rest_url('quantdeus/v1/telegram/login'),'telegramBrokerUrl'=>rest_url('quantdeus/v1/telegram/broker'),
         'telegramClientId'=>defined('QD_TELEGRAM_CLIENT_ID')?(string)QD_TELEGRAM_CLIENT_ID:'8122160274',
-        'canonicalOrigin'=>'https://quantdeus.github.io',
+        'canonicalOrigin'=>'https://quantdeus.vercel.app',
         'githubStartUrl'=>'https://quantdeus.vercel.app/api/quantdeus/github-auth',
         'githubConfigUrl'=>'https://quantdeus.vercel.app/api/quantdeus/github-auth?health=1',
         'githubBrokerUrl'=>rest_url('quantdeus/v1/github/broker'),'githubConfigured'=>true,
@@ -44,6 +52,67 @@ add_action('wp_head',function(){
     echo '<meta property="og:url" content="'.esc_url(home_url('/')).'">'."\n";
     echo '<meta property="og:image" content="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG">'."\n";
 });
+
+
+function qd_aero_visual_url(string $key,string $fallback): string {
+    $attachment_id=absint(get_theme_mod($key,0));
+    if($attachment_id){
+        $url=wp_get_attachment_image_url($attachment_id,'full');
+        if($url) return (string)$url;
+    }
+    return $fallback;
+}
+function qd_aero_visual_alt(string $key,string $fallback): string {
+    $attachment_id=absint(get_theme_mod($key,0));
+    if($attachment_id){
+        $alt=trim((string)get_post_meta($attachment_id,'_wp_attachment_image_alt',true));
+        if($alt!=='') return $alt;
+        $title=get_the_title($attachment_id);
+        if($title) return (string)$title;
+    }
+    return $fallback;
+}
+function qd_aero_visual_credit(string $key,string $fallback): string {
+    $attachment_id=absint(get_theme_mod($key,0));
+    if($attachment_id){
+        $caption=trim((string)wp_get_attachment_caption($attachment_id));
+        if($caption!=='') return $caption;
+        return 'QuantDeus Media Library';
+    }
+    return $fallback;
+}
+add_action('customize_register',function($wp_customize){
+    $wp_customize->add_section('qd_aero_visuals',[
+        'title'=>'QuantDeus · Cosmic Frutiger Aero',
+        'description'=>'Нативные изображения портала из WordPress Media Library. Меняйте шапку, hero и галерею без правки PHP.',
+        'priority'=>30,
+    ]);
+    $controls=[
+        'qd_visual_header'=>['Header background','Космический фон шапки.'],
+        'qd_visual_hero'=>['Hero image','Главное реальное изображение портала.'],
+        'qd_visual_aero'=>['Earth / Aero image','Вода, зелень и голубое небо.'],
+        'qd_visual_aurora'=>['Aurora image','Космос, атмосфера и сияние.'],
+        'qd_visual_city'=>['Night Earth image','Ночной технологический слой.'],
+        'qd_visual_ecology'=>['Ecology image','Экология и зелёный горизонт.'],
+    ];
+    foreach($controls as $key=>[$label,$description]){
+        $wp_customize->add_setting($key,['default'=>0,'sanitize_callback'=>'absint','transport'=>'refresh']);
+        $wp_customize->add_control(new WP_Customize_Media_Control($wp_customize,$key,[
+            'label'=>$label,'description'=>$description,'section'=>'qd_aero_visuals','mime_type'=>'image',
+        ]));
+    }
+});
+add_filter('nav_menu_item_title',function($title,$item,$args,$depth){
+    if(empty($args->theme_location) || $args->theme_location!=='primary' || $depth!==0) return $title;
+    $map=[
+        'QuantDeus'=>'dashicons-admin-home','Federation'=>'dashicons-networking','Horizons'=>'dashicons-chart-line',
+        'Research'=>'dashicons-search','Build'=>'dashicons-hammer','Community'=>'dashicons-groups',
+        'Knowledge'=>'dashicons-book-alt','About'=>'dashicons-info-outline',
+    ];
+    $plain=wp_strip_all_tags($title);
+    if(!isset($map[$plain])) return $title;
+    return '<span class="dashicons '.esc_attr($map[$plain]).'" aria-hidden="true"></span><span class="qd-menu-label">'.$title.'</span>';
+},10,4);
 
 function qd_aero_primary_menu_fallback(array $args=[]): void {
     $items=[

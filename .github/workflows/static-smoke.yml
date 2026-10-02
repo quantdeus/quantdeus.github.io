@@ -243,9 +243,18 @@ jobs:
           if grep -qF '\\$''{{' .github/workflows/browser-homunculus.yml; then echo 'escaped GitHub expression found'; exit 1; fi
           test -f .github/workflows/telegram-bot.yml
           node -e "const fs=require('fs'); const vc=JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json','utf8')); const p=JSON.parse(fs.readFileSync('vercel-dispatcher/package.json','utf8')); if(!p.dependencies?.['@vercel/sandbox']) throw new Error('missing @vercel/sandbox'); if(!vc.functions?.['api/quantdeus/hermes.js']) throw new Error('missing Hermes maxDuration');"
-          grep -q 'playground.wordpress.net' index.html
-          grep -q 'wordpress/blueprint.json' index.html
-          grep -q 'QuantDeus — WordPress' index.html
+          test -f assets/portal-shell.css
+          test -f assets/portal-shell.js
+          test -f federation/index.html
+          test -f research/index.html
+          test -f projects/index.html
+          test -f ai-fleet/index.html
+          test -f community/index.html
+          test -f knowledge/index.html
+          test -f login/index.html
+          grep -q 'https://quantdeus.vercel.app/' index.html
+          grep -q 'Публичное зеркало QuantDeus' index.html
+          if grep -q 'playground.wordpress.net' index.html; then echo 'GitHub Pages root must not launch Playground'; exit 1; fi
           grep -q "location.replace('/')" wordpress/index.html
           grep -q '26 специализированных ИИ-агентов' README.md
           grep -q 'sitemap.xml' robots.txt
@@ -255,13 +264,15 @@ jobs:
           grep -q 'Концерт Ксении Чередниковой' telegram/index.html
           grep -q '>Услуги<' telegram/index.html
           if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
-          grep -q 'mode=seamless' index.html
-          grep -q 'data-qd-auth' forum/index.html
+          grep -q 'https://quantdeus.vercel.app/forum/' forum/index.html
+          grep -q 'https://quantdeus.vercel.app/store/' store/index.html
+          grep -q 'noindex,follow' forum/index.html
+          grep -q 'noindex,follow' store/index.html
           if grep -Fq '\n  <script' store/index.html forum/index.html; then echo 'literal \\n found in portal HTML'; exit 1; fi
           if grep -q 'if(!initData)' store/index.html; then echo 'stale initData reference found in store'; exit 1; fi
           grep -q 'needs_user_send' vercel-dispatcher/api/quantdeus/orders.js
           grep -q 'DEFAULT_CLIENT_ID = "8122160274"' vercel-dispatcher/lib/telegram-auth.js
-          grep -q 'Регистрация не нужна' store/index.html
+          grep -q 'Регистрация не нужна' vercel-dispatcher/public/store/index.html
           grep -q 'anonymous_web' vercel-dispatcher/api/quantdeus/orders.js
           node -e "const c=require('./telegram-public.json'); if(!c.configured||!c.client_id||!c.username) throw new Error('Telegram public auth config is incomplete')"
 

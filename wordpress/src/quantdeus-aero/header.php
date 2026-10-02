@@ -6,13 +6,14 @@
   <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>><?php wp_body_open(); ?>
-<header class="qd-nav">
+<?php $qd_header_image=qd_aero_visual_url('qd_visual_header','https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG'); ?>
+<header class="qd-nav" style="--qd-header-image:url('<?php echo esc_url($qd_header_image); ?>')">
   <div class="qd-shell qd-navin">
     <div class="qd-brand-wrap">
       <?php if (has_custom_logo()): ?>
         <?php the_custom_logo(); ?>
       <?php else: ?>
-        <a class="qd-brand" href="<?php echo esc_url(home_url('/')); ?>"><img src="<?php echo esc_url(get_template_directory_uri().'/logo.svg'); ?>" alt="QuantDeus"></a>
+        <a class="qd-brand qd-brand-text" href="<?php echo esc_url(home_url('/')); ?>"><span class="qd-brand-orb" aria-hidden="true">◉</span><span><strong>QuantDeus</strong><small>NEON HORIZON</small></span></a>
       <?php endif; ?>
     </div>
     <button class="qd-menu-toggle" type="button" aria-expanded="false" aria-controls="qd-primary-nav" data-menu-toggle>

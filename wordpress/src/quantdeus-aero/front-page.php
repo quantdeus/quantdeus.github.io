@@ -6,6 +6,13 @@ $projects=get_posts(['post_type'=>'qd_project','post_status'=>'publish','numberp
 $artifacts=get_posts(['post_type'=>'qd_artifact','post_status'=>'publish','numberposts'=>4]);
 $grade_a=get_posts(['post_type'=>'qd_result','post_status'=>'publish','numberposts'=>-1,'fields'=>'ids','meta_key'=>'qd_evidence_grade','meta_value'=>'A']);
 $news=get_posts(['post_type'=>'post','post_status'=>'publish','numberposts'=>3]);
+$visuals=[
+ 'hero'=>['url'=>qd_aero_visual_url('qd_visual_hero','https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG'),'alt'=>qd_aero_visual_alt('qd_visual_hero','Земля с Международной космической станции'),'credit'=>qd_aero_visual_credit('qd_visual_hero','Earth from ISS · NASA/JSC · ISS075-E-22382')],
+ 'aero'=>['url'=>qd_aero_visual_url('qd_visual_aero','https://upload.wikimedia.org/wikipedia/commons/d/db/Mirror_lake_with_green_hill.jpg'),'alt'=>qd_aero_visual_alt('qd_visual_aero','Озеро, зелёные холмы и голубое небо'),'credit'=>qd_aero_visual_credit('qd_visual_aero','Public domain · Wikimedia Commons')],
+ 'aurora'=>['url'=>qd_aero_visual_url('qd_visual_aurora','https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS023/ISS023-E-58455.JPG'),'alt'=>qd_aero_visual_alt('qd_visual_aurora','Полярное сияние над Землёй'),'credit'=>qd_aero_visual_credit('qd_visual_aurora','NASA/JSC · ISS023-E-58455')],
+ 'city'=>['url'=>qd_aero_visual_url('qd_visual_city','https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS016/ISS016-E-27586.JPG'),'alt'=>qd_aero_visual_alt('qd_visual_city','Ночной город Земли с орбиты'),'credit'=>qd_aero_visual_credit('qd_visual_city','NASA/JSC · ISS016-E-27586')],
+ 'ecology'=>['url'=>qd_aero_visual_url('qd_visual_ecology','https://upload.wikimedia.org/wikipedia/commons/1/11/Trees_on_hills_with_blue_sky_landscape_image.jpg'),'alt'=>qd_aero_visual_alt('qd_visual_ecology','Зелёные холмы и голубое небо'),'credit'=>qd_aero_visual_credit('qd_visual_ecology','Public domain · Wikimedia Commons')],
+];
 ?>
 <main class="qd-portal">
 <section class="qd-hero qd-portal-hero" id="holding"><div class="qd-shell qd-hero-grid">
@@ -14,7 +21,7 @@ $news=get_posts(['post_type'=>'post','post_status'=>'publish','numberposts'=>3])
 <p>Портал для исследований, доказательств, проектов, AI Fleet, сообщества и репликации полезных результатов — без превращения независимых узлов в подразделения центра.</p>
 <div class="qd-actions"><a class="qd-btn" href="<?php echo esc_url(home_url('/federation/')); ?>">Federation</a><a class="qd-btn alt" href="<?php echo esc_url(get_post_type_archive_link('qd_research')?:home_url('/research/')); ?>">Research</a></div>
 <p class="qd-motto">«Единство в цели. Свобода в путях. Доказательства в результатах.»</p></div>
-<figure class="qd-hero-visual"><img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG" alt="Земля с Международной космической станции" fetchpriority="high"><figcaption>Earth from ISS · NASA/JSC · ISS075-E-22382</figcaption></figure>
+<figure class="qd-hero-visual"><img src="<?php echo esc_url($visuals['hero']['url']); ?>" alt="<?php echo esc_attr($visuals['hero']['alt']); ?>" fetchpriority="high" decoding="async"><figcaption><?php echo esc_html($visuals['hero']['credit']); ?></figcaption></figure>
 </div></section>
 
 <section class="qd-section" id="state"><div class="qd-shell">
@@ -82,10 +89,10 @@ $news=get_posts(['post_type'=>'post','post_status'=>'publish','numberposts'=>3])
 <section class="qd-section qd-visuals" id="visuals"><div class="qd-shell">
 <div class="qd-section-head"><div><span class="qd-kicker">Cosmic Frutiger Aero · Day / Earth × Night / Horizon</span><h2>Реальные изображения вместо заглушек</h2></div><p>Attribution остаётся рядом с медиа.</p></div>
 <div class="qd-visual-grid">
-<figure class="qd-visual qd-visual-wide"><img src="https://upload.wikimedia.org/wikipedia/commons/d/db/Mirror_lake_with_green_hill.jpg" alt="Озеро, зелёные холмы и голубое небо" loading="lazy" decoding="async"><figcaption><strong>Earth / Frutiger Aero</strong><span>Public domain · Wikimedia Commons</span></figcaption></figure>
-<figure class="qd-visual"><img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS023/ISS023-E-58455.JPG" alt="Полярное сияние над Землёй" loading="lazy"><figcaption><strong>Aurora from ISS</strong><span>NASA/JSC · ISS023-E-58455</span></figcaption></figure>
-<figure class="qd-visual"><img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS016/ISS016-E-27586.JPG" alt="Ночной город Земли с орбиты" loading="lazy"><figcaption><strong>Earth at night</strong><span>NASA/JSC · ISS016-E-27586</span></figcaption></figure>
-<figure class="qd-visual qd-visual-wide"><img src="https://upload.wikimedia.org/wikipedia/commons/1/11/Trees_on_hills_with_blue_sky_landscape_image.jpg" alt="Зелёные холмы и голубое небо" loading="lazy" decoding="async"><figcaption><strong>Green Horizon</strong><span>Public domain · Wikimedia Commons</span></figcaption></figure>
+<figure class="qd-visual qd-visual-wide"><img src="<?php echo esc_url($visuals['aero']['url']); ?>" alt="<?php echo esc_attr($visuals['aero']['alt']); ?>" loading="lazy" decoding="async"><figcaption><strong>Earth / Frutiger Aero</strong><span><?php echo esc_html($visuals['aero']['credit']); ?></span></figcaption></figure>
+<figure class="qd-visual"><img src="<?php echo esc_url($visuals['aurora']['url']); ?>" alt="<?php echo esc_attr($visuals['aurora']['alt']); ?>" loading="lazy" decoding="async"><figcaption><strong>Aurora / Atmosphere</strong><span><?php echo esc_html($visuals['aurora']['credit']); ?></span></figcaption></figure>
+<figure class="qd-visual"><img src="<?php echo esc_url($visuals['city']['url']); ?>" alt="<?php echo esc_attr($visuals['city']['alt']); ?>" loading="lazy" decoding="async"><figcaption><strong>Earth at night</strong><span><?php echo esc_html($visuals['city']['credit']); ?></span></figcaption></figure>
+<figure class="qd-visual qd-visual-wide"><img src="<?php echo esc_url($visuals['ecology']['url']); ?>" alt="<?php echo esc_attr($visuals['ecology']['alt']); ?>" loading="lazy" decoding="async"><figcaption><strong>Green Horizon</strong><span><?php echo esc_html($visuals['ecology']['credit']); ?></span></figcaption></figure>
 </div></div></section>
 
 <section class="qd-section" id="news"><div class="qd-shell">
