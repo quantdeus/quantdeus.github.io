@@ -62,6 +62,8 @@ jobs:
           test -f wordpress/src/quantdeus-aero/footer.php
           test -f wordpress/src/quantdeus-aero/page-login.php
           test -f wordpress/src/quantdeus-aero/index.php
+          test -f wordpress/src/quantdeus-aero/archive.php
+          test -f wordpress/src/quantdeus-aero/single.php
           test -f wordpress/src/quantdeus-aero/app.js
           test -f wordpress/src/quantdeus-aero/logo.svg
           test -f wordpress/src/quantdeus-aero/aero-world.svg
@@ -162,6 +164,28 @@ jobs:
           }
           $forum=get_post_type_object('qd_forum_thread');
           if (!$forum || $forum->has_archive !== 'forum') { throw new Exception('Forum archive contract missing'); }
+          $portal_types=[
+              'qd_node'=>'federation/nodes',
+              'qd_research'=>'research',
+              'qd_project'=>'projects',
+              'qd_artifact'=>'knowledge/artifacts',
+              'qd_result'=>'results',
+          ];
+          foreach ($portal_types as $type=>$archive) {
+              $obj=get_post_type_object($type);
+              if (!$obj || $obj->has_archive !== $archive) { throw new Exception('Portal archive contract missing: '.$type); }
+          }
+          foreach (['qd_evidence_grade','qd_horizon','qd_pillar'] as $taxonomy) {
+              if (!taxonomy_exists($taxonomy)) { throw new Exception('Portal taxonomy missing: '.$taxonomy); }
+          }
+          $node_meta=get_registered_meta_keys('post','qd_node');
+          foreach (['qd_identity','qd_mission','qd_evidence','qd_artifacts','qd_metrics','qd_replication','qd_safety','qd_exit','qd_governance','qd_human_override'] as $key) {
+              if (!isset($node_meta[$key])) { throw new Exception('Federation Interface meta missing: '.$key); }
+          }
+          $research_meta=get_registered_meta_keys('post','qd_research');
+          foreach (['qd_fact','qd_evidence','qd_hypothesis','qd_unknown','qd_next_test','qd_falsifier','qd_evidence_grade'] as $key) {
+              if (!isset($research_meta[$key])) { throw new Exception('Research evidence meta missing: '.$key); }
+          }
           foreach (['qd_member','qd_agent','qd_moderator'] as $role) {
               if (!get_role($role)) { throw new Exception('Missing role: '.$role); }
           }
@@ -188,13 +212,24 @@ jobs:
           if (empty($locations['primary'])) { throw new Exception('Primary WordPress menu location missing'); }
           $menu=wp_get_nav_menu_object((int)$locations['primary']);
           $items=$menu ? wp_get_nav_menu_items($menu->term_id) : [];
-          if (!$menu || count($items)<7) { throw new Exception('Primary WordPress menu was not fully seeded'); }
-          $gallery_url=home_url('/#visuals');
-          $has_gallery=false;
-          foreach ($items as $item) {
-              if (untrailingslashit((string)$item->url)===untrailingslashit($gallery_url)) { $has_gallery=true; break; }
+          if (!$menu || count($items)<12) { throw new Exception('Primary WordPress portal menu was not fully seeded'); }
+          $required_menu_urls=[
+              home_url('/'),
+              get_post_type_archive_link('qd_node'),
+              get_post_type_archive_link('qd_research'),
+              get_post_type_archive_link('qd_project'),
+              get_post_type_archive_link('qd_artifact'),
+              home_url('/#fleet'),
+              home_url('/#services'),
+              home_url('/#media'),
+              home_url('/#manifesto'),
+          ];
+          $menu_urls=array_map(fn($item)=>untrailingslashit((string)$item->url),$items);
+          foreach ($required_menu_urls as $required_url) {
+              if (!$required_url || !in_array(untrailingslashit((string)$required_url),$menu_urls,true)) {
+                  throw new Exception('Primary portal menu URL missing: '.(string)$required_url);
+              }
           }
-          if (!$has_gallery) { throw new Exception('Gallery is missing from Primary WordPress menu'); }
 
           $dynamic_id=wp_insert_post([
               'post_type'=>'qd_service','post_status'=>'publish','post_name'=>'runtime-custom-service',
@@ -246,6 +281,8 @@ jobs:
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/footer.php',data:source('wordpress/src/quantdeus-aero/footer.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-login.php',data:source('wordpress/src/quantdeus-aero/page-login.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/index.php',data:source('wordpress/src/quantdeus-aero/index.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/archive.php',data:source('wordpress/src/quantdeus-aero/archive.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/single.php',data:source('wordpress/src/quantdeus-aero/single.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/app.js',data:source('wordpress/src/quantdeus-aero/app.js')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/logo.svg',data:source('wordpress/src/quantdeus-aero/logo.svg')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/aero-world.svg',data:source('wordpress/src/quantdeus-aero/aero-world.svg')},
@@ -263,4 +300,8 @@ jobs:
           grep -q 'Неоновый горизонт' wordpress/src/quantdeus-aero/front-page.php
           grep -q 'Ксения Чередникова' wordpress/src/quantdeus-aero/front-page.php
           grep -q 'Cosmic Frutiger Aero' wordpress/src/quantdeus-aero/front-page.php
+          grep -q 'Federation of Nodes' wordpress/src/quantdeus-aero/front-page.php
+          grep -q 'Evidence Before Narrative' wordpress/src/quantdeus-aero/front-page.php
+          grep -q 'Digital Fleet Operations' wordpress/src/quantdeus-aero/front-page.php
+          grep -q 'Federation Interface v1' wordpress/src/quantdeus-aero/single.php
           echo "QuantDeus WordPress platform smoke passed"
