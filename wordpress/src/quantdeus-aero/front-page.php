@@ -9,7 +9,7 @@ $news=get_posts(['post_type'=>'post','post_status'=>'publish','numberposts'=>3])
 ?>
 <main class="qd-portal">
 <section class="qd-hero qd-portal-hero" id="holding"><div class="qd-shell qd-hero-grid">
-<div class="qd-hero-copy"><div class="qd-kicker">QUANTDEUS // NEON HORIZON · v4 CURRENT CANON</div>
+<div class="qd-hero-copy"><div class="qd-kicker">QUANTDEUS // Неоновый горизонт · NEON HORIZON v4 CURRENT CANON</div>
 <h1>Операционная система Неонового Горизонта и Федерация автономных узлов.</h1>
 <p>Портал для исследований, доказательств, проектов, AI Fleet, сообщества и репликации полезных результатов — без превращения независимых узлов в подразделения центра.</p>
 <div class="qd-actions"><a class="qd-btn" href="<?php echo esc_url(home_url('/federation/')); ?>">Federation</a><a class="qd-btn alt" href="<?php echo esc_url(get_post_type_archive_link('qd_research')?:home_url('/research/')); ?>">Research</a></div>
