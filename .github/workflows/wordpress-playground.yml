@@ -43,7 +43,11 @@ jobs:
           test -f wordpress/src/quantdeus-aero/functions.php
           test -f wordpress/src/quantdeus-aero/front-page.php
           test -f wordpress/src/quantdeus-aero/index.php
+          test -f wordpress/src/quantdeus-aero/app.js
+          test -f wordpress/src/quantdeus-aero/archive-qd_forum_thread.php
+          test -f wordpress/src/quantdeus-aero/single-qd_forum_thread.php
           find wordpress/src -name '*.php' -print0 | xargs -0 -n1 php -l
+          node --check wordpress/src/quantdeus-aero/app.js
           ! grep -RniE 'hook\.[a-z0-9.-]*make\.com|api\.make\.com|MAKE_(TOKEN|API|WEBHOOK|SCENARIO|TEAM|ORG)|scenarioId[^A-Za-z0-9]' wordpress/src wordpress/blueprint.json || {
             echo "Active Make integration detected in canonical WordPress runtime"; exit 1;
           }
@@ -76,7 +80,7 @@ jobs:
           if (!class_exists('QD_Core')) { throw new Exception('QD_Core not active'); }
           do_action('rest_api_init');
           $routes=rest_get_server()->get_routes();
-          foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/inquiries','/quantdeus/v1/forum'] as $route) {
+          foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/inquiries','/quantdeus/v1/forum','/quantdeus/v1/telegram/miniapp','/quantdeus/v1/telegram/login'] as $route) {
               if (!isset($routes[$route])) { throw new Exception('Missing REST route: '.$route); }
           }
           $services=get_posts(['post_type'=>'qd_service','post_status'=>'publish','numberposts'=>20]);
@@ -84,6 +88,12 @@ jobs:
           foreach (['business-automation','ksenia-cherednikova-concert'] as $required) {
               if (!in_array($required,$ids,true)) { throw new Exception('Missing service: '.$required); }
           }
+          $forum=get_post_type_object('qd_forum_thread');
+          if (!$forum || $forum->has_archive !== 'forum') { throw new Exception('Forum archive contract missing'); }
+          foreach (['qd_member','qd_agent','qd_moderator'] as $role) {
+              if (!get_role($role)) { throw new Exception('Missing role: '.$role); }
+          }
+          if (!get_role('qd_agent')->has_cap('qd_agent_context')) { throw new Exception('Agent context capability missing'); }
           if (get_option('stylesheet') !== 'quantdeus-aero') { throw new Exception('QuantDeus Aero theme not active'); }
           echo "QUANTDEUS_WORDPRESS_RUNTIME_OK\\n";
           `;
@@ -100,6 +110,9 @@ jobs:
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/functions.php',data:source('wordpress/src/quantdeus-aero/functions.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/front-page.php',data:source('wordpress/src/quantdeus-aero/front-page.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/index.php',data:source('wordpress/src/quantdeus-aero/index.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/app.js',data:source('wordpress/src/quantdeus-aero/app.js')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/archive-qd_forum_thread.php',data:source('wordpress/src/quantdeus-aero/archive-qd_forum_thread.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/single-qd_forum_thread.php',data:source('wordpress/src/quantdeus-aero/single-qd_forum_thread.php')},
               {step:'activatePlugin',pluginPath:'quantdeus-core/quantdeus-core.php',pluginName:'QuantDeus Core'},
               {step:'activateTheme',themeFolderName:'quantdeus-aero'},
               options,seed,{step:'runPHP',code:assertion},login
