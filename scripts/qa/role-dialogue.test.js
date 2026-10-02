@@ -2,6 +2,7 @@
 const {test}=require('node:test'), assert=require('node:assert/strict');
 const {turnBudget,issueContext,digest,isEmhComment,skipDialogue}=require('../dialogue-state');
 const {reasonRole}=require('../openclaw-role-dialogue');
+const {parseDecision}=require('../seven-reasoning');
 const decision={summary:'Observed delay; provider and contract failures are alternatives.',findings:['No completed artifact observed'],next_step:'Verify one bounded run'};
 const valid={text:JSON.stringify(decision),runtime:'openclaw-agent-exec-no-tools',model:'model-a',assistantTurns:1};
 const args={profile:'sherlock',role:'Science Officer',context:{issue:{number:1}},protocol:'Use facts',repository:'quantdeus/quantdeus.github.io'};
@@ -32,6 +33,15 @@ test('dedupe uses latest role output and allows scheduled degraded recovery only
   if(previousForce===undefined) delete process.env.QUANTDEUS_DIALOGUE_FORCE_RETRY;
   else process.env.QUANTDEUS_DIALOGUE_FORCE_RETRY=previousForce;
   assert.equal(skipDialogue([...comments,{body:'<!-- qd-sherlock-digest:b -->'}],m,'issue_comment'),false);
+});
+test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
+  const line={...valid,text:'SUMMARY: Evidence includes "quoted" terms without JSON escaping.\nFINDING: One bounded fact remains testable.\nNEXT_STEP: Run one explicit retry.'};
+  const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>line}});
+  assert.equal(result.status,'LLM');
+  assert.match(result.summary,/quoted/);
+  const seven=parseDecision('ANALYSIS: Compare "A" and "B" using observed fields.\nDIRECTIVE: Prioritize the bounded blocker.\nACTION: Verify one issue.\nACTION 2: Record the result.');
+  assert.equal(seven.actions.length,2);
+  assert.match(seven.analysis,/observed fields/);
 });
 test('role dialogue verifies real assistant turn, model and no-tools runtime',async()=>{
   let calls=0;
