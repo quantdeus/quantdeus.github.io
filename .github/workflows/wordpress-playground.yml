@@ -42,6 +42,7 @@ jobs:
           test -f wordpress/src/quantdeus-aero/style.css
           test -f wordpress/src/quantdeus-aero/functions.php
           test -f wordpress/src/quantdeus-aero/front-page.php
+          test -f wordpress/src/quantdeus-aero/index.php
           find wordpress/src -name '*.php' -print0 | xargs -0 -n1 php -l
           ! grep -RniE 'hook\.[a-z0-9.-]*make\.com|api\.make\.com|MAKE_(TOKEN|API|WEBHOOK|SCENARIO|TEAM|ORG)|scenarioId[^A-Za-z0-9]' wordpress/src wordpress/blueprint.json || {
             echo "Active Make integration detected in canonical WordPress runtime"; exit 1;
@@ -82,6 +83,7 @@ jobs:
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/style.css',data:source('wordpress/src/quantdeus-aero/style.css')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/functions.php',data:source('wordpress/src/quantdeus-aero/functions.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/front-page.php',data:source('wordpress/src/quantdeus-aero/front-page.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/index.php',data:source('wordpress/src/quantdeus-aero/index.php')},
               {step:'activatePlugin',pluginPath:'quantdeus-core/quantdeus-core.php',pluginName:'QuantDeus Core'},
               {step:'activateTheme',themeFolderName:'quantdeus-aero'},
               options,runPHP,login
