@@ -6,18 +6,17 @@ const {turnBudget,turnEvidence} = require('./dialogue-state');
 function parseJson(text) {
   const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   try { return JSON.parse(raw); } catch (jsonError) {
-    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    const field = name => {
-      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
-      const line = lines.find(x => re.test(x));
-      return line ? line.match(re)[1].trim() : '';
-    };
-    const findings = lines.map(x => {
-      const m = x.match(/^FINDING(?:\s*\d+)?\s*:\s*(.+)/i);
-      return m ? m[1].trim() : '';
-    }).filter(Boolean);
-    const summary = field('SUMMARY');
-    const nextStep = field('NEXT(?:_|\\s*)STEP');
+    const marker = /(?:^|\s)(SUMMARY|FINDING(?:\s*\d+)?|NEXT(?:_|\s*)STEP)\s*:\s*/gi;
+    const hits = [];
+    let match;
+    while ((match = marker.exec(raw))) hits.push({label:match[1].toUpperCase(),start:match.index,valueStart:marker.lastIndex});
+    const values = hits.map((hit,index) => ({
+      label:hit.label,
+      value:raw.slice(hit.valueStart,index+1<hits.length?hits[index+1].start:raw.length).trim().replace(/^[;,\-\s]+|[;,\-\s]+$/g,'')
+    }));
+    const summary = values.find(x => x.label === 'SUMMARY')?.value || '';
+    const findings = values.filter(x => x.label.startsWith('FINDING')).map(x => x.value).filter(Boolean);
+    const nextStep = values.find(x => /^NEXT(?:_|\s*)STEP$/.test(x.label))?.value || '';
     if (summary && findings.length && nextStep) return {summary, findings, next_step: nextStep};
     jsonError.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
     throw jsonError;
