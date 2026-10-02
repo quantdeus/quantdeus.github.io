@@ -1,6 +1,11 @@
 import crypto from 'node:crypto';
 import { generateText } from 'ai';
 import { getVercelOidcToken } from '@vercel/oidc';
+import {
+  issueTelegramBotAssertion,
+  telegramReturnUrl,
+  verifyTelegramLoginRequest
+} from '../../lib/telegram-bot-auth.js';
 
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -842,6 +847,21 @@ async function homunculusReply(message, retryUpdate = null) {
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${answer}`.slice(0, 3900);
 }
 
+function webhookLoginReply(res, message, loginUrl) {
+  return res.status(200).json({
+    method: 'sendMessage',
+    chat_id: message.chat.id,
+    text: '✅ QuantDeus Store Bot подтвердил Telegram. Нажми кнопку, чтобы вернуться на сайт.',
+    disable_web_page_preview: true,
+    reply_parameters: { message_id: message.message_id },
+    reply_markup: {
+      inline_keyboard: [[
+        { text: '🚀 Вернуться в QuantDeus', url: loginUrl }
+      ]]
+    }
+  });
+}
+
 function webhookReply(res, message, text) {
   return res.status(200).json({
     method: 'sendMessage',
@@ -939,6 +959,25 @@ export default async function handler(req, res) {
   const message = update.message;
   if (!message || message.from?.is_bot || !String(message.text || '').trim()) {
     return res.status(200).json({ ok: true, status: 'ignored_non_text_or_bot_update', update_id: update.update_id });
+  }
+
+  const rawText = String(message.text || '').trim();
+  const loginMatch = rawText.match(/^\/start(?:@[A-Za-z0-9_]+)?\s+(qdl_[A-Za-z0-9_-]+)$/i);
+  if (loginMatch) {
+    if (String(message.chat?.type || '') !== 'private') {
+      return webhookReply(res, message, '🔐 Вход через QuantDeus Store Bot работает только в личном чате с ботом.');
+    }
+    try {
+      verifyTelegramLoginRequest(loginMatch[1]);
+      const assertion = issueTelegramBotAssertion(message.from);
+      const loginUrl = telegramReturnUrl(assertion);
+      console.info('[telegram-bot-auth] status=approved user_id=' + String(message.from?.id || 'unknown'));
+      return webhookLoginReply(res, message, loginUrl);
+    } catch (error) {
+      const code = String(error?.message || 'telegram_bot_login_failed');
+      console.warn('[telegram-bot-auth] status=rejected code=' + code);
+      return webhookReply(res, message, '⚠️ Ссылка входа устарела или недействительна. Вернись на QuantDeus и нажми «Войти через Telegram» ещё раз.');
+    }
   }
 
   try {
