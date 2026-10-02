@@ -58,10 +58,6 @@
     {
       "step": "runPHP",
       "code": "<?php require_once '/wordpress/wp-load.php'; if (class_exists('QD_Core')) { QD_Core::activate(); } flush_rewrite_rules(false);"
-    },
-    {
-      "step": "login",
-      "username": "admin"
     }
   ]
 }

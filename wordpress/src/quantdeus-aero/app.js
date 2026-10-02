@@ -1,7 +1,7 @@
 (()=> {
   const cfg = window.QuantDeus || {};
   let nonce = cfg.nonce || '';
-  let currentUser = cfg.loggedIn ? {name: cfg.userName || 'Пользователь'} : null;
+  let currentUser = cfg.loggedIn ? {name: cfg.userName || 'Пользователь', role: cfg.userRole || 'qd_member', provider: cfg.authProvider || 'wordpress'} : null;
 
   const qs = (s, root=document) => root.querySelector(s);
   const qsa = (s, root=document) => [...root.querySelectorAll(s)];
@@ -9,7 +9,9 @@
   function setAuth(user) {
     currentUser = user || null;
     qsa('[data-auth-state]').forEach(el => {
-      el.textContent = currentUser ? ('Telegram · ' + (currentUser.name || 'авторизован')) : 'Гость · можно отправлять заявки без регистрации';
+      const provider = currentUser?.provider === 'github' ? 'GitHub' : (currentUser ? 'Telegram' : '');
+      const role = currentUser?.role ? (' · ' + currentUser.role) : '';
+      el.textContent = currentUser ? (provider + ' · ' + (currentUser.name || 'авторизован') + role) : 'Гость · можно отправлять заявки без регистрации';
     });
     qsa('[data-auth-required]').forEach(el => { el.hidden = !currentUser; });
     qsa('[data-guest-only]').forEach(el => { el.hidden = !!currentUser; });
@@ -69,6 +71,31 @@
       qsa('[data-auth-state]').forEach(el => el.textContent = 'Telegram Mini App: ' + err.message);
       return false;
     }
+  }
+
+  function bindGithubAdmin() {
+    const buttons = qsa('[data-github-admin-login]');
+    if (!cfg.githubConfigured || !cfg.githubStartUrl) {
+      buttons.forEach(button => { button.hidden = true; });
+      return;
+    }
+    buttons.forEach(button => {
+      button.hidden = false;
+      button.addEventListener('click', async () => {
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = 'GitHub…';
+        try {
+          const body = await json(cfg.githubStartUrl, {method:'POST', body:'{}'});
+          if (!body.authorize_url) throw new Error('GitHub authorize URL missing');
+          location.href = body.authorize_url;
+        } catch (err) {
+          button.disabled = false;
+          button.textContent = original;
+          qsa('[data-auth-state]').forEach(el => el.textContent = 'GitHub Admin: ' + err.message);
+        }
+      });
+    });
   }
 
   function bindInquiry() {
@@ -136,6 +163,7 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     setAuth(currentUser);
+    bindGithubAdmin();
     bindInquiry();
     bindForum();
     const mini = await miniAppLogin();
