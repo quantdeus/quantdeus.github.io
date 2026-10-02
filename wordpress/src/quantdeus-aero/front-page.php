@@ -6,7 +6,7 @@
     <h1>Неоновый горизонт</h1>
     <p>Исследования, автоматизация, продукты, медиа и сообщество в едином WordPress-контуре с человеческим контролем и проверяемыми результатами.</p>
     <div class="qd-actions"><a class="qd-btn" href="#services">Оставить заявку</a><a class="qd-btn alt" href="#community">Сообщество</a></div>
-    <div class="qd-authline"><span data-auth-state>Гость · можно отправлять заявки без регистрации</span><div data-telegram-widget data-guest-only></div></div>
+    <div class="qd-authline"><span data-auth-state>Гость · можно отправлять заявки без регистрации</span><a class="qd-btn alt qd-auth-cta" href="<?php echo esc_url(home_url('/login/')); ?>" data-guest-only>Войти</a></div>
   </div>
   <figure class="qd-hero-visual">
     <img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG" alt="Земля с Международной космической станции" fetchpriority="high">
@@ -47,7 +47,7 @@
     <article class="qd-role"><strong>02</strong><h3>Модератор</h3><p>Модерация сообщества без доступа к системной админке.</p></article>
     <article class="qd-role"><strong>03</strong><h3>Админ</h3><p>Только GitHub repo permission = admin.</p></article>
   </div>
-  <div class="qd-community-actions"><a class="qd-btn alt" href="<?php echo esc_url(home_url('/forum/')); ?>">Открыть форум</a><button class="qd-btn alt" type="button" data-github-admin-login hidden>Войти как администратор через GitHub</button></div>
+  <div class="qd-community-actions"><a class="qd-btn alt" href="<?php echo esc_url(home_url('/forum/')); ?>">Открыть форум</a><a class="qd-btn alt" href="<?php echo esc_url(home_url('/login/')); ?>">Войти</a></div>
 </div></section>
 </main>
 <?php get_footer(); ?>
