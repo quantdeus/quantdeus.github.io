@@ -5,7 +5,9 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-mirror';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
-const ALLOWED_EVENTS = new Set(['workflow_run', 'workflow_dispatch']);
+const ALLOWED_EVENTS = new Set(['workflow_dispatch']);
+const WORKFLOW = 'mirror-swarm-repair.yml';
+const ACTIVE_RUN_STATES = new Set(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
 const MODEL = process.env.QD_MIRROR_MODEL || 'openai/gpt-5.6-sol';
 const MAX_FILES = 2;
 const MAX_FILE_BYTES = 24000;
@@ -76,6 +78,68 @@ async function github(token, path, options = {}) {
     throw error;
   }
   return data;
+}
+
+function cronAuthorized(req) {
+  const secret = String(process.env.CRON_SECRET || '');
+  const auth = String(req.headers?.authorization || '');
+  return Boolean(secret) && auth === 'Bearer ' + secret;
+}
+
+async function handleCronWake(req, res) {
+  if (!cronAuthorized(req)) {
+    return res.status(401).json({ ok: false, error: 'mirror_wake_auth_failed' });
+  }
+
+  const token = String(process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
+  if (!token) {
+    return res.status(503).json({ ok: false, error: 'mirror_wake_github_token_missing' });
+  }
+
+  try {
+    const runs = await github(token, '/actions/workflows/' + WORKFLOW + '/runs?branch=main&per_page=10');
+    const active = (runs?.workflow_runs || []).find(run =>
+      ACTIVE_RUN_STATES.has(String(run.status || ''))
+    );
+
+    if (active) {
+      return res.status(200).json({
+        ok: true,
+        action: 'skip_active',
+        workflow: WORKFLOW,
+        active_run_id: active.id,
+        active_status: active.status
+      });
+    }
+
+    await github(token, '/actions/workflows/' + WORKFLOW + '/dispatches', {
+      method: 'POST',
+      body: JSON.stringify({
+        ref: 'main',
+        inputs: {
+          mode: 'repair',
+          wake_source: 'vercel-cron'
+        }
+      })
+    });
+
+    return res.status(202).json({
+      ok: true,
+      action: 'workflow_dispatch',
+      workflow: WORKFLOW,
+      ref: 'main',
+      mode: 'repair',
+      wake_source: 'vercel-cron',
+      schedule: String(req.headers?.['x-vercel-cron-schedule'] || '')
+    });
+  } catch (error) {
+    const status = Number(error?.status) || 500;
+    return res.status(status >= 400 && status < 600 ? status : 500).json({
+      ok: false,
+      error: 'mirror_wake_failed',
+      detail: String(error?.message || error).slice(0, 800)
+    });
+  }
 }
 
 function parseJson(text) {
@@ -252,6 +316,7 @@ async function createDraftRepairPr(token, files, diagnosis, critique, qa, fp) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'GET') return handleCronWake(req, res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
   try {
