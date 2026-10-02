@@ -1079,8 +1079,27 @@ final class QD_Core {
     }
 
     public static function schema(): void {
-        if (!is_front_page()) return;
-        echo '<script type="application/ld+json">'.wp_json_encode(['@context'=>'https://schema.org','@type'=>'Organization','name'=>'QuantDeus','url'=>home_url('/')],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).'</script>';
+        $graph=[];
+        if (is_front_page()) {
+            $graph=[
+                ['@type'=>'Organization','@id'=>home_url('/#organization'),'name'=>'QuantDeus','url'=>home_url('/')],
+                ['@type'=>'WebSite','@id'=>home_url('/#website'),'name'=>'QuantDeus // Neon Horizon','url'=>home_url('/'),'publisher'=>['@id'=>home_url('/#organization')]],
+            ];
+        } elseif (is_singular('qd_research')) {
+            $id=get_queried_object_id();
+            $graph=[[
+                '@type'=>'ResearchProject','name'=>get_the_title($id),'url'=>get_permalink($id),
+                'description'=>wp_strip_all_tags(get_the_excerpt($id) ?: get_post_field('post_content',$id)),
+            ]];
+        } elseif (is_singular('qd_node')) {
+            $id=get_queried_object_id();
+            $graph=[[
+                '@type'=>'Project','name'=>get_the_title($id),'url'=>get_permalink($id),
+                'description'=>wp_strip_all_tags(get_post_meta($id,'qd_mission',true) ?: get_post_field('post_content',$id)),
+            ]];
+        }
+        if (!$graph) return;
+        echo '<script type="application/ld+json">'.wp_json_encode(['@context'=>'https://schema.org','@graph'=>$graph],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).'</script>';
     }
 }
 register_activation_hook(__FILE__,['QD_Core','activate']);
