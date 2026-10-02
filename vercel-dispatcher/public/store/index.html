@@ -51,7 +51,7 @@
         try{
           const data=await request(API,{method:"POST",body:JSON.stringify({action:"create",product_id:product.id,note:String(form.get("note")||""),contact:String(form.get("contact")||""),website:String(form.get("website")||"")})});
           if(data.needs_user_send&&data.telegram_url){showTelegramFallback(data,product);return}
-          showOrder(data.order,data.payment);
+          showOrder(data.order,data.payment,data.delivery);
         }catch(err){
           const message=err.message==="contact_required"?"Укажи Telegram, телефон или email для ответа.":err.message==="inquiry_rate_limited"?"Слишком много заявок за короткое время. Попробуй немного позже.":err.message;
           notice("Заявка не отправлена: "+message,"qd-error")
@@ -60,10 +60,13 @@
     }
 
     function showTelegramFallback(data,product){
-      $("modalTitle").textContent="Заявка подготовлена";
+      $("modalTitle").textContent="Нужно подтвердить отправку";
       const url=String(data.telegram_url||"");
-      $("checkoutBody").innerHTML=`<div class="qd-notice qd-success">Заявка сформирована без регистрации. Остался один шаг: открыть чат QuantDeus и нажать «Отправить».</div><p><b>${esc(product.name)}</b><br>Номер: <code>${esc(data.order?.id||"")}</code></p><div class="qd-toolbar"><a class="qd-button" id="telegramSend" href="${esc(url)}">✈️ Отправить в Telegram</a><button class="qd-button secondary" id="copyInquiry" type="button">Скопировать ссылку</button></div><div class="qd-notice">Это резервный маршрут на случай, если приватное серверное хранилище временно не подключено.</div>`;
+      try{localStorage.setItem("qd_pending_inquiry",JSON.stringify({url,order:data.order,product:{id:product.id,name:product.name},saved_at:new Date().toISOString()}))}catch{}
+      $("checkoutBody").innerHTML=`<div class="qd-notice qd-error"><b>Заявка ещё НЕ доставлена.</b> Серверная доставка временно недоступна. Открой Telegram и нажми «Отправить» — только после этого заявка попадёт команде QuantDeus.</div><p><b>${esc(product.name)}</b><br>Номер: <code>${esc(data.order?.id||"")}</code></p><div class="qd-toolbar"><a class="qd-button" id="telegramSend" href="${esc(url)}" target="_blank" rel="noopener">✈️ Открыть Telegram и отправить</a><button class="qd-button secondary" id="copyInquiry" type="button">Скопировать ссылку</button></div><div class="qd-notice">Черновик сохранён в этом браузере, поэтому текст заявки не потеряется при закрытии окна.</div>`;
+      $("telegramSend")?.addEventListener("click",()=>notice("Telegram открыт. Заявка считается отправленной только после нажатия «Отправить» в чате.",""));
       $("copyInquiry")?.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(url);notice("Ссылка на заявку скопирована.","qd-success")}catch{}});
+      try{window.open(url,"_blank","noopener")}catch{}
     }
 
     async function createFixedOrder(productId){
@@ -72,11 +75,15 @@
       catch(e){notice("Заказ не создан: "+e.message,"qd-error")}
     }
 
-    function showOrder(order,payment){
-      const inquiry=order.pricing_mode==="quote"||order.status==="inquiry_created";
+    function showOrder(order,payment,delivery="github_private"){
+      const inquiry=order.pricing_mode==="quote"||order.status==="inquiry_created"||order.status==="inquiry_forwarded";
       $("modalTitle").textContent=(inquiry?"Заявка ":"Заказ ")+order.id;
       if(inquiry){
-        $("checkoutBody").innerHTML=`<p><b>${esc(order.product_name)}</b></p><p>Номер заявки: <code>${esc(order.id)}</code><br>Статус: <b>Заявка принята</b></p><div class="qd-notice qd-success">Заявка сохранена. Команда QuantDeus свяжется по указанному контакту${order.anonymous?"":" или через Telegram"} для уточнения задачи и стоимости.</div><p>${esc(order.request_note||"")}</p><div id="orderNotice" class="qd-notice" role="status">Оплата на этом этапе не требуется.</div>`;
+        const delivered=delivery==="telegram_server"||delivery==="generic_webhook";
+        const statusText=delivered?"Заявка доставлена":delivery==="github_private"?"Заявка сохранена":"Заявка принята";
+        const successText=delivered?"Заявка отправлена владельцу QuantDeus.":delivery==="github_private"?"Заявка сохранена в приватном inbox QuantDeus.":"Заявка принята сервером.";
+        try{localStorage.removeItem("qd_pending_inquiry")}catch{}
+        $("checkoutBody").innerHTML=`<p><b>${esc(order.product_name)}</b></p><p>Номер заявки: <code>${esc(order.id)}</code><br>Статус: <b>${statusText}</b></p><div class="qd-notice qd-success">${successText} Команда QuantDeus свяжется по указанному контакту${order.anonymous?"":" или через Telegram"} для уточнения задачи и стоимости.</div><p>${esc(order.request_note||"")}</p><div id="orderNotice" class="qd-notice" role="status">Оплата на этом этапе не требуется.</div>`;
       }else{
         const pay=payment?`<div class="qd-sbp"><b>Оплата по СБП</b><p>Получатель: ${esc(payment.recipient)}<br>Банк: ${esc(payment.bank)}<br>Телефон: <span id="phone">${esc(payment.phone)}</span><br>Сумма: <span id="amount">${Number(order.amount).toLocaleString("ru-RU")} ₽</span></p><div class="qd-toolbar"><button class="qd-button secondary" id="copyPhone" type="button">Скопировать телефон</button><button class="qd-button secondary" id="copyAmount" type="button">Скопировать сумму</button></div></div>`:`<div class="qd-notice qd-error">СБП-реквизиты не настроены. Заказ сохранён, но платить пока не нужно.</div>`;
         $("checkoutBody").innerHTML=`<p><b>${esc(order.product_name)}</b></p><p>Номер заказа: <code>${esc(order.id)}</code><br>Статус: <b>${esc(order.status)}</b></p>${pay}<button class="qd-button" id="paidBtn" ${payment&&order.status==="created"?"":"disabled"} type="button">Я оплатил</button>${order.status==="created"?`<button class="qd-button secondary" id="cancelBtn" type="button">Отменить заказ</button>`:""}<div id="orderNotice" class="qd-notice" role="status">Кнопка изменит статус на «ожидает проверки». Она не подтверждает поступление денег.</div>`;

@@ -208,6 +208,47 @@ test("anonymous inquiry auto-delivers to the first owner Telegram ID when no exp
   assert.match(sent.text, /Автоматизация бизнеса/);
 });
 
+
+test("anonymous inquiry supports legacy Telegram token and admin ID aliases", async () => {
+  delete process.env.QUANTDEUS_GITHUB_TOKEN;
+  delete process.env.TELEGRAM_BOT_TOKEN;
+  delete process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
+  delete process.env.TELEGRAM;
+  process.env.TELEGRAM_TOKEN = "legacy-delivery-token";
+  delete process.env.TELEGRAM_CHAT_ID;
+  delete process.env.QUANTDEUS_TELEGRAM_CHAT_ID;
+  delete process.env.TELEGRAM_ADMIN_CHAT_ID;
+  delete process.env.QUANTDEUS_OWNER_TELEGRAM_IDS;
+  process.env.TELEGRAM_ADMIN_USER_IDS = "7001,7002";
+  delete process.env.QUANTDEUS_GENERIC_WEBHOOK;
+  let sent = null;
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).startsWith("https://api.telegram.org/botlegacy-delivery-token/sendMessage")) {
+      sent = JSON.parse(options.body);
+      return Response.json({ ok: true, result: { message_id: 2 } });
+    }
+    return Response.json({ message: "Not Found" }, { status: 404 });
+  };
+  const created = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.14", "user-agent": "portal-legacy-delivery-test" },
+    body: {
+      action: "create",
+      product_id: "business-automation",
+      note: "Проверяем совместимость с уже существующей Telegram-конфигурацией.",
+      contact: "@legacy_delivery_client",
+      website: ""
+    }
+  }, created);
+  assert.equal(created.statusCode, 202, JSON.stringify(created.body));
+  assert.equal(created.body.delivery, "telegram_server");
+  assert.equal(created.body.order.status, "inquiry_forwarded");
+  assert.equal(sent.chat_id, "7001");
+  delete process.env.TELEGRAM_TOKEN;
+  delete process.env.TELEGRAM_ADMIN_USER_IDS;
+});
+
 test("anonymous quote inquiry requires a reply contact", async () => {
   mockFetch();
   const created = resMock();
