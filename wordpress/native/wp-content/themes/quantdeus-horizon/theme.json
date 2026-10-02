@@ -1,0 +1,6 @@
+{
+  "$schema":"https://schemas.wp.org/trunk/theme.json","version":3,
+  "settings":{"appearanceTools":true,"layout":{"contentSize":"760px","wideSize":"1320px"},"color":{"defaultPalette":false,"palette":[{"slug":"ink","name":"Ink","color":"#082f3d"},{"slug":"deep","name":"Deep Space","color":"#031d2a"},{"slug":"sky","name":"Sky","color":"#a7efff"},{"slug":"aqua","name":"Aqua","color":"#28cfe6"},{"slug":"green","name":"Eco Green","color":"#65da91"},{"slug":"violet","name":"Horizon Violet","color":"#8f82ff"},{"slug":"white","name":"White","color":"#ffffff"}]},"typography":{"fluid":true,"fontFamilies":[{"slug":"humanist","name":"QuantDeus Humanist","fontFamily":"Inter, Aptos, \"Segoe UI\", system-ui, -apple-system, sans-serif"}]},"spacing":{"units":["px","rem","vw","vh","%"],"blockGap":true},"border":{"radius":true,"width":true}},
+  "styles":{"typography":{"fontFamily":"var(--wp--preset--font-family--humanist)","lineHeight":"1.55"},"color":{"text":"var(--wp--preset--color--ink)"},"elements":{"heading":{"typography":{"fontWeight":"800","lineHeight":"1.05","letterSpacing":"-0.025em"}},"link":{"typography":{"textDecoration":"none"}},"button":{"border":{"radius":"999px"},"typography":{"fontWeight":"800"}}}},
+  "templateParts":[{"name":"header","title":"QuantDeus Header","area":"header"},{"name":"footer","title":"QuantDeus Footer","area":"footer"}]
+}
