@@ -23,6 +23,31 @@
   </div>
 </div></section>
 
+<section class="qd-section qd-visuals" id="visuals"><div class="qd-shell">
+  <div class="qd-section-head">
+    <div><span class="qd-kicker">Cosmic Frutiger Aero</span><h2>Земля, вода и орбита</h2></div>
+    <p>Живой визуальный слой QuantDeus: зелёные холмы, стекло, пузырьки, вода и реальные виды Земли из космоса.</p>
+  </div>
+  <div class="qd-visual-grid">
+    <figure class="qd-visual qd-visual-wide qd-visual-aero">
+      <img src="<?php echo esc_url(get_template_directory_uri().'/aero-world.svg'); ?>" alt="Frutiger Aero мир QuantDeus: зелёные холмы, вода, пузырьки и футуристический город" loading="lazy">
+      <figcaption><strong>QuantDeus Aero World</strong><span>Собственная иллюстрация темы</span></figcaption>
+    </figure>
+    <figure class="qd-visual">
+      <img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS023/ISS023-E-58455.JPG" alt="Полярное сияние над Землёй с Международной космической станции" loading="lazy">
+      <figcaption><strong>Aurora from ISS</strong><span>NASA/JSC · ISS023-E-58455</span></figcaption>
+    </figure>
+    <figure class="qd-visual">
+      <img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS016/ISS016-E-27586.JPG" alt="Ночной город Земли с Международной космической станции" loading="lazy">
+      <figcaption><strong>Earth at night</strong><span>NASA/JSC · ISS016-E-27586</span></figcaption>
+    </figure>
+    <figure class="qd-visual qd-visual-wide qd-visual-space">
+      <img src="<?php echo esc_url(get_template_directory_uri().'/orbital-garden.svg'); ?>" alt="Космический сад QuantDeus с Землёй, астронавтом и Frutiger Aero элементами" loading="lazy">
+      <figcaption><strong>Orbital Garden</strong><span>QuantDeus · Frutiger Aero × space</span></figcaption>
+    </figure>
+  </div>
+</div></section>
+
 <section class="qd-section qd-services" id="services"><div class="qd-shell">
   <div class="qd-section-head"><div><span class="qd-kicker">Quote-only</span><h2>Услуги</h2></div><p>Можно оставить заявку без регистрации. Аккаунт нужен только для функций сообщества.</p></div>
   <div class="qd-grid"><?php

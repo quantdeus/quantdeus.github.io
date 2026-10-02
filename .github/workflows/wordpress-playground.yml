@@ -54,10 +54,18 @@ jobs:
           test -f wordpress/src/quantdeus-aero/index.php
           test -f wordpress/src/quantdeus-aero/app.js
           test -f wordpress/src/quantdeus-aero/logo.svg
+          test -f wordpress/src/quantdeus-aero/aero-world.svg
+          test -f wordpress/src/quantdeus-aero/orbital-garden.svg
           test -f wordpress/src/quantdeus-aero/archive-qd_forum_thread.php
           test -f wordpress/src/quantdeus-aero/single-qd_forum_thread.php
           find wordpress/src -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check wordpress/src/quantdeus-aero/app.js
+          grep -q "qd:telegram-login" index.html
+          grep -q "Telegram.Login.auth" index.html
+          grep -q "https://quantdeus.vercel.app/api/quantdeus/auth" index.html
+          grep -q "telegramBrokerUrl" wordpress/src/quantdeus-aero/app.js
+          grep -q "data-telegram-login" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "telegram_broker_login" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "wp_nav_menu" wordpress/src/quantdeus-aero/header.php
           grep -q "theme_location'=>'primary'" wordpress/src/quantdeus-aero/header.php
           grep -q "register_nav_menus" wordpress/src/quantdeus-aero/functions.php
@@ -105,7 +113,7 @@ jobs:
           if (!class_exists('QD_Core')) { throw new Exception('QD_Core not active'); }
           do_action('rest_api_init');
           $routes=rest_get_server()->get_routes();
-          foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/inquiries','/quantdeus/v1/forum','/quantdeus/v1/telegram/miniapp','/quantdeus/v1/telegram/login','/quantdeus/v1/github/config','/quantdeus/v1/github/start','/quantdeus/v1/github/callback'] as $route) {
+          foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/inquiries','/quantdeus/v1/forum','/quantdeus/v1/telegram/miniapp','/quantdeus/v1/telegram/login','/quantdeus/v1/telegram/broker','/quantdeus/v1/github/config','/quantdeus/v1/github/start','/quantdeus/v1/github/callback'] as $route) {
               if (!isset($routes[$route])) { throw new Exception('Missing REST route: '.$route); }
           }
           $services=get_posts(['post_type'=>'qd_service','post_status'=>'publish','numberposts'=>20]);
@@ -129,13 +137,18 @@ jobs:
           if (empty($locations['primary'])) { throw new Exception('Primary WordPress menu location missing'); }
           $menu=wp_get_nav_menu_object((int)$locations['primary']);
           $items=$menu ? wp_get_nav_menu_items($menu->term_id) : [];
-          if (!$menu || count($items)<5) { throw new Exception('Primary WordPress menu was not seeded'); }
+          if (!$menu || count($items)<6) { throw new Exception('Primary WordPress menu was not seeded'); }
+          $broker=wp_remote_get('https://quantdeus.vercel.app/api/quantdeus/auth?health=1',['timeout'=>15]);
+          if (is_wp_error($broker) || wp_remote_retrieve_response_code($broker)!==200) { throw new Exception('Telegram broker health unavailable'); }
+          $broker_body=json_decode((string)wp_remote_retrieve_body($broker),true);
+          if (empty($broker_body['ok']) || empty($broker_body['configured']) || empty($broker_body['client_id'])) { throw new Exception('Telegram broker health contract invalid'); }
           echo "QUANTDEUS_WORDPRESS_RUNTIME_OK\\n";
           `;
           const b={
             $schema:canonical.$schema,
             landingPage:'/',
             preferredVersions:canonical.preferredVersions,
+            features:canonical.features,
             steps:[
               config,
               {step:'mkdir',path:'/wordpress/wp-content/plugins/quantdeus-core'},
@@ -150,6 +163,8 @@ jobs:
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/index.php',data:source('wordpress/src/quantdeus-aero/index.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/app.js',data:source('wordpress/src/quantdeus-aero/app.js')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/logo.svg',data:source('wordpress/src/quantdeus-aero/logo.svg')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/aero-world.svg',data:source('wordpress/src/quantdeus-aero/aero-world.svg')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/orbital-garden.svg',data:source('wordpress/src/quantdeus-aero/orbital-garden.svg')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/archive-qd_forum_thread.php',data:source('wordpress/src/quantdeus-aero/archive-qd_forum_thread.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/single-qd_forum_thread.php',data:source('wordpress/src/quantdeus-aero/single-qd_forum_thread.php')},
               {step:'activatePlugin',pluginPath:'quantdeus-core/quantdeus-core.php',pluginName:'QuantDeus Core'},
@@ -162,4 +177,5 @@ jobs:
           npx -y @wp-playground/cli@latest run-blueprint --blueprint=/tmp/quantdeus-wordpress-blueprint.json
           grep -q 'Неоновый горизонт' wordpress/src/quantdeus-aero/front-page.php
           grep -q 'Ксения Чередникова' wordpress/src/quantdeus-aero/front-page.php
+          grep -q 'Cosmic Frutiger Aero' wordpress/src/quantdeus-aero/front-page.php
           echo "QuantDeus WordPress platform smoke passed"

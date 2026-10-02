@@ -25,6 +25,9 @@ add_action('wp_enqueue_scripts', function(){
         'forumUrl' => rest_url('quantdeus/v1/forum'),
         'telegramMiniappUrl' => rest_url('quantdeus/v1/telegram/miniapp'),
         'telegramLoginUrl' => rest_url('quantdeus/v1/telegram/login'),
+        'telegramBrokerUrl' => rest_url('quantdeus/v1/telegram/broker'),
+        'telegramClientId' => defined('QD_TELEGRAM_CLIENT_ID') ? (string)QD_TELEGRAM_CLIENT_ID : '8122160274',
+        'canonicalOrigin' => 'https://quantdeus.github.io',
         'githubStartUrl' => rest_url('quantdeus/v1/github/start'),
         'githubConfigured' => defined('QD_GITHUB_CLIENT_ID') && defined('QD_GITHUB_CLIENT_SECRET') && trim((string)QD_GITHUB_CLIENT_ID)!=='' && trim((string)QD_GITHUB_CLIENT_SECRET)!=='',
         'loginUrl' => home_url('/login/'),
@@ -56,6 +59,7 @@ function qd_aero_primary_menu_fallback(array $args=[]): void {
     $items=[
         ['Холдинг',home_url('/#holding')],
         ['Направления',home_url('/#directions')],
+        ['Галерея',home_url('/#visuals')],
         ['Услуги',home_url('/#services')],
         ['Ксения',home_url('/#ksenia')],
         ['Форум',home_url('/forum/')],

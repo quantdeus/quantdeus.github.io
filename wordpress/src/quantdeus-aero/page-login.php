@@ -46,8 +46,8 @@ $provider=is_user_logged_in() && get_user_meta(get_current_user_id(),'qd_github_
             <span class="qd-tag">Обычный пользователь</span>
             <h2>Войти через Telegram</h2>
             <p>Для форума, сообщества и пользовательского профиля. После проверки Telegram WordPress создаёт или открывает аккаунт с ролью <strong>Пользователь</strong>.</p>
-            <div class="qd-login-widget" data-telegram-widget></div>
-            <div class="qd-login-status" data-auth-state>Telegram · ожидает входа</div>
+            <button class="qd-btn qd-telegram-login" type="button" data-telegram-login>Войти через Telegram</button>
+            <div class="qd-login-status" data-telegram-status>Telegram · работает на мобильном и ПК через защищённый OIDC bridge</div>
           </article>
 
           <article class="qd-login-card qd-login-github">
