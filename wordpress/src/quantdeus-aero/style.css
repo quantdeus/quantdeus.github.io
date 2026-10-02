@@ -1,7 +1,7 @@
 /*
 Theme Name: QuantDeus Aero
 Description: Cosmic Frutiger Aero theme for the QuantDeus holding.
-Version: 2.0.0
+Version: 4.1.0
 Text Domain: quantdeus-aero
 */
 :root{
@@ -157,3 +157,42 @@ html[data-qd-theme="night"] .qd-breadcrumb a,html[data-qd-theme="night"] .qd-int
 .qd-menu li{position:relative}.qd-menu .sub-menu{display:none;position:absolute;z-index:50;top:calc(100% + 8px);left:0;min-width:230px;margin:0;padding:8px;list-style:none;border:1px solid var(--line);border-radius:18px;background:var(--glass-strong);box-shadow:var(--shadow);backdrop-filter:blur(22px)}
 .qd-menu .sub-menu li{width:100%}.qd-menu .sub-menu a{display:block;width:100%;white-space:nowrap}.qd-menu li:hover>.sub-menu,.qd-menu li:focus-within>.sub-menu{display:block}
 @media(max-width:1050px){.qd-menu .sub-menu{position:static;display:block;min-width:0;margin:.25rem 0 .4rem .75rem;padding:.25rem 0 .25rem .75rem;border:0;border-left:2px solid var(--line);border-radius:0;background:transparent;box-shadow:none}.qd-menu .sub-menu a{white-space:normal}}
+
+
+/* QuantDeus native WordPress portal hardening — v4.1 */
+.qd-nav{isolation:isolate;overflow:visible}
+.qd-nav:before{content:"";position:absolute;inset:0;z-index:-2;background-image:linear-gradient(90deg,rgba(238,253,255,.94),rgba(238,253,255,.82) 48%,rgba(238,253,255,.92)),var(--qd-header-image);background-size:cover;background-position:center 46%;opacity:.92}
+.qd-nav:after{content:"";position:absolute;inset:auto 0 0;height:1px;z-index:-1;background:linear-gradient(90deg,transparent,rgba(57,192,221,.45),rgba(125,220,154,.4),transparent)}
+.qd-brand-text{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);min-width:max-content}
+.qd-brand-text>span:last-child{display:grid;line-height:1}.qd-brand-text strong{font-size:1.08rem;letter-spacing:-.02em}.qd-brand-text small{font-size:.58rem;letter-spacing:.16em;color:#4c8b98;margin-top:4px}
+.qd-brand-orb{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;color:#fff;background:radial-gradient(circle at 32% 28%,#fff 0 8%,#72e8ff 10% 28%,#0b91aa 31% 58%,#163a72 62% 100%);box-shadow:0 0 0 5px rgba(255,255,255,.48),0 10px 26px rgba(18,139,167,.24);font-size:.72rem}
+.qd-menu .dashicons{font-size:16px;width:16px;height:16px;line-height:16px;opacity:.72;flex:0 0 auto}.qd-menu>li>a{gap:6px}
+.qd-footer-brand .custom-logo{max-width:210px;height:auto}.qd-footer-brand .qd-brand-text{width:max-content}
+
+@media(min-width:1181px){
+ .qd-navin{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;position:relative}
+ .qd-primary-nav{position:static!important;min-width:0!important;margin:0!important;padding:0!important;opacity:1!important;visibility:visible!important;transform:none!important;background:transparent!important;border:0!important;box-shadow:none!important}
+ .qd-menu{display:flex!important;align-items:center;justify-content:center;gap:2px;min-width:0;flex-wrap:nowrap}
+ .qd-menu>.menu-item{width:auto!important;flex:0 1 auto}
+ .qd-menu>.menu-item>a{min-height:42px;padding:8px clamp(6px,.62vw,10px);font-size:clamp(.68rem,.72vw,.82rem);white-space:nowrap}
+ .qd-menu-toggle{display:none!important}
+}
+@media(max-width:1180px){
+ .qd-navin{position:relative;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+ .qd-menu-toggle{display:block!important;justify-self:end;margin-left:auto}
+ .qd-primary-nav{position:absolute!important;left:10px!important;right:10px!important;top:calc(100% + 8px)!important;z-index:100;margin:0!important;padding:12px!important;border:1px solid rgba(255,255,255,.95)!important;border-radius:22px!important;background:rgba(238,253,255,.985)!important;backdrop-filter:blur(24px) saturate(145%);box-shadow:0 24px 70px rgba(5,90,111,.24)!important;max-height:min(74vh,720px);overflow:auto;overscroll-behavior:contain;opacity:0!important;visibility:hidden!important;transform:translateY(-8px)!important;transition:.18s ease}
+ .qd-primary-nav.is-open{opacity:1!important;visibility:visible!important;transform:none!important}
+ .qd-primary-nav .qd-menu{display:block!important}
+ .qd-primary-nav .qd-menu>.menu-item{width:100%!important}
+ .qd-primary-nav .qd-menu a{width:100%;justify-content:flex-start;white-space:normal!important}
+ .qd-primary-nav .qd-menu .sub-menu,.qd-primary-nav .qd-menu .sub-menu .sub-menu{position:static!important;display:block!important;min-width:0!important;margin:3px 0 4px 14px!important;padding:0 0 0 10px!important;border:0!important;border-left:2px solid rgba(8,130,155,.14)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;opacity:1!important;visibility:visible!important;transform:none!important}
+ .qd-theme-toggle{display:none!important}
+}
+@media(max-width:720px){
+ .qd-navin{grid-template-columns:minmax(0,1fr) auto auto}
+ .qd-brand-text small{display:none}.qd-login-link{min-height:40px;padding:8px 11px}
+}
+@media(max-width:440px){
+ .qd-brand-text strong{font-size:.95rem}.qd-brand-orb{width:31px;height:31px}
+ .qd-login-link{font-size:.76rem;padding:7px 9px}.qd-menu-toggle{width:40px;height:40px}
+}
