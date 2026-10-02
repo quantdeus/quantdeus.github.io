@@ -173,6 +173,9 @@ final class QD_Core {
         register_rest_route(self::NS, '/github/callback', [
             'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'github_callback'],
         ]);
+        register_rest_route(self::NS, '/github/broker', [
+            'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'github_broker_login'],
+        ]);
         register_rest_route(self::NS, '/agent/context', [
             'methods'=>'GET','permission_callback'=>fn()=>current_user_can('qd_agent_context') || current_user_can('manage_options'),
             'callback'=>fn()=>rest_ensure_response([
@@ -414,6 +417,90 @@ final class QD_Core {
         return rest_url(self::NS.'/github/callback');
     }
 
+    private static function github_broker_url(): string {
+        return defined('QD_GITHUB_BROKER_URL') && trim((string)QD_GITHUB_BROKER_URL)!==''
+            ? trim((string)QD_GITHUB_BROKER_URL)
+            : 'https://quantdeus.vercel.app/api/quantdeus/github-auth';
+    }
+
+    private static function github_identity_via_broker(string $assertion): ?array {
+        if ($assertion==='') return null;
+        $response=wp_remote_post(self::github_broker_url(),[
+            'headers'=>[
+                'Accept'=>'application/json',
+                'Authorization'=>'Bearer '.$assertion,
+                'User-Agent'=>'QuantDeus-WordPress/1.0',
+            ],
+            'timeout'=>15,
+            'redirection'=>2,
+        ]);
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response)!==200) return null;
+        $body=json_decode((string)wp_remote_retrieve_body($response),true);
+        $user=is_array($body) && !empty($body['ok']) && is_array($body['user'] ?? null) ? $body['user'] : null;
+        if (!$user) return null;
+        $github_id=self::text($user['github_id'] ?? '',80);
+        $login=self::text($user['login'] ?? '',80);
+        $permission=strtolower(self::text($user['permission'] ?? '',40));
+        if ($github_id==='' || $login==='' || !in_array($permission,['write','maintain','admin'],true)) return null;
+        return [
+            'github_id'=>$github_id,
+            'login'=>$login,
+            'permission'=>$permission,
+            'role'=>self::role_for_github_permission($permission),
+            'avatar_url'=>esc_url_raw((string)($user['avatar_url'] ?? '')),
+        ];
+    }
+
+    private static function establish_github_broker_session(array $identity, string $assertion) {
+        $github_id=(string)$identity['github_id'];
+        $login=(string)$identity['login'];
+        $permission=(string)$identity['permission'];
+        $role=self::role_for_github_permission($permission);
+        $users=get_users(['meta_key'=>'qd_github_id','meta_value'=>$github_id,'number'=>1]);
+        $user=$users ? $users[0] : null;
+        if (!$user) {
+            $uid=wp_insert_user([
+                'user_login'=>'github_'.$github_id,
+                'user_pass'=>wp_generate_password(32,true,true),
+                'display_name'=>$login,
+                'role'=>$role,
+            ]);
+            if (is_wp_error($uid)) return $uid;
+            $user=get_user_by('id',$uid);
+        }
+        if (!$user) return new WP_Error('github_user','Unable to establish GitHub user',['status'=>500]);
+        $user->set_role($role);
+        if ($user->display_name!==$login) wp_update_user(['ID'=>$user->ID,'display_name'=>$login]);
+        update_user_meta($user->ID,'qd_github_id',$github_id);
+        update_user_meta($user->ID,'qd_github_login',$login);
+        update_user_meta($user->ID,'qd_github_permission',$permission);
+        update_user_meta($user->ID,'qd_github_verified_at',time());
+        if (!empty($identity['avatar_url'])) update_user_meta($user->ID,'qd_github_avatar',esc_url_raw((string)$identity['avatar_url']));
+        set_transient('qd_gh_broker_assertion_'.$user->ID,$assertion,8*HOUR_IN_SECONDS);
+        if ($permission==='admin') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
+        wp_set_current_user($user->ID);
+        wp_set_auth_cookie($user->ID,true,is_ssl());
+        return rest_ensure_response([
+            'ok'=>true,
+            'nonce'=>wp_create_nonce('wp_rest'),
+            'user'=>[
+                'id'=>$user->ID,
+                'name'=>$login,
+                'role'=>$role,
+                'provider'=>'github',
+            ],
+        ]);
+    }
+
+    public static function github_broker_login(WP_REST_Request $req) {
+        $payload=$req->get_json_params();
+        if (!is_array($payload)) $payload=[];
+        $assertion=trim((string)($payload['assertion'] ?? ''));
+        $identity=self::github_identity_via_broker($assertion);
+        if (!$identity) return new WP_Error('github_auth_invalid','GitHub staff verification failed',['status'=>401]);
+        return self::establish_github_broker_session($identity,$assertion);
+    }
+
     private static function github_headers(string $token): array {
         return [
             'Accept'=>'application/vnd.github+json',
@@ -555,6 +642,21 @@ final class QD_Core {
         if ($login==='') return false;
         if (get_transient('qd_gh_admin_ok_'.$user->ID)) return true;
         if (!$live) return false;
+
+        $broker_assertion=(string)get_transient('qd_gh_broker_assertion_'.$user->ID);
+        if ($broker_assertion!=='') {
+            $identity=self::github_identity_via_broker($broker_assertion);
+            $permission=is_array($identity) ? (string)($identity['permission'] ?? 'none') : 'none';
+            update_user_meta($user->ID,'qd_github_permission',$permission);
+            update_user_meta($user->ID,'qd_github_verified_at',time());
+            if ($permission==='admin') {
+                set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
+                return true;
+            }
+            $user->set_role(self::role_for_github_permission($permission));
+            delete_transient('qd_gh_admin_ok_'.$user->ID);
+            return false;
+        }
 
         $protected=(string)get_transient('qd_gh_token_'.$user->ID);
         $token=self::unprotect_github_token($protected);
