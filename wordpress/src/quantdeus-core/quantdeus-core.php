@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.3.0';
+    public const VERSION = '1.4.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
@@ -158,6 +158,9 @@ final class QD_Core {
         register_rest_route(self::NS, '/telegram/login', [
             'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'telegram_web_login'],
         ]);
+        register_rest_route(self::NS, '/telegram/broker', [
+            'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'telegram_broker_login'],
+        ]);
         register_rest_route(self::NS, '/github/config', [
             'methods'=>'GET','permission_callback'=>'__return_true','callback'=>fn()=>rest_ensure_response([
                 'configured'=>self::github_oauth_configured(),
@@ -288,8 +291,11 @@ final class QD_Core {
         $users=get_users(['meta_key'=>'qd_telegram_id','meta_value'=>$tgid,'number'=>1]);
         $user=$users ? $users[0] : null;
         $role=self::role_for_telegram($tgid);
+        $display=self::text(
+            $tg['name'] ?? (($tg['first_name'] ?? '').' '.($tg['last_name'] ?? '')),
+            120
+        );
         if (!$user) {
-            $display=self::text(($tg['first_name'] ?? '').' '.($tg['last_name'] ?? ''),120);
             $uid=wp_insert_user([
                 'user_login'=>'telegram_'.$tgid,
                 'user_pass'=>wp_generate_password(32,true,true),
@@ -299,7 +305,15 @@ final class QD_Core {
             if (is_wp_error($uid)) return $uid;
             update_user_meta($uid,'qd_telegram_id',$tgid);
             if (!empty($tg['username'])) update_user_meta($uid,'qd_telegram_username',self::text($tg['username'],80));
+            if (!empty($tg['picture'])) update_user_meta($uid,'qd_telegram_picture',esc_url_raw((string)$tg['picture']));
             $user=get_user_by('id',$uid);
+        } else {
+            if ($display!=='' && $display!==$user->display_name) {
+                wp_update_user(['ID'=>$user->ID,'display_name'=>$display]);
+                $user=get_user_by('id',$user->ID);
+            }
+            if (!empty($tg['username'])) update_user_meta($user->ID,'qd_telegram_username',self::text($tg['username'],80));
+            if (!empty($tg['picture'])) update_user_meta($user->ID,'qd_telegram_picture',esc_url_raw((string)$tg['picture']));
         }
         if ($user && !in_array($role,$user->roles,true)) $user->set_role($role);
         wp_set_current_user($user->ID);
@@ -307,7 +321,12 @@ final class QD_Core {
         return rest_ensure_response([
             'ok'=>true,
             'nonce'=>wp_create_nonce('wp_rest'),
-            'user'=>['id'=>$user->ID,'name'=>$user->display_name,'role'=>$user->roles[0] ?? 'qd_member'],
+            'user'=>[
+                'id'=>$user->ID,
+                'name'=>$user->display_name,
+                'role'=>$user->roles[0] ?? 'qd_member',
+                'provider'=>'telegram',
+            ],
         ]);
     }
 
@@ -322,6 +341,54 @@ final class QD_Core {
         if (!is_array($payload)) $payload=[];
         $tg=self::verify_login_widget($payload);
         if (!$tg) return new WP_Error('telegram_invalid','Invalid Telegram Login Widget payload',['status'=>401]);
+        return self::establish_telegram_session($tg);
+    }
+
+    private static function telegram_broker_url(): string {
+        return defined('QD_TELEGRAM_BROKER_URL') && trim((string)QD_TELEGRAM_BROKER_URL)!==''
+            ? trim((string)QD_TELEGRAM_BROKER_URL)
+            : 'https://quantdeus.vercel.app/api/quantdeus/auth';
+    }
+
+    private static function telegram_identity_via_broker(string $id_token, string $init_data): ?array {
+        $headers=[
+            'Accept'=>'application/json',
+            'User-Agent'=>'QuantDeus-WordPress/1.0',
+        ];
+        if ($id_token!=='') {
+            $headers['Authorization']='Bearer '.$id_token;
+        } elseif ($init_data!=='') {
+            $headers['x-telegram-init-data']=$init_data;
+        } else {
+            return null;
+        }
+        $response=wp_remote_get(self::telegram_broker_url(),[
+            'headers'=>$headers,
+            'timeout'=>15,
+            'redirection'=>2,
+        ]);
+        if (is_wp_error($response)) return null;
+        if (wp_remote_retrieve_response_code($response)!==200) return null;
+        $body=json_decode((string)wp_remote_retrieve_body($response),true);
+        if (!is_array($body) || empty($body['ok']) || !is_array($body['user'] ?? null)) return null;
+        $user=$body['user'];
+        if (empty($user['id'])) return null;
+        return [
+            'id'=>(string)$user['id'],
+            'name'=>self::text($user['name'] ?? '',120),
+            'username'=>self::text($user['username'] ?? '',80),
+            'picture'=>esc_url_raw((string)($user['picture'] ?? '')),
+            'auth_kind'=>self::text($user['auth_kind'] ?? 'broker',24),
+        ];
+    }
+
+    public static function telegram_broker_login(WP_REST_Request $req) {
+        $payload=$req->get_json_params();
+        if (!is_array($payload)) $payload=[];
+        $id_token=trim((string)($payload['id_token'] ?? ''));
+        $init_data=trim((string)($payload['init_data'] ?? ''));
+        $tg=self::telegram_identity_via_broker($id_token,$init_data);
+        if (!$tg) return new WP_Error('telegram_invalid','Telegram identity broker rejected the login',['status'=>401]);
         return self::establish_telegram_session($tg);
     }
 
