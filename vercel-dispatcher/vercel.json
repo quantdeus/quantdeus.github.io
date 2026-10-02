@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/quantdeus/mirror-wake",
+      "schedule": "37 * * * *"
+    }
+  ],
   "functions": {
     "api/quantdeus/hermes.js": {
       "maxDuration": 300
