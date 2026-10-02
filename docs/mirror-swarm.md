@@ -10,7 +10,7 @@ Mirror Swarm intentionally uses a separate execution path:
 
 ```
 Vercel Cron (:37 every hour)
-  -> protected /api/quantdeus/mirror-wake
+  -> protected GET /api/quantdeus/mirror
   -> GitHub workflow_dispatch
   -> deterministic local QA + recent main Actions failures
   -> sleep when healthy
@@ -34,7 +34,7 @@ The Vercel project `quantdeus` schedules:
 37 * * * *
 ```
 
-Vercel calls `GET /api/quantdeus/mirror-wake`. The endpoint is fail-closed behind the existing `CRON_SECRET`, uses the server-side `QUANTDEUS_GITHUB_TOKEN`, and dispatches `.github/workflows/mirror-swarm-repair.yml` on `main`.
+Vercel calls `GET /api/quantdeus/mirror`. The same Serverless Function also handles the GitHub-OIDC-protected `POST /api/quantdeus/mirror` execution path, which keeps the Hobby deployment at the 12-function limit. The GET wake path is fail-closed behind the existing `CRON_SECRET`, uses the server-side `QUANTDEUS_GITHUB_TOKEN`, and dispatches `.github/workflows/mirror-swarm-repair.yml` on `main`.
 
 The wake endpoint refuses to start a second mirror cycle while one is already queued or running.
 
@@ -88,7 +88,7 @@ Mirror-created repairs:
 ## Runtime
 
 Vercel project: `quantdeus`  
-Wake endpoint: `GET /api/quantdeus/mirror-wake`  
+Wake endpoint: `GET /api/quantdeus/mirror`  
 Mirror endpoint: `POST /api/quantdeus/mirror`  
 GitHub workflow: `.github/workflows/mirror-swarm-repair.yml`  
 OIDC audience: `quantdeus-vercel-mirror`
