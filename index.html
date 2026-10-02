@@ -43,15 +43,76 @@
   </div>
   <iframe id="wordpress" title="QuantDeus WordPress" allow="clipboard-read; clipboard-write"></iframe>
   <noscript><p><a href="https://playground.wordpress.net/">Для запуска QuantDeus WordPress включите JavaScript.</a></p></noscript>
+  <script src="https://oauth.telegram.org/js/telegram-login.js?3"></script>
   <script>
     (() => {
       const blueprint = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/wordpress/blueprint.json';
-      const playground = 'https://playground.wordpress.net/?mode=seamless&blueprint-url=' + encodeURIComponent(blueprint);
+      const playgroundOrigin = 'https://playground.wordpress.net';
+      const playground = playgroundOrigin + '/?mode=seamless&blueprint-url=' + encodeURIComponent(blueprint);
+      const telegramClientId = 8122160274;
+      const authApi = 'https://quantdeus.vercel.app/api/quantdeus/auth';
       const frame = document.getElementById('wordpress');
       const loading = document.getElementById('loading');
       const status = document.getElementById('status');
       const fallback = document.getElementById('fallback');
       const direct = document.getElementById('direct');
+
+      async function verifyTelegramToken(idToken) {
+        const response = await fetch(authApi, {
+          method: 'GET',
+          headers: { Authorization: 'Bearer ' + idToken },
+          cache: 'no-store',
+          credentials: 'omit'
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok || !body.user) {
+          throw new Error(body.error || ('telegram_auth_http_' + response.status));
+        }
+        return body;
+      }
+
+      function postToWordPress(message) {
+        if (!frame.contentWindow) return;
+        frame.contentWindow.postMessage(message, playgroundOrigin);
+      }
+
+      function telegramLogin() {
+        if (!window.Telegram?.Login?.auth) {
+          postToWordPress({type:'qd:telegram-result',ok:false,error:'telegram_login_sdk_unavailable'});
+          return;
+        }
+        window.Telegram.Login.auth(
+          {client_id: telegramClientId, scope:['profile'], lang:'ru'},
+          async result => {
+            try {
+              if (!result || result.error) throw new Error(result?.error || 'telegram_login_cancelled');
+              if (!result.id_token) throw new Error('telegram_id_token_missing');
+              const verified = await verifyTelegramToken(result.id_token);
+              postToWordPress({
+                type:'qd:telegram-result',
+                ok:true,
+                id_token:result.id_token,
+                user:verified.user,
+                role:verified.role || 'member'
+              });
+            } catch (error) {
+              postToWordPress({
+                type:'qd:telegram-result',
+                ok:false,
+                error:String(error?.message || 'telegram_auth_failed')
+              });
+            }
+          }
+        );
+      }
+
+      window.addEventListener('message', event => {
+        if (event.source !== frame.contentWindow) return;
+        if (event.origin !== playgroundOrigin) return;
+        const message = event.data || {};
+        if (message.type === 'qd:telegram-login') telegramLogin();
+      });
+
       direct.href = playground;
       frame.src = playground;
       frame.addEventListener('load', () => {
