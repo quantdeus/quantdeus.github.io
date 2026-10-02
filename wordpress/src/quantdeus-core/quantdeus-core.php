@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.2.0';
+    public const VERSION = '1.3.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
@@ -277,12 +277,8 @@ final class QD_Core {
     }
 
     private static function role_for_telegram(string $id): string {
-        // Telegram is the member identity layer. It can grant moderator status,
-        // but it must never mint a WordPress administrator session.
-        if (defined('QD_MODERATOR_TELEGRAM_IDS')) {
-            $ids=array_filter(array_map('trim',explode(',',(string)QD_MODERATOR_TELEGRAM_IDS)));
-            if (in_array($id,$ids,true)) return 'qd_moderator';
-        }
+        // Telegram is the public member identity layer only.
+        // Staff elevation is exclusively derived from live GitHub repository permission.
         return 'qd_member';
     }
 
@@ -468,14 +464,19 @@ final class QD_Core {
         update_user_meta($user->ID,'qd_github_permission',$permission);
         update_user_meta($user->ID,'qd_github_verified_at',time());
 
+        if (!in_array($permission,['write','maintain','admin'],true)) {
+            if ($user && !in_array('qd_member',$user->roles,true)) $user->set_role('qd_member');
+            wp_safe_redirect(home_url('/login/?github=staff-required'));
+            exit;
+        }
+
         $protected=self::protect_github_token($token);
         if ($protected!=='') set_transient('qd_gh_token_'.$user->ID,$protected,8*HOUR_IN_SECONDS);
         if ($permission==='admin') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
 
         wp_set_current_user($user->ID);
         wp_set_auth_cookie($user->ID,true,is_ssl());
-        $target=$permission==='admin' ? admin_url('admin.php?page=quantdeus') : home_url('/?github_role='.rawurlencode($role));
-        wp_safe_redirect($target);
+        wp_safe_redirect(home_url('/login/?github=ok'));
         exit;
     }
 
