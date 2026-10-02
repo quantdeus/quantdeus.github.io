@@ -5,7 +5,7 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-mirror';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
-const ALLOWED_EVENTS = new Set(['schedule', 'workflow_dispatch']);
+const ALLOWED_EVENTS = new Set(['workflow_run', 'workflow_dispatch']);
 const MODEL = process.env.QD_MIRROR_MODEL || 'openai/gpt-5.6-sol';
 const MAX_FILES = 2;
 const MAX_FILE_BYTES = 24000;
@@ -108,6 +108,32 @@ function boundedText(value, max = 18000) {
   return String(value || '').slice(-max);
 }
 
+function redactSensitive(value) {
+  return String(value || '')
+    .replace(
+      /-----BEGIN [^-\n]*PRIVATE KEY-----[\s\S]*?-----END [^-\n]*PRIVATE KEY-----/g,
+      '[REDACTED_PRIVATE_KEY]'
+    )
+    .replace(
+      /\b(?:github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{16,})\b/g,
+      '[REDACTED_TOKEN]'
+    )
+    .replace(/\b\d{6,12}:[A-Za-z0-9_-]{20,}\b/g, '[REDACTED_TELEGRAM_TOKEN]')
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]{12,}/gi, 'Bearer [REDACTED]')
+    .replace(
+      /((?:api[_-]?key|token|secret|password|authorization|credential)[A-Za-z0-9_.-]*\s*["']?\s*[:=]\s*["']?)[^"'\s,;]+/gi,
+      '$1[REDACTED]'
+    )
+    .replace(
+      /(\b[A-Z][A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|API_KEY|PRIVATE_KEY)[A-Z0-9_]*\s*=\s*)[^\s]+/g,
+      '$1[REDACTED]'
+    );
+}
+
+function publicText(value, max = 18000) {
+  return boundedText(redactSensitive(value), max);
+}
+
 function safeRepairPath(path) {
   const p = String(path || '').trim();
   if (!p || p.includes('..') || p.startsWith('/')) return false;
@@ -130,9 +156,13 @@ function safeRepairPath(path) {
   );
 }
 
-async function readMainFile(token, path) {
+async function readMainFile(token, path, refSha) {
   if (!safeRepairPath(path)) throw new Error('mirror_path_not_allowed:' + path);
-  const data = await github(token, '/contents/' + path.split('/').map(encodeURIComponent).join('/') + '?ref=main');
+  if (!refSha) throw new Error('mirror_snapshot_sha_missing');
+  const data = await github(
+    token,
+    '/contents/' + path.split('/').map(encodeURIComponent).join('/') + '?ref=' + encodeURIComponent(refSha)
+  );
   if (data?.type !== 'file' || !data?.content || !data?.sha) throw new Error('mirror_file_unreadable:' + path);
   const content = Buffer.from(String(data.content).replace(/\n/g, ''), 'base64').toString('utf8');
   if (Buffer.byteLength(content, 'utf8') > MAX_FILE_BYTES) throw new Error('mirror_file_too_large:' + path);
@@ -161,18 +191,18 @@ async function existingArtifact(token, fp) {
 async function createEscalationIssue(token, diagnosis, critique, fp) {
   const duplicate = await existingArtifact(token, fp);
   if (duplicate) return { action: 'existing', ...duplicate };
-  const title = '[MIRROR][REPAIR] ' + boundedText(diagnosis.summary || diagnosis.root_cause || 'Swarm repair finding', 90);
+  const title = '[MIRROR][REPAIR] ' + publicText(diagnosis.summary || diagnosis.root_cause || 'Swarm repair finding', 90);
   const body = [
     'Independent Mirror Swarm detected a repair-worthy condition.',
     '',
     '### Diagnosis',
-    boundedText(diagnosis.root_cause || diagnosis.summary || 'No concise root cause returned.', 5000),
+    publicText(diagnosis.root_cause || diagnosis.summary || 'No concise root cause returned.', 5000),
     '',
     '### Tuvok challenge',
-    boundedText(critique.challenge || critique.summary || 'No additional challenge.', 3500),
+    publicText(critique.challenge || critique.summary || 'No additional challenge.', 3500),
     '',
     '### Evidence',
-    boundedText(JSON.stringify(diagnosis.evidence || [], null, 2), 5000),
+    publicText(JSON.stringify(diagnosis.evidence || [], null, 2), 5000),
     '',
     '### Guardrail',
     'The mirror could not safely produce a bounded draft PR. Human/primary-swarm review is required. No production mutation or secret change was performed.',
@@ -186,12 +216,9 @@ async function createEscalationIssue(token, diagnosis, critique, fp) {
   return { action: 'issue', number: issue.number, url: issue.html_url };
 }
 
-async function createDraftRepairPr(token, files, diagnosis, critique, qa, fp) {
+async function createDraftRepairPr(token, baseSha, files, diagnosis, critique, qa, fp) {
   const duplicate = await existingArtifact(token, fp);
   if (duplicate) return { action: 'existing', ...duplicate };
-
-  const ref = await github(token, '/git/ref/heads/main');
-  const baseSha = ref?.object?.sha;
   if (!baseSha) throw new Error('mirror_main_sha_unavailable');
 
   const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
@@ -217,13 +244,13 @@ async function createDraftRepairPr(token, files, diagnosis, critique, qa, fp) {
     'Independent Vercel Mirror Swarm repair.',
     '',
     '### Root cause',
-    boundedText(diagnosis.root_cause || diagnosis.summary || '', 4000),
+    publicText(diagnosis.root_cause || diagnosis.summary || '', 4000),
     '',
     '### Tuvok falsification',
-    boundedText(critique.challenge || critique.summary || '', 2500),
+    publicText(critique.challenge || critique.summary || '', 2500),
     '',
     '### Mirror QA',
-    boundedText(qa.reason || '', 2500),
+    publicText(qa.reason || '', 2500),
     '',
     '### Scope',
     files.map(file => '- `' + file.path + '`').join('\n'),
@@ -331,8 +358,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, mode, action: 'shadow_finding', diagnosis, critique, fingerprint: fp, model: MODEL });
     }
 
+    const mainRef = await github(githubToken, '/git/ref/heads/main');
+    const baseSha = mainRef?.object?.sha;
+    if (!baseSha) throw new Error('mirror_main_sha_unavailable');
+
     const originals = [];
-    for (const path of requested) originals.push(await readMainFile(githubToken, path));
+    for (const path of requested) {
+      originals.push(await readMainFile(githubToken, path, baseSha));
+    }
 
     const implementation = await role(
       'Mirror Tasksmith',
@@ -402,6 +435,7 @@ export default async function handler(req, res) {
 
     const artifact = await createDraftRepairPr(
       githubToken,
+      baseSha,
       proposed.map(({ path, sha, content }) => ({ path, sha, content })),
       diagnosis,
       critique,
