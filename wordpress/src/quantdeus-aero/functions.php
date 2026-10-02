@@ -27,6 +27,8 @@ add_action('wp_enqueue_scripts', function(){
         'telegramLoginUrl' => rest_url('quantdeus/v1/telegram/login'),
         'githubStartUrl' => rest_url('quantdeus/v1/github/start'),
         'githubConfigured' => defined('QD_GITHUB_CLIENT_ID') && defined('QD_GITHUB_CLIENT_SECRET') && trim((string)QD_GITHUB_CLIENT_ID)!=='' && trim((string)QD_GITHUB_CLIENT_SECRET)!=='',
+        'loginUrl' => home_url('/login/'),
+        'logoutUrl' => wp_logout_url(home_url('/login/')),
         'telegramBotUsername' => defined('QD_TELEGRAM_BOT_USERNAME') ? (string)QD_TELEGRAM_BOT_USERNAME : 'QuantDeus_bot',
         'loggedIn' => is_user_logged_in(),
         'userName' => is_user_logged_in() ? wp_get_current_user()->display_name : '',
@@ -63,6 +65,18 @@ function qd_aero_primary_menu_fallback(array $args=[]): void {
         echo '<li class="menu-item"><a href="'.esc_url($url).'">'.esc_html($label).'</a></li>';
     }
     echo '</ul>';
+}
+
+function qd_aero_ensure_login_page(): void {
+    $page=get_page_by_path('login',OBJECT,'page');
+    if ($page) return;
+    wp_insert_post([
+        'post_type'=>'page',
+        'post_status'=>'publish',
+        'post_name'=>'login',
+        'post_title'=>'Вход',
+        'post_content'=>'',
+    ]);
 }
 
 function qd_aero_ensure_primary_menu(): void {
@@ -102,3 +116,5 @@ function qd_aero_ensure_primary_menu(): void {
 }
 add_action('after_switch_theme','qd_aero_ensure_primary_menu');
 add_action('init','qd_aero_ensure_primary_menu',40);
+
+add_action('init','qd_aero_ensure_login_page',35);
