@@ -64,6 +64,9 @@ function qd_aero_ensure_page(string $slug,string $title,string $content=''): int
     $id=wp_insert_post(['post_type'=>'page','post_status'=>'publish','post_name'=>$slug,'post_title'=>$title,'post_content'=>$content],true);
     return is_wp_error($id)?0:(int)$id;
 }
+function qd_aero_ensure_login_page(): void {
+    qd_aero_ensure_page('login','Вход','');
+}
 function qd_aero_ensure_portal_pages(): void {
     $pages=[
         'login'=>['Вход',''],'federation'=>['Federation','Каталог автономных совместимых узлов QuantDeus Federation.'],
