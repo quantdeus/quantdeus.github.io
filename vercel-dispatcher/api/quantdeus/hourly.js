@@ -1,9 +1,9 @@
 const REPO = "quantdeus/quantdeus.github.io";
 const ISSUE = 154;
-const DOCTRINE_VERSION = "2026.09-post-scarcity-v3";
-const MANIFEST_ID = "neon-horizon-v3";
-const MANIFEST_NAME = "Манифест Неонового Горизонта — QuantDeus v3.0";
-const MANIFEST_ARCHIVE = "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf";
+const DOCTRINE_VERSION = "2026.10-neon-horizon-v4";
+const MANIFEST_ID = "neon-horizon-v4";
+const MANIFEST_NAME = "Манифест Неонового Горизонта — QuantDeus v4.0";
+const MANIFEST_ARCHIVE = "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf";
 
 function authorized(req) {
   const secret = process.env.CRON_SECRET;
