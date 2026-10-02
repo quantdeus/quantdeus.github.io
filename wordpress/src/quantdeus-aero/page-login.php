@@ -60,7 +60,7 @@ $provider=is_user_logged_in() && get_user_meta(get_current_user_id(),'qd_github_
               <div><strong>admin</strong><span>→ Администратор</span></div>
             </div>
             <button class="qd-btn qd-github-login" type="button" data-github-admin-login>Войти через GitHub</button>
-            <div class="qd-login-status" data-github-status>GitHub · проверка прав репозитория</div>
+            <div class="qd-login-status" data-github-status>GitHub OAuth · проверяю защищённый Vercel broker</div>
           </article>
         </div>
 
