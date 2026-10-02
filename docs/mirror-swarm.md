@@ -9,7 +9,7 @@ The canonical QA Self-Heal lane uses OpenClaw. If OpenClaw itself, its tool loop
 Mirror Swarm intentionally uses a separate execution path:
 
 ```
-GitHub hourly anomaly scan
+failed main QA workflow
   -> deterministic local QA + recent main Actions failures
   -> GitHub OIDC
   -> Vercel /api/quantdeus/mirror
