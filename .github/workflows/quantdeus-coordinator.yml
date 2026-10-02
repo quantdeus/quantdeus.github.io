@@ -59,12 +59,25 @@ jobs:
         run: |
           node scripts/governance-gate.js
           export QUANTDEUS_DIALOGUE_DEADLINE_MS=$(node -e 'process.stdout.write(String(Date.now()+420000))')
-          node scripts/seven-of-nine.js
-          node scripts/coordinator.js
-          node scripts/emh.js
-          node scripts/sherlock.js
-          node scripts/tuvok.js
-          node scripts/strategic-hub.js
+          bridge_fail=0
+          run_stage() {
+            stage="$1"
+            shift
+            if "$@"; then
+              echo "Bridge crew stage OK: $stage"
+            else
+              rc=$?
+              echo "::error title=Bridge crew stage failed::$stage exited with code $rc"
+              bridge_fail=1
+            fi
+          }
+          run_stage seven node scripts/seven-of-nine.js
+          run_stage secretary node scripts/coordinator.js
+          run_stage emh node scripts/emh.js
+          run_stage sherlock node scripts/sherlock.js
+          run_stage tuvok node scripts/tuvok.js
+          run_stage strategic-hub node scripts/strategic-hub.js
+          exit "$bridge_fail"
 
       - name: Preserve bridge crew inference evidence
         if: always()

@@ -222,6 +222,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     check(text.includes("issue_comment:\n    types: [created]"), name, 'Coordinator receives every new Issue comment for command draining');
     check(/id-token:\s*write/.test(text) && text.includes('/tmp/quantdeus-seven-reasoning.json'), name, 'Seven Hub briefing receives OIDC and preserves inference evidence');
     check(text.indexOf('node scripts/seven-of-nine.js') < text.indexOf('node scripts/coordinator.js'), name, 'Seven of Nine runs before the Swarm Secretary');
+    check(text.includes('bridge_fail=0') && text.includes('run_stage emh node scripts/emh.js') && text.includes('run_stage sherlock node scripts/sherlock.js') && text.includes('run_stage tuvok node scripts/tuvok.js') && text.includes('exit "$bridge_fail"'), name, 'Bridge crew stages continue after one role-contract failure while preserving a failing final job status');
   }
   if (scheduledMissionWorkflows.has(name)) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
