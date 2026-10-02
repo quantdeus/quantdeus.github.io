@@ -52,7 +52,9 @@
   <div class="qd-section-head"><div><span class="qd-kicker">Quote-only</span><h2>Услуги</h2></div><p>Можно оставить заявку без регистрации. Аккаунт нужен только для функций сообщества.</p></div>
   <div class="qd-grid"><?php
   $services=get_posts(['post_type'=>'qd_service','post_status'=>'publish','numberposts'=>20]);
-  foreach($services as $s): $sid=get_post_meta($s->ID,'qd_service_id',true) ?: $s->post_name; ?>
+  foreach($services as $s):
+    if (get_post_meta($s->ID,'qd_available',true)==='0') continue;
+    $sid=get_post_meta($s->ID,'qd_service_id',true) ?: $s->post_name; ?>
     <article class="qd-card qd-service-card"><span class="qd-tag">По запросу</span><h3><?php echo esc_html(get_the_title($s)); ?></h3><p><?php echo esc_html(wp_strip_all_tags($s->post_content)); ?></p><button class="qd-btn" data-service="<?php echo esc_attr($sid); ?>">Оставить заявку</button></article>
   <?php endforeach; ?></div>
   <div class="qd-card qd-inquiry" id="inquiryBox" hidden><h3>Заявка без регистрации</h3><form class="qd-form" id="qdInquiry"><input type="hidden" name="service_id"><textarea name="note" minlength="10" maxlength="1600" required placeholder="Опиши задачу или мероприятие"></textarea><input name="contact" maxlength="320" required placeholder="@telegram, телефон или email"><input name="website" tabindex="-1" autocomplete="off" class="qd-honeypot"><button class="qd-btn" type="submit">Отправить</button><div class="qd-notice" id="qdInquiryStatus">Заявка сохраняется напрямую в WordPress.</div></form></div>
@@ -69,7 +71,7 @@
   <div class="qd-section-head"><div><span class="qd-kicker">Identity</span><h2>Сообщество и роли</h2></div><p>Telegram — вход для участников. Модераторы получают отдельную роль. WordPress Admin доступен только после проверки admin-права в каноническом GitHub-репозитории.</p></div>
   <div class="qd-role-grid">
     <article class="qd-role"><strong>01</strong><h3>Пользователь</h3><p>Telegram identity · форум · заявки · сообщество.</p></article>
-    <article class="qd-role"><strong>02</strong><h3>Модератор</h3><p>Модерация сообщества без доступа к системной админке.</p></article>
+    <article class="qd-role"><strong>02</strong><h3>Модератор</h3><p>Нативная WordPress-модерация форума без системных настроек, заявок и служебных данных.</p></article>
     <article class="qd-role"><strong>03</strong><h3>Админ</h3><p>Только GitHub repo permission = admin.</p></article>
   </div>
   <div class="qd-community-actions"><a class="qd-btn alt" href="<?php echo esc_url(home_url('/forum/')); ?>">Открыть форум</a><a class="qd-btn alt" href="<?php echo esc_url(home_url('/login/')); ?>">Войти</a></div>

@@ -108,6 +108,9 @@ jobs:
           grep -q "github_permission" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "github_staff_only" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "github_staff_session_valid" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "github_broker_unavailable" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "service_post" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "capability_type" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "wp_add_dashboard_widget" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "admin_url()" wordpress/src/quantdeus-aero/page-login.php
           if grep -q "admin.php?page=quantdeus" wordpress/src/quantdeus-aero/page-login.php; then echo "legacy custom control deck entry forbidden"; exit 1; fi
@@ -163,11 +166,19 @@ jobs:
               if (!get_role($role)) { throw new Exception('Missing role: '.$role); }
           }
           if (!get_role('qd_agent')->has_cap('qd_agent_context')) { throw new Exception('Agent context capability missing'); }
-          if (get_role('qd_moderator')->has_cap('manage_options')) { throw new Exception('Moderator must not have manage_options'); }
-          foreach (['edit_posts','edit_others_posts','publish_posts','edit_private_posts','read_private_posts','upload_files','moderate_comments','qd_moderate_forum'] as $cap) {
-              if (!get_role('qd_moderator')->has_cap($cap)) { throw new Exception('Moderator missing native wp-admin capability: '.$cap); }
+          $moderator=get_role('qd_moderator');
+          if ($moderator->has_cap('manage_options')) { throw new Exception('Moderator must not have manage_options'); }
+          foreach (['upload_files','moderate_comments','qd_moderate_forum','edit_qd_forum_threads','edit_others_qd_forum_threads','publish_qd_forum_threads','read_private_qd_forum_threads'] as $cap) {
+              if (!$moderator->has_cap($cap)) { throw new Exception('Moderator missing forum moderation capability: '.$cap); }
           }
-          if (!get_role('administrator')->has_cap('manage_options')) { throw new Exception('Administrator lost native WordPress capability'); }
+          foreach (['edit_posts','edit_others_posts','publish_posts','edit_private_posts','read_private_posts','edit_qd_inquiries','edit_qd_services','edit_qd_projects','edit_qd_evidence_items'] as $cap) {
+              if ($moderator->has_cap($cap)) { throw new Exception('Moderator has over-broad capability: '.$cap); }
+          }
+          $administrator=get_role('administrator');
+          if (!$administrator->has_cap('manage_options')) { throw new Exception('Administrator lost native WordPress capability'); }
+          foreach (['edit_qd_services','edit_qd_inquiries','edit_qd_forum_threads','edit_qd_projects','edit_qd_evidence_items'] as $cap) {
+              if (!$administrator->has_cap($cap)) { throw new Exception('Administrator missing QuantDeus capability: '.$cap); }
+          }
           if (get_option('stylesheet') !== 'quantdeus-aero') { throw new Exception('QuantDeus Aero theme not active'); }
           qd_aero_ensure_login_page();
           $login=get_page_by_path('login',OBJECT,'page');
@@ -177,7 +188,41 @@ jobs:
           if (empty($locations['primary'])) { throw new Exception('Primary WordPress menu location missing'); }
           $menu=wp_get_nav_menu_object((int)$locations['primary']);
           $items=$menu ? wp_get_nav_menu_items($menu->term_id) : [];
-          if (!$menu || count($items)<6) { throw new Exception('Primary WordPress menu was not seeded'); }
+          if (!$menu || count($items)<7) { throw new Exception('Primary WordPress menu was not fully seeded'); }
+          $gallery_url=home_url('/#visuals');
+          $has_gallery=false;
+          foreach ($items as $item) {
+              if (untrailingslashit((string)$item->url)===untrailingslashit($gallery_url)) { $has_gallery=true; break; }
+          }
+          if (!$has_gallery) { throw new Exception('Gallery is missing from Primary WordPress menu'); }
+
+          $dynamic_id=wp_insert_post([
+              'post_type'=>'qd_service','post_status'=>'publish','post_name'=>'runtime-custom-service',
+              'post_title'=>'Runtime Custom Service','post_content'=>'Runtime dynamic service test',
+          ],true);
+          if (is_wp_error($dynamic_id)) { throw new Exception('Unable to create dynamic service fixture'); }
+          update_post_meta($dynamic_id,'qd_service_id','runtime-custom-service');
+          update_post_meta($dynamic_id,'qd_available','1');
+          $_SERVER['REMOTE_ADDR']='127.0.0.77';
+          $_SERVER['HTTP_USER_AGENT']='quantdeus-wordpress-smoke';
+          $dynamic_req=new WP_REST_Request('POST','/quantdeus/v1/inquiries');
+          $dynamic_req->set_param('service_id','runtime-custom-service');
+          $dynamic_req->set_param('note','Dynamic WordPress service inquiry smoke test.');
+          $dynamic_req->set_param('contact','qa@example.test');
+          $dynamic_response=QD_Core::create_inquiry($dynamic_req);
+          if (is_wp_error($dynamic_response) || $dynamic_response->get_status()!==201) {
+              throw new Exception('Admin-created service cannot receive an inquiry');
+          }
+          update_post_meta($dynamic_id,'qd_available','0');
+          $blocked_req=new WP_REST_Request('POST','/quantdeus/v1/inquiries');
+          $blocked_req->set_param('service_id','runtime-custom-service');
+          $blocked_req->set_param('note','Unavailable service inquiry should be rejected.');
+          $blocked_req->set_param('contact','qa@example.test');
+          $blocked_response=QD_Core::create_inquiry($blocked_req);
+          if (!is_wp_error($blocked_response) || $blocked_response->get_error_code()!=='service_unavailable') {
+              throw new Exception('Unavailable service inquiry was not rejected');
+          }
+
           $broker=wp_remote_get('https://quantdeus.vercel.app/api/quantdeus/auth?health=1',['timeout'=>15]);
           if (is_wp_error($broker) || wp_remote_retrieve_response_code($broker)!==200) { throw new Exception('Telegram broker health unavailable'); }
           $broker_body=json_decode((string)wp_remote_retrieve_body($broker),true);
