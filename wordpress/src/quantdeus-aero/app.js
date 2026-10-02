@@ -108,7 +108,7 @@
       const body = Object.fromEntries(new FormData(create).entries());
       try {
         const result = await json(cfg.forumUrl, {method:'POST', body:JSON.stringify(body)});
-        location.href = '/forum/' + result.id + '/';
+        location.href = result.url || '/forum/';
       } catch (err) {
         if (status) status.textContent = 'Ошибка: ' + err.message;
       }
