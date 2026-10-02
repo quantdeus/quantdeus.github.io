@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.6.0
+ * Version: 1.7.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.6.0';
+    public const VERSION = '1.7.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
@@ -18,6 +18,8 @@ final class QD_Core {
         add_action('rest_api_init', [self::class, 'routes']);
         add_action('admin_init', [self::class, 'guard_admin']);
         add_action('wp_dashboard_setup', [self::class, 'dashboard_widgets']);
+        add_action('add_meta_boxes', [self::class, 'meta_boxes']);
+        add_action('save_post', [self::class, 'save_meta_boxes']);
         add_action('wp_head', [self::class, 'schema'], 40);
         add_filter('show_admin_bar', [self::class, 'show_admin_bar']);
         add_filter('wp_authenticate_user', [self::class, 'block_password_admin'], 20, 2);
@@ -30,6 +32,8 @@ final class QD_Core {
         self::register_types();
         self::roles();
         self::seed_services();
+        self::seed_taxonomies();
+        self::seed_portal_content();
         update_option('qd_core_version', self::VERSION, false);
         flush_rewrite_rules(false);
     }
@@ -38,6 +42,8 @@ final class QD_Core {
         if ((string)get_option('qd_core_version') === self::VERSION) return;
         self::roles();
         self::seed_services();
+        self::seed_taxonomies();
+        self::seed_portal_content();
         update_option('qd_core_version', self::VERSION, false);
         flush_rewrite_rules(false);
     }
@@ -108,6 +114,10 @@ final class QD_Core {
                 ['qd_forum_thread','qd_forum_threads'],
                 ['qd_project','qd_projects'],
                 ['qd_evidence','qd_evidence_items'],
+                ['qd_node','qd_nodes'],
+                ['qd_research','qd_research_items'],
+                ['qd_artifact','qd_artifacts'],
+                ['qd_result','qd_results'],
             ] as [$singular,$plural]) {
                 self::grant_caps($admin,self::mapped_post_caps($singular,$plural));
             }
@@ -115,31 +125,186 @@ final class QD_Core {
     }
 
     public static function register_types(): void {
-        register_post_type('qd_service', [
-            'label' => 'Services', 'public' => true, 'show_in_rest' => true,
-            'capability_type' => ['qd_service','qd_services'], 'map_meta_cap' => true,
-            'supports' => ['title','editor','excerpt','thumbnail'], 'rewrite' => ['slug'=>'services'],
+        $types = [
+            'qd_service' => ['Services','Service',true,'services',['title','editor','excerpt','thumbnail'],['qd_service','qd_services'],'dashicons-store'],
+            'qd_inquiry' => ['Inquiries','Inquiry',false,false,['title','editor','custom-fields'],['qd_inquiry','qd_inquiries'],'dashicons-email-alt'],
+            'qd_forum_thread' => ['Forum','Forum thread',true,'forum',['title','editor','author','comments'],['qd_forum_thread','qd_forum_threads'],'dashicons-format-chat'],
+            'qd_project' => ['Projects','Project',true,'projects',['title','editor','excerpt','thumbnail','author','custom-fields'],['qd_project','qd_projects'],'dashicons-hammer'],
+            'qd_node' => ['Federation Nodes','Federation Node',true,'federation/nodes',['title','editor','excerpt','thumbnail','author','custom-fields'],['qd_node','qd_nodes'],'dashicons-networking'],
+            'qd_research' => ['Research','Research item',true,'research',['title','editor','excerpt','thumbnail','author','custom-fields'],['qd_research','qd_research_items'],'dashicons-welcome-learn-more'],
+            'qd_artifact' => ['Open Artifacts','Artifact',true,'knowledge/artifacts',['title','editor','excerpt','thumbnail','author','custom-fields'],['qd_artifact','qd_artifacts'],'dashicons-media-code'],
+            'qd_result' => ['Verified Results','Verified Result',true,'evidence/results',['title','editor','excerpt','thumbnail','author','custom-fields'],['qd_result','qd_results'],'dashicons-yes-alt'],
+            'qd_evidence' => ['Internal Evidence','Evidence record',false,false,['title','editor','custom-fields'],['qd_evidence','qd_evidence_items'],'dashicons-search'],
+        ];
+        foreach ($types as $slug => [$plural,$singular,$public,$archive,$supports,$caps,$icon]) {
+            $args=[
+                'labels'=>['name'=>$plural,'singular_name'=>$singular],
+                'public'=>$public,'show_ui'=>true,'show_in_rest'=>$public,
+                'capability_type'=>$caps,'map_meta_cap'=>true,'supports'=>$supports,'menu_icon'=>$icon,
+            ];
+            if ($archive) {
+                $args['has_archive']=$archive;
+                $args['rewrite']=['slug'=>$archive,'with_front'=>false];
+            }
+            register_post_type($slug,$args);
+        }
+
+        register_taxonomy('qd_horizon',['qd_node','qd_project','qd_research','qd_artifact','qd_result'],[
+            'labels'=>['name'=>'Horizons','singular_name'=>'Horizon'],'public'=>true,'show_in_rest'=>true,
+            'rewrite'=>['slug'=>'horizon','with_front'=>false]
         ]);
-        register_post_type('qd_inquiry', [
-            'label' => 'Inquiries', 'public' => false, 'show_ui' => true, 'show_in_rest' => false,
-            'capability_type' => ['qd_inquiry','qd_inquiries'], 'map_meta_cap' => true,
-            'supports' => ['title','editor','custom-fields'],
+        register_taxonomy('qd_pillar',['qd_node','qd_project','qd_research','qd_artifact','qd_result'],[
+            'labels'=>['name'=>'Neon Horizon Pillars','singular_name'=>'Pillar'],'public'=>true,'show_in_rest'=>true,
+            'rewrite'=>['slug'=>'pillar','with_front'=>false]
         ]);
-        register_post_type('qd_forum_thread', [
-            'label' => 'Forum', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'forum',
-            'capability_type' => ['qd_forum_thread','qd_forum_threads'], 'map_meta_cap' => true,
-            'supports' => ['title','editor','author','comments'], 'rewrite' => ['slug'=>'forum'],
+        register_taxonomy('qd_research_domain',['qd_research'],[
+            'labels'=>['name'=>'Research Domains','singular_name'=>'Research Domain'],'public'=>true,'show_in_rest'=>true,
+            'hierarchical'=>true,'rewrite'=>['slug'=>'research/domain','with_front'=>false]
         ]);
-        register_post_type('qd_project', [
-            'label' => 'Projects', 'public' => true, 'show_in_rest' => true,
-            'capability_type' => ['qd_project','qd_projects'], 'map_meta_cap' => true,
-            'supports' => ['title','editor','excerpt','thumbnail'], 'rewrite' => ['slug'=>'projects'],
+
+        foreach (self::structured_fields() as $type=>$fields) {
+            foreach (array_keys($fields) as $key) {
+                register_post_meta($type,$key,[
+                    'type'=>'string','single'=>true,'show_in_rest'=>true,
+                    'sanitize_callback'=>'sanitize_textarea_field',
+                ]);
+            }
+        }
+    }
+
+    private static function structured_fields(): array {
+        return [
+            'qd_node'=>[
+                'qd_owner'=>'Identity / Owner','qd_mission'=>'Mission','qd_evidence_grade'=>'Evidence Grade (A/B/C)',
+                'qd_artifacts'=>'Artifacts','qd_metrics'=>'Outcome Metrics','qd_replication'=>'Replication',
+                'qd_safety'=>'Safety / failure modes','qd_exit'=>'EXIT / portability','qd_governance'=>'Governance',
+                'qd_human_override'=>'Human Override',
+            ],
+            'qd_research'=>[
+                'qd_evidence_grade'=>'Evidence Grade (A/B/C)','qd_fact'=>'FACT','qd_evidence'=>'EVIDENCE',
+                'qd_hypothesis'=>'HYPOTHESIS','qd_unknown'=>'UNKNOWN','qd_next_test'=>'NEXT TEST','qd_falsifier'=>'FALSIFIER',
+            ],
+            'qd_project'=>[
+                'qd_evidence_grade'=>'Evidence Grade (A/B/C)','qd_cycle_stage'=>'Operational cycle stage',
+                'qd_outcome_metric'=>'Outcome metric',
+            ],
+            'qd_artifact'=>[
+                'qd_evidence_grade'=>'Evidence Grade (A/B/C)','qd_source_url'=>'Source URL','qd_replication'=>'Replication notes',
+            ],
+            'qd_result'=>[
+                'qd_evidence_grade'=>'Evidence Grade (A/B/C)','qd_source_url'=>'Evidence/source URL','qd_falsifier'=>'Failure condition / falsifier',
+            ],
+        ];
+    }
+
+    private static function seed_taxonomies(): void {
+        $sets=[
+            'qd_horizon'=>[
+                'ignition-2028'=>'2026–2028 · IGNITION','proto-federation-2041'=>'2026–2041 · PROTO-FEDERATION',
+                'century-compass-2126'=>'2026–2126 · CENTURY COMPASS',
+            ],
+            'qd_pillar'=>[
+                'human-dignity'=>'Жизнь и достоинство человека','safety-freedom'=>'Безопасность как основа свободы',
+                'transparency-trust'=>'Прозрачность и доверие','science-innovation'=>'Творчество, наука и инновации',
+                'ecological-harmony'=>'Экологическая гармония','post-scarcity'=>'Постдефицитное мышление',
+                'idic'=>'IDIC — разнообразие без унификации','long-horizon'=>'Долгий горизонт и космическая цивилизация',
+            ],
+            'qd_research_domain'=>[
+                'warp-gravity'=>'Warp / Gravity','space'=>'Space','energy'=>'Energy','ai'=>'AI','ecology'=>'Ecology',
+                'human-potential'=>'Human Potential','experimental'=>'Experimental Research',
+            ],
+        ];
+        foreach($sets as $taxonomy=>$terms) foreach($terms as $slug=>$name) {
+            if(!term_exists($slug,$taxonomy)) wp_insert_term($name,$taxonomy,['slug'=>$slug]);
+        }
+    }
+
+    private static function seed_item(string $type,string $slug,string $title,string $content,array $meta,array $terms=[]): int {
+        $existing=get_page_by_path($slug,OBJECT,$type);
+        $id=$existing?(int)$existing->ID:(int)wp_insert_post([
+            'post_type'=>$type,'post_status'=>'publish','post_name'=>$slug,'post_title'=>$title,'post_content'=>$content,
         ]);
-        register_post_type('qd_evidence', [
-            'label' => 'Evidence', 'public' => false, 'show_ui' => true, 'show_in_rest' => false,
-            'capability_type' => ['qd_evidence','qd_evidence_items'], 'map_meta_cap' => true,
-            'supports' => ['title','editor','custom-fields'],
-        ]);
+        if($id<1) return 0;
+        foreach($meta as $k=>$v) if((string)get_post_meta($id,$k,true)==='') update_post_meta($id,$k,$v);
+        foreach($terms as $tax=>$values) wp_set_object_terms($id,$values,$tax,false);
+        return $id;
+    }
+
+    private static function seed_portal_content(): void {
+        self::seed_item('qd_node','quantdeus-core-node','QuantDeus Core Node',
+            'Канонический цифровой узел QuantDeus. Поддерживает открытые артефакты, портал и Federation Interface, не подчиняя независимые узлы.',
+            [
+                'qd_owner'=>'QuantDeus','qd_evidence_grade'=>'B',
+                'qd_mission'=>'Снижать измеримый дефицит и расширять способность людей свободно созидать через проверяемые решения, открытые артефакты и добровольное сотрудничество.',
+                'qd_artifacts'=>'quantdeus/quantdeus.github.io · quantdeus-core · quantdeus-aero · CI evidence',
+                'qd_metrics'=>'Наблюдаемые code/runtime артефакты существуют; impact KPI вне проверяемого состояния репозитория пока NOT MEASURED.',
+                'qd_replication'=>'Публичный репозиторий + WordPress plugin/theme + staging blueprint + acceptance criteria.',
+                'qd_safety'=>'Auth, secrets, production cutover, расходы и необратимые действия остаются под Human Override.',
+                'qd_exit'=>'Участники и совместимые узлы сохраняют собственную идентичность, owner, переносимые артефакты и право прекратить участие.',
+                'qd_governance'=>'Локальные решения принимаются локально; общий контракт — совместимость, evidence discipline и EXIT.',
+                'qd_human_override'=>'Production, secrets, billing, irreversible changes and sensitive external commitments.',
+            ],['qd_horizon'=>['ignition-2028'],'qd_pillar'=>['transparency-trust','idic']]);
+
+        self::seed_item('qd_project','wordpress-neon-horizon-v4-portal','WordPress Neon Horizon v4 Portal',
+            'Обратимый staging-проект по превращению QuantDeus из лендинга в многоуровневый WordPress-портал цивилизационной экосистемы.',
+            ['qd_evidence_grade'=>'B','qd_cycle_stage'=>'QA → MEASURED OUTCOME',
+             'qd_outcome_metric'=>'Portal capabilities, mobile usability, auth integrity and production smoke. Activity counts are not impact.'],
+            ['qd_horizon'=>['ignition-2028'],'qd_pillar'=>['science-innovation','transparency-trust']]);
+
+        self::seed_item('qd_research','warp-gravity-research','Warp / Gravity Research',
+            'Frontier research track. Футуристические концепции остаются гипотезами до прохождения уравнений, данных, воспроизводимости и falsifier.',
+            [
+                'qd_evidence_grade'=>'C','qd_fact'=>'QuantDeus maintains a documented Warp / Gravity research track.',
+                'qd_evidence'=>'No independently replicated engineering breakthrough is asserted by this portal entry.',
+                'qd_hypothesis'=>'Candidate spacetime and propulsion concepts can be screened through geometry, equations of motion, energy conditions, stability and reproducibility gates.',
+                'qd_unknown'=>'Engineering feasibility, scalable energy requirements and experimentally accessible configurations remain open.',
+                'qd_next_test'=>'Publish a reproducible solver/evidence packet for the next candidate and run independent QA.',
+                'qd_falsifier'=>'Failure to satisfy stated equations/constraints or independent inability to reproduce the claimed result.',
+            ],['qd_horizon'=>['ignition-2028','century-compass-2126'],'qd_pillar'=>['science-innovation','long-horizon'],'qd_research_domain'=>['warp-gravity']]);
+
+        self::seed_item('qd_artifact','neon-horizon-v4-canon','Neon Horizon v4 Canon',
+            'Canonical constitutional-operational charter. Grade A here describes the inspectable existence/integrity of the artifact, not proof of every long-horizon vision inside it.',
+            ['qd_evidence_grade'=>'A','qd_source_url'=>'https://github.com/quantdeus/quantdeus.github.io/blob/main/coordination/civilization-doctrine.json',
+             'qd_replication'=>'Read the canon, map a concrete need, publish evidence and package a reproducible result without surrendering local identity or EXIT.'],
+            ['qd_horizon'=>['ignition-2028','proto-federation-2041','century-compass-2126'],'qd_pillar'=>['human-dignity','idic','long-horizon']]);
+    }
+
+    public static function meta_boxes(): void {
+        foreach(array_keys(self::structured_fields()) as $type) {
+            add_meta_box('qd_structured_meta','QuantDeus Evidence / Federation Interface',[self::class,'render_meta_box'],$type,'normal','high');
+        }
+    }
+
+    public static function render_meta_box(WP_Post $post): void {
+        wp_nonce_field('qd_structured_meta_save','qd_structured_meta_nonce');
+        echo '<div style="display:grid;gap:14px">';
+        foreach(self::structured_fields()[$post->post_type]??[] as $key=>$label){
+            $value=(string)get_post_meta($post->ID,$key,true);
+            echo '<label><strong>'.esc_html($label).'</strong>';
+            if($key==='qd_evidence_grade'){
+                echo '<select name="'.esc_attr($key).'" style="display:block;width:100%;max-width:420px;margin-top:6px">';
+                foreach([''=>'UNKNOWN / NOT MEASURED','A'=>'A','B'=>'B','C'=>'C'] as $v=>$name)
+                    echo '<option value="'.esc_attr($v).'" '.selected($value,$v,false).'>'.esc_html($name).'</option>';
+                echo '</select>';
+            } else {
+                echo '<textarea name="'.esc_attr($key).'" rows="3" style="display:block;width:100%;margin-top:6px">'.esc_textarea($value).'</textarea>';
+            }
+            echo '</label>';
+        }
+        echo '</div>';
+    }
+
+    public static function save_meta_boxes(int $post_id): void {
+        if(!isset($_POST['qd_structured_meta_nonce']) || !wp_verify_nonce((string)$_POST['qd_structured_meta_nonce'],'qd_structured_meta_save')) return;
+        if(defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if(!current_user_can('edit_post',$post_id)) return;
+        $post=get_post($post_id); if(!$post) return;
+        foreach(self::structured_fields()[$post->post_type]??[] as $key=>$label){
+            if(!array_key_exists($key,$_POST)) continue;
+            $value=sanitize_textarea_field(wp_unslash((string)$_POST[$key]));
+            if($key==='qd_evidence_grade' && !in_array($value,['','A','B','C'],true)) $value='';
+            update_post_meta($post_id,$key,$value);
+        }
     }
 
     private static function service_seed(): array {
@@ -204,6 +369,20 @@ final class QD_Core {
                 return rest_ensure_response(array_map([self::class,'service_data'],$posts));
             },
         ]);
+        register_rest_route(self::NS, '/dashboard', [
+            'methods'=>'GET','permission_callback'=>'__return_true',
+            'callback'=>function() {
+                $published=fn(string $type)=>(int)(wp_count_posts($type)->publish??0);
+                $grade_a=get_posts(['post_type'=>'qd_result','post_status'=>'publish','numberposts'=>-1,'fields'=>'ids','meta_key'=>'qd_evidence_grade','meta_value'=>'A']);
+                return rest_ensure_response(['canon'=>'Neon Horizon v4.0','kpis'=>[
+                    'Active Nodes'=>$published('qd_node'),'Open Artifacts'=>$published('qd_artifact'),
+                    'Verified Results'=>count($grade_a),'Active Projects'=>$published('qd_project'),
+                    'Research Items'=>$published('qd_research'),'Action Conversion'=>'UNKNOWN','Partner Density'=>'UNKNOWN',
+                    'Future Fund Flow'=>'UNKNOWN','Automation Ratio'=>'UNKNOWN','Impact Ledger'=>'UNKNOWN',
+                    'Transparency Score'=>'UNKNOWN','Federation Score'=>'UNKNOWN','Replication Success'=>'UNKNOWN',
+                ]]);
+            },
+        ]);
         register_rest_route(self::NS, '/session/logout', [
             'methods'=>'POST','permission_callback'=>'__return_true',
             'callback'=>function() {
@@ -257,6 +436,10 @@ final class QD_Core {
                 'site'=>get_bloginfo('name'),'engine'=>'wordpress',
                 'services'=>(int)(wp_count_posts('qd_service')->publish ?? 0),
                 'forum_threads'=>(int)(wp_count_posts('qd_forum_thread')->publish ?? 0),
+                'nodes'=>(int)(wp_count_posts('qd_node')->publish ?? 0),
+                'research'=>(int)(wp_count_posts('qd_research')->publish ?? 0),
+                'artifacts'=>(int)(wp_count_posts('qd_artifact')->publish ?? 0),
+                'results'=>(int)(wp_count_posts('qd_result')->publish ?? 0),
             ]),
         ]);
     }
@@ -887,13 +1070,36 @@ final class QD_Core {
             echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_service')).'">Services</a>';
             echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_project')).'">Projects</a>';
             echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_evidence')).'">Evidence</a>';
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_node')).'">Nodes</a>';
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_research')).'">Research</a>';
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_artifact')).'">Artifacts</a>';
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_result')).'">Results</a>';
         }
         echo '</p>';
     }
 
     public static function schema(): void {
-        if (!is_front_page()) return;
-        echo '<script type="application/ld+json">'.wp_json_encode(['@context'=>'https://schema.org','@type'=>'Organization','name'=>'QuantDeus','url'=>home_url('/')],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).'</script>';
+        $graph=[];
+        if (is_front_page()) {
+            $graph=[
+                ['@type'=>'Organization','@id'=>home_url('/#organization'),'name'=>'QuantDeus','url'=>home_url('/')],
+                ['@type'=>'WebSite','@id'=>home_url('/#website'),'name'=>'QuantDeus // Neon Horizon','url'=>home_url('/'),'publisher'=>['@id'=>home_url('/#organization')]],
+            ];
+        } elseif (is_singular('qd_research')) {
+            $id=get_queried_object_id();
+            $graph=[[
+                '@type'=>'ResearchProject','name'=>get_the_title($id),'url'=>get_permalink($id),
+                'description'=>wp_strip_all_tags(get_the_excerpt($id) ?: get_post_field('post_content',$id)),
+            ]];
+        } elseif (is_singular('qd_node')) {
+            $id=get_queried_object_id();
+            $graph=[[
+                '@type'=>'Project','name'=>get_the_title($id),'url'=>get_permalink($id),
+                'description'=>wp_strip_all_tags(get_post_meta($id,'qd_mission',true) ?: get_post_field('post_content',$id)),
+            ]];
+        }
+        if (!$graph) return;
+        echo '<script type="application/ld+json">'.wp_json_encode(['@context'=>'https://schema.org','@graph'=>$graph],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).'</script>';
     }
 }
 register_activation_hook(__FILE__,['QD_Core','activate']);

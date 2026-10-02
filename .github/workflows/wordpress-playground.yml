@@ -62,6 +62,20 @@ jobs:
           test -f wordpress/src/quantdeus-aero/footer.php
           test -f wordpress/src/quantdeus-aero/page-login.php
           test -f wordpress/src/quantdeus-aero/index.php
+          test -f wordpress/src/quantdeus-aero/archive.php
+          test -f wordpress/src/quantdeus-aero/single.php
+          test -f wordpress/src/quantdeus-aero/page.php
+          test -f wordpress/src/quantdeus-aero/page-federation.php
+          test -f wordpress/src/quantdeus-aero/page-horizons.php
+          test -f wordpress/src/quantdeus-aero/page-ai-fleet.php
+          test -f wordpress/src/quantdeus-aero/page-manifesto.php
+          test -f wordpress/src/quantdeus-aero/page-community.php
+          test -f wordpress/src/quantdeus-aero/page-knowledge.php
+          test -f wordpress/src/quantdeus-aero/page-ksenia-cherednikova.php
+          test -f wordpress/src/quantdeus-aero/page-media.php
+          test -f wordpress/src/quantdeus-aero/page-news.php
+          test -f wordpress/src/quantdeus-aero/page-about.php
+          test -f wordpress/src/quantdeus-aero/page-account.php
           test -f wordpress/src/quantdeus-aero/app.js
           test -f wordpress/src/quantdeus-aero/logo.svg
           test -f wordpress/src/quantdeus-aero/aero-world.svg
@@ -110,6 +124,14 @@ jobs:
           grep -q "github_staff_session_valid" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "github_broker_unavailable" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "service_post" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "qd_node" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "qd_research" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "qd_artifact" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "qd_result" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "Federation Interface v1" wordpress/src/quantdeus-aero/page-federation.php
+          grep -q "Evidence Before Narrative" wordpress/src/quantdeus-aero/front-page.php
+          grep -q "Current QuantDeus State" wordpress/src/quantdeus-aero/front-page.php
+          if grep -q "aero-world.svg" wordpress/src/quantdeus-aero/front-page.php; then echo "SVG placeholder forbidden on portal homepage"; exit 1; fi
           grep -q "capability_type" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "wp_add_dashboard_widget" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "admin_url()" wordpress/src/quantdeus-aero/page-login.php
@@ -155,6 +177,19 @@ jobs:
           foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/session/logout','/quantdeus/v1/inquiries','/quantdeus/v1/forum','/quantdeus/v1/telegram/miniapp','/quantdeus/v1/telegram/login','/quantdeus/v1/telegram/broker','/quantdeus/v1/github/broker','/quantdeus/v1/github/config','/quantdeus/v1/github/start','/quantdeus/v1/github/callback'] as $route) {
               if (!isset($routes[$route])) { throw new Exception('Missing REST route: '.$route); }
           }
+          foreach (['qd_node','qd_research','qd_artifact','qd_result','qd_project','qd_service','qd_forum_thread'] as $type) {
+              if (!post_type_exists($type)) throw new Exception('Missing post type: '.$type);
+          }
+          foreach (['qd_horizon','qd_pillar','qd_research_domain'] as $taxonomy) {
+              if (!taxonomy_exists($taxonomy)) throw new Exception('Missing taxonomy: '.$taxonomy);
+          }
+          foreach (['federation','horizons','ai-fleet','community','ksenia-cherednikova','media','news','knowledge','manifesto','about','account'] as $slug) {
+              if (!get_page_by_path($slug,OBJECT,'page')) throw new Exception('Missing portal page: '.$slug);
+          }
+          $seed_node=get_page_by_path('quantdeus-core-node',OBJECT,'qd_node');
+          if (!$seed_node || get_post_meta($seed_node->ID,'qd_evidence_grade',true)!=='B') throw new Exception('Federation seed node missing');
+          $warp=get_page_by_path('warp-gravity-research',OBJECT,'qd_research');
+          if (!$warp || get_post_meta($warp->ID,'qd_evidence_grade',true)!=='C') throw new Exception('Warp research evidence contract missing');
           $services=get_posts(['post_type'=>'qd_service','post_status'=>'publish','numberposts'=>20]);
           $ids=array_map(fn($p)=>(string)(get_post_meta($p->ID,'qd_service_id',true) ?: $p->post_name),$services);
           foreach (['business-automation','ksenia-cherednikova-concert'] as $required) {
@@ -252,6 +287,20 @@ jobs:
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/orbital-garden.svg',data:source('wordpress/src/quantdeus-aero/orbital-garden.svg')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/archive-qd_forum_thread.php',data:source('wordpress/src/quantdeus-aero/archive-qd_forum_thread.php')},
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/single-qd_forum_thread.php',data:source('wordpress/src/quantdeus-aero/single-qd_forum_thread.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/archive.php',data:source('wordpress/src/quantdeus-aero/archive.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/single.php',data:source('wordpress/src/quantdeus-aero/single.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page.php',data:source('wordpress/src/quantdeus-aero/page.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-federation.php',data:source('wordpress/src/quantdeus-aero/page-federation.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-horizons.php',data:source('wordpress/src/quantdeus-aero/page-horizons.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-ai-fleet.php',data:source('wordpress/src/quantdeus-aero/page-ai-fleet.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-manifesto.php',data:source('wordpress/src/quantdeus-aero/page-manifesto.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-community.php',data:source('wordpress/src/quantdeus-aero/page-community.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-knowledge.php',data:source('wordpress/src/quantdeus-aero/page-knowledge.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-ksenia-cherednikova.php',data:source('wordpress/src/quantdeus-aero/page-ksenia-cherednikova.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-media.php',data:source('wordpress/src/quantdeus-aero/page-media.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-news.php',data:source('wordpress/src/quantdeus-aero/page-news.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-about.php',data:source('wordpress/src/quantdeus-aero/page-about.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/page-account.php',data:source('wordpress/src/quantdeus-aero/page-account.php')},
               {step:'activatePlugin',pluginPath:'quantdeus-core/quantdeus-core.php',pluginName:'QuantDeus Core'},
               {step:'activateTheme',themeFolderName:'quantdeus-aero'},
               options,seed,{step:'runPHP',code:assertion}

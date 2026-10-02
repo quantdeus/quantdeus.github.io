@@ -28,6 +28,7 @@
         'depth'=>3,
       ]); ?>
     </nav>
+    <button class="qd-theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Переключить Day / Night режим">DAY / NIGHT</button>
     <a class="qd-login-link<?php echo is_page('login') ? ' is-active' : ''; ?>" href="<?php echo esc_url(home_url('/login/')); ?>">
       <?php echo is_user_logged_in() ? 'Аккаунт' : 'Войти'; ?>
     </a>
