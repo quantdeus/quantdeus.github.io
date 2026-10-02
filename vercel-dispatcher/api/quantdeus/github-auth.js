@@ -11,7 +11,9 @@ const json = (res, status, body) => res.status(status).json(body);
 function cors(req, res) {
   const origin = req.headers?.origin;
   const allowed = githubAuthConfig().canonical_origin;
-  if (origin && origin === allowed) res.setHeader("Access-Control-Allow-Origin", origin);
+  if (origin && (origin === allowed || origin === "https://playground.wordpress.net")) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "content-type,authorization");
