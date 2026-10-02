@@ -46,29 +46,40 @@ add_action('wp_enqueue_scripts', function(){
 
 add_action('wp_head', function(){
     if (!is_front_page()) return;
-    $title = 'QuantDeus — технологии, исследования, медиа и сообщество';
-    $description = 'QuantDeus Holding: автоматизация бизнеса, исследования, медиа-проекты, концерты и сообщество на единой WordPress-платформе.';
+    $title = 'QuantDeus // Neon Horizon — Federation Portal & Civilization OS';
+    $description = 'QuantDeus — WordPress-портал Неонового Горизонта: Федерация автономных узлов, исследования, проекты, AI Fleet, открытые артефакты, сообщество и услуги.';
     echo '<meta name="description" content="'.esc_attr($description).'">'."\n";
     echo '<meta property="og:type" content="website">'."\n";
     echo '<meta property="og:title" content="'.esc_attr($title).'">'."\n";
     echo '<meta property="og:description" content="'.esc_attr($description).'">'."\n";
     echo '<meta property="og:url" content="'.esc_url(home_url('/')).'">'."\n";
     echo '<meta property="og:image" content="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG">'."\n";
+    echo '<link rel="canonical" href="'.esc_url(home_url('/')).'">'."\n";
 });
 
 
+function qd_aero_primary_items(): array {
+    return [
+        ['QuantDeus',home_url('/')],
+        ['Federation',get_post_type_archive_link('qd_node') ?: home_url('/federation/nodes/')],
+        ['Horizons',home_url('/#horizons')],
+        ['Research',get_post_type_archive_link('qd_research') ?: home_url('/research/')],
+        ['Projects',get_post_type_archive_link('qd_project') ?: home_url('/projects/')],
+        ['AI Fleet',home_url('/#fleet')],
+        ['Community',home_url('/#community')],
+        ['Forum',get_post_type_archive_link('qd_forum_thread') ?: home_url('/forum/')],
+        ['Services',home_url('/#services')],
+        ['Ksenia',home_url('/#ksenia')],
+        ['Knowledge',get_post_type_archive_link('qd_artifact') ?: home_url('/knowledge/artifacts/')],
+        ['News',home_url('/#news')],
+        ['Manifesto',home_url('/#manifesto')],
+        ['About',home_url('/#about')],
+    ];
+}
+
 function qd_aero_primary_menu_fallback(array $args=[]): void {
     echo '<ul class="qd-menu">';
-    $items=[
-        ['Холдинг',home_url('/#holding')],
-        ['Направления',home_url('/#directions')],
-        ['Галерея',home_url('/#visuals')],
-        ['Услуги',home_url('/#services')],
-        ['Ксения',home_url('/#ksenia')],
-        ['Форум',home_url('/forum/')],
-        ['Сообщество',home_url('/#community')],
-    ];
-    foreach($items as [$label,$url]){
+    foreach(qd_aero_primary_items() as [$label,$url]){
         echo '<li class="menu-item"><a href="'.esc_url($url).'">'.esc_html($label).'</a></li>';
     }
     echo '</ul>';
@@ -88,7 +99,10 @@ function qd_aero_ensure_login_page(): void {
 
 function qd_aero_ensure_primary_menu(): void {
     $locations=get_theme_mod('nav_menu_locations',[]);
-    if (!empty($locations['primary']) && wp_get_nav_menu_object((int)$locations['primary'])) return;
+    if (!empty($locations['primary'])) {
+        $bound=wp_get_nav_menu_object((int)$locations['primary']);
+        if ($bound && $bound->name!=='QuantDeus Primary') return;
+    }
 
     $menu=wp_get_nav_menu_object('QuantDeus Primary');
     if (!$menu) {
@@ -99,46 +113,19 @@ function qd_aero_ensure_primary_menu(): void {
     if (!$menu) return;
 
     $existing=wp_get_nav_menu_items($menu->term_id) ?: [];
-    if (!$existing) {
-        $items=[
-            ['Холдинг',home_url('/#holding')],
-            ['Направления',home_url('/#directions')],
-            ['Галерея',home_url('/#visuals')],
-            ['Услуги',home_url('/#services')],
-            ['Ксения',home_url('/#ksenia')],
-            ['Форум',home_url('/forum/')],
-            ['Сообщество',home_url('/#community')],
-        ];
-        foreach($items as [$title,$url]){
-            wp_update_nav_menu_item($menu->term_id,0,[
-                'menu-item-title'=>$title,
-                'menu-item-url'=>$url,
-                'menu-item-status'=>'publish',
-                'menu-item-type'=>'custom',
-            ]);
-        }
-        $existing=wp_get_nav_menu_items($menu->term_id) ?: [];
-    }
+    $urls=[];
+    foreach($existing as $item) $urls[untrailingslashit((string)$item->url)]=true;
 
-    // Repair the already-seeded QuantDeus menu from the pre-gallery release
-    // without overwriting an owner-created custom menu.
-    if ($menu->name==='QuantDeus Primary') {
-        $gallery_url=home_url('/#visuals');
-        $has_gallery=false;
-        foreach($existing as $item){
-            if (untrailingslashit((string)$item->url)===untrailingslashit($gallery_url)) {
-                $has_gallery=true;
-                break;
-            }
-        }
-        if (!$has_gallery) {
-            wp_update_nav_menu_item($menu->term_id,0,[
-                'menu-item-title'=>'Галерея',
-                'menu-item-url'=>$gallery_url,
-                'menu-item-status'=>'publish',
-                'menu-item-type'=>'custom',
-            ]);
-        }
+    foreach(qd_aero_primary_items() as [$title,$url]){
+        $key=untrailingslashit((string)$url);
+        if (isset($urls[$key])) continue;
+        wp_update_nav_menu_item($menu->term_id,0,[
+            'menu-item-title'=>$title,
+            'menu-item-url'=>$url,
+            'menu-item-status'=>'publish',
+            'menu-item-type'=>'custom',
+        ]);
+        $urls[$key]=true;
     }
 
     $locations['primary']=(int)$menu->term_id;
