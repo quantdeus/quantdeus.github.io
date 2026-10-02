@@ -94,6 +94,7 @@ async function role(name, system, prompt) {
       'You are ' + name + ' in the QuantDeus independent Mirror Swarm repair plane.',
       'GitHub quantdeus/quantdeus.github.io main is the canonical source of truth.',
       'You diagnose software/runtime defects, not people.',
+      String(system || '').trim(),
       'Never expose secrets or invent evidence.',
       'Never weaken authentication, RBAC, QA, branch protection, human approval, or protected policy to make a check green.',
       'Return only the requested strict JSON object.'
