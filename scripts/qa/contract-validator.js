@@ -123,7 +123,7 @@ check(registry.doctrine?.inheritance === 'all-agents', 'coordination/agents.json
 
 const requiredDoctrineSources = ['thrive-1','thrive-2','venus-project','earth-renovation','gravity-frontiers'];
 const doctrineSourceIds = (doctrine.source_streams || []).map(s=>s.id);
-const requiredManifestSources = ['neon-horizon-v3','epidemiya-dobra-2y'];
+const requiredManifestSources = ['neon-horizon-v4','epidemiya-dobra-2y'];
 const doctrineManifestIds = (doctrine.manifest_sources || []).map(s=>s.id);
 for (const id of requiredDoctrineSources) {
   check(doctrineSourceIds.includes(id), 'coordination/civilization-doctrine.json', 'required doctrine source present: '+id);
@@ -140,6 +140,13 @@ check(Boolean(doctrine.constitutional_core?.exit_principle?.rule), 'coordination
 check((doctrine.epidemic_of_good?.replication_loop || []).length >= 6, 'coordination/civilization-doctrine.json', 'Epidemic of Good replication loop preserved');
 check(Object.keys(doctrine.kpis || {}).length >= 10, 'coordination/civilization-doctrine.json', 'acceleration KPI set preserved');
 check((doctrine.acceleration_plan?.phases || []).length === 4, 'coordination/civilization-doctrine.json', 'four six-month phase gates preserved');
+check(doctrine.horizon_architecture?.short?.period === '2026-2028', 'coordination/civilization-doctrine.json', 'v4 short horizon 2026-2028 declared');
+check(doctrine.horizon_architecture?.middle?.period === '2026-2041', 'coordination/civilization-doctrine.json', 'v4 middle horizon 2026-2041 declared');
+check(doctrine.horizon_architecture?.century?.period === '2026-2126', 'coordination/civilization-doctrine.json', 'v4 century compass 2026-2126 declared');
+check((doctrine.federation_of_nodes?.interface_v1?.fields || []).includes('EXIT'), 'coordination/civilization-doctrine.json', 'Federation Interface v1 preserves EXIT');
+check((doctrine.federation_of_nodes?.interface_v1?.fields || []).includes('Human override'), 'coordination/civilization-doctrine.json', 'Federation Interface v1 preserves human override');
+check(Boolean(doctrine.kpis?.Federation_Score), 'coordination/civilization-doctrine.json', 'Federation Score KPI declared');
+check(Boolean(doctrine.kpis?.Replication_Success), 'coordination/civilization-doctrine.json', 'Replication Success KPI declared');
 check(doctrine.inheritance === 'all-agents', 'coordination/civilization-doctrine.json', 'canonical doctrine applies to all agents');
 check(doctrine.adaptive_manifest?.source === 'coordination/manifesto-living.md', 'coordination/civilization-doctrine.json', 'living manifesto adaptive layer declared');
 check(doctrine.agent_cron?.registry === 'coordination/agent-cron-map.json', 'coordination/civilization-doctrine.json', 'role cron registry declared');
