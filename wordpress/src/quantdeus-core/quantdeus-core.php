@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,13 +10,12 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.4.0';
+    public const VERSION = '1.5.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
         add_action('init', [self::class, 'maybe_upgrade'], 20);
         add_action('rest_api_init', [self::class, 'routes']);
-        add_action('admin_menu', [self::class, 'admin_menu']);
         add_action('admin_init', [self::class, 'guard_admin']);
         add_action('wp_head', [self::class, 'schema'], 40);
         add_filter('show_admin_bar', [self::class, 'show_admin_bar']);
@@ -657,60 +656,87 @@ final class QD_Core {
         exit;
     }
 
-    private static function github_admin_session_valid(bool $live=true): bool {
+    private static function github_staff_session_valid(array $allowed_permissions=['write','maintain','admin'], bool $live=true): bool {
         if (!is_user_logged_in()) return false;
         $user=wp_get_current_user();
-        if (!in_array('administrator',$user->roles,true)) return false;
         $login=(string)get_user_meta($user->ID,'qd_github_login',true);
         if ($login==='') return false;
-        if (get_transient('qd_gh_admin_ok_'.$user->ID)) return true;
-        if (!$live) return false;
+
+        $permission=strtolower((string)get_user_meta($user->ID,'qd_github_permission',true));
+        if (!$live) return in_array($permission,$allowed_permissions,true);
 
         $broker_assertion=(string)get_transient('qd_gh_broker_assertion_'.$user->ID);
         if ($broker_assertion!=='') {
             $identity=self::github_identity_via_broker($broker_assertion);
             $permission=is_array($identity) ? (string)($identity['permission'] ?? 'none') : 'none';
-            update_user_meta($user->ID,'qd_github_permission',$permission);
-            update_user_meta($user->ID,'qd_github_verified_at',time());
-            if ($permission==='admin') {
-                set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
-                return true;
-            }
-            $user->set_role(self::role_for_github_permission($permission));
-            delete_transient('qd_gh_admin_ok_'.$user->ID);
-            return false;
+        } else {
+            $protected=(string)get_transient('qd_gh_token_'.$user->ID);
+            $token=self::unprotect_github_token($protected);
+            $permission=$token!=='' ? self::github_permission($token,$login) : 'none';
         }
 
-        $protected=(string)get_transient('qd_gh_token_'.$user->ID);
-        $token=self::unprotect_github_token($protected);
-        if ($token==='') return false;
-        $permission=self::github_permission($token,$login);
         update_user_meta($user->ID,'qd_github_permission',$permission);
         update_user_meta($user->ID,'qd_github_verified_at',time());
+        $role=self::role_for_github_permission($permission);
+        if (!in_array($role,$user->roles,true)) {
+            $user->set_role($role);
+        }
+
         if ($permission==='admin') {
             set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
-            return true;
+        } else {
+            delete_transient('qd_gh_admin_ok_'.$user->ID);
         }
-        $user->set_role(self::role_for_github_permission($permission));
-        delete_transient('qd_gh_admin_ok_'.$user->ID);
-        return false;
+        return in_array($permission,$allowed_permissions,true);
+    }
+
+    private static function github_admin_session_valid(bool $live=true): bool {
+        if (!is_user_logged_in()) return false;
+        $user=wp_get_current_user();
+        if (!in_array('administrator',$user->roles,true)) return false;
+        if (!$live && get_transient('qd_gh_admin_ok_'.$user->ID)) return true;
+        return self::github_staff_session_valid(['admin'],$live);
     }
 
     public static function guard_admin(): void {
         if (wp_doing_ajax()) return;
-        if (current_user_can('manage_options') && self::github_admin_session_valid(true)) return;
-        if (current_user_can('manage_options')) wp_logout();
-        wp_safe_redirect(home_url('/?admin=github-required'));
+
+        if (current_user_can('manage_options')) {
+            if (self::github_admin_session_valid(true)) return;
+            wp_logout();
+            wp_safe_redirect(home_url('/login/?github=admin-required'));
+            exit;
+        }
+
+        $roles=wp_get_current_user()->roles ?? [];
+        if (in_array('qd_moderator',$roles,true)) {
+            if (self::github_staff_session_valid(['write','maintain','admin'],true)) return;
+            wp_logout();
+            wp_safe_redirect(home_url('/login/?github=staff-required'));
+            exit;
+        }
+
+        wp_safe_redirect(home_url('/login/?admin=staff-required'));
         exit;
     }
 
     public static function show_admin_bar(bool $show): bool {
-        return $show && current_user_can('manage_options') && self::github_admin_session_valid(false);
+        if (!$show || !is_user_logged_in()) return false;
+        if (current_user_can('manage_options')) return self::github_admin_session_valid(false);
+        $roles=wp_get_current_user()->roles ?? [];
+        if (in_array('qd_moderator',$roles,true)) {
+            return self::github_staff_session_valid(['write','maintain','admin'],false);
+        }
+        return false;
     }
 
     public static function block_password_admin($user, $password) {
-        if ($user instanceof WP_User && user_can($user,'manage_options')) {
+        if (!($user instanceof WP_User)) return $user;
+        if (user_can($user,'manage_options')) {
             return new WP_Error('github_admin_only','Administrator access requires a live GitHub repository-admin verification.');
+        }
+        if (in_array('qd_moderator',$user->roles,true)) {
+            return new WP_Error('github_staff_only','Moderator access requires live GitHub repository write/maintain/admin verification.');
         }
         return $user;
     }
@@ -719,20 +745,18 @@ final class QD_Core {
         if ($result instanceof WP_Error) return $result;
         $uri=(string)($_SERVER['REQUEST_URI'] ?? '');
         if (str_contains($uri,'/quantdeus/v1/session/logout')) return $result;
+
         if (is_user_logged_in() && current_user_can('manage_options') && !self::github_admin_session_valid(true)) {
             return new WP_Error('github_admin_required','GitHub repository-admin verification required',['status'=>403]);
         }
+
+        if (is_user_logged_in()) {
+            $roles=wp_get_current_user()->roles ?? [];
+            if (in_array('qd_moderator',$roles,true) && !self::github_staff_session_valid(['write','maintain','admin'],true)) {
+                return new WP_Error('github_staff_required','GitHub repository write/maintain/admin verification required',['status'=>403]);
+            }
+        }
         return $result;
-    }
-
-    public static function admin_menu(): void {
-        add_menu_page('QuantDeus','QuantDeus','manage_options','quantdeus',[self::class,'dashboard'],'dashicons-admin-site-alt3',3);
-    }
-
-    public static function dashboard(): void {
-        if (!current_user_can('manage_options')) return;
-        echo '<div class="wrap"><h1>QuantDeus WordPress Control Deck</h1><p>WordPress is the canonical application/CMS runtime. Make.com is not part of the runtime architecture.</p>';
-        echo '<p><a class="button button-primary" href="'.esc_url(admin_url('edit.php?post_type=qd_inquiry')).'">Inquiries</a> <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_service')).'">Services</a> <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_forum_thread')).'">Forum</a></p></div>';
     }
 
     public static function schema(): void {
