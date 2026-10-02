@@ -106,8 +106,11 @@ jobs:
           if grep -q '"step"[[:space:]]*:[[:space:]]*"login"' wordpress/blueprint.json; then echo "public WordPress admin autologin forbidden"; exit 1; fi
           if grep -n "QD_\(OWNER\|ADMIN\)_TELEGRAM_IDS.*administrator" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "Telegram must never grant administrator"; exit 1; fi
           grep -q "github_permission" wordpress/src/quantdeus-core/quantdeus-core.php
-          grep -q "github_admin_only" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "github_staff_session_valid" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "github_staff_only" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "return 'qd_member';" wordpress/src/quantdeus-core/quantdeus-core.php
+          if grep -q "add_menu_page('QuantDeus'" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "custom QuantDeus admin dashboard forbidden; use native wp-admin"; exit 1; fi
+          if grep -q "public static function dashboard(): void" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "custom dashboard renderer forbidden"; exit 1; fi
           if grep -q "QD_MODERATOR_TELEGRAM_IDS" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "Telegram staff elevation forbidden"; exit 1; fi
           grep -q "home_url('/login/')" wordpress/src/quantdeus-aero/header.php
           grep -q "QuantDeus Store Bot" wordpress/src/quantdeus-aero/page-login.php
@@ -159,7 +162,10 @@ jobs:
               if (!get_role($role)) { throw new Exception('Missing role: '.$role); }
           }
           if (!get_role('qd_agent')->has_cap('qd_agent_context')) { throw new Exception('Agent context capability missing'); }
-          if (get_role('qd_moderator')->has_cap('manage_options')) { throw new Exception('Moderator must not have admin access'); }
+          if (get_role('qd_moderator')->has_cap('manage_options')) { throw new Exception('Moderator must not have administrator settings access'); }
+          foreach (['edit_posts','edit_others_posts','edit_pages','upload_files','moderate_comments','read_private_posts','qd_moderate_forum'] as $cap) {
+              if (!get_role('qd_moderator')->has_cap($cap)) { throw new Exception('Moderator native wp-admin capability missing: '.$cap); }
+          }
           if (get_option('stylesheet') !== 'quantdeus-aero') { throw new Exception('QuantDeus Aero theme not active'); }
           qd_aero_ensure_login_page();
           $login=get_page_by_path('login',OBJECT,'page');
