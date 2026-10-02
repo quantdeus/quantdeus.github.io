@@ -22,21 +22,29 @@
     {
       "step": "installPlugin",
       "pluginData": {
-        "resource": "url",
-        "url": "https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/7ba3bc46a4db508622cd646718f86483dec994c1/wordpress/dist/quantdeus-core.zip"
+        "resource": "git:directory",
+        "url": "https://github.com/quantdeus/quantdeus.github.io.git",
+        "ref": "main",
+        "refType": "branch",
+        "path": "wordpress/src/quantdeus-core"
       },
       "options": {
-        "activate": true
+        "activate": true,
+        "targetFolderName": "quantdeus-core"
       }
     },
     {
       "step": "installTheme",
       "themeData": {
-        "resource": "url",
-        "url": "https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/7ba3bc46a4db508622cd646718f86483dec994c1/wordpress/dist/quantdeus-aero.zip"
+        "resource": "git:directory",
+        "url": "https://github.com/quantdeus/quantdeus.github.io.git",
+        "ref": "main",
+        "refType": "branch",
+        "path": "wordpress/src/quantdeus-aero"
       },
       "options": {
-        "activate": true
+        "activate": true,
+        "targetFolderName": "quantdeus-aero"
       }
     },
     {
