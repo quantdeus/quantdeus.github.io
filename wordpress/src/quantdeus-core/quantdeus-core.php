@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,14 +10,20 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.1.0';
+    public const VERSION = '1.2.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
         add_action('init', [self::class, 'maybe_upgrade'], 20);
         add_action('rest_api_init', [self::class, 'routes']);
         add_action('admin_menu', [self::class, 'admin_menu']);
+        add_action('admin_init', [self::class, 'guard_admin']);
         add_action('wp_head', [self::class, 'schema'], 40);
+        add_filter('show_admin_bar', [self::class, 'show_admin_bar']);
+        add_filter('wp_authenticate_user', [self::class, 'block_password_admin'], 20, 2);
+        add_filter('rest_authentication_errors', [self::class, 'guard_admin_rest'], 20);
+        add_filter('xmlrpc_enabled', '__return_false');
+        add_filter('wp_is_application_passwords_available', '__return_false');
     }
 
     public static function activate(): void {
@@ -152,6 +158,18 @@ final class QD_Core {
         register_rest_route(self::NS, '/telegram/login', [
             'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'telegram_web_login'],
         ]);
+        register_rest_route(self::NS, '/github/config', [
+            'methods'=>'GET','permission_callback'=>'__return_true','callback'=>fn()=>rest_ensure_response([
+                'configured'=>self::github_oauth_configured(),
+                'repository'=>self::github_repo(),
+            ]),
+        ]);
+        register_rest_route(self::NS, '/github/start', [
+            'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'github_start'],
+        ]);
+        register_rest_route(self::NS, '/github/callback', [
+            'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'github_callback'],
+        ]);
         register_rest_route(self::NS, '/agent/context', [
             'methods'=>'GET','permission_callback'=>fn()=>current_user_can('qd_agent_context') || current_user_can('manage_options'),
             'callback'=>fn()=>rest_ensure_response([
@@ -259,11 +277,11 @@ final class QD_Core {
     }
 
     private static function role_for_telegram(string $id): string {
-        $map=['QD_OWNER_TELEGRAM_IDS'=>'administrator','QD_ADMIN_TELEGRAM_IDS'=>'administrator','QD_MODERATOR_TELEGRAM_IDS'=>'qd_moderator'];
-        foreach($map as $const=>$role){
-            if (!defined($const)) continue;
-            $ids=array_filter(array_map('trim',explode(',',(string)constant($const))));
-            if (in_array($id,$ids,true)) return $role;
+        // Telegram is the member identity layer. It can grant moderator status,
+        // but it must never mint a WordPress administrator session.
+        if (defined('QD_MODERATOR_TELEGRAM_IDS')) {
+            $ids=array_filter(array_map('trim',explode(',',(string)QD_MODERATOR_TELEGRAM_IDS)));
+            if (in_array($id,$ids,true)) return 'qd_moderator';
         }
         return 'qd_member';
     }
@@ -309,6 +327,206 @@ final class QD_Core {
         $tg=self::verify_login_widget($payload);
         if (!$tg) return new WP_Error('telegram_invalid','Invalid Telegram Login Widget payload',['status'=>401]);
         return self::establish_telegram_session($tg);
+    }
+
+    private static function github_client_id(): string {
+        return defined('QD_GITHUB_CLIENT_ID') ? trim((string)QD_GITHUB_CLIENT_ID) : '';
+    }
+
+    private static function github_client_secret(): string {
+        return defined('QD_GITHUB_CLIENT_SECRET') ? trim((string)QD_GITHUB_CLIENT_SECRET) : '';
+    }
+
+    private static function github_repo(): string {
+        return defined('QD_GITHUB_ADMIN_REPOSITORY') && trim((string)QD_GITHUB_ADMIN_REPOSITORY)!==''
+            ? trim((string)QD_GITHUB_ADMIN_REPOSITORY)
+            : 'quantdeus/quantdeus.github.io';
+    }
+
+    private static function github_oauth_configured(): bool {
+        return self::github_client_id()!=='' && self::github_client_secret()!=='';
+    }
+
+    private static function github_callback_url(): string {
+        return rest_url(self::NS.'/github/callback');
+    }
+
+    private static function github_headers(string $token): array {
+        return [
+            'Accept'=>'application/vnd.github+json',
+            'Authorization'=>'Bearer '.$token,
+            'X-GitHub-Api-Version'=>'2026-03-10',
+            'User-Agent'=>'QuantDeus-WordPress',
+        ];
+    }
+
+    private static function github_api(string $url, string $token): ?array {
+        $response=wp_remote_get($url,['headers'=>self::github_headers($token),'timeout'=>12]);
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response)!==200) return null;
+        $body=json_decode((string)wp_remote_retrieve_body($response),true);
+        return is_array($body) ? $body : null;
+    }
+
+    private static function github_permission(string $token, string $login): string {
+        $repo=self::github_repo();
+        if (!preg_match('~^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$~',$repo)) return 'none';
+        $url='https://api.github.com/repos/'.$repo.'/collaborators/'.rawurlencode($login).'/permission';
+        $data=self::github_api($url,$token);
+        return strtolower((string)($data['permission'] ?? 'none'));
+    }
+
+    private static function role_for_github_permission(string $permission): string {
+        if ($permission==='admin') return 'administrator';
+        if (in_array($permission,['maintain','write'],true)) return 'qd_moderator';
+        return 'qd_member';
+    }
+
+    private static function protect_github_token(string $token): string {
+        if ($token==='' || !function_exists('openssl_encrypt')) return '';
+        $key=hash('sha256',wp_salt('auth'),true);
+        $iv=random_bytes(12); $tag='';
+        $cipher=openssl_encrypt($token,'aes-256-gcm',$key,OPENSSL_RAW_DATA,$iv,$tag,'quantdeus-github');
+        if ($cipher===false) return '';
+        return base64_encode($iv.$tag.$cipher);
+    }
+
+    private static function unprotect_github_token(string $protected): string {
+        if ($protected==='' || !function_exists('openssl_decrypt')) return '';
+        $raw=base64_decode($protected,true);
+        if ($raw===false || strlen($raw)<29) return '';
+        $iv=substr($raw,0,12); $tag=substr($raw,12,16); $cipher=substr($raw,28);
+        $key=hash('sha256',wp_salt('auth'),true);
+        $plain=openssl_decrypt($cipher,'aes-256-gcm',$key,OPENSSL_RAW_DATA,$iv,$tag,'quantdeus-github');
+        return is_string($plain) ? $plain : '';
+    }
+
+    public static function github_start() {
+        if (!self::github_oauth_configured()) {
+            return new WP_Error('github_oauth_unconfigured','GitHub admin login is not configured on this runtime',['status'=>503]);
+        }
+        $state=wp_generate_password(48,false,false);
+        set_transient('qd_gh_state_'.hash('sha256',$state),'1',10*MINUTE_IN_SECONDS);
+        $url=add_query_arg([
+            'client_id'=>self::github_client_id(),
+            'redirect_uri'=>self::github_callback_url(),
+            'state'=>$state,
+            'scope'=>'read:user',
+            'allow_signup'=>'false',
+        ],'https://github.com/login/oauth/authorize');
+        return rest_ensure_response(['ok'=>true,'authorize_url'=>$url]);
+    }
+
+    public static function github_callback(WP_REST_Request $req) {
+        $code=self::text($req->get_param('code'),500);
+        $state=self::text($req->get_param('state'),500);
+        $state_key='qd_gh_state_'.hash('sha256',$state);
+        if ($code==='' || $state==='' || !get_transient($state_key)) {
+            return new WP_Error('github_oauth_state','Invalid or expired GitHub OAuth state',['status'=>401]);
+        }
+        delete_transient($state_key);
+        if (!self::github_oauth_configured()) return new WP_Error('github_oauth_unconfigured','GitHub OAuth not configured',['status'=>503]);
+
+        $exchange=wp_remote_post('https://github.com/login/oauth/access_token',[
+            'headers'=>['Accept'=>'application/json','User-Agent'=>'QuantDeus-WordPress'],
+            'body'=>[
+                'client_id'=>self::github_client_id(),
+                'client_secret'=>self::github_client_secret(),
+                'code'=>$code,
+                'redirect_uri'=>self::github_callback_url(),
+            ],
+            'timeout'=>12,
+        ]);
+        if (is_wp_error($exchange) || wp_remote_retrieve_response_code($exchange)!==200) {
+            return new WP_Error('github_oauth_exchange','GitHub token exchange failed',['status'=>502]);
+        }
+        $token_body=json_decode((string)wp_remote_retrieve_body($exchange),true);
+        $token=is_array($token_body) ? trim((string)($token_body['access_token'] ?? '')) : '';
+        if ($token==='') return new WP_Error('github_oauth_token','GitHub did not return an access token',['status'=>401]);
+
+        $profile=self::github_api('https://api.github.com/user',$token);
+        $login=is_array($profile) ? self::text($profile['login'] ?? '',80) : '';
+        $github_id=is_array($profile) ? (string)($profile['id'] ?? '') : '';
+        if ($login==='' || $github_id==='') return new WP_Error('github_profile','GitHub profile unavailable',['status'=>401]);
+
+        $permission=self::github_permission($token,$login);
+        $role=self::role_for_github_permission($permission);
+        $users=get_users(['meta_key'=>'qd_github_id','meta_value'=>$github_id,'number'=>1]);
+        $user=$users ? $users[0] : null;
+        if (!$user) {
+            $uid=wp_insert_user([
+                'user_login'=>'github_'.$github_id,
+                'user_pass'=>wp_generate_password(32,true,true),
+                'display_name'=>$login,
+                'role'=>$role,
+            ]);
+            if (is_wp_error($uid)) return $uid;
+            $user=get_user_by('id',$uid);
+        }
+        $user->set_role($role);
+        update_user_meta($user->ID,'qd_github_id',$github_id);
+        update_user_meta($user->ID,'qd_github_login',$login);
+        update_user_meta($user->ID,'qd_github_permission',$permission);
+        update_user_meta($user->ID,'qd_github_verified_at',time());
+
+        $protected=self::protect_github_token($token);
+        if ($protected!=='') set_transient('qd_gh_token_'.$user->ID,$protected,8*HOUR_IN_SECONDS);
+        if ($permission==='admin') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
+
+        wp_set_current_user($user->ID);
+        wp_set_auth_cookie($user->ID,true,is_ssl());
+        $target=$permission==='admin' ? admin_url('admin.php?page=quantdeus') : home_url('/?github_role='.rawurlencode($role));
+        wp_safe_redirect($target);
+        exit;
+    }
+
+    private static function github_admin_session_valid(bool $live=true): bool {
+        if (!is_user_logged_in()) return false;
+        $user=wp_get_current_user();
+        if (!in_array('administrator',$user->roles,true)) return false;
+        $login=(string)get_user_meta($user->ID,'qd_github_login',true);
+        if ($login==='') return false;
+        if (!$live && get_transient('qd_gh_admin_ok_'.$user->ID)) return true;
+
+        $protected=(string)get_transient('qd_gh_token_'.$user->ID);
+        $token=self::unprotect_github_token($protected);
+        if ($token==='') return false;
+        $permission=self::github_permission($token,$login);
+        update_user_meta($user->ID,'qd_github_permission',$permission);
+        update_user_meta($user->ID,'qd_github_verified_at',time());
+        if ($permission==='admin') {
+            set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
+            return true;
+        }
+        $user->set_role(self::role_for_github_permission($permission));
+        delete_transient('qd_gh_admin_ok_'.$user->ID);
+        return false;
+    }
+
+    public static function guard_admin(): void {
+        if (wp_doing_ajax()) return;
+        if (current_user_can('manage_options') && self::github_admin_session_valid(true)) return;
+        if (current_user_can('manage_options')) wp_logout();
+        wp_safe_redirect(home_url('/?admin=github-required'));
+        exit;
+    }
+
+    public static function show_admin_bar(bool $show): bool {
+        return $show && current_user_can('manage_options') && self::github_admin_session_valid(false);
+    }
+
+    public static function block_password_admin($user, $password) {
+        if ($user instanceof WP_User && user_can($user,'manage_options')) {
+            return new WP_Error('github_admin_only','Administrator access requires a live GitHub repository-admin verification.');
+        }
+        return $user;
+    }
+
+    public static function guard_admin_rest($result) {
+        if ($result instanceof WP_Error) return $result;
+        if (is_user_logged_in() && current_user_can('manage_options') && !self::github_admin_session_valid(false)) {
+            return new WP_Error('github_admin_required','GitHub repository-admin verification required',['status'=>403]);
+        }
+        return $result;
     }
 
     public static function admin_menu(): void {
