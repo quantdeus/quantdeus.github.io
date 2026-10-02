@@ -81,7 +81,7 @@
       if(inquiry){
         const delivered=delivery==="telegram_server"||delivery==="generic_webhook";
         const statusText=delivered?"Заявка доставлена":delivery==="github_private"?"Заявка сохранена":"Заявка принята";
-        const successText=delivered?"Заявка отправлена владельцу QuantDeus.":delivery==="github_private"?"Заявка сохранена в приватном inbox QuantDeus.":"Заявка принята сервером.";
+        const successText=delivery==="telegram_server"?"Заявка отправлена владельцу QuantDeus.":delivery==="generic_webhook"?"Заявка доставлена в серверный inbox QuantDeus.":delivery==="github_private"?"Заявка сохранена в приватном inbox QuantDeus.":"Заявка принята сервером.";
         try{localStorage.removeItem("qd_pending_inquiry")}catch{}
         $("checkoutBody").innerHTML=`<p><b>${esc(order.product_name)}</b></p><p>Номер заявки: <code>${esc(order.id)}</code><br>Статус: <b>${statusText}</b></p><div class="qd-notice qd-success">${successText} Команда QuantDeus свяжется по указанному контакту${order.anonymous?"":" или через Telegram"} для уточнения задачи и стоимости.</div><p>${esc(order.request_note||"")}</p><div id="orderNotice" class="qd-notice" role="status">Оплата на этом этапе не требуется.</div>`;
       }else{
