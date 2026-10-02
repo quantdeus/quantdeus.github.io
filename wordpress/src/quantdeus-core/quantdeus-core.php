@@ -360,23 +360,38 @@ final class QD_Core {
             : 'https://quantdeus.vercel.app/api/quantdeus/auth';
     }
 
-    private static function telegram_identity_via_broker(string $id_token, string $init_data): ?array {
+    private static function telegram_bot_auth_url(): string {
+        return defined('QD_TELEGRAM_BOT_AUTH_URL') && trim((string)QD_TELEGRAM_BOT_AUTH_URL)!==''
+            ? trim((string)QD_TELEGRAM_BOT_AUTH_URL)
+            : 'https://quantdeus.vercel.app/api/quantdeus/bot-auth';
+    }
+
+    private static function telegram_identity_via_broker(string $id_token, string $init_data, string $assertion=''): ?array {
         $headers=[
             'Accept'=>'application/json',
             'User-Agent'=>'QuantDeus-WordPress/1.0',
         ];
-        if ($id_token!=='') {
+        $url=self::telegram_broker_url();
+        $method='GET';
+        if ($assertion!=='') {
+            $headers['Authorization']='Bearer '.$assertion;
+            $url=self::telegram_bot_auth_url();
+            $method='POST';
+        } elseif ($id_token!=='') {
             $headers['Authorization']='Bearer '.$id_token;
         } elseif ($init_data!=='') {
             $headers['x-telegram-init-data']=$init_data;
         } else {
             return null;
         }
-        $response=wp_remote_get(self::telegram_broker_url(),[
+        $args=[
             'headers'=>$headers,
             'timeout'=>15,
             'redirection'=>2,
-        ]);
+        ];
+        $response=$method==='POST'
+            ? wp_remote_post($url,$args)
+            : wp_remote_get($url,$args);
         if (is_wp_error($response)) return null;
         if (wp_remote_retrieve_response_code($response)!==200) return null;
         $body=json_decode((string)wp_remote_retrieve_body($response),true);
@@ -397,7 +412,8 @@ final class QD_Core {
         if (!is_array($payload)) $payload=[];
         $id_token=trim((string)($payload['id_token'] ?? ''));
         $init_data=trim((string)($payload['init_data'] ?? ''));
-        $tg=self::telegram_identity_via_broker($id_token,$init_data);
+        $assertion=trim((string)($payload['assertion'] ?? ''));
+        $tg=self::telegram_identity_via_broker($id_token,$init_data,$assertion);
         if (!$tg) return new WP_Error('telegram_invalid','Telegram identity broker rejected the login',['status'=>401]);
         return self::establish_telegram_session($tg);
     }
