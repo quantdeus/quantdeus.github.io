@@ -136,6 +136,13 @@ final class QD_Core {
                 return rest_ensure_response(array_map([self::class,'service_data'],$posts));
             },
         ]);
+        register_rest_route(self::NS, '/session/logout', [
+            'methods'=>'POST','permission_callback'=>'__return_true',
+            'callback'=>function() {
+                wp_logout();
+                return rest_ensure_response(['ok'=>true,'logged_out'=>true]);
+            },
+        ]);
         register_rest_route(self::NS, '/inquiries', [
             'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'create_inquiry'],
         ]);
@@ -694,6 +701,8 @@ final class QD_Core {
 
     public static function guard_admin_rest($result) {
         if ($result instanceof WP_Error) return $result;
+        $uri=(string)($_SERVER['REQUEST_URI'] ?? '');
+        if (str_contains($uri,'/quantdeus/v1/session/logout')) return $result;
         if (is_user_logged_in() && current_user_can('manage_options') && !self::github_admin_session_valid(true)) {
             return new WP_Error('github_admin_required','GitHub repository-admin verification required',['status'=>403]);
         }
