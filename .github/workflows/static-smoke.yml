@@ -243,10 +243,10 @@ jobs:
           if grep -qF '\\$''{{' .github/workflows/browser-homunculus.yml; then echo 'escaped GitHub expression found'; exit 1; fi
           test -f .github/workflows/telegram-bot.yml
           node -e "const fs=require('fs'); const vc=JSON.parse(fs.readFileSync('vercel-dispatcher/vercel.json','utf8')); const p=JSON.parse(fs.readFileSync('vercel-dispatcher/package.json','utf8')); if(!p.dependencies?.['@vercel/sandbox']) throw new Error('missing @vercel/sandbox'); if(!vc.functions?.['api/quantdeus/hermes.js']) throw new Error('missing Hermes maxDuration');"
-          grep -q '/coordination/' index.html
-          grep -q '/forum/' index.html
-          grep -q '/store/' index.html
-          grep -q 'постдефицитного' index.html
+          grep -q 'playground.wordpress.net' index.html
+          grep -q 'wordpress/blueprint.json' index.html
+          grep -q 'QuantDeus — WordPress' index.html
+          grep -q "location.replace('/')" wordpress/index.html
           grep -q '26 специализированных ИИ-агентов' README.md
           grep -q 'sitemap.xml' robots.txt
           grep -q '/coordination/' telegram/index.html
@@ -255,8 +255,7 @@ jobs:
           grep -q 'Концерт Ксении Чередниковой' telegram/index.html
           grep -q '>Услуги<' telegram/index.html
           if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
-          grep -q 'Frutiger Aero' index.html || grep -q 'var(--lime)' index.html
-          grep -q 'data-qd-auth' index.html
+          grep -q 'mode=seamless' index.html
           grep -q 'data-qd-auth' forum/index.html
           if grep -Fq '\n  <script' store/index.html forum/index.html; then echo 'literal \\n found in portal HTML'; exit 1; fi
           if grep -q 'if(!initData)' store/index.html; then echo 'stale initData reference found in store'; exit 1; fi

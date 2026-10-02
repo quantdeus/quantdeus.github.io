@@ -114,7 +114,7 @@ QuantDeus использует GitHub как источник истины.
 
 ```text
 /
-├─ index.html                     # публичная главная QuantDeus
+├─ index.html                     # корневой launcher канонического WordPress runtime
 ├─ telegram/                      # интерфейс продукта для Telegram
 ├─ coordination/                  # организация, доктрина, доски и записи исполнения
 │  ├─ agents.json                 # канонический реестр 26 агентов

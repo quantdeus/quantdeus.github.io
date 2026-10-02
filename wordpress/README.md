@@ -7,9 +7,10 @@ WordPress is the canonical QuantDeus application/CMS runtime after the owner-dec
 - `src/quantdeus-core/` — first-party application plugin: services, inquiries, forum, Telegram Mini App identity, RBAC, admin and bounded agent REST.
 - `src/quantdeus-aero/` — first-party Cosmic Frutiger Aero theme.
 - `blueprint.json` — reproducible developer/CI preview using WordPress Playground `git:directory` resources.
-- `index.html` — developer preview launcher for the GitHub Pages repository.
+- root `/index.html` — canonical GitHub Pages WordPress launcher at `https://quantdeus.github.io/`.
+- `wordpress/index.html` — compatibility redirect from the former `/wordpress/` URL to the root.
 
-The production WordPress origin is owner-managed and is intentionally not hard-coded here until the final public domain is declared as repository configuration.
+GitHub Pages serves the public entrypoint while WordPress Playground executes PHP/WordPress in the browser from the canonical Blueprint.
 
 ## Runtime rule
 

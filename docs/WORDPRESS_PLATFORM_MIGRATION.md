@@ -6,9 +6,11 @@ Tracks: Issue #359.
 
 On 2026-10-02 the owner declared the site migration complete: **WordPress is now the canonical application/CMS runtime for QuantDeus.**
 
-The repository `quantdeus/quantdeus.github.io` remains the canonical source/CI/evidence/swarm repository. It is no longer the canonical public application runtime.
+The repository `quantdeus/quantdeus.github.io` remains the canonical source/CI/evidence/swarm repository.
 
-The exact production WordPress origin is intentionally not guessed here. The connected `quantdeus.wordpress.com` account currently reports Coming Soon and no paid site-scoped MCP access, so that connector state is not treated as proof of the owner-managed production origin.
+**Public cutover:** `https://quantdeus.github.io/` is the canonical public entrypoint and boots the canonical QuantDeus WordPress Playground runtime from `wordpress/blueprint.json`. The legacy `https://quantdeus.github.io/wordpress/` route redirects to the root entrypoint.
+
+GitHub Pages itself is static hosting and does not execute PHP server-side; the WordPress runtime at this origin is therefore delivered through WordPress Playground in the browser. A future persistent PHP/MySQL WordPress host can replace the Playground transport without changing the first-party `quantdeus-core` and `quantdeus-aero` source contract.
 
 ## Canonical component mapping
 

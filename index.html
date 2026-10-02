@@ -2,134 +2,68 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#071629">
-  <title>QuantDeus — холдинг ИИ, исследований, продуктов и автоматизации</title>
-  <meta name="description" content="QuantDeus — холдинг ИИ: 26 специализированных агентов, исследования, продукты, инженерия, контроль качества, маркетинг, SEO и партнёрства в единой системе на GitHub.">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#9be8ff">
+  <title>QuantDeus — WordPress</title>
+  <meta name="description" content="QuantDeus Holding: технологии, исследования, автоматизация, медиа и сообщество на единой WordPress-платформе.">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="https://quantdeus.github.io/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="QuantDeus Holding">
-  <meta property="og:description" content="26 ИИ-агентов. 5 отделов. Исследования с опорой на доказательства, продукты, автоматизация, маркетинг и контроль качества.">
+  <meta property="og:title" content="QuantDeus — WordPress">
+  <meta property="og:description" content="QuantDeus Holding на WordPress: технологии, исследования, автоматизация, медиа и сообщество.">
   <meta property="og:url" content="https://quantdeus.github.io/">
   <meta property="og:site_name" content="QuantDeus">
-  <meta name="twitter:card" content="summary">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="/assets/qd-auth.js" defer></script>
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"Organization",
-    "name":"QuantDeus",
-    "url":"https://quantdeus.github.io/",
-    "description":"Холдинг исследований, продуктов и креативных проектов с цифровой командой из 26 ИИ-агентов.",
-    "sameAs":["https://github.com/quantdeus/quantdeus.github.io"]
-  }
-  </script>
   <style>
-    :root{--bg:#061329;--panel:#0b2947b8;--line:#9cecff33;--text:#f7fcff;--muted:#b5cce0;--cyan:#72ebff;--violet:#a99cff;--pink:#ff8de8;--lime:#70ffd7;--shadow:0 24px 80px #00101d88,inset 0 1px 0 #ffffff18}
-    *{box-sizing:border-box}html{scroll-behavior:smooth;background:var(--bg)}body{margin:0;color:var(--text);font:16px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 10% 8%,#6deeff3d,transparent 27rem),radial-gradient(circle at 88% 4%,#a98cff42,transparent 26rem),radial-gradient(circle at 80% 70%,#70ffd71c,transparent 30rem),linear-gradient(180deg,#07152c,#0b2948 48%,#061329 100%);min-height:100vh;overflow-x:hidden}
-    a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 32px));margin:auto}.nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(22px) saturate(135%);background:#061329b8;border-bottom:1px solid var(--line);box-shadow:0 10px 40px #00101d45}.navin{height:68px;display:flex;align-items:center;gap:22px}.brand{display:flex;align-items:center;gap:11px;font-weight:900;letter-spacing:.03em;margin-right:auto}.orb{width:31px;height:31px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 5%,var(--cyan) 12%,#6756db 48%,#11162e 70%);box-shadow:0 0 30px #72ebff55;position:relative}.orb:after{content:"";position:absolute;inset:9px -7px;border:1px solid var(--pink);border-radius:50%;transform:rotate(-14deg)}.nav a:not(.brand){color:var(--muted);font-size:14px}.nav a:hover{color:#fff}.pill{border:1px solid var(--line);border-radius:999px;padding:9px 13px;background:linear-gradient(145deg,#ffffff16,#7defff0c);box-shadow:inset 0 1px 0 #ffffff16}
-    .hero{padding:92px 0 62px;display:grid;grid-template-columns:1.25fr .75fr;gap:34px;align-items:center;position:relative}.hero:after{content:"";position:absolute;width:240px;height:240px;right:-70px;top:40px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff 0 3%,#8ffaff 5% 14%,#6674ff 36%,#34247033 66%,transparent 70%);box-shadow:0 0 80px #72ebff33;z-index:-1}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:var(--cyan);font-size:12px;font-weight:800}.hero h1{font-size:clamp(52px,8vw,96px);line-height:.92;letter-spacing:-.065em;margin:18px 0 24px;max-width:850px}.hero h1 span{background:linear-gradient(90deg,var(--cyan),#fff 48%,var(--pink));-webkit-background-clip:text;color:transparent}.lead{font-size:19px;color:#c4cae1;max-width:720px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:16px;font-weight:850;background:linear-gradient(120deg,var(--lime),var(--cyan) 48%,var(--pink));color:#07101b;border:1px solid #ffffff36;box-shadow:0 12px 34px #55dfff2b,inset 0 1px 0 #fff}.btn.ghost{background:linear-gradient(145deg,#ffffff14,#0b2947a8);border:1px solid var(--line);color:#edfaff;box-shadow:inset 0 1px 0 #ffffff12}
-    .status{border:1px solid var(--line);border-radius:28px;padding:24px;background:linear-gradient(145deg,#ffffff16,#0b2947b8);box-shadow:var(--shadow);backdrop-filter:blur(20px) saturate(135%)}.status h2{font-size:14px;color:var(--muted);margin:0 0 18px;text-transform:uppercase;letter-spacing:.13em}.metric{display:flex;justify-content:space-between;align-items:end;padding:14px 0;border-bottom:1px solid #ffffff0d}.metric:last-child{border:0}.metric b{font-size:34px;line-height:1}.metric span{color:var(--muted);font-size:13px}.online{color:var(--lime)}
-    section{padding:58px 0}.head{display:flex;justify-content:space-between;gap:30px;align-items:end;margin-bottom:24px}.head h2{font-size:clamp(32px,5vw,52px);line-height:1;margin:0;letter-spacing:-.04em}.head p{max-width:560px;color:var(--muted);margin:0}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{border:1px solid var(--line);border-radius:22px;padding:20px;background:linear-gradient(145deg,#ffffff12,#0b2947b3);min-height:180px;box-shadow:inset 0 1px 0 #ffffff12,0 16px 42px #00101d38;backdrop-filter:blur(14px)}.card .ico{font-size:28px}.card h3{margin:13px 0 7px;font-size:19px}.card p{margin:0;color:var(--muted);font-size:14px}.card small{display:block;color:var(--cyan);margin-top:14px;font-weight:700}
-    .departments{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.dept{border:1px solid var(--line);border-radius:20px;padding:18px;background:linear-gradient(145deg,#ffffff10,#0b2947a8);box-shadow:inset 0 1px 0 #ffffff10}.dept .emoji{font-size:26px}.dept h3{font-size:16px;margin:10px 0 7px}.dept p{font-size:13px;color:var(--muted);margin:0}.dept b{display:block;color:var(--lime);margin-top:14px}
-    .team{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.person{padding:14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#ffffff10,#0b29478f);box-shadow:inset 0 1px 0 #ffffff0f}.person strong{display:block;font-size:14px}.person span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.person em{display:inline-block;margin-top:9px;font-style:normal;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--cyan)}
-    .loop{display:flex;gap:8px;flex-wrap:wrap}.loop span{border:1px solid var(--line);padding:10px 12px;border-radius:999px;background:linear-gradient(145deg,#ffffff12,#0b29479c);color:#e9fbff;font-weight:750;font-size:13px;box-shadow:inset 0 1px 0 #ffffff10}.quote{font-size:clamp(26px,4vw,44px);line-height:1.15;letter-spacing:-.03em;border-left:3px solid var(--pink);padding-left:24px;max-width:900px}.quote small{display:block;font-size:13px;color:var(--muted);margin-top:14px;letter-spacing:0}
-    .site-auth{display:flex;align-items:center;min-width:0}.qd-auth-control{display:inline-flex;align-items:center;gap:8px;min-height:38px;max-width:210px;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:linear-gradient(145deg,#ffffff14,#0b2947a8);color:var(--text);font-weight:800;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff12}.qd-auth-control span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qd-auth-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--line)}
-    footer{border-top:1px solid #ffffff10;padding:34px 0 54px;color:var(--muted);font-size:13px}.foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
-    @media(max-width:900px){.hero{grid-template-columns:1fr}.departments{grid-template-columns:repeat(2,1fr)}.grid,.team{grid-template-columns:repeat(2,1fr)}.nav a:not(.brand):not(.pill){display:none}.qd-auth-control{max-width:44px;padding:8px 10px}.qd-auth-control span{display:none}}
-    @media(max-width:560px){.hero{padding-top:60px}.hero h1{font-size:clamp(36px,10vw,44px);overflow-wrap:normal;word-break:normal;hyphens:none}.eyebrow{font-size:11px;letter-spacing:.14em}.actions{display:grid;grid-template-columns:1fr 1fr}.actions .btn{min-width:0;padding:12px 11px;text-align:center}.actions .btn:first-child{grid-column:1/-1}.departments,.grid,.team{grid-template-columns:1fr}.head{display:block}.head p{margin-top:12px}.status{margin-top:10px}}
+    :root{--ink:#072735;--muted:#4f7480;--glass:rgba(255,255,255,.82);--line:rgba(10,112,137,.14)}
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:linear-gradient(180deg,#bcefff,#e8fbff 50%,#dff8ed);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}
+    #wordpress{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
+    .loading{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% 16%,#fff,#dffaff 42%,#dff8ed)}
+    .loading.hide{display:none}
+    .card{width:min(440px,100%);padding:30px;border:1px solid #fff;border-radius:30px;background:var(--glass);backdrop-filter:blur(18px);box-shadow:0 22px 70px rgba(7,89,108,.13);text-align:center}
+    .orb{width:58px;height:58px;margin:0 auto 16px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff 0 9%,#79e6ff 11% 34%,#13a6c5 55%,#0a6d84 80%);box-shadow:0 10px 34px rgba(0,139,169,.28)}
+    h1{margin:0 0 8px;font-size:clamp(28px,7vw,42px);letter-spacing:-.04em}
+    p{margin:0;color:var(--muted);line-height:1.55}
+    .spinner{width:38px;height:38px;margin:22px auto 0;border:4px solid rgba(9,122,146,.12);border-top-color:#0ba5c4;border-radius:50%;animation:s .8s linear infinite}
+    .fallback{display:none;margin-top:18px}
+    .fallback.show{display:block}
+    .fallback a{display:inline-flex;padding:11px 16px;border-radius:999px;background:#0b91aa;color:#fff;text-decoration:none;font-weight:800}
+    @keyframes s{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
-  <nav class="nav"><div class="wrap navin">
-    <a class="brand" href="/"><span class="orb"></span>QuantDeus</a>
-    <a href="#holding">Холдинг</a><a href="#team">Команда</a><a href="/coordination/">Координация</a><a href="/forum/">Форум</a><a href="/store/">Услуги</a>
-    <div class="site-auth qd-auth-slot" data-qd-auth></div>
-    <a class="pill" href="/telegram/">Открыть портал ↗</a>
-  </div></nav>
-
-  <main>
-    <header class="wrap hero">
-      <div>
-        <div class="eyebrow">ИИ-холдинг • опора на доказательства • управление через GitHub</div>
-        <h1>Создаём инфраструктуру <span>постдефицитного</span> будущего.</h1>
-        <p class="lead">QuantDeus объединяет исследования, продукты, инженерную автоматизацию, QA, маркетинг, SEO и партнёрства в одной управляемой системе из 26 специализированных AI-агентов.</p>
-        <div class="actions">
-          <a class="btn" href="/coordination/">🧭 Центр координации</a>
-          <a class="btn ghost" href="/homunculi/">🤖 Команда ИИ-агентов</a>
-          <a class="btn ghost" href="/forum/">💬 Форум</a>
-          <a class="btn ghost" href="/store/">🧩 Услуги</a>
-          <a class="btn ghost" href="https://github.com/quantdeus/quantdeus.github.io">GitHub ↗</a>
-        </div>
-      </div>
-      <aside class="status" aria-label="Статус QuantDeus">
-        <h2>Статус холдинга</h2>
-        <div class="metric"><b class="online">В СЕТИ</b><span>рабочее состояние</span></div>
-        <div class="metric"><b>26</b><span>ИИ-сотрудников</span></div>
-        <div class="metric"><b>5</b><span>стартап-отделов</span></div>
-        <div class="metric"><b>3</b><span>валидатора качества</span></div>
-      </aside>
-    </header>
-
-    <section id="holding"><div class="wrap">
-      <div class="head"><h2>Один холдинг.<br>Пять рабочих отделов.</h2><p>Технические идентификаторы агентов остаются стабильными для автоматизации. Поверх них работает полноценная стартап-структура с ответственностью, KPI и понятной передачей задач между отделами.</p></div>
-      <div class="departments">
-        <article class="dept"><div class="emoji">🛰️</div><h3>Руководство и стратегия</h3><p>Стратегия, портфель, операционная работа и технический контроль.</p><b>4 агента</b></article>
-        <article class="dept"><div class="emoji">🔬</div><h3>Наука и НИОКР</h3><p>Энергетика, управление, космос и исследования человеческого потенциала.</p><b>5 агентов</b></article>
-        <article class="dept"><div class="emoji">📣</div><h3>Рост и маркетинг</h3><p>Бренд, SEO, контент, PR, сообщество и партнёрства.</p><b>4 агента</b></article>
-        <article class="dept"><div class="emoji">⚒️</div><h3>Продукт и инженерия</h3><p>Исследование продукта, требования, архитектура, безопасность и выпуск.</p><b>6 агентов</b></article>
-        <article class="dept"><div class="emoji">🦀</div><h3>Качество и надёжность</h3><p>Автоматический контроль качества, проверка контрактов и циклы исправлений.</p><b>3 агента</b></article>
-      </div>
-    </div></section>
-
-    <section><div class="wrap">
-      <div class="head"><h2>Направления портфеля</h2><p>QuantDeus — не один продукт, а общий операционный слой для технологических и креативных направлений.</p></div>
-      <div class="grid">
-        <article class="card"><div class="ico">⚡</div><h3>Энергетика и ресурсы</h3><p>Чистая энергетика, накопители, устойчивость сетей, продуктивность ресурсов и замкнутые системы.</p><small>исследования → прототипы</small></article>
-        <article class="card"><div class="ico">🧠</div><h3>ИИ и автоматизация</h3><p>Рабочие процессы агентов, безопасная автоматизация, контроль человека и инструменты цифровой организации.</p><small>операции → продукты</small></article>
-        <article class="card"><div class="ico">🌍</div><h3>Планета и сотрудничество</h3><p>Открытая наука, циклические системы, сообщества и стратегические партнёрства.</p><small>сообщество → масштаб</small></article>
-        <article class="card"><div class="ico">🚀</div><h3>Космос и передовые исследования</h3><p>Жизнеобеспечение, ISRU, робототехника, двигательные системы и строгие варп-исследования.</p><small>доказательства → передний край</small></article>
-        <article class="card"><div class="ico">🧬</div><h3>Человеческий потенциал</h3><p>Образование, доступность, творчество и усиление возможностей человека с ИИ.</p><small>инструменты → самостоятельность</small></article>
-        <article class="card"><div class="ico">✨</div><h3>Медиа и культура</h3><p>Бренд, интерфейсы, научная коммуникация и креативные продукты.</p><small>проверенные результаты → внимание</small></article>
-      </div>
-    </div></section>
-
-    <section id="team"><div class="wrap">
-      <div class="head"><h2>Команда из 26 ИИ-агентов</h2><p>Роли загружаются из канонического реестра GitHub. Если меняется оргструктура — сайт меняется вместе с ней.</p></div>
-      <div class="team" id="teamGrid"><div class="person"><strong>Загрузка команды…</strong><span>coordination/agents.json</span></div></div>
-    </div></section>
-
-    <section><div class="wrap">
-      <div class="head"><h2>Рабочий цикл</h2><p>Проверяемый результат важнее активности ради активности.</p></div>
-      <div class="loop"><span>Потребность</span><span>Карта ресурсов</span><span>Доказательства</span><span>Прототип</span><span>Контроль качества</span><span>Выпуск</span><span>SEO / коммуникации</span><span>Итерация</span></div>
-    </div></section>
-
-    <section><div class="wrap">
-      <div class="quote">«Вдохновение ≠ доказательство. Автоматизация расширяет возможности; окончательное решение остаётся за людьми».<small>Операционная доктрина QuantDeus</small></div>
-    </div></section>
-  </main>
-
-  <footer><div class="wrap foot"><span>© QuantDeus • экспериментальный холдинг ИИ</span><span><a href="/telegram/">Продукт Telegram</a> · <a href="/coordination/">Координация</a> · <a href="/homunculi/">Команда ИИ</a></span></div></footer>
-
+  <div class="loading" id="loading">
+    <div class="card">
+      <div class="orb"></div>
+      <h1>QuantDeus</h1>
+      <p id="status">Запускаю WordPress на основном адресе…</p>
+      <div class="spinner"></div>
+      <div class="fallback" id="fallback"><a id="direct" href="#" target="_blank" rel="noopener">Открыть WordPress напрямую</a></div>
+    </div>
+  </div>
+  <iframe id="wordpress" title="QuantDeus WordPress" allow="clipboard-read; clipboard-write"></iframe>
+  <noscript><p><a href="https://playground.wordpress.net/">Для запуска QuantDeus WordPress включите JavaScript.</a></p></noscript>
   <script>
-    const order=["Executive & Strategy","Science & R&D","Growth, Marketing & Partnerships","Product & Engineering","Quality & Reliability"];
-    const agentTitlesRu={"coordinator":"Секретарь роя","seven-of-nine":"Координатор QuantDeus и руководитель ИИ-штаба","emh":"Медиатор и дипломат роя","sherlock":"Офицер по науке и научным расследованиям","tuvok":"Заместитель офицера по науке и хранитель логики","pillar-executor":"Руководитель продуктовых операций","strategic-hub":"Главный стратегический агент","orchestrator":"Руководитель исследовательских операций","energy":"Руководитель исследований энергетических систем","justice":"Руководитель ответственного ИИ и управления ресурсами","unity":"Руководитель партнёрств и роста сообщества","space":"Руководитель космических систем и варп-исследований","potential":"Руководитель исследований человеческого потенциала","synthesis":"Директор по бренду и креативу","control-tower":"Технический директор и руководитель автоматизации","scout":"Аналитик продуктовых исследований","verifier":"Аналитик продуктовых требований","analyst":"Аналитик систем и влияния","strategist":"Архитектор решений и инженерный руководитель","guardian":"Руководитель безопасности и платформенного управления","tasksmith":"Старший инженер-программист","archivist":"Руководитель SEO и контент-операций","herald":"Менеджер по PR и коммуникациям","qa-syntax":"Инженер автоматизации контроля качества","qa-contract":"Инженер по интеграциям и соответствию требованиям","qa-repair":"Руководитель QA и инженер надёжности сайта"};
-const departmentsRu={"Executive & Strategy":"Руководство и стратегия","Science & R&D":"Наука и НИОКР","Growth, Marketing & Partnerships":"Рост, маркетинг и партнёрства","Product & Engineering":"Продукт и инженерия","Quality & Reliability":"Качество и надёжность"};
-const ruRole=s=>String(s||"").replaceAll("hypotheses","гипотезы").replaceAll("evidence pipeline","конвейер доказательств").replaceAll("R&D","НИОКР").replaceAll("efficiency","эффективность").replaceAll("resource productivity","продуктивность ресурсов").replaceAll("privacy","конфиденциальность").replaceAll("human override","контроль человека").replaceAll("propulsion","двигательные системы").replaceAll("life support","жизнеобеспечение").replaceAll("accessibility","доступность").replaceAll("human-AI augmentation","усиление возможностей человека с ИИ").replaceAll("creativity","творчество").replaceAll("health","здоровье").replaceAll("creative direction","творческое направление").replaceAll("presentation layer","слой представления").replaceAll("acceptance criteria","критерии приёмки").replaceAll("manifest","манифест").replaceAll("blast radius","масштаб воздействия").replaceAll("privileged surfaces","привилегированные поверхности").replaceAll("governance","управление").replaceAll("knowledge base","база знаний").replaceAll("release communications","коммуникации релизов").replaceAll("PR handoff","передача в PR").replaceAll("summaries","сводки").replaceAll("doctrine","доктрину").replaceAll("labels","метки").replaceAll("repair-loop","цикл исправлений");
-    fetch('/coordination/agents.json').then(r=>r.json()).then(data=>{
-      const agents=[...(data.agents||[])].sort((a,b)=>order.indexOf(a.department)-order.indexOf(b.department));
-      document.querySelector('#teamGrid').innerHTML=agents.map(a=>`
-        <article class="person">
-          <strong>${a.emoji||'🤖'} ${agentTitlesRu[a.id]||a.startup_title||a.name}</strong>
-          <span>${ruRole(a.role)}</span>
-          <em>${departmentsRu[a.department]||a.department||a.group||''}</em>
-        </article>`).join('');
-    }).catch(()=>{
-      document.querySelector('#teamGrid').innerHTML='<article class="person"><strong>Команда из 26 агентов в сети</strong><span>Открой Центр координации для просмотра актуального реестра.</span></article>';
-    });
+    (() => {
+      const blueprint = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/wordpress/blueprint.json';
+      const playground = 'https://playground.wordpress.net/?mode=seamless&blueprint-url=' + encodeURIComponent(blueprint);
+      const frame = document.getElementById('wordpress');
+      const loading = document.getElementById('loading');
+      const status = document.getElementById('status');
+      const fallback = document.getElementById('fallback');
+      const direct = document.getElementById('direct');
+      direct.href = playground;
+      frame.src = playground;
+      frame.addEventListener('load', () => {
+        loading.classList.add('hide');
+      }, {once:true});
+      setTimeout(() => {
+        if (!loading.classList.contains('hide')) {
+          status.textContent = 'WordPress запускается дольше обычного. Можно открыть его напрямую.';
+          fallback.classList.add('show');
+        }
+      }, 30000);
+    })();
   </script>
 </body>
 </html>

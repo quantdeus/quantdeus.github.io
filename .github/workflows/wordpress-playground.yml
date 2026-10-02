@@ -4,12 +4,14 @@ on:
   push:
     branches: [main]
     paths:
+      - 'index.html'
       - 'wordpress/**'
       - 'docs/WORDPRESS_PLATFORM_MIGRATION.md'
       - '.github/workflows/wordpress-playground.yml'
   pull_request:
     branches: [main]
     paths:
+      - 'index.html'
       - 'wordpress/**'
       - 'docs/WORDPRESS_PLATFORM_MIGRATION.md'
       - '.github/workflows/wordpress-playground.yml'
@@ -36,8 +38,12 @@ jobs:
       - name: Validate canonical WordPress source
         run: |
           set -euo pipefail
+          test -f index.html
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
+          grep -q 'playground.wordpress.net' index.html
+          grep -q 'wordpress/blueprint.json' index.html
+          grep -q "location.replace('/')" wordpress/index.html
           test -f wordpress/src/quantdeus-core/quantdeus-core.php
           test -f wordpress/src/quantdeus-aero/style.css
           test -f wordpress/src/quantdeus-aero/functions.php
