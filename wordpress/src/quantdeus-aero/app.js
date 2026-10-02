@@ -73,6 +73,30 @@
     }
   }
 
+  function bindPrimaryMenu() {
+    const toggle = qs('[data-menu-toggle]');
+    const nav = qs('[data-primary-nav]');
+    if (!toggle || !nav) return;
+    const close = () => {
+      toggle.setAttribute('aria-expanded','false');
+      nav.classList.remove('is-open');
+      document.documentElement.classList.remove('qd-menu-open');
+    };
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      nav.classList.toggle('is-open', open);
+      document.documentElement.classList.toggle('qd-menu-open', open);
+    });
+    qsa('a', nav).forEach(link => link.addEventListener('click', close));
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
+    document.addEventListener('click', event => {
+      if (toggle.getAttribute('aria-expanded') !== 'true') return;
+      if (nav.contains(event.target) || toggle.contains(event.target)) return;
+      close();
+    });
+  }
+
   function bindGithubAdmin() {
     const buttons = qsa('[data-github-admin-login]');
     if (!cfg.githubConfigured || !cfg.githubStartUrl) {
@@ -163,6 +187,7 @@
 
   document.addEventListener('DOMContentLoaded', async () => {
     setAuth(currentUser);
+    bindPrimaryMenu();
     bindGithubAdmin();
     bindInquiry();
     bindForum();
