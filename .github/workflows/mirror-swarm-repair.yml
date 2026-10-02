@@ -1,12 +1,6 @@
 name: QuantDeus Mirror Swarm Repair 🪞🐒
 
 on:
-  workflow_run:
-    workflows:
-      - QuantDeus Static Smoke
-      - QuantDeus QA Triad 🦀
-    types:
-      - completed
   workflow_dispatch:
     inputs:
       mode:
@@ -17,6 +11,11 @@ on:
         options:
           - shadow
           - repair
+      wake_source:
+        description: Wake source (for example vercel-cron or manual)
+        required: false
+        type: string
+        default: manual
 
 permissions:
   contents: write
@@ -32,18 +31,6 @@ concurrency:
 
 jobs:
   mirror:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (
-        github.event_name == 'workflow_run' &&
-        github.event.workflow_run.head_branch == 'main' &&
-        (
-          github.event.workflow_run.conclusion == 'failure' ||
-          github.event.workflow_run.conclusion == 'timed_out' ||
-          github.event.workflow_run.conclusion == 'startup_failure' ||
-          github.event.workflow_run.conclusion == 'action_required'
-        )
-      )
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -59,6 +46,7 @@ jobs:
         run: |
           node --check scripts/mirror-swarm-client.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
+          node --check vercel-dispatcher/api/quantdeus/mirror-wake.js
           node scripts/mission-alignment.js
 
       - name: Collect deterministic QA state
@@ -86,10 +74,7 @@ jobs:
           SYNTAX_RC: ${{ steps.qa.outputs.syntax_rc }}
           CONTRACT_RC: ${{ steps.qa.outputs.contract_rc }}
           OPENCLAW_RC: ${{ steps.qa.outputs.openclaw_rc }}
-          EVENT_NAME: ${{ github.event_name }}
-          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
-          TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
-          TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WAKE_SOURCE: ${{ inputs.wake_source }}
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -140,17 +125,15 @@ jobs:
               contract_rc: Number(process.env.CONTRACT_RC || 0),
               openclaw_rc: Number(process.env.OPENCLAW_RC || 0)
             };
-
-            const manual = process.env.EVENT_NAME === 'workflow_dispatch';
-            const trigger = manual
-              ? 'manual workflow_dispatch'
-              : 'workflow_run ' +
-                String(process.env.TRIGGER_WORKFLOW || 'unknown') +
-                ' #' + String(process.env.TRIGGER_RUN_ID || 'unknown') +
-                ' conclusion=' + String(process.env.TRIGGER_CONCLUSION || 'unknown');
+            const wakeRequired =
+              Object.values(validatorState).some(value => value !== 0) ||
+              recentFailures.length > 0;
+            const wakeSource = String(process.env.WAKE_SOURCE || 'manual').slice(0, 80);
+            const trigger = 'workflow_dispatch source=' + wakeSource;
 
             const evidence = {
               trigger,
+              wake_source: wakeSource,
               validator_state: validatorState,
               validator_logs: [
                 '=== syntax ===',
@@ -164,16 +147,25 @@ jobs:
             };
 
             fs.writeFileSync('/tmp/qd-mirror-evidence.json', JSON.stringify(evidence, null, 2));
-            console.log(JSON.stringify({ validatorState, recentFailures, trigger }, null, 2));
+            fs.appendFileSync(
+              process.env.GITHUB_OUTPUT,
+              'wake_required=' + (wakeRequired ? 'true' : 'false') + '\n'
+            );
+            console.log(JSON.stringify({ validatorState, recentFailures, trigger, wakeRequired }, null, 2));
           })().catch(error => {
             console.error(error.stack || error);
             process.exit(1);
           });
           NODE
 
+      - name: Keep mirror asleep when Vercel pulse is healthy
+        if: ${{ steps.evidence.outputs.wake_required != 'true' && inputs.wake_source == 'vercel-cron' }}
+        run: echo "Mirror pulse healthy; model plane remains asleep."
+
       - name: Run independent Mirror Swarm
+        if: ${{ steps.evidence.outputs.wake_required == 'true' || inputs.wake_source != 'vercel-cron' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          QD_MIRROR_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'repair' }}
+          QD_MIRROR_MODE: ${{ inputs.mode }}
           QD_MIRROR_EVIDENCE: /tmp/qd-mirror-evidence.json
         run: node scripts/mirror-swarm-client.js
