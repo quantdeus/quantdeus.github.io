@@ -145,6 +145,9 @@ test("anonymous visitor can submit quote inquiry with contact and no registratio
 
 test("anonymous inquiry falls back to Telegram draft when private storage is not configured", async () => {
   delete process.env.QUANTDEUS_GITHUB_TOKEN;
+  delete process.env.TELEGRAM_BOT_TOKEN;
+  delete process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
+  delete process.env.TELEGRAM;
   delete process.env.TELEGRAM_CHAT_ID;
   delete process.env.QUANTDEUS_TELEGRAM_CHAT_ID;
   delete process.env.QUANTDEUS_GENERIC_WEBHOOK;
@@ -166,6 +169,43 @@ test("anonymous inquiry falls back to Telegram draft when private storage is not
   assert.equal(created.body.delivery, "telegram_draft");
   assert.match(created.body.telegram_url, /^https:\/\/t\.me\/QuantDeus_bot\?text=/);
   assert.equal(created.body.order.status, "needs_user_send");
+});
+
+test("anonymous inquiry auto-delivers to the first owner Telegram ID when no explicit chat ID is configured", async () => {
+  delete process.env.QUANTDEUS_GITHUB_TOKEN;
+  delete process.env.TELEGRAM_BOT_TOKEN;
+  delete process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
+  process.env.TELEGRAM = "test-delivery-token";
+  delete process.env.TELEGRAM_CHAT_ID;
+  delete process.env.QUANTDEUS_TELEGRAM_CHAT_ID;
+  delete process.env.QUANTDEUS_GENERIC_WEBHOOK;
+  process.env.QUANTDEUS_OWNER_TELEGRAM_IDS = "9001,9009";
+  let sent = null;
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).startsWith("https://api.telegram.org/bottest-delivery-token/sendMessage")) {
+      sent = JSON.parse(options.body);
+      return Response.json({ ok: true, result: { message_id: 1 } });
+    }
+    return Response.json({ message: "Not Found" }, { status: 404 });
+  };
+  const created = resMock();
+  await orders({
+    method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.13", "user-agent": "portal-owner-delivery-test" },
+    body: {
+      action: "create",
+      product_id: "business-automation",
+      note: "Нужно автоматически доставить заявку владельцу без второго шага.",
+      contact: "@auto_delivery_client",
+      website: ""
+    }
+  }, created);
+  assert.equal(created.statusCode, 202, JSON.stringify(created.body));
+  assert.equal(created.body.ok, true);
+  assert.equal(created.body.delivery, "telegram_server");
+  assert.equal(created.body.order.status, "inquiry_forwarded");
+  assert.equal(sent.chat_id, "9001");
+  assert.match(sent.text, /Автоматизация бизнеса/);
 });
 
 test("anonymous quote inquiry requires a reply contact", async () => {
