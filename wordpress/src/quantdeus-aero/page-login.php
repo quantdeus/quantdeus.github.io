@@ -29,10 +29,8 @@ $provider=is_user_logged_in() && get_user_meta(get_current_user_id(),'qd_github_
             <p><?php echo esc_html($provider ?: 'WordPress'); ?> · <?php echo esc_html($role_labels[$role] ?? $role); ?></p>
           </div>
           <div class="qd-session-actions">
-            <?php if ($role==='administrator'): ?>
-              <a class="qd-btn" href="<?php echo esc_url(admin_url('admin.php?page=quantdeus')); ?>">Открыть админку</a>
-            <?php elseif ($role==='qd_moderator'): ?>
-              <a class="qd-btn" href="<?php echo esc_url(home_url('/forum/')); ?>">Перейти к модерации</a>
+            <?php if (in_array($role,['administrator','qd_moderator'],true)): ?>
+              <a class="qd-btn" href="<?php echo esc_url(admin_url()); ?>">Открыть WordPress</a>
             <?php else: ?>
               <a class="qd-btn" href="<?php echo esc_url(home_url('/forum/')); ?>">Открыть форум</a>
             <?php endif; ?>
