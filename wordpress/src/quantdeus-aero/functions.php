@@ -34,6 +34,7 @@ add_action('wp_enqueue_scripts', function(){
         'githubConfigured' => true,
         'loginUrl' => home_url('/login/'),
         'logoutUrl' => wp_logout_url(home_url('/login/')),
+        'logoutEndpoint' => rest_url('quantdeus/v1/session/logout'),
         'telegramBotUsername' => defined('QD_TELEGRAM_BOT_USERNAME') ? (string)QD_TELEGRAM_BOT_USERNAME : 'QuantDeus_bot',
         'loggedIn' => is_user_logged_in(),
         'userName' => is_user_logged_in() ? wp_get_current_user()->display_name : '',
