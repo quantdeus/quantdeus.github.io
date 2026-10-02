@@ -43,6 +43,13 @@ test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
   assert.equal(seven.actions.length,2);
   assert.match(seven.analysis,/observed fields/);
 });
+test('role line protocol accepts single-line labelled output',async()=>{
+  const line={...valid,text:'SUMMARY: Sherlock is alive; FINDING: One concrete issue remains; NEXT_STEP: Verify the issue comment'};
+  const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>line}});
+  assert.equal(result.status,'LLM');
+  assert.equal(result.findings.length,1);
+  assert.match(result.next_step,/Verify/);
+});
 test('role dialogue verifies real assistant turn, model and no-tools runtime',async()=>{
   let calls=0;
   const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async opts=>{
