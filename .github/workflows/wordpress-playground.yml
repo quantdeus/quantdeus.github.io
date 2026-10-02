@@ -6,6 +6,32 @@ on:
     paths:
       - 'index.html'
       - 'wordpress/**'
+      - 'assets/portal-shell.css'
+      - 'assets/portal-shell.js'
+      - 'federation/**'
+      - 'horizons/**'
+      - 'research/**'
+      - 'projects/**'
+      - 'ai-fleet/**'
+      - 'community/**'
+      - 'knowledge/**'
+      - 'manifesto/**'
+      - 'about/**'
+      - 'ksenia-cherednikova/**'
+      - 'login/**'
+      - 'assets/portal-shell.css'
+      - 'assets/portal-shell.js'
+      - 'federation/**'
+      - 'horizons/**'
+      - 'research/**'
+      - 'projects/**'
+      - 'ai-fleet/**'
+      - 'community/**'
+      - 'knowledge/**'
+      - 'manifesto/**'
+      - 'about/**'
+      - 'ksenia-cherednikova/**'
+      - 'login/**'
       - 'vercel-dispatcher/api/quantdeus/github-auth.js'
       - 'vercel-dispatcher/api/quantdeus/bot-auth.js'
       - 'vercel-dispatcher/api/quantdeus/telegram.js'
@@ -51,8 +77,11 @@ jobs:
           test -f index.html
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
-          grep -q 'playground.wordpress.net' index.html
-          grep -q 'wordpress/blueprint.json' index.html
+          test -f assets/portal-shell.css
+          test -f assets/portal-shell.js
+          grep -q 'https://quantdeus.vercel.app/' index.html
+          grep -q 'Публичное зеркало QuantDeus' index.html
+          if grep -q 'playground.wordpress.net' index.html; then echo "GitHub Pages root must be the Vercel mirror, not Playground"; exit 1; fi
           grep -q "location.replace('/')" wordpress/index.html
           test -f wordpress/src/quantdeus-core/quantdeus-core.php
           test -f wordpress/src/quantdeus-aero/style.css
@@ -92,10 +121,9 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/telegram.js
           node --check vercel-dispatcher/lib/github-auth.js
           node --check vercel-dispatcher/lib/telegram-bot-auth.js
-          grep -q "qd:telegram-login" index.html
-          grep -q "qd:telegram-consumed" index.html
-          grep -q "qd:github-login" index.html
-          grep -q "https://quantdeus.vercel.app/api/quantdeus/bot-auth" index.html
+          grep -q "https://quantdeus.vercel.app/api/quantdeus/bot-auth" assets/portal-shell.js
+          grep -q "https://quantdeus.vercel.app/api/quantdeus/github-auth" assets/portal-shell.js
+          grep -q "canonical.href" assets/portal-shell.js
           if grep -q "Telegram.Login.auth" index.html; then echo "legacy Telegram Login SDK forbidden"; exit 1; fi
           grep -q "telegramBrokerUrl" wordpress/src/quantdeus-aero/app.js
           grep -q "syncTelegramBotSession" wordpress/src/quantdeus-aero/app.js
@@ -107,7 +135,7 @@ jobs:
           grep -q "github_broker_login" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "/session/logout" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "data-qd-logout" wordpress/src/quantdeus-aero/page-login.php
-          grep -q "message.type === 'qd:logout'" index.html
+          grep -q "qd:logout" wordpress/src/quantdeus-aero/app.js
           grep -q "githubBrokerUrl" wordpress/src/quantdeus-aero/app.js
           grep -q "permission_strategy" vercel-dispatcher/lib/github-auth.js
           grep -q "token_box" vercel-dispatcher/lib/github-auth.js
