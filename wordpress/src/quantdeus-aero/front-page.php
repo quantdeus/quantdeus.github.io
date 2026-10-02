@@ -30,8 +30,8 @@
   </div>
   <div class="qd-visual-grid">
     <figure class="qd-visual qd-visual-wide qd-visual-aero">
-      <img src="<?php echo esc_url(get_template_directory_uri().'/aero-world.svg'); ?>" alt="Frutiger Aero мир QuantDeus: зелёные холмы, вода, пузырьки и футуристический город" loading="lazy">
-      <figcaption><strong>QuantDeus Aero World</strong><span>Собственная иллюстрация темы</span></figcaption>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/d/db/Mirror_lake_with_green_hill.jpg" alt="Реальное озеро, зелёные холмы и голубое небо в эстетике Frutiger Aero" loading="lazy" decoding="async">
+      <figcaption><strong>Frutiger Aero · Lake &amp; Sky</strong><span>Public domain · Rosendahl / Wikimedia Commons</span></figcaption>
     </figure>
     <figure class="qd-visual">
       <img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS023/ISS023-E-58455.JPG" alt="Полярное сияние над Землёй с Международной космической станции" loading="lazy">
@@ -42,8 +42,8 @@
       <figcaption><strong>Earth at night</strong><span>NASA/JSC · ISS016-E-27586</span></figcaption>
     </figure>
     <figure class="qd-visual qd-visual-wide qd-visual-space">
-      <img src="<?php echo esc_url(get_template_directory_uri().'/orbital-garden.svg'); ?>" alt="Космический сад QuantDeus с Землёй, астронавтом и Frutiger Aero элементами" loading="lazy">
-      <figcaption><strong>Orbital Garden</strong><span>QuantDeus · Frutiger Aero × space</span></figcaption>
+      <img src="https://upload.wikimedia.org/wikipedia/commons/1/11/Trees_on_hills_with_blue_sky_landscape_image.jpg" alt="Реальные зелёные холмы и насыщенное голубое небо в эстетике Frutiger Aero" loading="lazy" decoding="async">
+      <figcaption><strong>Frutiger Aero · Green Horizon</strong><span>Public domain · Jon Sullivan / Wikimedia Commons</span></figcaption>
     </figure>
   </div>
 </div></section>
