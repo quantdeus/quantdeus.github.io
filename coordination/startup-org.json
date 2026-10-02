@@ -87,7 +87,7 @@
     "Every successful cycle asks whether the result can become a reusable template, automation or autonomous node."
   ],
   "charter": {
-    "doctrine_version": "2026.09-post-scarcity-v3",
+    "doctrine_version": "2026.10-neon-horizon-v4",
     "manifesto": "Неоновый горизонт v3.0 + Эпидемия Добра",
     "motto": "Единство в цели. Свобода в путях. Доказательства в результатах.",
     "eight_pillars": [
@@ -121,6 +121,6 @@
       "frutiger_aero": "дневной экологический постдефицитный слой",
       "rule": "aesthetics support culture and participation; evidence remains independent"
     },
-    "manifest_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf"
+    "manifest_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf"
   }
 }
