@@ -46,9 +46,10 @@
   <noscript><p><a href="https://playground.wordpress.net/">Для запуска QuantDeus WordPress включите JavaScript.</a></p></noscript>
   <script>
     (() => {
-      const blueprint = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/wordpress/blueprint.json';
+      const buildVersion = '20261002-frutiger-real-1';
+      const blueprint = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/wordpress/blueprint.json?v=' + encodeURIComponent(buildVersion);
       const playgroundOrigin = 'https://playground.wordpress.net';
-      const playground = playgroundOrigin + '/?mode=seamless&blueprint-url=' + encodeURIComponent(blueprint);
+      const playground = playgroundOrigin + '/?mode=seamless&blueprint-url=' + encodeURIComponent(blueprint) + '&qd-build=' + encodeURIComponent(buildVersion);
       const telegramBotAuthApi = 'https://quantdeus.vercel.app/api/quantdeus/bot-auth';
       const githubAuthApi = 'https://quantdeus.vercel.app/api/quantdeus/github-auth';
       const telegramAssertionKey = 'qd_telegram_assertion';
