@@ -80,7 +80,7 @@ $news=get_posts(['post_type'=>'post','post_status'=>'publish','numberposts'=>3])
 </div></section>
 
 <section class="qd-section qd-visuals" id="visuals"><div class="qd-shell">
-<div class="qd-section-head"><div><span class="qd-kicker">Day / Earth × Night / Horizon</span><h2>Реальные изображения вместо заглушек</h2></div><p>Attribution остаётся рядом с медиа.</p></div>
+<div class="qd-section-head"><div><span class="qd-kicker">Cosmic Frutiger Aero · Day / Earth × Night / Horizon</span><h2>Реальные изображения вместо заглушек</h2></div><p>Attribution остаётся рядом с медиа.</p></div>
 <div class="qd-visual-grid">
 <figure class="qd-visual qd-visual-wide"><img src="https://upload.wikimedia.org/wikipedia/commons/d/db/Mirror_lake_with_green_hill.jpg" alt="Озеро, зелёные холмы и голубое небо" loading="lazy" decoding="async"><figcaption><strong>Earth / Frutiger Aero</strong><span>Public domain · Wikimedia Commons</span></figcaption></figure>
 <figure class="qd-visual"><img src="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS023/ISS023-E-58455.JPG" alt="Полярное сияние над Землёй" loading="lazy"><figcaption><strong>Aurora from ISS</strong><span>NASA/JSC · ISS023-E-58455</span></figcaption></figure>
