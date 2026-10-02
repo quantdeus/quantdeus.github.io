@@ -12,6 +12,7 @@
   const githubBrokerUrl = cfg.githubBrokerUrl || '';
   const githubStartUrl = cfg.githubStartUrl || '';
   const githubConfigUrl = cfg.githubConfigUrl || '';
+  const logoutEndpoint = cfg.logoutEndpoint || '';
 
   function roleLabel(role) {
     return ({
@@ -238,7 +239,7 @@
     if (!health.configured) {
       const missing = !health.oauth_configured
         ? 'нужны OAuth Client ID/Secret'
-        : (!health.permission_verifier_configured ? 'нужен GitHub permission token' : 'не настроена подпись сессии');
+        : 'не настроена подпись сессии';
       status.forEach(el => el.textContent = 'GitHub OAuth · ' + missing);
       return;
     }
@@ -254,6 +255,34 @@
         button.disabled = true;
         button.textContent = 'Открываю GitHub…';
         window.parent.postMessage({type:'qd:github-login',action:'start'}, canonicalOrigin);
+      });
+    });
+  }
+
+  function notifyParentLogout() {
+    if (window.parent !== window) {
+      window.parent.postMessage({type:'qd:logout'}, canonicalOrigin);
+    }
+  }
+
+  function bindLogout() {
+    qsa('[data-qd-logout]').forEach(link => {
+      link.addEventListener('click', async event => {
+        event.preventDefault();
+        const fallback = link.href;
+        link.setAttribute('aria-disabled','true');
+        link.textContent = 'Выхожу…';
+        notifyParentLogout();
+        try {
+          if (logoutEndpoint) {
+            await json(logoutEndpoint, {method:'POST', body:'{}'});
+            nonce = '';
+            currentUser = null;
+            location.replace(cfg.loginUrl || '/login/');
+            return;
+          }
+        } catch {}
+        location.href = fallback;
       });
     });
   }
@@ -324,6 +353,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     setAuth(currentUser);
     bindPrimaryMenu();
+    bindLogout();
     bindTelegramLogin();
     const githubRestored = await syncGithubSession();
     if (githubRestored) return;
