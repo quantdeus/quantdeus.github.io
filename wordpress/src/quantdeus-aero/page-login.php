@@ -30,9 +30,9 @@ $provider=is_user_logged_in() && get_user_meta(get_current_user_id(),'qd_github_
           </div>
           <div class="qd-session-actions">
             <?php if ($role==='administrator'): ?>
-              <a class="qd-btn" href="<?php echo esc_url(admin_url('admin.php?page=quantdeus')); ?>">Открыть админку</a>
+              <a class="qd-btn" href="<?php echo esc_url(admin_url()); ?>">Открыть WordPress</a>
             <?php elseif ($role==='qd_moderator'): ?>
-              <a class="qd-btn" href="<?php echo esc_url(home_url('/forum/')); ?>">Перейти к модерации</a>
+              <a class="qd-btn" href="<?php echo esc_url(admin_url()); ?>">Открыть модерацию WordPress</a>
             <?php else: ?>
               <a class="qd-btn" href="<?php echo esc_url(home_url('/forum/')); ?>">Открыть форум</a>
             <?php endif; ?>
