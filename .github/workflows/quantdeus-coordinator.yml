@@ -59,6 +59,9 @@ jobs:
         run: |
           node scripts/governance-gate.js
           export QUANTDEUS_DIALOGUE_DEADLINE_MS=$(node -e 'process.stdout.write(String(Date.now()+420000))')
+          if [ "${GITHUB_EVENT_NAME:-}" = "issue_comment" ]; then
+            export QUANTDEUS_DIALOGUE_FORCE_RETRY=1
+          fi
           bridge_fail=0
           run_stage() {
             stage="$1"
