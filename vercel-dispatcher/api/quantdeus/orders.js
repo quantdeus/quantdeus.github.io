@@ -162,9 +162,17 @@ function inquiryMessage(order) {
 function telegramDraftUrl(order) {
   return "https://t.me/QuantDeus_bot?text=" + encodeURIComponent(inquiryMessage(order));
 }
+function deliveryBotToken() {
+  return String(process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM || "").trim();
+}
+function deliveryChatId() {
+  const explicit = String(process.env.TELEGRAM_CHAT_ID || process.env.QUANTDEUS_TELEGRAM_CHAT_ID || "").trim();
+  if (explicit) return explicit;
+  return String(process.env.QUANTDEUS_OWNER_TELEGRAM_IDS || "").split(",").map(x => x.trim()).filter(Boolean)[0] || "";
+}
 async function deliverInquiryFallback(order) {
-  const botToken = String(process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN || "").trim();
-  const chatId = String(process.env.TELEGRAM_CHAT_ID || process.env.QUANTDEUS_TELEGRAM_CHAT_ID || "").trim();
+  const botToken = deliveryBotToken();
+  const chatId = deliveryChatId();
   if (botToken && chatId) {
     try {
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -210,7 +218,7 @@ export default async function handler(req, res) {
       return json(res, 200, {
         ok: true,
         persistent_storage: Boolean(String(process.env.QUANTDEUS_GITHUB_TOKEN || "").trim()),
-        server_delivery: Boolean((process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN) && (process.env.TELEGRAM_CHAT_ID || process.env.QUANTDEUS_TELEGRAM_CHAT_ID)) || Boolean(process.env.QUANTDEUS_GENERIC_WEBHOOK),
+        server_delivery: Boolean(deliveryBotToken() && deliveryChatId()) || Boolean(process.env.QUANTDEUS_GENERIC_WEBHOOK),
         client_fallback: "https://t.me/QuantDeus_bot"
       });
     }
