@@ -110,7 +110,7 @@ jobs:
           grep -q "return 'qd_member';" wordpress/src/quantdeus-core/quantdeus-core.php
           if grep -q "QD_MODERATOR_TELEGRAM_IDS" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "Telegram staff elevation forbidden"; exit 1; fi
           grep -q "home_url('/login/')" wordpress/src/quantdeus-aero/header.php
-          grep -q "Войти через Telegram" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "QuantDeus Store Bot" wordpress/src/quantdeus-aero/page-login.php
           grep -q "Войти через GitHub" wordpress/src/quantdeus-aero/page-login.php
           grep -q "write / maintain" wordpress/src/quantdeus-aero/page-login.php
           grep -q "admin" wordpress/src/quantdeus-aero/page-login.php
