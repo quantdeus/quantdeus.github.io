@@ -11,17 +11,17 @@ function inputDigest(context) {
   return crypto.createHash('sha256').update(JSON.stringify(canonical)).digest('hex').slice(0,12);
 }
 function parseDecision(text) {
-  const raw = String(text || '').trim().replace(/^```(?:json)?\\s*/i,'').replace(/\\s*```$/,'');
+  const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
   let d;
   try { d = JSON.parse(raw); } catch (jsonError) {
-    const lines = raw.split(/\\r?\\n/).map(x => x.trim()).filter(Boolean);
+    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
     const field = name => {
-      const re = new RegExp('^' + name + '\\\\s*:\\\\s*(.+)', 'i');
+      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
       const line = lines.find(x => re.test(x));
       return line ? line.match(re)[1].trim() : '';
     };
     const actions = lines.map(x => {
-      const m = x.match(/^ACTION(?:\\s*\\d+)?\\s*:\\s*(.+)/i);
+      const m = x.match(/^ACTION(?:\s*\d+)?\s*:\s*(.+)/i);
       return m ? m[1].trim() : '';
     }).filter(Boolean);
     const analysis = field('ANALYSIS');
