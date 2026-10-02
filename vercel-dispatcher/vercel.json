@@ -1,10 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/quantdeus/mirror-wake",
+      "schedule": "37 * * * *"
+    }
+  ],
   "functions": {
     "api/quantdeus/hermes.js": {
       "maxDuration": 300
     },
     "api/quantdeus/openclaw.js": {
+      "maxDuration": 300
+    },
+    "api/quantdeus/mirror.js": {
       "maxDuration": 300
     },
     "api/**/*.js": {

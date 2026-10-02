@@ -1,0 +1,171 @@
+name: QuantDeus Mirror Swarm Repair 🪞🐒
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Mirror execution mode
+        required: false
+        type: choice
+        default: repair
+        options:
+          - shadow
+          - repair
+      wake_source:
+        description: Wake source (for example vercel-cron or manual)
+        required: false
+        type: string
+        default: manual
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-mirror-swarm-repair
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate mirror sources
+        run: |
+          node --check scripts/mirror-swarm-client.js
+          node --check vercel-dispatcher/api/quantdeus/mirror.js
+          node --check vercel-dispatcher/api/quantdeus/mirror-wake.js
+          node scripts/mission-alignment.js
+
+      - name: Collect deterministic QA state
+        id: qa
+        shell: bash
+        run: |
+          set +e
+          node scripts/qa/syntax-validator.js >/tmp/qd-mirror-syntax.log 2>&1
+          syntax_rc=$?
+          node scripts/qa/contract-validator.js >/tmp/qd-mirror-contract.log 2>&1
+          contract_rc=$?
+          node scripts/qa/openclaw-office-validator.js >/tmp/qd-mirror-openclaw.log 2>&1
+          openclaw_rc=$?
+          {
+            echo "syntax_rc=$syntax_rc"
+            echo "contract_rc=$contract_rc"
+            echo "openclaw_rc=$openclaw_rc"
+          } >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Build mirror evidence
+        id: evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SYNTAX_RC: ${{ steps.qa.outputs.syntax_rc }}
+          CONTRACT_RC: ${{ steps.qa.outputs.contract_rc }}
+          OPENCLAW_RC: ${{ steps.qa.outputs.openclaw_rc }}
+          WAKE_SOURCE: ${{ inputs.wake_source }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          function read(path, max = 8000) {
+            try { return fs.readFileSync(path, 'utf8').slice(-max); } catch { return ''; }
+          }
+
+          (async () => {
+            const token = process.env.GH_TOKEN;
+            const repo = process.env.GITHUB_REPOSITORY;
+            const response = await fetch(
+              'https://api.github.com/repos/' + repo + '/actions/runs?branch=main&per_page=40',
+              {
+                headers: {
+                  authorization: 'Bearer ' + token,
+                  accept: 'application/vnd.github+json',
+                  'x-github-api-version': '2022-11-28'
+                }
+              }
+            );
+            const raw = await response.text();
+            if (!response.ok) throw new Error('actions_state_' + response.status + ': ' + raw.slice(0, 500));
+            const data = JSON.parse(raw);
+            const cutoff = Date.now() - 3 * 60 * 60 * 1000;
+            const bad = new Set(['failure','timed_out','startup_failure','action_required']);
+
+            const recentFailures = (data.workflow_runs || [])
+              .filter(run =>
+                run.name !== 'QuantDeus Mirror Swarm Repair 🪞🐒' &&
+                bad.has(String(run.conclusion || '')) &&
+                Date.parse(run.updated_at || run.created_at || 0) >= cutoff
+              )
+              .slice(0, 12)
+              .map(run => ({
+                id: run.id,
+                name: run.name,
+                event: run.event,
+                conclusion: run.conclusion,
+                head_sha: run.head_sha,
+                created_at: run.created_at,
+                updated_at: run.updated_at,
+                html_url: run.html_url
+              }));
+
+            const validatorState = {
+              syntax_rc: Number(process.env.SYNTAX_RC || 0),
+              contract_rc: Number(process.env.CONTRACT_RC || 0),
+              openclaw_rc: Number(process.env.OPENCLAW_RC || 0)
+            };
+            const wakeRequired =
+              Object.values(validatorState).some(value => value !== 0) ||
+              recentFailures.length > 0;
+            const wakeSource = String(process.env.WAKE_SOURCE || 'manual').slice(0, 80);
+            const trigger = 'workflow_dispatch source=' + wakeSource;
+
+            const evidence = {
+              trigger,
+              wake_source: wakeSource,
+              validator_state: validatorState,
+              validator_logs: [
+                '=== syntax ===',
+                read('/tmp/qd-mirror-syntax.log'),
+                '=== contract ===',
+                read('/tmp/qd-mirror-contract.log'),
+                '=== openclaw ===',
+                read('/tmp/qd-mirror-openclaw.log')
+              ].join('\n'),
+              recent_failures: recentFailures
+            };
+
+            fs.writeFileSync('/tmp/qd-mirror-evidence.json', JSON.stringify(evidence, null, 2));
+            fs.appendFileSync(
+              process.env.GITHUB_OUTPUT,
+              'wake_required=' + (wakeRequired ? 'true' : 'false') + '\n'
+            );
+            console.log(JSON.stringify({ validatorState, recentFailures, trigger, wakeRequired }, null, 2));
+          })().catch(error => {
+            console.error(error.stack || error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Keep mirror asleep when Vercel pulse is healthy
+        if: ${{ steps.evidence.outputs.wake_required != 'true' && inputs.wake_source == 'vercel-cron' }}
+        run: echo "Mirror pulse healthy; model plane remains asleep."
+
+      - name: Run independent Mirror Swarm
+        if: ${{ steps.evidence.outputs.wake_required == 'true' || inputs.wake_source != 'vercel-cron' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QD_MIRROR_MODE: ${{ inputs.mode }}
+          QD_MIRROR_EVIDENCE: /tmp/qd-mirror-evidence.json
+        run: node scripts/mirror-swarm-client.js
