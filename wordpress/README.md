@@ -1,23 +1,22 @@
 # QuantDeus WordPress Platform
 
-This directory is the canonical staging package for the migration in Issue #359.
+WordPress is the canonical QuantDeus application/CMS runtime after the owner-declared migration on 2026-10-02.
 
-## Architecture
+## Canonical source
 
-- `dist/quantdeus-core.zip` — first-party WordPress application plugin package.
-- `dist/quantdeus-aero.zip` — first-party Cosmic Frutiger Aero theme package.
-- `blueprint.json` — WordPress Playground bundle blueprint.
-- `dist/quantdeus-wordpress-blueprint.zip` — self-contained staging bundle.
-- `index.html` — browser launcher used by the existing `/wordpress/` route after merge.
+- `src/quantdeus-core/` — first-party application plugin: services, inquiries, forum, Telegram Mini App identity, RBAC, admin and bounded agent REST.
+- `src/quantdeus-aero/` — first-party Cosmic Frutiger Aero theme.
+- `blueprint.json` — reproducible developer/CI preview using WordPress Playground `git:directory` resources.
+- `index.html` — developer preview launcher for the GitHub Pages repository.
 
-The staging bundle moves the application surface into WordPress:
+The production WordPress origin is owner-managed and is intentionally not hard-coded here until the final public domain is declared as repository configuration.
 
-- Services and guest inquiries → WordPress custom post types + REST.
-- Forum threads/replies/moderation → WordPress posts/comments + REST.
-- Telegram Login / Mini App identity → `quantdeus-core` server verification and WordPress session.
-- RBAC → WordPress roles/capabilities.
-- Admin → native `wp-admin` + QuantDeus dashboard.
-- SEO → WordPress sitemap/canonical plus QuantDeus metadata/schema.
-- Agent integration → bounded REST context/evidence endpoints using WordPress authentication/Application Passwords.
+## Runtime rule
 
-The packaged source remains inspectable inside the plugin/theme ZIPs. The old Vercel/GitHub Portal remains unchanged until an explicit production cutover.
+WordPress owns public pages, content, users, roles, services, guest inquiries, forum/community data and admin.
+
+GitHub remains canonical for source code, CI, issues, evidence and swarm coordination. Telegram/OpenClaw integrate directly through WordPress REST or GitHub-native paths.
+
+**Make.com is not an application dependency.** Do not add Make scenarios, Make webhooks, polling bridges or a second orchestration layer to the canonical WordPress runtime.
+
+Legacy GitHub Pages/Vercel Portal code may remain temporarily as rollback/history evidence, but it is not the target product runtime.
