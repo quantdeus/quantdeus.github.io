@@ -18,6 +18,8 @@ add_action('wp_enqueue_scripts', function(){
         'forumUrl' => rest_url('quantdeus/v1/forum'),
         'telegramMiniappUrl' => rest_url('quantdeus/v1/telegram/miniapp'),
         'telegramLoginUrl' => rest_url('quantdeus/v1/telegram/login'),
+        'githubStartUrl' => rest_url('quantdeus/v1/github/start'),
+        'githubConfigured' => defined('QD_GITHUB_CLIENT_ID') && defined('QD_GITHUB_CLIENT_SECRET') && trim((string)QD_GITHUB_CLIENT_ID)!=='' && trim((string)QD_GITHUB_CLIENT_SECRET)!=='',
         'telegramBotUsername' => defined('QD_TELEGRAM_BOT_USERNAME') ? (string)QD_TELEGRAM_BOT_USERNAME : 'QuantDeus_bot',
         'loggedIn' => is_user_logged_in(),
         'userName' => is_user_logged_in() ? wp_get_current_user()->display_name : '',
@@ -34,4 +36,5 @@ add_action('wp_head', function(){
     echo '<meta property="og:title" content="'.esc_attr($title).'">'."\n";
     echo '<meta property="og:description" content="'.esc_attr($description).'">'."\n";
     echo '<meta property="og:url" content="'.esc_url(home_url('/')).'">'."\n";
+    echo '<meta property="og:image" content="https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS075/ISS075-E-22382.JPG">'."\n";
 });
