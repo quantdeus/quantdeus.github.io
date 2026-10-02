@@ -7,6 +7,9 @@
     "api/quantdeus/openclaw.js": {
       "maxDuration": 300
     },
+    "api/quantdeus/mirror.js": {
+      "maxDuration": 300
+    },
     "api/**/*.js": {
       "maxDuration": 60
     }
