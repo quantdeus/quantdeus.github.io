@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,10 +10,11 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.0.0';
+    public const VERSION = '1.1.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
+        add_action('init', [self::class, 'maybe_upgrade'], 20);
         add_action('rest_api_init', [self::class, 'routes']);
         add_action('admin_menu', [self::class, 'admin_menu']);
         add_action('wp_head', [self::class, 'schema'], 40);
@@ -23,6 +24,15 @@ final class QD_Core {
         self::register_types();
         self::roles();
         self::seed_services();
+        update_option('qd_core_version', self::VERSION, false);
+        flush_rewrite_rules(false);
+    }
+
+    public static function maybe_upgrade(): void {
+        if ((string)get_option('qd_core_version') === self::VERSION) return;
+        self::roles();
+        self::seed_services();
+        update_option('qd_core_version', self::VERSION, false);
         flush_rewrite_rules(false);
     }
 
@@ -198,14 +208,18 @@ final class QD_Core {
         if (mb_strlen($title)<3 || mb_strlen($body)<3) return new WP_Error('invalid_thread','Title/content required',['status'=>400]);
         $id=wp_insert_post(['post_type'=>'qd_forum_thread','post_status'=>'publish','post_title'=>$title,'post_content'=>$body,'post_author'=>get_current_user_id()],true);
         if (is_wp_error($id)) return $id;
-        return new WP_REST_Response(['ok'=>true,'id'=>$id],201);
+        return new WP_REST_Response(['ok'=>true,'id'=>$id,'url'=>get_permalink($id)],201);
     }
 
     public static function forum_reply(WP_REST_Request $req) {
         $post=get_post((int)$req['id']); $body=self::text($req->get_param('content'),5000);
         if (!$post || $post->post_type!=='qd_forum_thread') return new WP_Error('thread_not_found','Not found',['status'=>404]);
         if (mb_strlen($body)<1) return new WP_Error('reply_required','Reply required',['status'=>400]);
-        $comment=wp_insert_comment(['comment_post_ID'=>$post->ID,'comment_content'=>$body,'user_id'=>get_current_user_id(),'comment_approved'=>1]);
+        $user=wp_get_current_user();
+        $comment=wp_insert_comment([
+            'comment_post_ID'=>$post->ID,'comment_content'=>$body,'user_id'=>get_current_user_id(),'comment_approved'=>1,
+            'comment_author'=>$user->display_name,'comment_author_email'=>$user->user_email,
+        ]);
         return new WP_REST_Response(['ok'=>(bool)$comment,'id'=>$comment],201);
     }
 
