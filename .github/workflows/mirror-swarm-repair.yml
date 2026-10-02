@@ -1,8 +1,12 @@
 name: QuantDeus Mirror Swarm Repair 🪞🐒
 
 on:
-  schedule:
-    - cron: '23 * * * *'
+  workflow_run:
+    workflows:
+      - QuantDeus Static Smoke
+      - QuantDeus QA Triad 🦀
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       mode:
@@ -28,6 +32,18 @@ concurrency:
 
 jobs:
   mirror:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        (
+          github.event.workflow_run.conclusion == 'failure' ||
+          github.event.workflow_run.conclusion == 'timed_out' ||
+          github.event.workflow_run.conclusion == 'startup_failure' ||
+          github.event.workflow_run.conclusion == 'action_required'
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -71,6 +87,9 @@ jobs:
           CONTRACT_RC: ${{ steps.qa.outputs.contract_rc }}
           OPENCLAW_RC: ${{ steps.qa.outputs.openclaw_rc }}
           EVENT_NAME: ${{ github.event_name }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          TRIGGER_WORKFLOW: ${{ github.event.workflow_run.name }}
+          TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -122,12 +141,16 @@ jobs:
               openclaw_rc: Number(process.env.OPENCLAW_RC || 0)
             };
 
-            const validatorFailure = Object.values(validatorState).some(value => value !== 0);
             const manual = process.env.EVENT_NAME === 'workflow_dispatch';
-            const needsMirror = manual || validatorFailure || recentFailures.length > 0;
+            const trigger = manual
+              ? 'manual workflow_dispatch'
+              : 'workflow_run ' +
+                String(process.env.TRIGGER_WORKFLOW || 'unknown') +
+                ' #' + String(process.env.TRIGGER_RUN_ID || 'unknown') +
+                ' conclusion=' + String(process.env.TRIGGER_CONCLUSION || 'unknown');
 
             const evidence = {
-              trigger: manual ? 'manual workflow_dispatch' : 'hourly anomaly scan',
+              trigger,
               validator_state: validatorState,
               validator_logs: [
                 '=== syntax ===',
@@ -141,21 +164,14 @@ jobs:
             };
 
             fs.writeFileSync('/tmp/qd-mirror-evidence.json', JSON.stringify(evidence, null, 2));
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'needs_mirror=' + String(needsMirror) + '\n');
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'failure_count=' + String(recentFailures.length) + '\n');
-            console.log(JSON.stringify({ needsMirror, validatorState, recentFailures }, null, 2));
+            console.log(JSON.stringify({ validatorState, recentFailures, trigger }, null, 2));
           })().catch(error => {
             console.error(error.stack || error);
             process.exit(1);
           });
           NODE
 
-      - name: Healthy — mirror stays asleep
-        if: steps.evidence.outputs.needs_mirror != 'true'
-        run: echo "Primary swarm is green; Mirror Swarm did not spend an agent run."
-
       - name: Run independent Mirror Swarm
-        if: steps.evidence.outputs.needs_mirror == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QD_MIRROR_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'repair' }}
