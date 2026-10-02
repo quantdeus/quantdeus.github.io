@@ -44,10 +44,10 @@ $provider=is_user_logged_in() && get_user_meta(get_current_user_id(),'qd_github_
           <article class="qd-login-card qd-login-telegram">
             <div class="qd-login-icon">✈️</div>
             <span class="qd-tag">Обычный пользователь</span>
-            <h2>Войти через Telegram</h2>
-            <p>Для форума, сообщества и пользовательского профиля. После проверки Telegram WordPress создаёт или открывает аккаунт с ролью <strong>Пользователь</strong>.</p>
-            <button class="qd-btn qd-telegram-login" type="button" data-telegram-login>Войти через Telegram</button>
-            <div class="qd-login-status" data-telegram-status>Telegram · работает на мобильном и ПК через защищённый OIDC bridge</div>
+            <h2>Войти через QuantDeus Store Bot</h2>
+            <p>Для форума, сообщества и пользовательского профиля. Сайт перенаправит в <strong>@QuantDeus_bot</strong>, бот подтвердит Telegram-аккаунт и вернёт тебя обратно в QuantDeus.</p>
+            <button class="qd-btn qd-telegram-login" type="button" data-telegram-login>Открыть QuantDeus Store Bot</button>
+            <div class="qd-login-status" data-telegram-status>Telegram · вход через личный чат с QuantDeus Store Bot</div>
           </article>
 
           <article class="qd-login-card qd-login-github">
