@@ -59,6 +59,7 @@ function qd_aero_primary_menu_fallback(array $args=[]): void {
     $items=[
         ['Холдинг',home_url('/#holding')],
         ['Направления',home_url('/#directions')],
+        ['Галерея',home_url('/#visuals')],
         ['Услуги',home_url('/#services')],
         ['Ксения',home_url('/#ksenia')],
         ['Форум',home_url('/forum/')],
