@@ -485,7 +485,8 @@ final class QD_Core {
         if (!in_array('administrator',$user->roles,true)) return false;
         $login=(string)get_user_meta($user->ID,'qd_github_login',true);
         if ($login==='') return false;
-        if (!$live && get_transient('qd_gh_admin_ok_'.$user->ID)) return true;
+        if (get_transient('qd_gh_admin_ok_'.$user->ID)) return true;
+        if (!$live) return false;
 
         $protected=(string)get_transient('qd_gh_token_'.$user->ID);
         $token=self::unprotect_github_token($protected);
@@ -523,7 +524,7 @@ final class QD_Core {
 
     public static function guard_admin_rest($result) {
         if ($result instanceof WP_Error) return $result;
-        if (is_user_logged_in() && current_user_can('manage_options') && !self::github_admin_session_valid(false)) {
+        if (is_user_logged_in() && current_user_can('manage_options') && !self::github_admin_session_valid(true)) {
             return new WP_Error('github_admin_required','GitHub repository-admin verification required',['status'=>403]);
         }
         return $result;
