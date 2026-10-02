@@ -8,7 +8,7 @@ Canonical repository: `quantdeus/quantdeus.github.io`
 
 Before acting, read the fresh `main` state, especially:
 - `coordination/civilization-doctrine.json`
-- canonical manifesto: `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf` (`neon-horizon-v3`)
+- canonical manifesto: `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf` (`neon-horizon-v4`)
 - adaptive living manifesto: `coordination/manifesto-living.md`
 - role cron registry: `coordination/agent-cron-map.json`
 - multi-platform growth contract: `coordination/growth/platform-playbook.json`
