@@ -9,13 +9,12 @@ The canonical QA Self-Heal lane uses OpenClaw. If OpenClaw itself, its tool loop
 Mirror Swarm intentionally uses a separate execution path:
 
 ```
-Vercel Cron (:37 every hour)
-  -> protected /api/quantdeus/mirror-wake
-  -> GitHub workflow_dispatch
+Canonical hourly GitHub Action completes (:00 cadence)
+  -> workflow_run wakes Mirror Swarm
   -> deterministic local QA + recent main Actions failures
   -> sleep when healthy
   -> GitHub OIDC
-  -> Vercel /api/quantdeus/mirror
+  -> Vercel POST /api/quantdeus/mirror
   -> Mirror Sherlock
   -> Mirror Tuvok
   -> Mirror Tasksmith
@@ -24,29 +23,27 @@ Vercel Cron (:37 every hour)
   -> normal QuantDeus QA / review / merge policy
 ```
 
-GitHub remains the source of truth. Vercel owns the mirror wake-up schedule.
+GitHub remains the source of truth. The already-approved `QuantDeus Hourly OpenClaw Swarm 🐒` workflow owns the hourly schedule; the mirror adds no second hourly cron. Vercel owns the independent AI mirror execution plane.
 
 ## Wake-up rule
 
-The Vercel project `quantdeus` schedules:
+`.github/workflows/mirror-swarm-repair.yml` listens for the completed `workflow_run` of the canonical hourly OpenClaw workflow on `main`. This fires whether the primary hourly run succeeds or fails, so a primary-swarm failure can still wake the independent repair plane.
 
-```cron
-37 * * * *
-```
-
-Vercel calls `GET /api/quantdeus/mirror-wake`. The endpoint is fail-closed behind the existing `CRON_SECRET`, uses the server-side `QUANTDEUS_GITHUB_TOKEN`, and dispatches `.github/workflows/mirror-swarm-repair.yml` on `main`.
-
-The wake endpoint refuses to start a second mirror cycle while one is already queued or running.
-
-The GitHub workflow then runs deterministic validators and scans recent `main` Actions failures. For a normal `vercel-cron` pulse, the model plane stays asleep when:
+Each hourly workflow-run pulse first runs deterministic validators and scans recent `main` Actions failures. The Vercel AI mirror stays asleep when:
 - syntax validator is green;
 - contract validator is green;
 - OpenClaw office validator is green; and
-- there are no repair-worthy main Actions failures from the last three hours.
+- there are no repair-worthy `main` Actions failures from the last three hours.
 
-A manual `workflow_dispatch` still wakes the mirror for an explicit test, even when the deterministic pulse is green.
+When the pulse detects a repair-worthy condition, the mirror Action obtains a GitHub OIDC token for audience `quantdeus-vercel-mirror` and calls `POST /api/quantdeus/mirror` on Vercel. The Vercel endpoint accepts only the mirror workflow's `workflow_run` or explicit `workflow_dispatch` OIDC events.
 
-The :37 offset keeps the mirror away from the primary hourly swarm's :00 slot and reduces runtime contention.
+A manual `workflow_dispatch` always wakes the mirror for an explicit test, even when the deterministic pulse is green.
+
+This Actions -> Vercel design is intentional for the current Hobby deployment:
+- it reuses the canonical approved hourly Actions cadence instead of creating a duplicate cron;
+- it does not require hourly Vercel Cron support;
+- it keeps the deployment at the 12 Serverless Function limit;
+- it still executes the independent mirror brain on Vercel.
 
 ## Modes
 
@@ -88,17 +85,14 @@ Mirror-created repairs:
 ## Runtime
 
 Vercel project: `quantdeus`  
-Wake endpoint: `GET /api/quantdeus/mirror-wake`  
 Mirror endpoint: `POST /api/quantdeus/mirror`  
 GitHub workflow: `.github/workflows/mirror-swarm-repair.yml`  
 OIDC audience: `quantdeus-vercel-mirror`
 
-Existing required runtime variables:
-- `CRON_SECRET` — authenticates the Vercel Cron wake request.
-- `QUANTDEUS_GITHUB_TOKEN` — dispatches the mirror GitHub workflow from the protected Vercel endpoint.
+The scheduled Action supplies its ephemeral GitHub token to the Vercel mirror only for the bounded repair operation. The repository does not store that token.
 
-Optional environment variable:
-- `QD_MIRROR_MODEL` — overrides the Vercel AI Gateway model used by the mirror. No model secret is stored in the repository.
+Optional Vercel environment variable:
+- `QD_MIRROR_MODEL` — overrides the Vercel AI Gateway model used by the mirror.
 
 ## Failure-domain rule
 

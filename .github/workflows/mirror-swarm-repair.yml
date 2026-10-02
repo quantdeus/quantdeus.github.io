@@ -1,6 +1,13 @@
 name: QuantDeus Mirror Swarm Repair 🪞🐒
 
 on:
+  workflow_run:
+    workflows:
+      - QuantDeus Hourly OpenClaw Swarm 🐒
+    types:
+      - completed
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       mode:
@@ -46,7 +53,6 @@ jobs:
         run: |
           node --check scripts/mirror-swarm-client.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
-          node --check vercel-dispatcher/api/quantdeus/mirror-wake.js
           node scripts/mission-alignment.js
 
       - name: Collect deterministic QA state
@@ -74,7 +80,7 @@ jobs:
           SYNTAX_RC: ${{ steps.qa.outputs.syntax_rc }}
           CONTRACT_RC: ${{ steps.qa.outputs.contract_rc }}
           OPENCLAW_RC: ${{ steps.qa.outputs.openclaw_rc }}
-          WAKE_SOURCE: ${{ inputs.wake_source }}
+          WAKE_SOURCE: ${{ github.event_name == 'workflow_run' && 'hourly-actions-vercel' || inputs.wake_source }}
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -158,12 +164,12 @@ jobs:
           });
           NODE
 
-      - name: Keep mirror asleep when Vercel pulse is healthy
-        if: ${{ steps.evidence.outputs.wake_required != 'true' && inputs.wake_source == 'vercel-cron' }}
+      - name: Keep mirror asleep when hourly Actions pulse is healthy
+        if: ${{ steps.evidence.outputs.wake_required != 'true' && github.event_name == 'workflow_run' }}
         run: echo "Mirror pulse healthy; model plane remains asleep."
 
       - name: Run independent Mirror Swarm
-        if: ${{ steps.evidence.outputs.wake_required == 'true' || inputs.wake_source != 'vercel-cron' }}
+        if: ${{ steps.evidence.outputs.wake_required == 'true' || github.event_name != 'workflow_run' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QD_MIRROR_MODE: ${{ inputs.mode }}
