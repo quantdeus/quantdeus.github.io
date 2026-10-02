@@ -1,14 +1,59 @@
 {
   "$schema": "https://playground.wordpress.net/blueprint-schema.json",
   "landingPage": "/",
-  "preferredVersions": {"php":"8.3","wp":"latest"},
-  "features": {"networking": true},
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "latest"
+  },
+  "features": {
+    "networking": true
+  },
   "steps": [
-    {"step":"defineWpConfigConsts","consts":{"WP_DEBUG":true,"WP_DEBUG_LOG":true,"WP_DEBUG_DISPLAY":false,"QD_TELEGRAM_CLIENT_ID":"8122160274","QD_TELEGRAM_BOT_USERNAME":"QuantDeus_bot"}},
-    {"step":"installPlugin","pluginData":{"resource":"bundled","path":"/assets/quantdeus-core.zip"},"options":{"activate":true}},
-    {"step":"installTheme","themeData":{"resource":"bundled","path":"/assets/quantdeus-aero.zip"},"options":{"activate":true}},
-    {"step":"setSiteOptions","options":{"blogname":"QuantDeus","blogdescription":"Технологии · Исследования · Медиа · Сообщество","permalink_structure":"/%postname%/"}},
-    {"step":"runPHP","code":"<?php require_once '/wordpress/wp-load.php'; if (class_exists('QD_Core')) { QD_Core::activate(); } flush_rewrite_rules(false);"},
-    {"step":"login","username":"admin"}
+    {
+      "step": "defineWpConfigConsts",
+      "consts": {
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": true,
+        "WP_DEBUG_DISPLAY": false,
+        "QD_TELEGRAM_CLIENT_ID": "8122160274",
+        "QD_TELEGRAM_BOT_USERNAME": "QuantDeus_bot"
+      }
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "url",
+        "url": "https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/7ba3bc46a4db508622cd646718f86483dec994c1/wordpress/dist/quantdeus-core.zip"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "installTheme",
+      "themeData": {
+        "resource": "url",
+        "url": "https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/7ba3bc46a4db508622cd646718f86483dec994c1/wordpress/dist/quantdeus-aero.zip"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "blogname": "QuantDeus",
+        "blogdescription": "Технологии · Исследования · Медиа · Сообщество",
+        "permalink_structure": "/%postname%/"
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; if (class_exists('QD_Core')) { QD_Core::activate(); } flush_rewrite_rules(false);"
+    },
+    {
+      "step": "login",
+      "username": "admin"
+    }
   ]
 }
