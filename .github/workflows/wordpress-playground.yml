@@ -1,15 +1,17 @@
-name: QuantDeus WordPress Playground
+name: QuantDeus WordPress Platform
 
 on:
   push:
     branches: [main]
     paths:
       - 'wordpress/**'
+      - 'docs/WORDPRESS_PLATFORM_MIGRATION.md'
       - '.github/workflows/wordpress-playground.yml'
   pull_request:
     branches: [main]
     paths:
       - 'wordpress/**'
+      - 'docs/WORDPRESS_PLATFORM_MIGRATION.md'
       - '.github/workflows/wordpress-playground.yml'
   workflow_dispatch:
 
@@ -17,13 +19,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: quantdeus-wordpress-playground-${{ github.event.pull_request.number || github.ref }}
+  group: quantdeus-wordpress-platform-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  wordpress-smoke:
+  wordpress-platform-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -31,20 +33,45 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate WordPress files
+      - name: Validate WordPress staging contract
         run: |
+          set -euo pipefail
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
-          node -e "const fs=require('fs'); const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8')); if(!b.preferredVersions?.wp) throw new Error('wp version missing'); if(!b.steps?.some(x=>x.step==='login')) throw new Error('login step missing'); console.log('Blueprint OK:',b.preferredVersions)"
+          test -f wordpress/dist/quantdeus-core.zip
+          test -f wordpress/dist/quantdeus-aero.zip
+          unzip -t wordpress/dist/quantdeus-core.zip
+          unzip -t wordpress/dist/quantdeus-aero.zip
+          rm -rf /tmp/qd-core /tmp/qd-aero
+          mkdir -p /tmp/qd-core /tmp/qd-aero
+          unzip -q wordpress/dist/quantdeus-core.zip -d /tmp/qd-core
+          unzip -q wordpress/dist/quantdeus-aero.zip -d /tmp/qd-aero
+          find /tmp/qd-core /tmp/qd-aero -name '*.php' -print0 | xargs -0 -n1 php -l
+          node - <<'NODE'
+          const fs=require('fs');
+          const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8'));
+          for(const step of ['installPlugin','installTheme','runPHP','login']){
+            if(!(b.steps||[]).some(x=>x.step===step)) throw new Error('missing '+step);
+          }
+          const text=JSON.stringify(b);
+          if(!text.includes('quantdeus-core.zip')||!text.includes('quantdeus-aero.zip')) throw new Error('QuantDeus packages not wired');
+          console.log('Blueprint contract OK');
+          NODE
 
-      - name: Boot WordPress Playground in CI
+      - name: Boot full QuantDeus WordPress in Playground
         run: |
           set -euo pipefail
           npx -y @wp-playground/cli@latest --blueprint=wordpress/blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
           pid=$!
           trap 'kill $pid 2>/dev/null || true' EXIT
-          timeout 180 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
+          timeout 240 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
           kill -0 "$pid"
-          grep -q "PHP 8.3  WordPress latest" /tmp/quantdeus-wordpress.log
-          echo "WordPress Playground booted successfully"
-          tail -20 /tmp/quantdeus-wordpress.log
+          curl -fsS http://127.0.0.1:9400/wp-json/quantdeus/v1/health | tee /tmp/health.json
+          grep -q '"engine":"wordpress"' /tmp/health.json
+          curl -fsS http://127.0.0.1:9400/wp-json/quantdeus/v1/services | tee /tmp/services.json
+          grep -q 'business-automation' /tmp/services.json
+          grep -q 'ksenia-cherednikova-concert' /tmp/services.json
+          curl -fsS http://127.0.0.1:9400/ > /tmp/home.html
+          grep -q 'QuantDeus Holding' /tmp/home.html
+          grep -q 'Ксения Чередникова' /tmp/home.html
+          echo "QuantDeus WordPress platform smoke passed"
