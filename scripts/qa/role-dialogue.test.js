@@ -26,6 +26,11 @@ test('dedupe uses latest role output and allows scheduled degraded recovery only
   const comments=[{body:m+' Runtime status: **DEGRADED**'}];
   assert.equal(skipDialogue(comments,m,'issue_comment'),true);
   assert.equal(skipDialogue(comments,m,'schedule'),false);
+  const previousForce=process.env.QUANTDEUS_DIALOGUE_FORCE_RETRY;
+  process.env.QUANTDEUS_DIALOGUE_FORCE_RETRY='1';
+  assert.equal(skipDialogue(comments,m),false);
+  if(previousForce===undefined) delete process.env.QUANTDEUS_DIALOGUE_FORCE_RETRY;
+  else process.env.QUANTDEUS_DIALOGUE_FORCE_RETRY=previousForce;
   assert.equal(skipDialogue([...comments,{body:'<!-- qd-sherlock-digest:b -->'}],m,'issue_comment'),false);
 });
 test('role dialogue verifies real assistant turn, model and no-tools runtime',async()=>{
