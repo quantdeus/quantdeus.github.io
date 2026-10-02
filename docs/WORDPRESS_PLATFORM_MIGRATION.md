@@ -1,80 +1,88 @@
-# QuantDeus WordPress platform migration — implementation contract
+# QuantDeus WordPress platform migration — canonical runtime contract
 
 Tracks: Issue #359.
 
-## Decision
+## Decision and cutover
 
-WordPress is the target primary application engine for QuantDeus, not only a marketing CMS.
+On 2026-10-02 the owner declared the site migration complete: **WordPress is now the canonical application/CMS runtime for QuantDeus.**
 
-## Implemented staging slice
+The repository `quantdeus/quantdeus.github.io` remains the canonical source/CI/evidence/swarm repository. It is no longer the canonical public application runtime.
 
-| Current QuantDeus surface | WordPress target | Staging implementation |
+The exact production WordPress origin is intentionally not guessed here. The connected `quantdeus.wordpress.com` account currently reports Coming Soon and no paid site-scoped MCP access, so that connector state is not treated as proof of the owner-managed production origin.
+
+## Canonical component mapping
+
+| Legacy surface | Canonical WordPress surface | Status |
 | --- | --- | --- |
-| Static/Vercel portal homepage | WordPress theme | `quantdeus-aero` front page |
-| `store/products.json` | `qd_service` records | Seeded by `quantdeus-core` |
-| private GitHub inquiry JSON | `qd_inquiry` private records | Guest REST inquiry endpoint + admin list |
-| GitHub Issues forum | `qd_forum_thread` + WP comments | Read/create/reply/moderate REST API |
-| Telegram website/Mini App auth | WordPress users/sessions | OIDC RS256 + Mini App HMAC verification |
-| owner/admin/moderator/member | WordPress roles/capabilities | Telegram ID mapping + `qd_moderator` |
-| Portal admin UI | `wp-admin` | QuantDeus dashboard, services, inquiries, forum |
-| Portal metadata | WP sitemap/canonical + theme/plugin metadata | meta description, OpenGraph, Schema.org |
-| OpenClaw/GitHub evidence | WP REST integration | `/agent/context` + idempotent `/agent/evidence` |
+| Static/Vercel homepage | `quantdeus-aero` theme | migrated |
+| `store/products.json` | `qd_service` | migrated |
+| guest inquiry delivery/webhook fallback | private `qd_inquiry` records | migrated; direct WordPress persistence |
+| GitHub-Issues-backed Forum UI | `qd_forum_thread` + WordPress comments | migrated target |
+| Telegram Mini App identity | `quantdeus-core` verification + WordPress session | canonical |
+| owner/admin/moderator/member | WordPress roles/capabilities | canonical |
+| Portal admin | native `wp-admin` QuantDeus surfaces | canonical |
+| Portal SEO metadata | WordPress canonical/sitemap/theme metadata/schema | canonical |
+| agent context/evidence | bounded `/wp-json/quantdeus/v1/` API | canonical integration surface |
+
+## No-Make invariant
+
+The canonical WordPress architecture has **no Make.com dependency**.
+
+Allowed integration paths:
+- WordPress REST/API;
+- direct Telegram Bot API / Telegram Mini App verification;
+- GitHub Actions and GitHub API/MCP;
+- OpenClaw and external AI providers through explicit bounded APIs.
+
+Not canonical:
+- Make scenarios;
+- Make webhook inboxes;
+- Make polling;
+- Make as a transport/orchestration layer;
+- duplicated control planes outside the WordPress/GitHub/OpenClaw contracts.
+
+Guest inquiries are persisted directly in WordPress and remain valid without registration.
 
 ## WordPress secret/config contract
 
-Secrets belong in `wp-config.php` or host environment, never in the repository.
+Secrets belong in `wp-config.php` or the host environment and are never committed.
 
 ```php
-define('QD_TELEGRAM_CLIENT_ID', '8122160274');            // public identifier
-define('QD_TELEGRAM_BOT_USERNAME', 'QuantDeus_bot');      // public identifier
+define('QD_TELEGRAM_CLIENT_ID', '8122160274');
+define('QD_TELEGRAM_BOT_USERNAME', 'QuantDeus_bot');
 define('QD_TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
 define('QD_OWNER_TELEGRAM_IDS', getenv('QUANTDEUS_OWNER_TELEGRAM_IDS'));
 define('QD_ADMIN_TELEGRAM_IDS', getenv('QUANTDEUS_ADMIN_TELEGRAM_IDS'));
 define('QD_MODERATOR_TELEGRAM_IDS', getenv('QUANTDEUS_MODERATOR_TELEGRAM_IDS'));
-define('QD_TELEGRAM_CHAT_ID', getenv('TELEGRAM_CHAT_ID')); // optional inquiry push
-define('QD_INQUIRY_EMAIL', getenv('QD_INQUIRY_EMAIL'));    // optional email fallback
 ```
 
-Application Passwords should be used for external automation identities. The staging agent API is deliberately bounded to context reads and evidence writes; it is not a second orchestration plane.
+## Repository responsibilities after migration
 
-## Ksenia Cherednikova content
+1. Keep `wordpress/src/quantdeus-core` and `wordpress/src/quantdeus-aero` reviewable as text source.
+2. Run WordPress Playground CI from source via `git:directory`; do not commit generated ZIP packages.
+3. Keep WordPress REST contracts smoke-tested.
+4. Treat legacy Portal/Vercel files as rollback/history only until deliberately archived/removed.
+5. Route new product work to WordPress, not legacy `/forum/`, `/store/` or Vercel Portal APIs.
+6. Keep secrets out of Git.
+7. Preserve a rollback snapshot before any destructive production migration.
 
-The starter profile uses only public facts backed by currently discoverable profiles and leaves the official hero photo editable from the WordPress Media Library/featured image.
-
-Starter references:
-
-- SMS Casting: https://smscasting.ru/actor/1607
-- Telegram: https://t.me/KseniaCherednikova
-- OK.ru: https://ok.ru/kseniyache
-- Profi.ru public profile surfaced in 2026 search for the 2024 Moscow A Cappella achievement
-
-A real official photo asset was not found in the connected project Dropbox under Ksenia/Чередникова/Чувствую searches, so staging does not copy or hotlink an unverified third-party image.
-
-## SEO
+## SEO and content
 
 - semantic server-rendered WordPress pages;
-- WordPress core canonical URLs and XML sitemap;
-- page-specific descriptions;
-- OpenGraph basics;
-- `Organization` schema on the site and `Person` schema on the Ksenia page;
-- editable media alt text through WordPress;
-- mobile-first responsive theme.
+- WordPress canonical URLs/XML sitemap;
+- page-level titles/descriptions and OpenGraph;
+- Organization schema for QuantDeus and Person schema where source-backed;
+- editable image alt text and Media Library;
+- responsive Cosmic Frutiger Aero presentation.
 
-## Migration / cutover gates
+Ksenia Cherednikova biography, regalia, photos, social links and media must remain source-backed; missing items are owner/content inputs, never invented.
 
-1. WordPress bundle boots in CI.
-2. `/wp-json/quantdeus/v1/health` returns `engine=wordpress`.
-3. Two seeded services are exposed by WordPress REST.
-4. Guest inquiry contract is exercised in staging without requiring registration.
-5. Forum read and authenticated write contracts pass.
-6. Telegram domain binding is configured for the final WordPress production origin.
-7. Production WordPress hosting supports plugins/theme and secure environment constants.
-8. Backup and rollback snapshot exists.
-9. Redirect map from legacy `/forum/`, `/store/`, Portal pages is tested.
-10. Owner explicitly approves DNS/domain cutover.
+## Verification
 
-## Current external blocker
-
-The existing `quantdeus.wordpress.com` site is present but WordPress.com reports site-scoped MCP access unavailable until that site has a paid plan. That does not block the GitHub/Playground staging package; it blocks direct remote installation/configuration through the connected WordPress.com management tools.
-
-No DNS switch, WordPress.com plan purchase, secret mutation, or production replacement is performed by this staging implementation.
+CI must prove:
+- PHP syntax for first-party source;
+- Playground can install plugin/theme from the repository;
+- `/wp-json/quantdeus/v1/health` reports `engine=wordpress` and `make_dependency=false`;
+- both current quote services exist;
+- the WordPress holding homepage renders;
+- no Make dependency appears in canonical WordPress source/docs.
