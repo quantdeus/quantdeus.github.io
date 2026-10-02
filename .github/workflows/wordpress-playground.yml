@@ -114,6 +114,10 @@ jobs:
           grep -q "Войти через GitHub" wordpress/src/quantdeus-aero/page-login.php
           grep -q "write / maintain" wordpress/src/quantdeus-aero/page-login.php
           grep -q "admin" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "admin_url()" wordpress/src/quantdeus-aero/page-login.php
+          if grep -q "admin.php?page=quantdeus" wordpress/src/quantdeus-aero/page-login.php; then echo "custom admin dashboard link forbidden"; exit 1; fi
+          grep -q "github_staff_session_valid" wordpress/src/quantdeus-core/quantdeus-core.php
+          if grep -q "add_menu_page('QuantDeus'" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "custom QuantDeus admin shell forbidden"; exit 1; fi
           ! grep -RniE 'hook\.[a-z0-9.-]*make\.com|api\.make\.com|MAKE_(TOKEN|API|WEBHOOK|SCENARIO|TEAM|ORG)|scenarioId[^A-Za-z0-9]' wordpress/src wordpress/blueprint.json || {
             echo "Active Make integration detected in canonical WordPress runtime"; exit 1;
           }
@@ -160,6 +164,7 @@ jobs:
           }
           if (!get_role('qd_agent')->has_cap('qd_agent_context')) { throw new Exception('Agent context capability missing'); }
           if (get_role('qd_moderator')->has_cap('manage_options')) { throw new Exception('Moderator must not have admin access'); }
+          if (!get_role('qd_moderator')->has_cap('edit_posts') || !get_role('qd_moderator')->has_cap('qd_moderate_forum')) { throw new Exception('Moderator native wp-admin capabilities missing'); }
           if (get_option('stylesheet') !== 'quantdeus-aero') { throw new Exception('QuantDeus Aero theme not active'); }
           qd_aero_ensure_login_page();
           $login=get_page_by_path('login',OBJECT,'page');
