@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.6.0
+ * Version: 1.7.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.6.0';
+    public const VERSION = '1.7.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
@@ -107,6 +107,10 @@ final class QD_Core {
                 ['qd_inquiry','qd_inquiries'],
                 ['qd_forum_thread','qd_forum_threads'],
                 ['qd_project','qd_projects'],
+                ['qd_node','qd_nodes'],
+                ['qd_research','qd_research_items'],
+                ['qd_artifact','qd_artifacts'],
+                ['qd_result','qd_results'],
                 ['qd_evidence','qd_evidence_items'],
             ] as [$singular,$plural]) {
                 self::grant_caps($admin,self::mapped_post_caps($singular,$plural));
@@ -131,15 +135,90 @@ final class QD_Core {
             'supports' => ['title','editor','author','comments'], 'rewrite' => ['slug'=>'forum'],
         ]);
         register_post_type('qd_project', [
-            'label' => 'Projects', 'public' => true, 'show_in_rest' => true,
+            'label' => 'Projects', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'projects',
             'capability_type' => ['qd_project','qd_projects'], 'map_meta_cap' => true,
-            'supports' => ['title','editor','excerpt','thumbnail'], 'rewrite' => ['slug'=>'projects'],
+            'supports' => ['title','editor','excerpt','thumbnail','custom-fields'], 'rewrite' => ['slug'=>'projects'],
+        ]);
+        register_post_type('qd_node', [
+            'label' => 'Federation Nodes', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'federation/nodes',
+            'capability_type' => ['qd_node','qd_nodes'], 'map_meta_cap' => true,
+            'supports' => ['title','editor','excerpt','thumbnail','custom-fields'], 'rewrite' => ['slug'=>'federation/node','with_front'=>false],
+            'menu_icon' => 'dashicons-networking',
+        ]);
+        register_post_type('qd_research', [
+            'label' => 'Research', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'research',
+            'capability_type' => ['qd_research','qd_research_items'], 'map_meta_cap' => true,
+            'supports' => ['title','editor','excerpt','thumbnail','custom-fields'], 'rewrite' => ['slug'=>'research','with_front'=>false],
+            'menu_icon' => 'dashicons-search',
+        ]);
+        register_post_type('qd_artifact', [
+            'label' => 'Open Artifacts', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'knowledge/artifacts',
+            'capability_type' => ['qd_artifact','qd_artifacts'], 'map_meta_cap' => true,
+            'supports' => ['title','editor','excerpt','thumbnail','custom-fields'], 'rewrite' => ['slug'=>'knowledge/artifact','with_front'=>false],
+            'menu_icon' => 'dashicons-portfolio',
+        ]);
+        register_post_type('qd_result', [
+            'label' => 'Verified Results', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'results',
+            'capability_type' => ['qd_result','qd_results'], 'map_meta_cap' => true,
+            'supports' => ['title','editor','excerpt','thumbnail','custom-fields'], 'rewrite' => ['slug'=>'result','with_front'=>false],
+            'menu_icon' => 'dashicons-yes-alt',
         ]);
         register_post_type('qd_evidence', [
             'label' => 'Evidence', 'public' => false, 'show_ui' => true, 'show_in_rest' => false,
             'capability_type' => ['qd_evidence','qd_evidence_items'], 'map_meta_cap' => true,
             'supports' => ['title','editor','custom-fields'],
         ]);
+
+        register_taxonomy('qd_evidence_grade', ['qd_research','qd_result'], [
+            'label'=>'Evidence Grade', 'public'=>true, 'show_in_rest'=>true, 'hierarchical'=>false,
+            'rewrite'=>['slug'=>'evidence-grade','with_front'=>false],
+        ]);
+        register_taxonomy('qd_horizon', ['qd_node','qd_project','qd_research','qd_result'], [
+            'label'=>'Horizon', 'public'=>true, 'show_in_rest'=>true, 'hierarchical'=>false,
+            'rewrite'=>['slug'=>'horizon','with_front'=>false],
+        ]);
+        register_taxonomy('qd_pillar', ['qd_node','qd_project','qd_research','qd_artifact','qd_result'], [
+            'label'=>'Neon Horizon Pillar', 'public'=>true, 'show_in_rest'=>true, 'hierarchical'=>false,
+            'rewrite'=>['slug'=>'pillar','with_front'=>false],
+        ]);
+
+        foreach ([
+            'A'=>'Grade A — independently verifiable / reproducible',
+            'B'=>'Grade B — promising early result / substantial uncertainty',
+            'C'=>'Grade C — hypothesis / concept / unverified signal',
+        ] as $slug=>$label) {
+            if (!term_exists($slug,'qd_evidence_grade')) wp_insert_term($label,'qd_evidence_grade',['slug'=>strtolower($slug)]);
+        }
+        foreach ([
+            '2028'=>'2026–2028 · Ignition',
+            '2041'=>'2026–2041 · Proto-Federation',
+            '2126'=>'2026–2126 · Century Compass',
+        ] as $slug=>$label) {
+            if (!term_exists($slug,'qd_horizon')) wp_insert_term($label,'qd_horizon',['slug'=>$slug]);
+        }
+        $pillars=[
+            'life-dignity'=>'Жизнь и достоинство человека',
+            'safety-freedom'=>'Безопасность как основа свободы',
+            'transparency-trust'=>'Прозрачность и доверие',
+            'creativity-science'=>'Творчество, наука и инновации',
+            'ecological-harmony'=>'Экологическая гармония',
+            'post-scarcity'=>'Постдефицитное мышление',
+            'idic'=>'IDIC — разнообразие без унификации',
+            'long-horizon-space'=>'Долгий горизонт и космическая цивилизация',
+        ];
+        foreach ($pillars as $slug=>$label) {
+            if (!term_exists($slug,'qd_pillar')) wp_insert_term($label,'qd_pillar',['slug'=>$slug]);
+        }
+
+        $public_meta = ['type'=>'string','single'=>true,'show_in_rest'=>true,'auth_callback'=>fn()=>current_user_can('manage_options')];
+        foreach (['identity','mission','evidence','artifacts','metrics','replication','safety','exit','governance','human_override'] as $field) {
+            register_post_meta('qd_node','qd_'.$field,$public_meta);
+        }
+        foreach (['fact','evidence','hypothesis','unknown','next_test','falsifier','evidence_grade'] as $field) {
+            register_post_meta('qd_research','qd_'.$field,$public_meta);
+        }
+        register_post_meta('qd_project','qd_loop_stage',$public_meta);
+        register_post_meta('qd_result','qd_evidence_grade',$public_meta);
     }
 
     private static function service_seed(): array {
@@ -257,6 +336,11 @@ final class QD_Core {
                 'site'=>get_bloginfo('name'),'engine'=>'wordpress',
                 'services'=>(int)(wp_count_posts('qd_service')->publish ?? 0),
                 'forum_threads'=>(int)(wp_count_posts('qd_forum_thread')->publish ?? 0),
+                'nodes'=>(int)(wp_count_posts('qd_node')->publish ?? 0),
+                'projects'=>(int)(wp_count_posts('qd_project')->publish ?? 0),
+                'research'=>(int)(wp_count_posts('qd_research')->publish ?? 0),
+                'artifacts'=>(int)(wp_count_posts('qd_artifact')->publish ?? 0),
+                'verified_results'=>(int)(wp_count_posts('qd_result')->publish ?? 0),
             ]),
         ]);
     }
