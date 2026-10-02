@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.5.0
+ * Version: 1.6.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.5.0';
+    public const VERSION = '1.6.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
@@ -44,14 +44,37 @@ final class QD_Core {
 
     public static function deactivate(): void { flush_rewrite_rules(false); }
 
+    private static function mapped_post_caps(string $singular, string $plural): array {
+        return [
+            'edit_'.$singular,
+            'read_'.$singular,
+            'delete_'.$singular,
+            'edit_'.$plural,
+            'edit_others_'.$plural,
+            'publish_'.$plural,
+            'read_private_'.$plural,
+            'delete_'.$plural,
+            'delete_private_'.$plural,
+            'delete_published_'.$plural,
+            'delete_others_'.$plural,
+            'edit_private_'.$plural,
+            'edit_published_'.$plural,
+        ];
+    }
+
+    private static function grant_caps($role, array $caps): void {
+        if (!$role) return;
+        foreach ($caps as $cap) $role->add_cap($cap, true);
+    }
+
     private static function roles(): void {
         $definitions = [
             'qd_member' => ['QuantDeus Member', ['read' => true]],
             'qd_agent' => ['QuantDeus Agent', ['read' => true, 'qd_agent_context' => true]],
             'qd_moderator' => ['QuantDeus Moderator', [
-                'read' => true, 'edit_posts' => true, 'edit_others_posts' => true,
-                'publish_posts' => true, 'edit_private_posts' => true, 'read_private_posts' => true,
-                'upload_files' => true, 'moderate_comments' => true,
+                'read' => true,
+                'upload_files' => true,
+                'moderate_comments' => true,
                 'qd_moderate_forum' => true,
             ]],
         ];
@@ -60,32 +83,61 @@ final class QD_Core {
             $role = get_role($slug);
             if ($role) foreach ($caps as $cap => $grant) $role->add_cap($cap, $grant);
         }
+
+        $moderator=get_role('qd_moderator');
+        if ($moderator) {
+            // Remove the legacy generic post caps: they unintentionally exposed
+            // private inquiries/evidence and every custom post type to moderators.
+            foreach ([
+                'edit_posts','edit_others_posts','publish_posts','edit_private_posts','read_private_posts',
+                'delete_posts','delete_private_posts','delete_published_posts','delete_others_posts',
+                'edit_published_posts','delete_published_posts'
+            ] as $legacy_cap) {
+                $moderator->remove_cap($legacy_cap);
+            }
+            self::grant_caps($moderator,self::mapped_post_caps('qd_forum_thread','qd_forum_threads'));
+        }
+
         $admin = get_role('administrator');
         if ($admin) {
             $admin->add_cap('qd_agent_context');
             $admin->add_cap('qd_moderate_forum');
+            foreach ([
+                ['qd_service','qd_services'],
+                ['qd_inquiry','qd_inquiries'],
+                ['qd_forum_thread','qd_forum_threads'],
+                ['qd_project','qd_projects'],
+                ['qd_evidence','qd_evidence_items'],
+            ] as [$singular,$plural]) {
+                self::grant_caps($admin,self::mapped_post_caps($singular,$plural));
+            }
         }
     }
 
     public static function register_types(): void {
         register_post_type('qd_service', [
             'label' => 'Services', 'public' => true, 'show_in_rest' => true,
+            'capability_type' => ['qd_service','qd_services'], 'map_meta_cap' => true,
             'supports' => ['title','editor','excerpt','thumbnail'], 'rewrite' => ['slug'=>'services'],
         ]);
         register_post_type('qd_inquiry', [
             'label' => 'Inquiries', 'public' => false, 'show_ui' => true, 'show_in_rest' => false,
+            'capability_type' => ['qd_inquiry','qd_inquiries'], 'map_meta_cap' => true,
             'supports' => ['title','editor','custom-fields'],
         ]);
         register_post_type('qd_forum_thread', [
             'label' => 'Forum', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'forum',
+            'capability_type' => ['qd_forum_thread','qd_forum_threads'], 'map_meta_cap' => true,
             'supports' => ['title','editor','author','comments'], 'rewrite' => ['slug'=>'forum'],
         ]);
         register_post_type('qd_project', [
             'label' => 'Projects', 'public' => true, 'show_in_rest' => true,
+            'capability_type' => ['qd_project','qd_projects'], 'map_meta_cap' => true,
             'supports' => ['title','editor','excerpt','thumbnail'], 'rewrite' => ['slug'=>'projects'],
         ]);
         register_post_type('qd_evidence', [
             'label' => 'Evidence', 'public' => false, 'show_ui' => true, 'show_in_rest' => false,
+            'capability_type' => ['qd_evidence','qd_evidence_items'], 'map_meta_cap' => true,
             'supports' => ['title','editor','custom-fields'],
         ]);
     }
@@ -120,6 +172,21 @@ final class QD_Core {
             'pricing_mode' => (string) (get_post_meta($post->ID,'qd_pricing_mode',true) ?: 'quote'),
             'available' => get_post_meta($post->ID,'qd_available',true) !== '0',
         ];
+    }
+
+    private static function service_post(string $service): ?WP_Post {
+        if ($service==='') return null;
+        $posts=get_posts([
+            'post_type'=>'qd_service',
+            'post_status'=>'publish',
+            'numberposts'=>1,
+            'meta_key'=>'qd_service_id',
+            'meta_value'=>$service,
+        ]);
+        if ($posts) return $posts[0];
+
+        $by_slug=get_page_by_path(sanitize_title($service),OBJECT,'qd_service');
+        return $by_slug instanceof WP_Post && $by_slug->post_status==='publish' ? $by_slug : null;
     }
 
     public static function routes(): void {
@@ -205,8 +272,12 @@ final class QD_Core {
         $contact=self::text($req->get_param('contact'),320);
         if (mb_strlen($note)<10) return new WP_Error('note_required','Describe the request',['status'=>400]);
         if (mb_strlen($contact)<3 && !is_user_logged_in()) return new WP_Error('contact_required','Contact required',['status'=>400]);
-        $allowed=array_keys(self::service_seed());
-        if (!in_array($service,$allowed,true)) return new WP_Error('service_unknown','Unknown service',['status'=>404]);
+        $service_post=self::service_post($service);
+        if (!$service_post) return new WP_Error('service_unknown','Unknown service',['status'=>404]);
+        if (get_post_meta($service_post->ID,'qd_available',true)==='0') {
+            return new WP_Error('service_unavailable','Service is currently unavailable',['status'=>409]);
+        }
+        $service=(string)(get_post_meta($service_post->ID,'qd_service_id',true) ?: $service_post->post_name);
 
         $ip=$_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $bucket='qd_inquiry_'.md5($ip.'|'.($_SERVER['HTTP_USER_AGENT'] ?? ''));
@@ -221,6 +292,7 @@ final class QD_Core {
         ],true);
         if (is_wp_error($id)) return $id;
         update_post_meta($id,'qd_service_id',$service);
+        update_post_meta($id,'qd_service_post_id',$service_post->ID);
         update_post_meta($id,'qd_contact',$contact);
         update_post_meta($id,'qd_source','wordpress_guest');
         update_post_meta($id,'qd_status','new');
@@ -245,14 +317,15 @@ final class QD_Core {
 
     public static function forum_reply(WP_REST_Request $req) {
         $post=get_post((int)$req['id']); $body=self::text($req->get_param('content'),5000);
-        if (!$post || $post->post_type!=='qd_forum_thread') return new WP_Error('thread_not_found','Not found',['status'=>404]);
+        if (!$post || $post->post_type!=='qd_forum_thread' || $post->post_status!=='publish') return new WP_Error('thread_not_found','Not found',['status'=>404]);
         if (mb_strlen($body)<1) return new WP_Error('reply_required','Reply required',['status'=>400]);
         $user=wp_get_current_user();
         $comment=wp_insert_comment([
             'comment_post_ID'=>$post->ID,'comment_content'=>$body,'user_id'=>get_current_user_id(),'comment_approved'=>1,
             'comment_author'=>$user->display_name,'comment_author_email'=>$user->user_email,
         ]);
-        return new WP_REST_Response(['ok'=>(bool)$comment,'id'=>$comment],201);
+        if (!$comment) return new WP_Error('reply_failed','Unable to save reply',['status'=>500]);
+        return new WP_REST_Response(['ok'=>true,'id'=>$comment],201);
     }
 
     private static function telegram_bot_token(): string {
@@ -447,8 +520,10 @@ final class QD_Core {
             : 'https://quantdeus.vercel.app/api/quantdeus/github-auth';
     }
 
-    private static function github_identity_via_broker(string $assertion): ?array {
-        if ($assertion==='') return null;
+    private static function github_identity_via_broker(string $assertion) {
+        if ($assertion==='') {
+            return new WP_Error('github_assertion_invalid','GitHub assertion missing',['status'=>401]);
+        }
         $response=wp_remote_post(self::github_broker_url(),[
             'headers'=>[
                 'Accept'=>'application/json',
@@ -458,14 +533,29 @@ final class QD_Core {
             'timeout'=>15,
             'redirection'=>2,
         ]);
-        if (is_wp_error($response) || wp_remote_retrieve_response_code($response)!==200) return null;
+        if (is_wp_error($response)) {
+            return new WP_Error('github_broker_unavailable','GitHub verifier unavailable',['status'=>503]);
+        }
+
+        $status=(int)wp_remote_retrieve_response_code($response);
         $body=json_decode((string)wp_remote_retrieve_body($response),true);
+        if ($status!==200) {
+            $code=is_array($body) ? self::text($body['error'] ?? '',80) : '';
+            if ($code==='') $code=$status>=500 ? 'github_broker_unavailable' : 'github_assertion_invalid';
+            return new WP_Error($code,'GitHub staff verification failed',['status'=>$status>=500 ? 503 : 401]);
+        }
+
         $user=is_array($body) && !empty($body['ok']) && is_array($body['user'] ?? null) ? $body['user'] : null;
-        if (!$user) return null;
+        if (!$user) return new WP_Error('github_broker_invalid','GitHub verifier returned an invalid response',['status'=>503]);
         $github_id=self::text($user['github_id'] ?? '',80);
         $login=self::text($user['login'] ?? '',80);
         $permission=strtolower(self::text($user['permission'] ?? '',40));
-        if ($github_id==='' || $login==='' || !in_array($permission,['write','maintain','admin'],true)) return null;
+        if ($github_id==='' || $login==='') {
+            return new WP_Error('github_broker_invalid','GitHub verifier response is incomplete',['status'=>503]);
+        }
+        if (!in_array($permission,['write','maintain','admin'],true)) {
+            return new WP_Error('github_staff_required','GitHub repository staff permission required',['status'=>401]);
+        }
         return [
             'github_id'=>$github_id,
             'login'=>$login,
@@ -522,7 +612,7 @@ final class QD_Core {
         if (!is_array($payload)) $payload=[];
         $assertion=trim((string)($payload['assertion'] ?? ''));
         $identity=self::github_identity_via_broker($assertion);
-        if (!$identity) return new WP_Error('github_auth_invalid','GitHub staff verification failed',['status'=>401]);
+        if (is_wp_error($identity)) return $identity;
         return self::establish_github_broker_session($identity,$assertion);
     }
 
@@ -681,7 +771,18 @@ final class QD_Core {
         $broker_assertion=(string)get_transient('qd_gh_broker_assertion_'.$user->ID);
         if ($broker_assertion!=='') {
             $identity=self::github_identity_via_broker($broker_assertion);
-            $permission=is_array($identity) ? strtolower((string)($identity['permission'] ?? 'none')) : 'none';
+            if (is_wp_error($identity)) {
+                delete_transient('qd_gh_staff_ok_'.$user->ID);
+                delete_transient('qd_gh_admin_ok_'.$user->ID);
+                if ($identity->get_error_code()==='github_staff_required') {
+                    update_user_meta($user->ID,'qd_github_permission','none');
+                    $user->set_role('qd_member');
+                }
+                // Expired assertions and verifier outages deny this request but
+                // never rewrite a verified staff role. Re-auth can recover it.
+                return false;
+            }
+            $permission=strtolower((string)($identity['permission'] ?? 'none'));
         } else {
             $protected=(string)get_transient('qd_gh_token_'.$user->ID);
             $token=self::unprotect_github_token($protected);
@@ -780,11 +881,14 @@ final class QD_Core {
     public static function dashboard_widget(): void {
         if (!current_user_can('qd_moderate_forum')) return;
         echo '<p>QuantDeus работает внутри нативной админки WordPress. Используйте стандартные разделы WordPress и нативные таблицы контента ниже.</p>';
-        echo '<p><a class="button button-primary" href="'.esc_url(admin_url('edit.php?post_type=qd_inquiry')).'">Inquiries</a> ';
-        echo '<a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_service')).'">Services</a> ';
-        echo '<a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_forum_thread')).'">Forum</a> ';
-        echo '<a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_project')).'">Projects</a> ';
-        echo '<a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_evidence')).'">Evidence</a></p>';
+        echo '<p><a class="button button-primary" href="'.esc_url(admin_url('edit.php?post_type=qd_forum_thread')).'">Forum</a>';
+        if (current_user_can('manage_options')) {
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_inquiry')).'">Inquiries</a>';
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_service')).'">Services</a>';
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_project')).'">Projects</a>';
+            echo ' <a class="button" href="'.esc_url(admin_url('edit.php?post_type=qd_evidence')).'">Evidence</a>';
+        }
+        echo '</p>';
     }
 
     public static function schema(): void {
