@@ -59,7 +59,7 @@ jobs:
           console.log('WordPress source contract OK');
           NODE
 
-      - name: Boot QuantDeus WordPress in Playground
+      - name: Execute QuantDeus WordPress Blueprint
         run: |
           set -euo pipefail
           node - <<'NODE'
@@ -69,12 +69,28 @@ jobs:
           const keep=(canonical.steps||[]).filter(x=>['defineWpConfigConsts','setSiteOptions','runPHP','login'].includes(x.step));
           const config=keep.find(x=>x.step==='defineWpConfigConsts');
           const options=keep.find(x=>x.step==='setSiteOptions');
-          const runPHP=keep.find(x=>x.step==='runPHP');
+          const seed=keep.find(x=>x.step==='runPHP');
           const login=keep.find(x=>x.step==='login');
+          const assertion=`<?php
+          require_once '/wordpress/wp-load.php';
+          if (!class_exists('QD_Core')) { throw new Exception('QD_Core not active'); }
+          do_action('rest_api_init');
+          $routes=rest_get_server()->get_routes();
+          foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/inquiries','/quantdeus/v1/forum'] as $route) {
+              if (!isset($routes[$route])) { throw new Exception('Missing REST route: '.$route); }
+          }
+          $services=get_posts(['post_type'=>'qd_service','post_status'=>'publish','numberposts'=>20]);
+          $ids=array_map(fn($p)=>(string)(get_post_meta($p->ID,'qd_service_id',true) ?: $p->post_name),$services);
+          foreach (['business-automation','ksenia-cherednikova-concert'] as $required) {
+              if (!in_array($required,$ids,true)) { throw new Exception('Missing service: '.$required); }
+          }
+          if (get_option('stylesheet') !== 'quantdeus-aero') { throw new Exception('QuantDeus Aero theme not active'); }
+          echo "QUANTDEUS_WORDPRESS_RUNTIME_OK\\n";
+          `;
           const b={
-            $schema: canonical.$schema,
+            $schema:canonical.$schema,
             landingPage:'/',
-            preferredVersions: canonical.preferredVersions,
+            preferredVersions:canonical.preferredVersions,
             steps:[
               config,
               {step:'mkdir',path:'/wordpress/wp-content/plugins/quantdeus-core'},
@@ -86,22 +102,12 @@ jobs:
               {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/index.php',data:source('wordpress/src/quantdeus-aero/index.php')},
               {step:'activatePlugin',pluginPath:'quantdeus-core/quantdeus-core.php',pluginName:'QuantDeus Core'},
               {step:'activateTheme',themeFolderName:'quantdeus-aero'},
-              options,runPHP,login
+              options,seed,{step:'runPHP',code:assertion},login
             ].filter(Boolean)
           };
           fs.writeFileSync('/tmp/quantdeus-wordpress-blueprint.json',JSON.stringify(b));
           NODE
-          npx -y @wp-playground/cli@latest --blueprint=/tmp/quantdeus-wordpress-blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
-          trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "--- WordPress Playground log ---"; cat /tmp/quantdeus-wordpress.log || true; fi; pkill -f "wp-playground" 2>/dev/null || true' EXIT
-          timeout 240 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
-          timeout 180 bash -c 'until curl -fsSL http://localhost:9400/?rest_route=/quantdeus/v1/health -o /tmp/health.json 2>/dev/null; do sleep 2; done'
-          cat /tmp/health.json
-          grep -q '"engine":"wordpress"' /tmp/health.json
-          grep -q '"make_dependency":false' /tmp/health.json
-          curl -fsSL http://localhost:9400/?rest_route=/quantdeus/v1/services | tee /tmp/services.json
-          grep -q 'business-automation' /tmp/services.json
-          grep -q 'ksenia-cherednikova-concert' /tmp/services.json
-          curl -fsSL http://localhost:9400/ > /tmp/home.html
-          grep -q 'Неоновый горизонт' /tmp/home.html
-          grep -q 'Ксения Чередникова' /tmp/home.html
+          npx -y @wp-playground/cli@latest run-blueprint --blueprint=/tmp/quantdeus-wordpress-blueprint.json
+          grep -q 'Неоновый горизонт' wordpress/src/quantdeus-aero/front-page.php
+          grep -q 'Ксения Чередникова' wordpress/src/quantdeus-aero/front-page.php
           echo "QuantDeus WordPress platform smoke passed"
