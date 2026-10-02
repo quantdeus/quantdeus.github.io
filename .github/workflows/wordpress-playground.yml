@@ -59,20 +59,34 @@ jobs:
           NODE
 
       - name: Boot QuantDeus WordPress in Playground
-        env:
-          TEST_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           node - <<'NODE'
           const fs=require('fs');
-          const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8'));
-          for(const step of b.steps||[]){
-            const resource=step.pluginData||step.themeData;
-            if(resource?.resource==='git:directory'){
-              resource.ref=process.env.TEST_REF;
-              resource.refType='commit';
-            }
-          }
+          const source=path=>fs.readFileSync(path,'utf8');
+          const canonical=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8'));
+          const keep=(canonical.steps||[]).filter(x=>['defineWpConfigConsts','setSiteOptions','runPHP','login'].includes(x.step));
+          const config=keep.find(x=>x.step==='defineWpConfigConsts');
+          const options=keep.find(x=>x.step==='setSiteOptions');
+          const runPHP=keep.find(x=>x.step==='runPHP');
+          const login=keep.find(x=>x.step==='login');
+          const b={
+            $schema: canonical.$schema,
+            landingPage:'/',
+            preferredVersions: canonical.preferredVersions,
+            steps:[
+              config,
+              {step:'mkdir',path:'/wordpress/wp-content/plugins/quantdeus-core'},
+              {step:'writeFile',path:'/wordpress/wp-content/plugins/quantdeus-core/quantdeus-core.php',data:source('wordpress/src/quantdeus-core/quantdeus-core.php')},
+              {step:'mkdir',path:'/wordpress/wp-content/themes/quantdeus-aero'},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/style.css',data:source('wordpress/src/quantdeus-aero/style.css')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/functions.php',data:source('wordpress/src/quantdeus-aero/functions.php')},
+              {step:'writeFile',path:'/wordpress/wp-content/themes/quantdeus-aero/front-page.php',data:source('wordpress/src/quantdeus-aero/front-page.php')},
+              {step:'activatePlugin',pluginPath:'quantdeus-core/quantdeus-core.php',pluginName:'QuantDeus Core'},
+              {step:'activateTheme',themeFolderName:'quantdeus-aero'},
+              options,runPHP,login
+            ].filter(Boolean)
+          };
           fs.writeFileSync('/tmp/quantdeus-wordpress-blueprint.json',JSON.stringify(b));
           NODE
           npx -y @wp-playground/cli@latest --blueprint=/tmp/quantdeus-wordpress-blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
