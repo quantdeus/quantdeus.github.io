@@ -33,45 +33,60 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate WordPress staging contract
+      - name: Validate canonical WordPress source
         run: |
           set -euo pipefail
           test -f wordpress/index.html
           test -f wordpress/blueprint.json
-          test -f wordpress/dist/quantdeus-core.zip
-          test -f wordpress/dist/quantdeus-aero.zip
-          unzip -t wordpress/dist/quantdeus-core.zip
-          unzip -t wordpress/dist/quantdeus-aero.zip
-          rm -rf /tmp/qd-core /tmp/qd-aero
-          mkdir -p /tmp/qd-core /tmp/qd-aero
-          unzip -q wordpress/dist/quantdeus-core.zip -d /tmp/qd-core
-          unzip -q wordpress/dist/quantdeus-aero.zip -d /tmp/qd-aero
-          find /tmp/qd-core /tmp/qd-aero -name '*.php' -print0 | xargs -0 -n1 php -l
+          test -f wordpress/src/quantdeus-core/quantdeus-core.php
+          test -f wordpress/src/quantdeus-aero/style.css
+          test -f wordpress/src/quantdeus-aero/functions.php
+          test -f wordpress/src/quantdeus-aero/front-page.php
+          find wordpress/src -name '*.php' -print0 | xargs -0 -n1 php -l
+          ! grep -RniE 'make\.com|MAKE_[A-Z_]*|make webhook|Make webhook' wordpress docs/WORDPRESS_PLATFORM_MIGRATION.md || {
+            echo "Make dependency detected in canonical WordPress source"; exit 1;
+          }
           node - <<'NODE'
           const fs=require('fs');
           const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8'));
-          for(const step of ['installPlugin','installTheme','runPHP','login']){
-            if(!(b.steps||[]).some(x=>x.step===step)) throw new Error('missing '+step);
-          }
-          const text=JSON.stringify(b);
-          if(!text.includes('quantdeus-core.zip')||!text.includes('quantdeus-aero.zip')) throw new Error('QuantDeus packages not wired');
-          console.log('Blueprint contract OK');
+          const plugin=(b.steps||[]).find(x=>x.step==='installPlugin');
+          const theme=(b.steps||[]).find(x=>x.step==='installTheme');
+          if(plugin?.pluginData?.resource!=='git:directory') throw new Error('plugin must use git:directory');
+          if(theme?.themeData?.resource!=='git:directory') throw new Error('theme must use git:directory');
+          if(!String(plugin.pluginData.path).includes('wordpress/src/quantdeus-core')) throw new Error('core source path missing');
+          if(!String(theme.themeData.path).includes('wordpress/src/quantdeus-aero')) throw new Error('aero source path missing');
+          console.log('WordPress source contract OK');
           NODE
 
-      - name: Boot full QuantDeus WordPress in Playground
+      - name: Boot QuantDeus WordPress in Playground
+        env:
+          TEST_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          npx -y @wp-playground/cli@latest --blueprint=wordpress/blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
+          node - <<'NODE'
+          const fs=require('fs');
+          const b=JSON.parse(fs.readFileSync('wordpress/blueprint.json','utf8'));
+          for(const step of b.steps||[]){
+            const resource=step.pluginData||step.themeData;
+            if(resource?.resource==='git:directory'){
+              resource.ref=process.env.TEST_REF;
+              resource.refType='commit';
+            }
+          }
+          fs.writeFileSync('/tmp/quantdeus-wordpress-blueprint.json',JSON.stringify(b));
+          NODE
+          npx -y @wp-playground/cli@latest --blueprint=/tmp/quantdeus-wordpress-blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
           pid=$!
           trap 'kill $pid 2>/dev/null || true' EXIT
           timeout 240 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
           kill -0 "$pid"
           curl -fsS http://127.0.0.1:9400/wp-json/quantdeus/v1/health | tee /tmp/health.json
           grep -q '"engine":"wordpress"' /tmp/health.json
+          grep -q '"make_dependency":false' /tmp/health.json
           curl -fsS http://127.0.0.1:9400/wp-json/quantdeus/v1/services | tee /tmp/services.json
           grep -q 'business-automation' /tmp/services.json
           grep -q 'ksenia-cherednikova-concert' /tmp/services.json
           curl -fsS http://127.0.0.1:9400/ > /tmp/home.html
-          grep -q 'QuantDeus Holding' /tmp/home.html
+          grep -q 'Неоновый горизонт' /tmp/home.html
           grep -q 'Ксения Чередникова' /tmp/home.html
           echo "QuantDeus WordPress platform smoke passed"
