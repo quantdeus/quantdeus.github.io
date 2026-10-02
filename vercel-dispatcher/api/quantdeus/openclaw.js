@@ -627,10 +627,10 @@ export default async function handler(req, res) {
       addProvider({ id: 'quantdeus-vercel-gateway', keyEnv: 'QUANTDEUS_GATEWAY_REQUEST_TOKEN', key: gatewayToken, model: gatewayModel, baseUrl: 'https://ai-gateway.vercel.sh/v1', priority: 110 });
     }
 
-    // Historical production evidence on 2026-09-30 showed the trusted 26-agent
-    // OpenClaw lane completing real MCP-backed turns with the Pollinations `openai`
-    // model. Prefer that proven route for trusted Office only when it passes the
-    // same sequential tool-capability probe; public/no-tools chat still keeps it last.
+    // Pollinations remains a useful last-resort route, but recent production
+    // evidence includes intermittent incomplete/malformed tool turns. Keep it behind
+    // any other provider that passes the same live capability probe; if it is the
+    // only healthy route it is still admitted and protected by the bounded retry.
     addProvider({
       id: 'quantdeus-pollinations',
       keyEnv: 'POLLINATIONS_API_KEY',
@@ -638,7 +638,7 @@ export default async function handler(req, res) {
       model: process.env.POLLINATIONS_MODEL || 'openai',
       baseUrl: 'https://text.pollinations.ai/openai',
       contextWindow: 131072,
-      priority: trustedOffice ? 5 : 1000
+      priority: trustedOffice ? 900 : 1000
     });
 
     const modelCandidates = probeCandidates.map(candidate => candidate.ref);
@@ -672,7 +672,7 @@ export default async function handler(req, res) {
     const fallbackModels = healthyRefs.slice(1);
     const modelConfig = { mode: 'replace', providers: providerDefs };
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
-    const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 90000);
+    const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 60000);
     if (!prompt) return res.status(400).json({ ok: false, error: 'messages_required' });
 
     // Telegram's Vercel-internal lane is chat-only and has no tools. After the
@@ -798,7 +798,9 @@ export default async function handler(req, res) {
     const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
     const promptPath = `${requestsDir}/quantdeus-prompt-${requestId}.txt`;
     ephemeralFiles = [configPath, promptPath];
-    const statePath = `${home}/.openclaw/quantdeus-state`;
+    // Separate inference-only and tool-enabled OpenClaw state so a long MCP turn
+    // cannot block or corrupt lightweight Sherlock/Tuvok/Seven dialogue cycles.
+    const statePath = `${home}/.openclaw/quantdeus-state-${trustedOffice ? 'tools' : 'no-tools'}`;
     for (const dir of [`${home}/.openclaw`, requestsDir, statePath, workdir]) await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', dir] });
     const publicTools = { deny: ['*'] };
     const trustedDeny = [
@@ -995,7 +997,6 @@ export default async function handler(req, res) {
     }
 
     const agentLock = `${statePath}/.quantdeus-agent.lock`;
-    const modelArgs = ['--model', model, ...fallbackModels.flatMap(ref => ['--fallback', ref])];
     const githubMutationTools = new Set([
       'create_branch',
       'create_or_update_file',
@@ -1025,15 +1026,24 @@ export default async function handler(req, res) {
           code: 'OPENCLAW_REQUEST_BUDGET_EXHAUSTED'
         });
       }
-      queueWaitSeconds = Math.max(3, Math.min(20, Math.floor(remainingMs / 5000)));
-      agentTimeoutSeconds = Math.floor((remainingMs - queueWaitSeconds * 1000 - 5000) / 1000);
-      agentTimeoutSeconds = Math.max(15, Math.min(210, agentTimeoutSeconds));
+      // Preserve enough wall-clock budget for a real second attempt. Previously the
+      // first agent turn could consume ~210s of a ~235s request, making the retry
+      // loop effectively unreachable after provider/tool-call failures.
+      const remainingAttempts = 3 - attempt;
+      const attemptModels = attempt === 1 || orderedModels.length < 2
+        ? orderedModels
+        : [...orderedModels.slice(1), orderedModels[0]];
+      const attemptModelArgs = ['--model', attemptModels[0], ...attemptModels.slice(1).flatMap(ref => ['--fallback', ref])];
+      queueWaitSeconds = Math.max(3, Math.min(10, Math.floor(remainingMs / 8000)));
+      const fairShareMs = Math.floor((remainingMs - 5000) / remainingAttempts);
+      agentTimeoutSeconds = Math.floor((fairShareMs - queueWaitSeconds * 1000 - 2500) / 1000);
+      agentTimeoutSeconds = Math.max(15, Math.min(105, agentTimeoutSeconds));
       if (trustedOffice && !smokePhase) await cloneRequestRepo();
 
       try {
         run = await runOfficeAgent(sandbox, {
           lock: agentLock,
-          args: ['agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...modelArgs, '--timeout', String(agentTimeoutSeconds), '--json', '--message-file', promptPath],
+          args: ['agent', 'exec', '--config', configPath, '--cwd', agentCwd, ...attemptModelArgs, '--timeout', String(agentTimeoutSeconds), '--json', '--message-file', promptPath],
           cwd: agentCwd,
           env: runtimeEnv,
           queueWaitSeconds
@@ -1074,7 +1084,8 @@ export default async function handler(req, res) {
       console.warn('[openclaw-agent] retrying once after a no-mutation execution failure', {
         exit_code: run.exitCode,
         tool_failures: toolFailures,
-        incomplete_tool_turn: incompleteToolTurn
+        incomplete_tool_turn: incompleteToolTurn,
+        next_primary: orderedModels.length > 1 ? orderedModels[1] : orderedModels[0]
       });
       await new Promise(resolve => setTimeout(resolve, 750));
     }
