@@ -178,6 +178,14 @@ jobs:
           foreach (['qd_evidence_grade','qd_horizon','qd_pillar'] as $taxonomy) {
               if (!taxonomy_exists($taxonomy)) { throw new Exception('Portal taxonomy missing: '.$taxonomy); }
           }
+          foreach ([
+              ['a','qd_evidence_grade'],
+              ['2028','qd_horizon'],
+              ['life-dignity','qd_pillar'],
+          ] as [$term,$taxonomy]) {
+              if (!term_exists($term,$taxonomy)) { throw new Exception('Portal taxonomy seed missing: '.$taxonomy.'/'.$term); }
+          }
+          echo "PORTAL_TYPES_TAXONOMIES_OK\\n";
           $node_meta=get_registered_meta_keys('post','qd_node');
           foreach (['qd_identity','qd_mission','qd_evidence','qd_artifacts','qd_metrics','qd_replication','qd_safety','qd_exit','qd_governance','qd_human_override'] as $key) {
               if (!isset($node_meta[$key])) { throw new Exception('Federation Interface meta missing: '.$key); }
@@ -186,6 +194,7 @@ jobs:
           foreach (['qd_fact','qd_evidence','qd_hypothesis','qd_unknown','qd_next_test','qd_falsifier','qd_evidence_grade'] as $key) {
               if (!isset($research_meta[$key])) { throw new Exception('Research evidence meta missing: '.$key); }
           }
+          echo "PORTAL_META_OK\\n";
           foreach (['qd_member','qd_agent','qd_moderator'] as $role) {
               if (!get_role($role)) { throw new Exception('Missing role: '.$role); }
           }
@@ -200,9 +209,10 @@ jobs:
           }
           $administrator=get_role('administrator');
           if (!$administrator->has_cap('manage_options')) { throw new Exception('Administrator lost native WordPress capability'); }
-          foreach (['edit_qd_services','edit_qd_inquiries','edit_qd_forum_threads','edit_qd_projects','edit_qd_evidence_items'] as $cap) {
+          foreach (['edit_qd_services','edit_qd_inquiries','edit_qd_forum_threads','edit_qd_projects','edit_qd_nodes','edit_qd_research_items','edit_qd_artifacts','edit_qd_results','edit_qd_evidence_items'] as $cap) {
               if (!$administrator->has_cap($cap)) { throw new Exception('Administrator missing QuantDeus capability: '.$cap); }
           }
+          echo "PORTAL_RBAC_OK\\n";
           if (get_option('stylesheet') !== 'quantdeus-aero') { throw new Exception('QuantDeus Aero theme not active'); }
           qd_aero_ensure_login_page();
           $login=get_page_by_path('login',OBJECT,'page');
@@ -230,6 +240,7 @@ jobs:
                   throw new Exception('Primary portal menu URL missing: '.(string)$required_url);
               }
           }
+          echo "PORTAL_MENU_OK\\n";
 
           $dynamic_id=wp_insert_post([
               'post_type'=>'qd_service','post_status'=>'publish','post_name'=>'runtime-custom-service',
@@ -257,11 +268,13 @@ jobs:
           if (!is_wp_error($blocked_response) || $blocked_response->get_error_code()!=='service_unavailable') {
               throw new Exception('Unavailable service inquiry was not rejected');
           }
+          echo "PORTAL_INQUIRY_OK\\n";
 
           $broker=wp_remote_get('https://quantdeus.vercel.app/api/quantdeus/auth?health=1',['timeout'=>15]);
           if (is_wp_error($broker) || wp_remote_retrieve_response_code($broker)!==200) { throw new Exception('Telegram broker health unavailable'); }
           $broker_body=json_decode((string)wp_remote_retrieve_body($broker),true);
           if (empty($broker_body['ok']) || empty($broker_body['configured']) || empty($broker_body['client_id'])) { throw new Exception('Telegram broker health contract invalid'); }
+          echo "PORTAL_BROKER_OK\\n";
           echo "QUANTDEUS_WORDPRESS_RUNTIME_OK\\n";
           `;
           const b={
