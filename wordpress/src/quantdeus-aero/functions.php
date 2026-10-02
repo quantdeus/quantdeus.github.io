@@ -103,6 +103,7 @@ function qd_aero_ensure_primary_menu(): void {
         $items=[
             ['Холдинг',home_url('/#holding')],
             ['Направления',home_url('/#directions')],
+            ['Галерея',home_url('/#visuals')],
             ['Услуги',home_url('/#services')],
             ['Ксения',home_url('/#ksenia')],
             ['Форум',home_url('/forum/')],
@@ -112,6 +113,28 @@ function qd_aero_ensure_primary_menu(): void {
             wp_update_nav_menu_item($menu->term_id,0,[
                 'menu-item-title'=>$title,
                 'menu-item-url'=>$url,
+                'menu-item-status'=>'publish',
+                'menu-item-type'=>'custom',
+            ]);
+        }
+        $existing=wp_get_nav_menu_items($menu->term_id) ?: [];
+    }
+
+    // Repair the already-seeded QuantDeus menu from the pre-gallery release
+    // without overwriting an owner-created custom menu.
+    if ($menu->name==='QuantDeus Primary') {
+        $gallery_url=home_url('/#visuals');
+        $has_gallery=false;
+        foreach($existing as $item){
+            if (untrailingslashit((string)$item->url)===untrailingslashit($gallery_url)) {
+                $has_gallery=true;
+                break;
+            }
+        }
+        if (!$has_gallery) {
+            wp_update_nav_menu_item($menu->term_id,0,[
+                'menu-item-title'=>'Галерея',
+                'menu-item-url'=>$gallery_url,
                 'menu-item-status'=>'publish',
                 'menu-item-type'=>'custom',
             ]);
