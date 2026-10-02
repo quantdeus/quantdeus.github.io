@@ -12,7 +12,26 @@ function inputDigest(context) {
 }
 function parseDecision(text) {
   const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
-  const d = JSON.parse(raw);
+  let d;
+  try { d = JSON.parse(raw); } catch (jsonError) {
+    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    const field = name => {
+      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
+      const line = lines.find(x => re.test(x));
+      return line ? line.match(re)[1].trim() : '';
+    };
+    const actions = lines.map(x => {
+      const m = x.match(/^ACTION(?:\s*\d+)?\s*:\s*(.+)/i);
+      return m ? m[1].trim() : '';
+    }).filter(Boolean);
+    const analysis = field('ANALYSIS');
+    const directive = field('DIRECTIVE');
+    if (analysis && directive && actions.length) d = {analysis,directive,actions};
+    else {
+      jsonError.code = 'SEVEN_MALFORMED_DECISION';
+      throw jsonError;
+    }
+  }
   for (const key of ['analysis','directive']) {
     if (typeof d[key] !== 'string' || !d[key].trim() || d[key].length > 4000) throw new Error('SEVEN_INVALID_DECISION');
   }
@@ -36,7 +55,7 @@ async function reason({office,context,persona,doctrine,repository}) {
         'Do not claim Slack, Jira, stand-ups, sprints or another process exists unless the supplied snapshot or persona explicitly proves it. Suggestions must be labeled as suggestions.',
         'For every current-state claim, anchor it to an observable snapshot field or concrete Issue/PR reference. Separate VERIFIED facts from INFERRED hypotheses and UNKNOWN measurements.',
         'Prefer finishing existing work. Preserve QA, human override and voluntary participation. No tools or mutations in this briefing; action items are recommendations.',
-        'Return ONLY JSON {"analysis":"facts, alternatives and uncertainty","directive":"chosen priority and why","actions":["one to three precise recommendations"]}.',
+        'Return ONLY plain text using this exact line protocol, with each value on one line and no Markdown/JSON: ANALYSIS: <facts, alternatives and uncertainty>; DIRECTIVE: <chosen priority and why>; then 1-3 lines ACTION: <precise recommendation>.',
         persona, doctrine
       ].join('\n')},{role:'user',content:JSON.stringify(context)}],
       metadata:{source:'quantdeus-seven-hub-briefing',repository}

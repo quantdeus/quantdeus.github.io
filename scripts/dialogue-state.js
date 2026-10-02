@@ -20,7 +20,9 @@ function skipDialogue(comments, marker, eventName = process.env.GITHUB_EVENT_NAM
   const prefix = marker.split(':')[0]+':';
   const latest = [...(comments || [])].reverse().find(c=>String(c.body || '').includes(prefix));
   if (!String(latest?.body || '').includes(marker)) return false;
-  const retry = /^(schedule|workflow_dispatch)$/.test(eventName || '') && /(?:Runtime|LLM) status: \*\*DEGRADED\*\*/.test(latest.body);
+  const explicitCommandRetry = arguments.length < 3 && process.env.QUANTDEUS_DIALOGUE_FORCE_RETRY === '1';
+  const retry = (/^(schedule|workflow_dispatch)$/.test(eventName || '') || explicitCommandRetry) &&
+    /(?:Runtime|LLM) status: \*\*DEGRADED\*\*/.test(latest.body);
   return !retry;
 }
 function turnEvidence(result, trusted = false) {
