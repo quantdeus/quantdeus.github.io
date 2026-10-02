@@ -1,4 +1,11 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual
+} from "node:crypto";
 
 const DEFAULT_REPOSITORY = "quantdeus/quantdeus.github.io";
 const DEFAULT_SITE_ORIGIN = "https://quantdeus.github.io";
@@ -50,6 +57,8 @@ export function githubAuthConfig() {
   const repository = firstEnv(["QUANTDEUS_GITHUB_ADMIN_REPOSITORY", "QD_GITHUB_ADMIN_REPOSITORY"]) || DEFAULT_REPOSITORY;
   const canonical_origin = firstEnv(["QUANTDEUS_CANONICAL_ORIGIN"]) || DEFAULT_SITE_ORIGIN;
   const callback_url = firstEnv(["QUANTDEUS_GITHUB_OAUTH_CALLBACK_URL"]) || DEFAULT_CALLBACK_URL;
+  const oauth_configured = Boolean(client_id && client_secret);
+  const assertion_signing_configured = Boolean(signingSecret());
   return {
     client_id,
     client_secret,
@@ -57,10 +66,10 @@ export function githubAuthConfig() {
     repository,
     canonical_origin,
     callback_url,
-    configured: Boolean(client_id && client_secret && verifier_token && signingSecret()),
-    oauth_configured: Boolean(client_id && client_secret),
-    permission_verifier_configured: Boolean(verifier_token),
-    assertion_signing_configured: Boolean(signingSecret())
+    configured: Boolean(oauth_configured && assertion_signing_configured),
+    oauth_configured,
+    permission_verifier_configured: Boolean(oauth_configured || verifier_token),
+    assertion_signing_configured
   };
 }
 
@@ -110,6 +119,41 @@ function issue(type, payload, ttlSeconds) {
   }, secret);
 }
 
+function tokenKey() {
+  const secret = signingSecret();
+  if (!secret) throw new Error("github_oauth_unconfigured");
+  return createHash("sha256").update("quantdeus-github-token|" + secret).digest();
+}
+
+function sealToken(token) {
+  const value = clean(token);
+  if (!value) throw new Error("github_assertion_invalid");
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", tokenKey(), iv);
+  cipher.setAAD(Buffer.from("quantdeus-github-oauth"));
+  const ciphertext = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, ciphertext]).toString("base64url");
+}
+
+function openToken(sealed) {
+  let raw;
+  try { raw = Buffer.from(clean(sealed), "base64url"); }
+  catch { throw new Error("github_assertion_invalid"); }
+  if (raw.length < 29) throw new Error("github_assertion_invalid");
+  const iv = raw.subarray(0, 12);
+  const tag = raw.subarray(12, 28);
+  const ciphertext = raw.subarray(28);
+  try {
+    const decipher = createDecipheriv("aes-256-gcm", tokenKey(), iv);
+    decipher.setAAD(Buffer.from("quantdeus-github-oauth"));
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
+  } catch {
+    throw new Error("github_assertion_invalid");
+  }
+}
+
 function safeReturnTo(value, config) {
   try {
     const url = new URL(clean(value) || config.canonical_origin + "/");
@@ -121,17 +165,14 @@ function safeReturnTo(value, config) {
 }
 
 async function githubFetch(url, token, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: "Bearer " + token,
-      "X-GitHub-Api-Version": "2026-03-10",
-      "User-Agent": "QuantDeus-GitHub-Auth",
-      ...(options.headers || {})
-    }
-  });
-  return response;
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2026-03-10",
+    "User-Agent": "QuantDeus-GitHub-Auth",
+    ...(options.headers || {})
+  };
+  if (clean(token)) headers.Authorization = "Bearer " + clean(token);
+  return fetch(url, {...options, headers});
 }
 
 async function exchangeCode(code, config) {
@@ -166,16 +207,30 @@ async function githubProfile(token) {
   return { login, id, avatar_url: clean(body?.avatar_url) || null };
 }
 
-export async function githubPermission(login, config = githubAuthConfig()) {
-  if (!config.verifier_token) throw new Error("github_permission_verifier_unconfigured");
+export async function githubPermission(login, config = githubAuthConfig(), userToken = "") {
+  const token = clean(userToken) || clean(config.verifier_token);
+  if (!token) throw new Error("github_permission_verifier_unconfigured");
   const match = /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/.exec(config.repository);
   if (!match) throw new Error("github_repository_invalid");
-  const url = `https://api.github.com/repos/${match[1]}/${match[2]}/collaborators/${encodeURIComponent(login)}/permission`;
-  const response = await githubFetch(url, config.verifier_token);
+
+  const repoUrl = `https://api.github.com/repos/${match[1]}/${match[2]}`;
+  const repoResponse = await githubFetch(repoUrl, token);
+  if (repoResponse.ok) {
+    const repo = await repoResponse.json().catch(() => null);
+    const permissions = repo?.permissions || {};
+    if (permissions.admin === true) return "admin";
+    if (permissions.maintain === true) return "maintain";
+    if (permissions.push === true) return "write";
+    if (permissions.triage === true) return "triage";
+    if (permissions.pull === true) return "read";
+  }
+
+  const permissionUrl = repoUrl + "/collaborators/" + encodeURIComponent(login) + "/permission";
+  const response = await githubFetch(permissionUrl, token);
   if (response.status === 404) return "none";
   if (!response.ok) throw new Error("github_permission_check_failed");
   const body = await response.json().catch(() => null);
-  return clean(body?.permission || body?.role_name || "none").toLowerCase();
+  return clean(body?.role_name || body?.permission || "none").toLowerCase();
 }
 
 export function roleForGithubPermission(permission) {
@@ -191,6 +246,7 @@ export function githubAuthHealth() {
     configured: config.configured,
     oauth_configured: config.oauth_configured,
     permission_verifier_configured: config.permission_verifier_configured,
+    permission_strategy: config.oauth_configured ? "oauth-user-token" : (config.verifier_token ? "service-token" : "none"),
     assertion_signing_configured: config.assertion_signing_configured,
     client_id: config.client_id || null,
     repository: config.repository,
@@ -200,16 +256,14 @@ export function githubAuthHealth() {
 
 export function githubAuthorizationUrl(returnTo) {
   const config = githubAuthConfig();
-  if (!config.oauth_configured || !config.permission_verifier_configured || !config.assertion_signing_configured) {
-    throw new Error("github_oauth_unconfigured");
-  }
+  if (!config.configured) throw new Error("github_oauth_unconfigured");
   const state = issue("qd-gh-state", { return_to: safeReturnTo(returnTo, config) }, STATE_TTL_SECONDS);
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", config.client_id);
   url.searchParams.set("redirect_uri", config.callback_url);
   url.searchParams.set("state", state);
-  url.searchParams.set("scope", "read:user");
   url.searchParams.set("allow_signup", "false");
+  url.searchParams.set("prompt", "select_account");
   return url.toString();
 }
 
@@ -219,7 +273,7 @@ export async function completeGithubOAuth(code, state) {
   const statePayload = verifyPayload(state, "qd-gh-state");
   const userToken = await exchangeCode(code, config);
   const profile = await githubProfile(userToken);
-  const permission = await githubPermission(profile.login, config);
+  const permission = await githubPermission(profile.login, config, userToken);
   if (!["write", "maintain", "admin"].includes(permission)) throw new Error("github_staff_required");
   const role = roleForGithubPermission(permission);
   const assertion = issue("qd-gh-assertion", {
@@ -227,7 +281,8 @@ export async function completeGithubOAuth(code, state) {
     login: profile.login,
     avatar_url: profile.avatar_url,
     permission,
-    role
+    role,
+    token_box: sealToken(userToken)
   }, ASSERTION_TTL_SECONDS);
   return {
     assertion,
@@ -243,7 +298,8 @@ export async function verifyGithubAssertion(token) {
   const login = clean(payload.login);
   const github_id = clean(payload.github_id);
   if (!login || !github_id) throw new Error("github_assertion_invalid");
-  const permission = await githubPermission(login, config);
+  const userToken = payload.token_box ? openToken(payload.token_box) : "";
+  const permission = await githubPermission(login, config, userToken);
   if (!["write", "maintain", "admin"].includes(permission)) throw new Error("github_staff_required");
   return {
     github_id,

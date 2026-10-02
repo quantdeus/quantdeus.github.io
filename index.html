@@ -89,7 +89,10 @@
 
       function postToWordPress(message) {
         if (!frame.contentWindow) return;
-        frame.contentWindow.postMessage(message, playgroundOrigin);
+        // WordPress Playground can change its internal document origin while
+        // navigating wp-login/wp-admin. The exact frame window is the trust
+        // boundary; using "*" here keeps the parent bridge alive after logout.
+        frame.contentWindow.postMessage(message, '*');
       }
 
       function telegramLogin() {
@@ -124,7 +127,6 @@
 
       window.addEventListener('message', event => {
         if (event.source !== frame.contentWindow) return;
-        if (event.origin !== playgroundOrigin) return;
         const message = event.data || {};
         if (message.type === 'qd:telegram-login') {
           telegramLogin();
@@ -150,6 +152,11 @@
           }
         }
         if (message.type === 'qd:github-consumed' && message.ok) {
+          sessionStorage.removeItem(githubAssertionKey);
+          sessionStorage.removeItem(githubErrorKey);
+          return;
+        }
+        if (message.type === 'qd:logout') {
           sessionStorage.removeItem(githubAssertionKey);
           sessionStorage.removeItem(githubErrorKey);
         }

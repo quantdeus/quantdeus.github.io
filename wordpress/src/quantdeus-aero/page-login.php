@@ -36,7 +36,7 @@ $provider=is_user_logged_in() && get_user_meta(get_current_user_id(),'qd_github_
             <?php else: ?>
               <a class="qd-btn" href="<?php echo esc_url(home_url('/forum/')); ?>">Открыть форум</a>
             <?php endif; ?>
-            <a class="qd-btn alt" href="<?php echo esc_url(wp_logout_url(home_url('/login/'))); ?>">Выйти</a>
+            <a class="qd-btn alt" data-qd-logout href="<?php echo esc_url(wp_logout_url(home_url('/login/'))); ?>">Выйти</a>
           </div>
         </section>
       <?php else: ?>

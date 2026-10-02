@@ -76,7 +76,12 @@ jobs:
           grep -q "data-telegram-login" wordpress/src/quantdeus-aero/page-login.php
           grep -q "telegram_broker_login" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "github_broker_login" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "/session/logout" wordpress/src/quantdeus-core/quantdeus-core.php
+          grep -q "data-qd-logout" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "message.type === 'qd:logout'" index.html
           grep -q "githubBrokerUrl" wordpress/src/quantdeus-aero/app.js
+          grep -q "permission_strategy" vercel-dispatcher/lib/github-auth.js
+          grep -q "token_box" vercel-dispatcher/lib/github-auth.js
           grep -q "wp_nav_menu" wordpress/src/quantdeus-aero/header.php
           grep -q "theme_location'=>'primary'" wordpress/src/quantdeus-aero/header.php
           grep -q "register_nav_menus" wordpress/src/quantdeus-aero/functions.php
@@ -124,7 +129,7 @@ jobs:
           if (!class_exists('QD_Core')) { throw new Exception('QD_Core not active'); }
           do_action('rest_api_init');
           $routes=rest_get_server()->get_routes();
-          foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/inquiries','/quantdeus/v1/forum','/quantdeus/v1/telegram/miniapp','/quantdeus/v1/telegram/login','/quantdeus/v1/telegram/broker','/quantdeus/v1/github/broker','/quantdeus/v1/github/config','/quantdeus/v1/github/start','/quantdeus/v1/github/callback'] as $route) {
+          foreach (['/quantdeus/v1/health','/quantdeus/v1/services','/quantdeus/v1/session/logout','/quantdeus/v1/inquiries','/quantdeus/v1/forum','/quantdeus/v1/telegram/miniapp','/quantdeus/v1/telegram/login','/quantdeus/v1/telegram/broker','/quantdeus/v1/github/broker','/quantdeus/v1/github/config','/quantdeus/v1/github/start','/quantdeus/v1/github/callback'] as $route) {
               if (!isset($routes[$route])) { throw new Exception('Missing REST route: '.$route); }
           }
           $services=get_posts(['post_type'=>'qd_service','post_status'=>'publish','numberposts'=>20]);
