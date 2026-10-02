@@ -37,6 +37,7 @@
   window.QDTelegramAuth = async function(user) {
     try {
       await establish(cfg.telegramLoginUrl, user || {});
+      if (qs('[data-login-page]')) location.reload();
     } catch (err) {
       qsa('[data-auth-state]').forEach(el => el.textContent = 'Ошибка Telegram: ' + err.message);
     }
@@ -60,12 +61,14 @@
   }
 
   async function miniAppLogin() {
+    if (currentUser) return false;
     const tg = window.Telegram && window.Telegram.WebApp;
     if (!tg || !tg.initData || !cfg.telegramMiniappUrl) return false;
     try {
       tg.ready();
       tg.expand();
       await establish(cfg.telegramMiniappUrl, {init_data: tg.initData});
+      if (qs('[data-login-page]')) location.reload();
       return true;
     } catch (err) {
       qsa('[data-auth-state]').forEach(el => el.textContent = 'Telegram Mini App: ' + err.message);
@@ -99,16 +102,25 @@
 
   function bindGithubAdmin() {
     const buttons = qsa('[data-github-admin-login]');
+    const status = qsa('[data-github-status]');
+    if (!buttons.length) return;
     if (!cfg.githubConfigured || !cfg.githubStartUrl) {
-      buttons.forEach(button => { button.hidden = true; });
+      buttons.forEach(button => {
+        button.disabled = true;
+        button.setAttribute('aria-disabled','true');
+        button.title = 'GitHub OAuth не настроен на этом runtime';
+      });
+      status.forEach(el => el.textContent = 'GitHub OAuth · требуется server-side конфигурация');
       return;
     }
+    status.forEach(el => el.textContent = 'GitHub · права write/maintain/admin проверяются при входе');
     buttons.forEach(button => {
-      button.hidden = false;
+      button.disabled = false;
+      button.removeAttribute('aria-disabled');
       button.addEventListener('click', async () => {
         const original = button.textContent;
         button.disabled = true;
-        button.textContent = 'GitHub…';
+        button.textContent = 'Проверяю GitHub…';
         try {
           const body = await json(cfg.githubStartUrl, {method:'POST', body:'{}'});
           if (!body.authorize_url) throw new Error('GitHub authorize URL missing');
@@ -116,7 +128,7 @@
         } catch (err) {
           button.disabled = false;
           button.textContent = original;
-          qsa('[data-auth-state]').forEach(el => el.textContent = 'GitHub Admin: ' + err.message);
+          status.forEach(el => el.textContent = 'GitHub: ' + err.message);
         }
       });
     });
