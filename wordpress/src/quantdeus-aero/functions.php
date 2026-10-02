@@ -70,6 +70,7 @@ function qd_aero_primary_items(): array {
         ['Forum',get_post_type_archive_link('qd_forum_thread') ?: home_url('/forum/')],
         ['Services',home_url('/#services')],
         ['Ksenia',home_url('/#ksenia')],
+        ['Media',home_url('/#media')],
         ['Knowledge',get_post_type_archive_link('qd_artifact') ?: home_url('/knowledge/artifacts/')],
         ['News',home_url('/#news')],
         ['Manifesto',home_url('/#manifesto')],
@@ -112,6 +113,17 @@ function qd_aero_ensure_primary_menu(): void {
     }
     if (!$menu) return;
 
+    $existing=wp_get_nav_menu_items($menu->term_id) ?: [];
+    $legacy=[
+        untrailingslashit(home_url('/#holding')),
+        untrailingslashit(home_url('/#directions')),
+        untrailingslashit(home_url('/#visuals')),
+    ];
+    foreach($existing as $item){
+        if(in_array(untrailingslashit((string)$item->url),$legacy,true)){
+            wp_delete_post((int)$item->ID,true);
+        }
+    }
     $existing=wp_get_nav_menu_items($menu->term_id) ?: [];
     $urls=[];
     foreach($existing as $item) $urls[untrailingslashit((string)$item->url)]=true;
