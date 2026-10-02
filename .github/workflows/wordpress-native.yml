@@ -1,0 +1,102 @@
+name: QuantDeus Native WordPress
+
+on:
+  pull_request:
+    paths:
+      - "wordpress/native/**"
+      - "wordpress/src/quantdeus-core/**"
+      - ".github/workflows/wordpress-native.yml"
+  push:
+    branches: [main]
+    paths:
+      - "wordpress/native/**"
+      - "wordpress/src/quantdeus-core/**"
+      - ".github/workflows/wordpress-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-wordpress:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: wordpress_test
+          MYSQL_USER: wordpress
+          MYSQL_PASSWORD: wordpress
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: wp-cli
+          coverage: none
+
+      - name: Static native-theme contract
+        run: |
+          set -euo pipefail
+          THEME=wordpress/native/wp-content/themes/quantdeus-horizon
+          test -f "$THEME/theme.json"
+          test -f "$THEME/templates/front-page.html"
+          test -f "$THEME/parts/header.html"
+          test -f "$THEME/patterns/home.php"
+          php -l "$THEME/functions.php"
+          node --check "$THEME/assets/native.js"
+          grep -q '^Template: twentytwentyfive$' "$THEME/style.css"
+          grep -q '"overlayMenu":"mobile"' "$THEME/parts/header.html"
+          grep -q 'wp:navigation' "$THEME/parts/header.html"
+          grep -q 'images.unsplash.com' "$THEME/patterns/home.php"
+          grep -q 'svs.gsfc.nasa.gov' "$THEME/style.css"
+          if grep -RniE '\.svg|<svg' "$THEME"; then
+            echo "SVG artwork is forbidden in the canonical native theme"
+            exit 1
+          fi
+
+      - name: Install WordPress 7.1.2
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quantdeus-wp
+          cd /tmp/quantdeus-wp
+          wp core download --version=7.1.2 --force
+          wp config create --dbname=wordpress_test --dbuser=wordpress --dbpass=wordpress --dbhost=127.0.0.1:3306 --skip-check
+          wp core install --url=http://quantdeus.test --title=QuantDeus --admin_user=ci_admin --admin_password='CI-only-password-42!' --admin_email=ci@example.test --skip-email
+          test "$(wp core version)" = "7.1.2"
+
+      - name: Install native QuantDeus app
+        run: |
+          set -euo pipefail
+          cd /tmp/quantdeus-wp
+          wp theme install twentytwentyfive
+          cp -R "$GITHUB_WORKSPACE/wordpress/native/wp-content/themes/quantdeus-horizon" wp-content/themes/
+          cp -R "$GITHUB_WORKSPACE/wordpress/src/quantdeus-core" wp-content/plugins/
+          wp plugin activate quantdeus-core
+          wp theme activate quantdeus-horizon
+          wp rewrite structure '/%postname%/' --hard
+          wp rewrite flush --hard
+
+      - name: Runtime WordPress contract
+        run: |
+          set -euo pipefail
+          cd /tmp/quantdeus-wp
+          wp eval 'if (!wp_is_block_theme()) { throw new Exception("QuantDeus Horizon must be a block theme"); }'
+          wp eval '$t=wp_get_theme(); if ($t->get_stylesheet()!=="quantdeus-horizon") throw new Exception("wrong active theme"); if ($t->get_template()!=="twentytwentyfive") throw new Exception("wrong parent theme");'
+          wp eval 'foreach(["qd_node","qd_project","qd_research","qd_artifact","qd_service","qd_result","qd_forum_thread"] as $t){ if(!post_type_exists($t)) throw new Exception("missing CPT ".$t); }'
+          wp eval 'foreach(["qd_member","qd_agent","qd_moderator"] as $r){ if(!get_role($r)) throw new Exception("missing role ".$r); }'
+          wp eval '$a=get_role("administrator"); if(!$a || !$a->has_cap("manage_options")) throw new Exception("native administrator capability missing");'
+          wp eval '$m=get_role("qd_moderator"); if(!$m || $m->has_cap("manage_options")) throw new Exception("moderator privilege escalation");'
+          wp eval '$p=get_page_by_path("login"); if(!$p) throw new Exception("native login page missing"); $s=get_page_by_path("services"); if(!$s) throw new Exception("services page missing");'
+          wp eval '$services=get_posts(["post_type"=>"qd_service","post_status"=>"publish","numberposts"=>20]); if(count($services)<2) throw new Exception("service seed missing");'
+          echo "QUANTDEUS_NATIVE_WORDPRESS_OK"
