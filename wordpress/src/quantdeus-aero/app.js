@@ -361,18 +361,30 @@
     });
   }
 
+  function bindThemeToggle() {
+    const button=qs('[data-theme-toggle]');
+    const apply=mode=>{
+      const next=mode==='night'?'night':'day';
+      document.documentElement.dataset.qdTheme=next;
+      if(button){button.setAttribute('aria-pressed',String(next==='night'));button.textContent=next==='night'?'NIGHT / HORIZON':'DAY / EARTH';}
+    };
+    let stored=''; try{stored=localStorage.getItem('qd_theme')||'';}catch{}
+    if(!stored){try{stored=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'night':'day';}catch{stored='day';}}
+    apply(stored);
+    button?.addEventListener('click',()=>{const next=document.documentElement.dataset.qdTheme==='night'?'day':'night';apply(next);try{localStorage.setItem('qd_theme',next);}catch{}});
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
+    bindThemeToggle();
     setAuth(currentUser);
     bindPrimaryMenu();
     bindLogout();
     bindTelegramLogin();
-    const telegramRestored = await syncTelegramBotSession();
-    if (telegramRestored) return;
-    const githubRestored = await syncGithubSession();
-    if (githubRestored) return;
-    await bindGithubAdmin();
     bindInquiry();
     bindForum();
-    await miniAppLogin();
+    let restored=await syncTelegramBotSession();
+    if(!restored) restored=await syncGithubSession();
+    await bindGithubAdmin();
+    if(!restored) await miniAppLogin();
   });
 })();
