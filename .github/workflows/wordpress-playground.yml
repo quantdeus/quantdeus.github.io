@@ -92,11 +92,11 @@ jobs:
           npx -y @wp-playground/cli@latest --blueprint=/tmp/quantdeus-wordpress-blueprint.json server --port=9400 > /tmp/quantdeus-wordpress.log 2>&1 &
           trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "--- WordPress Playground log ---"; cat /tmp/quantdeus-wordpress.log || true; fi; pkill -f "wp-playground" 2>/dev/null || true' EXIT
           timeout 240 bash -c 'until grep -q "Ready! WordPress is running" /tmp/quantdeus-wordpress.log 2>/dev/null; do sleep 2; done'
-          timeout 180 bash -c 'until curl -fsSL http://localhost:9400/wp-json/quantdeus/v1/health -o /tmp/health.json 2>/dev/null; do sleep 2; done'
+          timeout 180 bash -c 'until curl -fsSL http://localhost:9400/?rest_route=/quantdeus/v1/health -o /tmp/health.json 2>/dev/null; do sleep 2; done'
           cat /tmp/health.json
           grep -q '"engine":"wordpress"' /tmp/health.json
           grep -q '"make_dependency":false' /tmp/health.json
-          curl -fsSL http://localhost:9400/wp-json/quantdeus/v1/services | tee /tmp/services.json
+          curl -fsSL http://localhost:9400/?rest_route=/quantdeus/v1/services | tee /tmp/services.json
           grep -q 'business-automation' /tmp/services.json
           grep -q 'ksenia-cherednikova-concert' /tmp/services.json
           curl -fsSL http://localhost:9400/ > /tmp/home.html
