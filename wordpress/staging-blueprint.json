@@ -3,7 +3,7 @@
   "landingPage": "/",
   "preferredVersions": {
     "php": "8.3",
-    "wp": "latest"
+    "wp": "7.1.2"
   },
   "features": {
     "networking": true
@@ -24,7 +24,7 @@
       "pluginData": {
         "resource": "git:directory",
         "url": "https://github.com/quantdeus/quantdeus.github.io.git",
-        "ref": "staging/neon-horizon-v4-portal",
+        "ref": "staging/native-wordpress-aero-712-r1",
         "refType": "branch",
         "path": "wordpress/src/quantdeus-core"
       },
