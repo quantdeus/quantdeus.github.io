@@ -29,10 +29,25 @@ final class QD_Core {
     public static function deactivate(): void { flush_rewrite_rules(false); }
 
     private static function roles(): void {
-        add_role('qd_moderator', 'QuantDeus Moderator', [
-            'read' => true, 'edit_posts' => true, 'moderate_comments' => true,
-            'qd_moderate_forum' => true,
-        ]);
+        $definitions = [
+            'qd_member' => ['QuantDeus Member', ['read' => true]],
+            'qd_agent' => ['QuantDeus Agent', ['read' => true, 'qd_agent_context' => true]],
+            'qd_moderator' => ['QuantDeus Moderator', [
+                'read' => true, 'edit_posts' => true, 'edit_others_posts' => true,
+                'publish_posts' => true, 'moderate_comments' => true,
+                'qd_moderate_forum' => true,
+            ]],
+        ];
+        foreach ($definitions as $slug => [$label, $caps]) {
+            if (!get_role($slug)) add_role($slug, $label, $caps);
+            $role = get_role($slug);
+            if ($role) foreach ($caps as $cap => $grant) $role->add_cap($cap, $grant);
+        }
+        $admin = get_role('administrator');
+        if ($admin) {
+            $admin->add_cap('qd_agent_context');
+            $admin->add_cap('qd_moderate_forum');
+        }
     }
 
     public static function register_types(): void {
@@ -45,7 +60,7 @@ final class QD_Core {
             'supports' => ['title','editor','custom-fields'],
         ]);
         register_post_type('qd_forum_thread', [
-            'label' => 'Forum', 'public' => true, 'show_in_rest' => true,
+            'label' => 'Forum', 'public' => true, 'show_in_rest' => true, 'has_archive' => 'forum',
             'supports' => ['title','editor','author','comments'], 'rewrite' => ['slug'=>'forum'],
         ]);
         register_post_type('qd_project', [
@@ -124,8 +139,11 @@ final class QD_Core {
         register_rest_route(self::NS, '/telegram/miniapp', [
             'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'telegram_login'],
         ]);
+        register_rest_route(self::NS, '/telegram/login', [
+            'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'telegram_web_login'],
+        ]);
         register_rest_route(self::NS, '/agent/context', [
-            'methods'=>'GET','permission_callback'=>fn()=>current_user_can('read'),
+            'methods'=>'GET','permission_callback'=>fn()=>current_user_can('qd_agent_context') || current_user_can('manage_options'),
             'callback'=>fn()=>rest_ensure_response([
                 'site'=>get_bloginfo('name'),'engine'=>'wordpress',
                 'services'=>(int)(wp_count_posts('qd_service')->publish ?? 0),
@@ -208,6 +226,24 @@ final class QD_Core {
         return is_array($user) && !empty($user['id']) ? $user : null;
     }
 
+    private static function verify_login_widget(array $data): ?array {
+        $token=self::telegram_bot_token(); if ($token==='') return null;
+        $hash=(string)($data['hash'] ?? ''); unset($data['hash']);
+        $auth=(int)($data['auth_date'] ?? 0);
+        if ($hash==='' || $auth<1 || abs(time()-$auth)>86400) return null;
+        ksort($data);
+        $pairs=[];
+        foreach($data as $k=>$v){
+            if (is_array($v) || is_object($v)) return null;
+            $pairs[]=$k.'='.(string)$v;
+        }
+        $check=implode("\n",$pairs);
+        $secret=hash('sha256',$token,true);
+        $calc=hash_hmac('sha256',$check,$secret);
+        if (!hash_equals($calc,$hash) || empty($data['id'])) return null;
+        return $data;
+    }
+
     private static function role_for_telegram(string $id): string {
         $map=['QD_OWNER_TELEGRAM_IDS'=>'administrator','QD_ADMIN_TELEGRAM_IDS'=>'administrator','QD_MODERATOR_TELEGRAM_IDS'=>'qd_moderator'];
         foreach($map as $const=>$role){
@@ -215,23 +251,50 @@ final class QD_Core {
             $ids=array_filter(array_map('trim',explode(',',(string)constant($const))));
             if (in_array($id,$ids,true)) return $role;
         }
-        return 'subscriber';
+        return 'qd_member';
+    }
+
+    private static function establish_telegram_session(array $tg) {
+        $tgid=(string)($tg['id'] ?? '');
+        if ($tgid==='') return new WP_Error('telegram_user_missing','Telegram user id missing',['status'=>401]);
+        $users=get_users(['meta_key'=>'qd_telegram_id','meta_value'=>$tgid,'number'=>1]);
+        $user=$users ? $users[0] : null;
+        $role=self::role_for_telegram($tgid);
+        if (!$user) {
+            $display=self::text(($tg['first_name'] ?? '').' '.($tg['last_name'] ?? ''),120);
+            $uid=wp_insert_user([
+                'user_login'=>'telegram_'.$tgid,
+                'user_pass'=>wp_generate_password(32,true,true),
+                'display_name'=>$display ?: 'Telegram '.$tgid,
+                'role'=>$role,
+            ]);
+            if (is_wp_error($uid)) return $uid;
+            update_user_meta($uid,'qd_telegram_id',$tgid);
+            if (!empty($tg['username'])) update_user_meta($uid,'qd_telegram_username',self::text($tg['username'],80));
+            $user=get_user_by('id',$uid);
+        }
+        if ($user && !in_array($role,$user->roles,true)) $user->set_role($role);
+        wp_set_current_user($user->ID);
+        wp_set_auth_cookie($user->ID,true,is_ssl());
+        return rest_ensure_response([
+            'ok'=>true,
+            'nonce'=>wp_create_nonce('wp_rest'),
+            'user'=>['id'=>$user->ID,'name'=>$user->display_name,'role'=>$user->roles[0] ?? 'qd_member'],
+        ]);
     }
 
     public static function telegram_login(WP_REST_Request $req) {
         $tg=self::verify_init_data((string)$req->get_param('init_data'));
         if (!$tg) return new WP_Error('telegram_invalid','Invalid Telegram initData',['status'=>401]);
-        $tgid=(string)$tg['id'];
-        $users=get_users(['meta_key'=>'qd_telegram_id','meta_value'=>$tgid,'number'=>1]);
-        $user=$users ? $users[0] : null;
-        if (!$user) {
-            $uid=wp_insert_user(['user_login'=>'telegram_'.$tgid,'user_pass'=>wp_generate_password(32,true,true),'display_name'=>self::text(($tg['first_name'] ?? '').' '.($tg['last_name'] ?? ''),120) ?: 'Telegram '.$tgid,'role'=>self::role_for_telegram($tgid)]);
-            if (is_wp_error($uid)) return $uid;
-            update_user_meta($uid,'qd_telegram_id',$tgid); $user=get_user_by('id',$uid);
-        }
-        if ($user && !in_array(self::role_for_telegram($tgid),$user->roles,true)) $user->set_role(self::role_for_telegram($tgid));
-        wp_set_current_user($user->ID); wp_set_auth_cookie($user->ID,true,is_ssl());
-        return rest_ensure_response(['ok'=>true,'user'=>['id'=>$user->ID,'name'=>$user->display_name,'role'=>$user->roles[0] ?? 'subscriber']]);
+        return self::establish_telegram_session($tg);
+    }
+
+    public static function telegram_web_login(WP_REST_Request $req) {
+        $payload=$req->get_json_params();
+        if (!is_array($payload)) $payload=[];
+        $tg=self::verify_login_widget($payload);
+        if (!$tg) return new WP_Error('telegram_invalid','Invalid Telegram Login Widget payload',['status'=>401]);
+        return self::establish_telegram_session($tg);
     }
 
     public static function admin_menu(): void {
