@@ -152,3 +152,8 @@ html[data-qd-theme="night"] .qd-nav{background:rgba(4,16,31,.78)}html[data-qd-th
 html[data-qd-theme="night"] .qd-breadcrumb a,html[data-qd-theme="night"] .qd-interface-grid span{color:#80eafa}
 @media(max-width:1050px){.qd-pillars{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.qd-interface-grid,.qd-pillars{grid-template-columns:1fr}}
+
+/* Native hierarchical Primary Menu */
+.qd-menu li{position:relative}.qd-menu .sub-menu{display:none;position:absolute;z-index:50;top:calc(100% + 8px);left:0;min-width:230px;margin:0;padding:8px;list-style:none;border:1px solid var(--line);border-radius:18px;background:var(--glass-strong);box-shadow:var(--shadow);backdrop-filter:blur(22px)}
+.qd-menu .sub-menu li{width:100%}.qd-menu .sub-menu a{display:block;width:100%;white-space:nowrap}.qd-menu li:hover>.sub-menu,.qd-menu li:focus-within>.sub-menu{display:block}
+@media(max-width:1050px){.qd-menu .sub-menu{position:static;display:block;min-width:0;margin:.25rem 0 .4rem .75rem;padding:.25rem 0 .25rem .75rem;border:0;border-left:2px solid var(--line);border-radius:0;background:transparent;box-shadow:none}.qd-menu .sub-menu a{white-space:normal}}
