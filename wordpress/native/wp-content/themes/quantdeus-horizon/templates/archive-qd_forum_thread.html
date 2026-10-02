@@ -1,0 +1,8 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+<!-- wp:group {"tagName":"main","className":"qd-section","layout":{"type":"constrained"}} --><main class="wp-block-group qd-section">
+<!-- wp:paragraph {"align":"wide","className":"qd-eyebrow"} --><p class="alignwide qd-eyebrow">COMMUNITY / FEDERATION</p><!-- /wp:paragraph -->
+<!-- wp:heading {"level":1,"align":"wide","className":"qd-section-title"} --><h1 class="wp-block-heading alignwide qd-section-title">Forum</h1><!-- /wp:heading -->
+<!-- wp:query {"query":{"perPage":20,"postType":"qd_forum_thread","order":"desc","orderBy":"date","inherit":false},"align":"wide"} --><div class="wp-block-query alignwide"><!-- wp:post-template {"className":"qd-post-grid"} --><!-- wp:post-title {"isLink":true,"level":2} /--><!-- wp:post-excerpt {"moreText":"Открыть тему →"} /--><!-- wp:post-date /--><!-- /wp:post-template --></div><!-- /wp:query -->
+<!-- wp:group {"align":"wide","className":"qd-glass-card"} --><div class="wp-block-group alignwide qd-glass-card"><!-- wp:heading {"level":2} --><h2 class="wp-block-heading">Новая тема</h2><!-- /wp:heading --><!-- wp:html --><form class="qd-form" data-qd-forum-create><label>Заголовок<input name="title" minlength="3" required></label><label>Сообщение<textarea name="content" minlength="3" required></textarea></label><button class="wp-element-button qd-btn" type="submit">Опубликовать</button><p class="qd-status" data-qd-status aria-live="polite"></p></form><!-- /wp:html --></div><!-- /wp:group -->
+</main><!-- /wp:group -->
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->
