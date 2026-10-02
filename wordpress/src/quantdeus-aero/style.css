@@ -142,3 +142,13 @@ html[data-qd-theme="night"] .qd-nav{background:rgba(4,16,31,.78)}html[data-qd-th
 .qd-theme-toggle:focus-visible{outline:3px solid #47d9f3;outline-offset:3px}
 @media(max-width:1050px){.qd-kpi-grid,.qd-content-grid,.qd-fleet-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.qd-theme-toggle{display:none}}
 @media(max-width:720px){.qd-kpi-grid,.qd-content-grid,.qd-horizon-grid,.qd-fleet-grid,.qd-split{grid-template-columns:1fr}.qd-cycle{grid-template-columns:repeat(9,118px)}}
+
+/* Portal detail surfaces */
+.qd-breadcrumb{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 18px;font-size:.86rem;color:var(--muted);font-weight:750}.qd-breadcrumb a{text-decoration:none;color:#0b7288}
+.qd-page-title{font-size:clamp(2.1rem,5vw,4.8rem);line-height:.98;max-width:980px}.qd-detail{display:grid;gap:24px}.qd-detail-head{max-width:900px}.qd-detail-head h1{font-size:clamp(2rem,5vw,4.6rem);line-height:.98;margin:.25em 0}.qd-prose{font-size:1.06rem;line-height:1.75;max-width:880px}
+.qd-interface{margin-top:12px}.qd-interface-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.qd-interface-grid article{padding:18px;border:1px solid var(--line);border-radius:20px;background:var(--glass)}.qd-interface-grid span{display:block;font-size:.72rem;font-weight:950;letter-spacing:.08em;color:#0b7288}.qd-interface-grid p{margin:.55rem 0 0;line-height:1.55}
+.qd-federation-contract{margin-bottom:28px}.qd-tight{margin-top:28px}.qd-pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.qd-pillars article{display:flex;gap:12px;align-items:flex-start;padding:18px;border-radius:20px;background:var(--glass);border:1px solid var(--line)}.qd-pillars b{display:grid;place-items:center;min-width:34px;height:34px;border-radius:12px;background:#0b7288;color:white}.qd-pillars span{font-weight:850}.qd-source-gap{border-style:dashed}
+.qd-card-media{display:block;margin:-4px -4px 8px}.qd-card-media img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:18px}
+html[data-qd-theme="night"] .qd-breadcrumb a,html[data-qd-theme="night"] .qd-interface-grid span{color:#80eafa}
+@media(max-width:1050px){.qd-pillars{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.qd-interface-grid,.qd-pillars{grid-template-columns:1fr}}
