@@ -9,7 +9,8 @@ The canonical QA Self-Heal lane uses OpenClaw. If OpenClaw itself, its tool loop
 Mirror Swarm intentionally uses a separate execution path:
 
 ```
-GitHub Actions schedule (:37 every hour)
+Canonical hourly GitHub Action completes (:00 cadence)
+  -> workflow_run wakes Mirror Swarm
   -> deterministic local QA + recent main Actions failures
   -> sleep when healthy
   -> GitHub OIDC
@@ -22,29 +23,24 @@ GitHub Actions schedule (:37 every hour)
   -> normal QuantDeus QA / review / merge policy
 ```
 
-GitHub remains the source of truth and owns the wake schedule. Vercel owns the independent AI mirror execution plane.
+GitHub remains the source of truth. The already-approved `QuantDeus Hourly OpenClaw Swarm 🐒` workflow owns the hourly schedule; the mirror adds no second hourly cron. Vercel owns the independent AI mirror execution plane.
 
 ## Wake-up rule
 
-The workflow `.github/workflows/mirror-swarm-repair.yml` runs at:
+`.github/workflows/mirror-swarm-repair.yml` listens for the completed `workflow_run` of the canonical hourly OpenClaw workflow on `main`. This fires whether the primary hourly run succeeds or fails, so a primary-swarm failure can still wake the independent repair plane.
 
-```cron
-37 * * * *
-```
-
-The :37 offset keeps the mirror away from the primary hourly swarm's :00 slot and reduces runtime contention.
-
-Each scheduled pulse first runs deterministic validators and scans recent `main` Actions failures. The Vercel AI mirror stays asleep when:
+Each hourly workflow-run pulse first runs deterministic validators and scans recent `main` Actions failures. The Vercel AI mirror stays asleep when:
 - syntax validator is green;
 - contract validator is green;
 - OpenClaw office validator is green; and
 - there are no repair-worthy `main` Actions failures from the last three hours.
 
-When the pulse detects a repair-worthy condition, the Action obtains a GitHub OIDC token for audience `quantdeus-vercel-mirror` and calls `POST /api/quantdeus/mirror` on Vercel.
+When the pulse detects a repair-worthy condition, the mirror Action obtains a GitHub OIDC token for audience `quantdeus-vercel-mirror` and calls `POST /api/quantdeus/mirror` on Vercel. The Vercel endpoint accepts only the mirror workflow's `workflow_run` or explicit `workflow_dispatch` OIDC events.
 
 A manual `workflow_dispatch` always wakes the mirror for an explicit test, even when the deterministic pulse is green.
 
 This Actions -> Vercel design is intentional for the current Hobby deployment:
+- it reuses the canonical approved hourly Actions cadence instead of creating a duplicate cron;
 - it does not require hourly Vercel Cron support;
 - it keeps the deployment at the 12 Serverless Function limit;
 - it still executes the independent mirror brain on Vercel.
