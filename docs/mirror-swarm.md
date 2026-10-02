@@ -9,8 +9,11 @@ The canonical QA Self-Heal lane uses OpenClaw. If OpenClaw itself, its tool loop
 Mirror Swarm intentionally uses a separate execution path:
 
 ```
-failed main QA workflow
+Vercel Cron (:37 every hour)
+  -> protected /api/quantdeus/mirror-wake
+  -> GitHub workflow_dispatch
   -> deterministic local QA + recent main Actions failures
+  -> sleep when healthy
   -> GitHub OIDC
   -> Vercel /api/quantdeus/mirror
   -> Mirror Sherlock
@@ -21,17 +24,29 @@ failed main QA workflow
   -> normal QuantDeus QA / review / merge policy
 ```
 
-GitHub remains the source of truth.
+GitHub remains the source of truth. Vercel owns the mirror wake-up schedule.
 
 ## Wake-up rule
 
-Scheduled checks run hourly, but the model plane stays asleep when:
+The Vercel project `quantdeus` schedules:
+
+```cron
+37 * * * *
+```
+
+Vercel calls `GET /api/quantdeus/mirror-wake`. The endpoint is fail-closed behind the existing `CRON_SECRET`, uses the server-side `QUANTDEUS_GITHUB_TOKEN`, and dispatches `.github/workflows/mirror-swarm-repair.yml` on `main`.
+
+The wake endpoint refuses to start a second mirror cycle while one is already queued or running.
+
+The GitHub workflow then runs deterministic validators and scans recent `main` Actions failures. For a normal `vercel-cron` pulse, the model plane stays asleep when:
 - syntax validator is green;
 - contract validator is green;
 - OpenClaw office validator is green; and
 - there are no repair-worthy main Actions failures from the last three hours.
 
-A manual workflow dispatch always wakes the mirror for an explicit test.
+A manual `workflow_dispatch` still wakes the mirror for an explicit test, even when the deterministic pulse is green.
+
+The :37 offset keeps the mirror away from the primary hourly swarm's :00 slot and reduces runtime contention.
 
 ## Modes
 
@@ -73,9 +88,14 @@ Mirror-created repairs:
 ## Runtime
 
 Vercel project: `quantdeus`  
-Endpoint: `POST /api/quantdeus/mirror`  
+Wake endpoint: `GET /api/quantdeus/mirror-wake`  
+Mirror endpoint: `POST /api/quantdeus/mirror`  
 GitHub workflow: `.github/workflows/mirror-swarm-repair.yml`  
 OIDC audience: `quantdeus-vercel-mirror`
+
+Existing required runtime variables:
+- `CRON_SECRET` — authenticates the Vercel Cron wake request.
+- `QUANTDEUS_GITHUB_TOKEN` — dispatches the mirror GitHub workflow from the protected Vercel endpoint.
 
 Optional environment variable:
 - `QD_MIRROR_MODEL` — overrides the Vercel AI Gateway model used by the mirror. No model secret is stored in the repository.
