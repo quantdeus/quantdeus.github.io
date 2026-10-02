@@ -51,11 +51,27 @@
       const playground = playgroundOrigin + '/?mode=seamless&blueprint-url=' + encodeURIComponent(blueprint);
       const telegramClientId = 8122160274;
       const authApi = 'https://quantdeus.vercel.app/api/quantdeus/auth';
+      const githubAuthApi = 'https://quantdeus.vercel.app/api/quantdeus/github-auth';
+      const githubAssertionKey = 'qd_github_assertion';
+      const githubErrorKey = 'qd_github_error';
       const frame = document.getElementById('wordpress');
       const loading = document.getElementById('loading');
       const status = document.getElementById('status');
       const fallback = document.getElementById('fallback');
       const direct = document.getElementById('direct');
+
+      (() => {
+        const current = new URL(location.href);
+        const assertion = current.searchParams.get('qd_github_assertion');
+        const error = current.searchParams.get('qd_github_error');
+        if (assertion) sessionStorage.setItem(githubAssertionKey, assertion);
+        if (error) sessionStorage.setItem(githubErrorKey, error);
+        if (assertion || error) {
+          current.searchParams.delete('qd_github_assertion');
+          current.searchParams.delete('qd_github_error');
+          history.replaceState(null, '', current.pathname + (current.search ? current.search : '') + current.hash);
+        }
+      })();
 
       async function verifyTelegramToken(idToken) {
         const response = await fetch(authApi, {
@@ -110,7 +126,33 @@
         if (event.source !== frame.contentWindow) return;
         if (event.origin !== playgroundOrigin) return;
         const message = event.data || {};
-        if (message.type === 'qd:telegram-login') telegramLogin();
+        if (message.type === 'qd:telegram-login') {
+          telegramLogin();
+          return;
+        }
+        if (message.type === 'qd:github-login') {
+          if (message.action === 'start') {
+            sessionStorage.removeItem(githubAssertionKey);
+            sessionStorage.removeItem(githubErrorKey);
+            const start = new URL(githubAuthApi);
+            start.searchParams.set('action', 'start');
+            start.searchParams.set('return_to', location.origin + '/');
+            location.assign(start.toString());
+            return;
+          }
+          if (message.action === 'consume') {
+            const assertion = sessionStorage.getItem(githubAssertionKey) || '';
+            const error = sessionStorage.getItem(githubErrorKey) || '';
+            postToWordPress(assertion
+              ? {type:'qd:github-result',ok:true,assertion}
+              : {type:'qd:github-result',ok:false,error:error || 'github_no_pending_assertion'});
+            return;
+          }
+        }
+        if (message.type === 'qd:github-consumed' && message.ok) {
+          sessionStorage.removeItem(githubAssertionKey);
+          sessionStorage.removeItem(githubErrorKey);
+        }
       });
 
       direct.href = playground;
