@@ -1,0 +1,47 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${WP_DB_NAME:-quantdeus}
+      MYSQL_USER: ${WP_DB_USER:-quantdeus}
+      MYSQL_PASSWORD: ${WP_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD}
+    volumes:
+      - qd_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  wordpress:
+    image: wordpress:7.1.2-php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${WP_PORT:-8080}:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${WP_DB_NAME:-quantdeus}
+      WORDPRESS_DB_USER: ${WP_DB_USER:-quantdeus}
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD}
+      QD_GITHUB_CLIENT_ID: ${QD_GITHUB_CLIENT_ID:-}
+      QD_GITHUB_CLIENT_SECRET: ${QD_GITHUB_CLIENT_SECRET:-}
+      QD_GITHUB_ADMIN_REPOSITORY: ${QD_GITHUB_ADMIN_REPOSITORY:-quantdeus/quantdeus.github.io}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('QD_GITHUB_CLIENT_ID', getenv('QD_GITHUB_CLIENT_ID') ?: '');
+        define('QD_GITHUB_CLIENT_SECRET', getenv('QD_GITHUB_CLIENT_SECRET') ?: '');
+        define('QD_GITHUB_ADMIN_REPOSITORY', getenv('QD_GITHUB_ADMIN_REPOSITORY') ?: 'quantdeus/quantdeus.github.io');
+        define('DISALLOW_FILE_EDIT', true);
+        define('WP_AUTO_UPDATE_CORE', 'minor');
+    volumes:
+      - qd_wp:/var/www/html
+      - ../src/quantdeus-core:/var/www/html/wp-content/plugins/quantdeus-core
+      - ./wp-content/themes/quantdeus-horizon:/var/www/html/wp-content/themes/quantdeus-horizon
+
+volumes:
+  qd_db:
+  qd_wp:
