@@ -79,7 +79,6 @@ export default async function handler(req, res) {
       console.warn("[github-auth-verify]", code);
       const status = [
         "github_oauth_unconfigured",
-        "github_permission_verifier_unconfigured",
         "github_permission_check_failed"
       ].includes(code) ? 503 : 401;
       return json(res, status, { ok: false, error: code });
