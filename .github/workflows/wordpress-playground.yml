@@ -7,7 +7,10 @@ on:
       - 'index.html'
       - 'wordpress/**'
       - 'vercel-dispatcher/api/quantdeus/github-auth.js'
+      - 'vercel-dispatcher/api/quantdeus/bot-auth.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
       - 'vercel-dispatcher/lib/github-auth.js'
+      - 'vercel-dispatcher/lib/telegram-bot-auth.js'
       - 'docs/WORDPRESS_PLATFORM_MIGRATION.md'
       - '.github/workflows/wordpress-playground.yml'
   pull_request:
@@ -16,7 +19,10 @@ on:
       - 'index.html'
       - 'wordpress/**'
       - 'vercel-dispatcher/api/quantdeus/github-auth.js'
+      - 'vercel-dispatcher/api/quantdeus/bot-auth.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
       - 'vercel-dispatcher/lib/github-auth.js'
+      - 'vercel-dispatcher/lib/telegram-bot-auth.js'
       - 'docs/WORDPRESS_PLATFORM_MIGRATION.md'
       - '.github/workflows/wordpress-playground.yml'
   workflow_dispatch:
@@ -65,15 +71,25 @@ jobs:
           find wordpress/src -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check wordpress/src/quantdeus-aero/app.js
           test -f vercel-dispatcher/api/quantdeus/github-auth.js
+          test -f vercel-dispatcher/api/quantdeus/bot-auth.js
           test -f vercel-dispatcher/lib/github-auth.js
+          test -f vercel-dispatcher/lib/telegram-bot-auth.js
           node --check vercel-dispatcher/api/quantdeus/github-auth.js
+          node --check vercel-dispatcher/api/quantdeus/bot-auth.js
+          node --check vercel-dispatcher/api/quantdeus/telegram.js
           node --check vercel-dispatcher/lib/github-auth.js
+          node --check vercel-dispatcher/lib/telegram-bot-auth.js
           grep -q "qd:telegram-login" index.html
+          grep -q "qd:telegram-consumed" index.html
           grep -q "qd:github-login" index.html
-          grep -q "Telegram.Login.auth" index.html
-          grep -q "https://quantdeus.vercel.app/api/quantdeus/auth" index.html
+          grep -q "https://quantdeus.vercel.app/api/quantdeus/bot-auth" index.html
+          if grep -q "Telegram.Login.auth" index.html; then echo "legacy Telegram Login SDK forbidden"; exit 1; fi
           grep -q "telegramBrokerUrl" wordpress/src/quantdeus-aero/app.js
+          grep -q "syncTelegramBotSession" wordpress/src/quantdeus-aero/app.js
           grep -q "data-telegram-login" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "QuantDeus Store Bot" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "qdl_" vercel-dispatcher/api/quantdeus/telegram.js
+          grep -q "issueTelegramBotAssertion" vercel-dispatcher/api/quantdeus/telegram.js
           grep -q "telegram_broker_login" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "github_broker_login" wordpress/src/quantdeus-core/quantdeus-core.php
           grep -q "/session/logout" wordpress/src/quantdeus-core/quantdeus-core.php
@@ -94,7 +110,7 @@ jobs:
           grep -q "return 'qd_member';" wordpress/src/quantdeus-core/quantdeus-core.php
           if grep -q "QD_MODERATOR_TELEGRAM_IDS" wordpress/src/quantdeus-core/quantdeus-core.php; then echo "Telegram staff elevation forbidden"; exit 1; fi
           grep -q "home_url('/login/')" wordpress/src/quantdeus-aero/header.php
-          grep -q "Войти через Telegram" wordpress/src/quantdeus-aero/page-login.php
+          grep -q "QuantDeus Store Bot" wordpress/src/quantdeus-aero/page-login.php
           grep -q "Войти через GitHub" wordpress/src/quantdeus-aero/page-login.php
           grep -q "write / maintain" wordpress/src/quantdeus-aero/page-login.php
           grep -q "admin" wordpress/src/quantdeus-aero/page-login.php

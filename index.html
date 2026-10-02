@@ -7,6 +7,7 @@
   <title>QuantDeus — WordPress</title>
   <meta name="description" content="QuantDeus Holding: технологии, исследования, автоматизация, медиа и сообщество на единой WordPress-платформе.">
   <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="referrer" content="no-referrer">
   <link rel="canonical" href="https://quantdeus.github.io/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="QuantDeus — WordPress">
@@ -43,15 +44,15 @@
   </div>
   <iframe id="wordpress" title="QuantDeus WordPress" allow="clipboard-read; clipboard-write"></iframe>
   <noscript><p><a href="https://playground.wordpress.net/">Для запуска QuantDeus WordPress включите JavaScript.</a></p></noscript>
-  <script src="https://oauth.telegram.org/js/telegram-login.js?3"></script>
   <script>
     (() => {
       const blueprint = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/wordpress/blueprint.json';
       const playgroundOrigin = 'https://playground.wordpress.net';
       const playground = playgroundOrigin + '/?mode=seamless&blueprint-url=' + encodeURIComponent(blueprint);
-      const telegramClientId = 8122160274;
-      const authApi = 'https://quantdeus.vercel.app/api/quantdeus/auth';
+      const telegramBotAuthApi = 'https://quantdeus.vercel.app/api/quantdeus/bot-auth';
       const githubAuthApi = 'https://quantdeus.vercel.app/api/quantdeus/github-auth';
+      const telegramAssertionKey = 'qd_telegram_assertion';
+      const telegramErrorKey = 'qd_telegram_error';
       const githubAssertionKey = 'qd_github_assertion';
       const githubErrorKey = 'qd_github_error';
       const frame = document.getElementById('wordpress');
@@ -62,30 +63,24 @@
 
       (() => {
         const current = new URL(location.href);
-        const assertion = current.searchParams.get('qd_github_assertion');
-        const error = current.searchParams.get('qd_github_error');
-        if (assertion) sessionStorage.setItem(githubAssertionKey, assertion);
-        if (error) sessionStorage.setItem(githubErrorKey, error);
-        if (assertion || error) {
+        const telegramAssertion = current.searchParams.get('qd_telegram_assertion');
+        const telegramError = current.searchParams.get('qd_telegram_error');
+        const githubAssertion = current.searchParams.get('qd_github_assertion');
+        const githubError = current.searchParams.get('qd_github_error');
+
+        if (telegramAssertion) sessionStorage.setItem(telegramAssertionKey, telegramAssertion);
+        if (telegramError) sessionStorage.setItem(telegramErrorKey, telegramError);
+        if (githubAssertion) sessionStorage.setItem(githubAssertionKey, githubAssertion);
+        if (githubError) sessionStorage.setItem(githubErrorKey, githubError);
+
+        if (telegramAssertion || telegramError || githubAssertion || githubError) {
+          current.searchParams.delete('qd_telegram_assertion');
+          current.searchParams.delete('qd_telegram_error');
           current.searchParams.delete('qd_github_assertion');
           current.searchParams.delete('qd_github_error');
           history.replaceState(null, '', current.pathname + (current.search ? current.search : '') + current.hash);
         }
       })();
-
-      async function verifyTelegramToken(idToken) {
-        const response = await fetch(authApi, {
-          method: 'GET',
-          headers: { Authorization: 'Bearer ' + idToken },
-          cache: 'no-store',
-          credentials: 'omit'
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok || !body.ok || !body.user) {
-          throw new Error(body.error || ('telegram_auth_http_' + response.status));
-        }
-        return body;
-      }
 
       function postToWordPress(message) {
         if (!frame.contentWindow) return;
@@ -95,42 +90,26 @@
         frame.contentWindow.postMessage(message, '*');
       }
 
-      function telegramLogin() {
-        if (!window.Telegram?.Login?.auth) {
-          postToWordPress({type:'qd:telegram-result',ok:false,error:'telegram_login_sdk_unavailable'});
-          return;
-        }
-        window.Telegram.Login.auth(
-          {client_id: telegramClientId, scope:['profile'], lang:'ru'},
-          async result => {
-            try {
-              if (!result || result.error) throw new Error(result?.error || 'telegram_login_cancelled');
-              if (!result.id_token) throw new Error('telegram_id_token_missing');
-              const verified = await verifyTelegramToken(result.id_token);
-              postToWordPress({
-                type:'qd:telegram-result',
-                ok:true,
-                id_token:result.id_token,
-                user:verified.user,
-                role:verified.role || 'member'
-              });
-            } catch (error) {
-              postToWordPress({
-                type:'qd:telegram-result',
-                ok:false,
-                error:String(error?.message || 'telegram_auth_failed')
-              });
-            }
-          }
-        );
-      }
-
       window.addEventListener('message', event => {
         if (event.source !== frame.contentWindow) return;
         const message = event.data || {};
         if (message.type === 'qd:telegram-login') {
-          telegramLogin();
-          return;
+          if (message.action === 'start') {
+            sessionStorage.removeItem(telegramAssertionKey);
+            sessionStorage.removeItem(telegramErrorKey);
+            const start = new URL(telegramBotAuthApi);
+            start.searchParams.set('action', 'start');
+            location.assign(start.toString());
+            return;
+          }
+          if (message.action === 'consume') {
+            const assertion = sessionStorage.getItem(telegramAssertionKey) || '';
+            const error = sessionStorage.getItem(telegramErrorKey) || '';
+            postToWordPress(assertion
+              ? {type:'qd:telegram-result',ok:true,assertion}
+              : {type:'qd:telegram-result',ok:false,error:error || 'telegram_no_pending_assertion'});
+            return;
+          }
         }
         if (message.type === 'qd:github-login') {
           if (message.action === 'start') {
@@ -151,12 +130,19 @@
             return;
           }
         }
+        if (message.type === 'qd:telegram-consumed' && message.ok) {
+          sessionStorage.removeItem(telegramAssertionKey);
+          sessionStorage.removeItem(telegramErrorKey);
+          return;
+        }
         if (message.type === 'qd:github-consumed' && message.ok) {
           sessionStorage.removeItem(githubAssertionKey);
           sessionStorage.removeItem(githubErrorKey);
           return;
         }
         if (message.type === 'qd:logout') {
+          sessionStorage.removeItem(telegramAssertionKey);
+          sessionStorage.removeItem(telegramErrorKey);
           sessionStorage.removeItem(githubAssertionKey);
           sessionStorage.removeItem(githubErrorKey);
         }

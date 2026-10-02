@@ -57,7 +57,7 @@
     return body;
   }
 
-  function requestTelegramFromParent() {
+  function requestTelegramAssertionFromParent() {
     return new Promise((resolve,reject) => {
       if (window.parent === window) {
         reject(new Error('canonical_origin_required'));
@@ -65,41 +65,54 @@
       }
       const timeout = setTimeout(() => {
         window.removeEventListener('message', onMessage);
-        reject(new Error('telegram_login_timeout'));
-      }, 120000);
+        reject(new Error('telegram_bridge_timeout'));
+      }, 8000);
       function onMessage(event) {
         if (event.source !== window.parent || event.origin !== canonicalOrigin) return;
         const message = event.data || {};
         if (message.type !== 'qd:telegram-result') return;
         clearTimeout(timeout);
         window.removeEventListener('message', onMessage);
-        if (!message.ok || !message.id_token) {
-          reject(new Error(message.error || 'telegram_auth_failed'));
-          return;
+        if (!message.ok || !message.assertion) {
+          if (message.error === 'telegram_no_pending_assertion') return resolve(null);
+          return reject(new Error(message.error || 'telegram_auth_failed'));
         }
         resolve(message);
       }
       window.addEventListener('message', onMessage);
-      window.parent.postMessage({type:'qd:telegram-login'}, canonicalOrigin);
+      window.parent.postMessage({type:'qd:telegram-login',action:'consume'}, canonicalOrigin);
     });
+  }
+
+  async function syncTelegramBotSession() {
+    if (!telegramBrokerUrl || window.parent === window) return false;
+    try {
+      const result = await requestTelegramAssertionFromParent();
+      if (!result?.assertion) return false;
+      setTelegramStatus('QuantDeus Store Bot · создаю сессию…');
+      await establish(telegramBrokerUrl, {assertion:result.assertion});
+      window.parent.postMessage({type:'qd:telegram-consumed',ok:true}, canonicalOrigin);
+      location.reload();
+      return true;
+    } catch (err) {
+      const map = {
+        canonical_origin_required:'Открой QuantDeus через https://quantdeus.github.io/.',
+        telegram_bridge_timeout:'Store Bot bridge не ответил. Обнови страницу и повтори вход.',
+        telegram_bot_assertion_invalid:'Ссылка Store Bot истекла. Войди ещё раз.',
+        telegram_invalid:'Store Bot не подтвердил вход.'
+      };
+      setTelegramStatus(map[err.message] || ('Telegram: ' + String(err.message || 'ошибка входа')));
+      return false;
+    }
   }
 
   async function telegramBrowserLogin(button) {
     if (!telegramBrokerUrl) throw new Error('telegram_broker_missing');
-    const original = button.textContent;
+    if (window.parent === window) throw new Error('canonical_origin_required');
     button.disabled = true;
-    button.textContent = 'Открываю Telegram…';
-    setTelegramStatus('Telegram · подтверждение личности…');
-    try {
-      const result = await requestTelegramFromParent();
-      button.textContent = 'Проверяю…';
-      await establish(telegramBrokerUrl, {id_token: result.id_token});
-      setTelegramStatus('Telegram · вход выполнен');
-      if (qs('[data-login-page]')) location.reload();
-    } finally {
-      button.disabled = false;
-      button.textContent = original;
-    }
+    button.textContent = 'Открываю Store Bot…';
+    setTelegramStatus('QuantDeus Store Bot · откроется Telegram для подтверждения');
+    window.parent.postMessage({type:'qd:telegram-login',action:'start'}, canonicalOrigin);
   }
 
   function bindTelegramLogin() {
@@ -110,11 +123,9 @@
         } catch (err) {
           const map = {
             canonical_origin_required:'Открой QuantDeus через https://quantdeus.github.io/ — прямой Playground не поддерживает безопасный вход.',
-            telegram_login_timeout:'Telegram не ответил. Попробуй ещё раз.',
-            telegram_login_cancelled:'Вход через Telegram отменён.',
-            telegram_login_sdk_unavailable:'Telegram Login SDK временно недоступен.',
-            telegram_id_token_missing:'Telegram не вернул токен входа.',
-            telegram_auth_invalid:'Telegram-сессия не прошла проверку.'
+            telegram_bridge_timeout:'Store Bot bridge не ответил. Попробуй ещё раз.',
+            telegram_bot_auth_unconfigured:'QuantDeus Store Bot временно не готов к входу.',
+            telegram_invalid:'Store Bot не подтвердил сессию.'
           };
           setTelegramStatus(map[err.message] || ('Telegram: ' + String(err.message || 'ошибка входа')));
         }
@@ -355,6 +366,8 @@
     bindPrimaryMenu();
     bindLogout();
     bindTelegramLogin();
+    const telegramRestored = await syncTelegramBotSession();
+    if (telegramRestored) return;
     const githubRestored = await syncGithubSession();
     if (githubRestored) return;
     await bindGithubAdmin();
