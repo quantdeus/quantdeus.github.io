@@ -402,7 +402,7 @@
     }
   ],
   "doctrine": {
-    "version": "2026.09-post-scarcity-v3",
+    "version": "2026.10-neon-horizon-v4",
     "source": "coordination/civilization-doctrine.json",
     "inheritance": "all-agents",
     "source_streams": [
@@ -413,7 +413,7 @@
       "gravity-frontiers"
     ],
     "manifest_sources": [
-      "neon-horizon-v3",
+      "neon-horizon-v4",
       "epidemiya-dobra-2y"
     ]
   },

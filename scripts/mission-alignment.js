@@ -10,7 +10,7 @@ const agentCron = JSON.parse(fs.readFileSync(path.join(root,'coordination','agen
 const livingManifest = fs.readFileSync(path.join(root,'coordination','manifesto-living.md'),'utf8');
 
 const requiredSources = ['thrive-1','thrive-2','venus-project','earth-renovation','gravity-frontiers'];
-const requiredManifests = ['neon-horizon-v3','epidemiya-dobra-2y'];
+const requiredManifests = ['neon-horizon-v4','epidemiya-dobra-2y'];
 const requiredPrinciples = [
   'resource-census-before-abundance-claims',
   'needs-to-resources-matching',
@@ -41,6 +41,12 @@ check(Boolean(doctrine.constitutional_core?.exit_principle?.rule),'doctrine','EX
 check((doctrine.epidemic_of_good?.replication_loop||[]).length>=6,'doctrine','Epidemic of Good replication loop declared');
 check(Object.keys(doctrine.kpis||{}).length>=10,'doctrine','acceleration KPI set declared');
 check((doctrine.acceleration_plan?.phases||[]).length===4,'doctrine','four acceleration phase gates declared');
+check(doctrine.horizon_architecture?.short?.period==='2026-2028','doctrine','v4 short horizon declared');
+check(doctrine.horizon_architecture?.middle?.period==='2026-2041','doctrine','v4 middle horizon declared');
+check(doctrine.horizon_architecture?.century?.period==='2026-2126','doctrine','v4 century compass declared');
+check((doctrine.federation_of_nodes?.interface_v1?.fields||[]).includes('EXIT'),'doctrine','Federation Interface v1 preserves EXIT');
+check(Boolean(doctrine.kpis?.Federation_Score),'doctrine','Federation Score KPI declared');
+check(Boolean(doctrine.kpis?.Replication_Success),'doctrine','Replication Success KPI declared');
 check((doctrine.future_fund?.instruments||[]).length>=4,'doctrine','Future Fund instruments declared');
 check(Boolean(doctrine.cultural_layer?.aesthetics?.synthwave),'doctrine','Synthwave cultural layer declared');
 check(Boolean(doctrine.cultural_layer?.aesthetics?.frutiger_aero),'doctrine','Frutiger Aero cultural layer declared');

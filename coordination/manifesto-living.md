@@ -1,7 +1,7 @@
 # QuantDeus Living Manifest — Adaptive Horizon
 
 Status: **ACTIVE / automatically maintained adaptive layer**  
-Constitutional base: **Neon Horizon v3.0 + «Эпидемия Добра»**  
+Constitutional base: **Neon Horizon v4.0 + «Эпидемия Добра»**  
 Machine source: `coordination/civilization-doctrine.json`  
 Automation: `.github/workflows/news-manifest-cycle.yml`
 
@@ -10,6 +10,16 @@ Automation: `.github/workflows/news-manifest-cycle.yml`
 This file is the **living, evidence-backed layer** of the QuantDeus manifesto system. It adapts operational priorities to meaningful changes in the world, Russia, science, technology, infrastructure, economics and the QuantDeus community without rewriting the constitutional core because of one headline.
 
 The stable core remains: human dignity and agency, voluntary participation and EXIT, evidence before narrative, transparency, safety, open learning, measurable scarcity reduction, science/engineering progress and a long space horizon.
+
+## Canonical bridge — Neon Horizon v4.0
+
+- **2026–2028 / IGNITION:** build the self-accelerating OS, evidence loops, open artifacts, first autonomous nodes and Federation standards.
+- **2026–2041 / MIDDLE HORIZON:** grow a Proto-Federation of local, science, digital, education/culture and physical pilot nodes; translate post-scarcity ideas into measurable pilots.
+- **2026–2126 / CENTURY COMPASS:** preserve the long civilizational direction while methods remain adaptive.
+- **Federation of Nodes:** compatibility replaces centralization; independent projects keep their owner, identity, roadmap and EXIT rights.
+- **Federation Interface v1:** Identity, Mission, Evidence, Artifacts, Metrics, Replication, Safety, EXIT, Governance and Human override are the minimum interoperability contract.
+
+This section is constitutional context, **not** an adaptive news signal. The automated news cycle may reprioritize experiments and opportunity maps, but it must not silently rewrite these v4 constraints.
 
 ## Current adaptive horizon
 
@@ -51,4 +61,5 @@ _No adaptive change required yet._
 
 ## Change log
 
+- **2026-10-02** — Constitutional base promoted to Neon Horizon v4.0 after the canonical PDF was archived; added the three nested horizons and Federation of Nodes bridge. No adaptive news signal was promoted by this change.
 - **2026-09-29** — Living adaptive layer created. No current-world claims imported at bootstrap; future cycles must attach dated evidence.

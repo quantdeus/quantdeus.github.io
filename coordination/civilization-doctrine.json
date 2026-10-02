@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "version": "2026.09-post-scarcity-v3",
+  "version": "2026.10-neon-horizon-v4",
   "title": "QuantDeus — доктрина Неонового горизонта и постдефицитной цивилизации",
   "objective": "Снижать измеримый дефицит и расширять способность людей свободно созидать через научно проверяемые решения, ресурсный учёт, AI-оркестрацию, открытые артефакты, экологическое восстановление, добровольное сотрудничество и культуру будущего — сохраняя человеческую жизнь, достоинство, право выхода и разнообразие как верхние ограничения системы.",
   "operating_rule": "QuantDeus — инструмент и координационная инфраструктура, а не господин. Люди задают ценности, направление и финальную ответственность; агенты ускоряют исследование, прототипирование, код, координацию и проверку. Идея, фильм, манифест или партнёрский проект задают направление поиска, но не подменяют доказательство.",
@@ -186,11 +186,11 @@
   ],
   "manifest_sources": [
     {
-      "id": "neon-horizon-v3",
-      "name": "Манифест Неонового Горизонта — QuantDeus v3.0",
-      "canonical_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf",
-      "source_modified": "2026-09-28T11:17:51Z",
-      "role": "canonical-constitutional-charter",
+      "id": "neon-horizon-v4",
+      "name": "Манифест Неонового Горизонта — QuantDeus v4.0",
+      "canonical_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf",
+      "source_modified": "2026-10-02T06:25:00Z",
+      "role": "canonical-constitutional-operational-charter",
       "preserves": [
         "eight-creative-society-pillars",
         "human-first-ai-partnership",
@@ -202,9 +202,18 @@
         "post-scarcity-resource-economy",
         "evidence-gates-and-reversible-prototypes",
         "epidemic-of-good-acceleration",
-        "synthwave-frutiger-aero-cultural-layer"
+        "synthwave-frutiger-aero-cultural-layer",
+        "three-horizon-architecture-2026-2028-2026-2041-2026-2126",
+        "federation-of-nodes",
+        "federation-interface-v1",
+        "local-physical-node-pilots",
+        "aligned-project-classification",
+        "federation-score-and-replication-success",
+        "star-trek-synthwave-frutiger-aero-cultural-layer"
       ],
-      "supersedes": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v2.0.pdf"
+      "supersedes": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf",
+      "document_date": "2026-10-01",
+      "status": "canonical-new-canon-after-v3"
     },
     {
       "id": "epidemiya-dobra-2y",
@@ -329,7 +338,9 @@
     "Future_Fund_Flow": "ресурсы, направленные в проверяемую frontier-науку после резервов и обязательств",
     "Automation_Ratio": "доля повторяемой рутины, безопасно снятой агентами и шаблонами",
     "Impact_Ledger": "измеримые улучшения для людей, среды, науки или доступности ресурсов",
-    "Transparency_Score": "доля решений и результатов с публичным обоснованием настолько открытым, насколько позволяют безопасность, закон и приватность"
+    "Transparency_Score": "доля решений и результатов с публичным обоснованием настолько открытым, насколько позволяют безопасность, закон и приватность",
+    "Federation_Score": "доля узлов, способных обмениваться артефактами и метриками без потери автономии",
+    "Replication_Success": "доля replication packages, успешно повторённых независимым узлом"
   },
   "acceleration_plan": {
     "horizon": "2026-09-10/2028-09-10",
@@ -365,7 +376,8 @@
       "compute-grants",
       "replication-grants",
       "30-90-day-prototype-grants",
-      "open-knowledge-grants"
+      "open-knowledge-grants",
+      "federation-node-grants"
     ],
     "precondition": "Перед финансированием должны быть определены: что проверяем, чем гипотеза может быть опровергнута или признана неуспешной, какой открытый или проверяемый артефакт останется."
   },
@@ -377,7 +389,10 @@
     "secrecy-without-safety-legal-or-privacy-need",
     "content-without-knowledge-action-or-cultural-value",
     "too-many-parallel-moonshots-diluting-resources",
-    "growth-through-pressure-or-manipulation"
+    "growth-through-pressure-or-manipulation",
+    "centralization-for-speed-without-federation-interface-check",
+    "agent-autonomy-without-guardrails",
+    "star-trek-narrative-presented-as-verified-evidence"
   ],
   "cultural_layer": {
     "purpose": "Делать проверяемое, гуманное и постдефицитное будущее эмоционально желаемым, узнаваемым и воспроизводимым через визуальный язык, музыку, интерфейсы, кино, игры, образовательный контент и публичные артефакты.",
@@ -449,5 +464,108 @@
     "registry": "coordination/agent-cron-map.json",
     "policy": "Every one of the 26 registered agents has an explicit role-driven cron owner; specialized cycles may run more frequently than daily.",
     "orchestration": "Seven of Nine selects at most one bounded priority action every two hours from Actions, PRs, Issues, public community evidence and manifesto commitments."
-  }
+  },
+  "horizon_architecture": {
+    "rule": "2 years build the engine; 15 years test it across real autonomous nodes; 100 years hold the civilizational compass. Horizons are nested, not competing.",
+    "short": {
+      "period": "2026-2028",
+      "role": "IGNITION / Двигатель",
+      "goal": "Launch the self-accelerating QuantDeus OS: swarm, evidence cycles, open artifacts, first autonomous nodes and Federation standards."
+    },
+    "middle": {
+      "period": "2026-2041",
+      "role": "MIDDLE HORIZON / Прото-Федерация",
+      "goal": "Deploy a resilient network of local, scientific, digital and cultural nodes and turn post-scarcity ideas into measurable pilots.",
+      "checkpoint_2041": "Federation Interface works between independent participants; physical and digital pilots can be replicated without the center."
+    },
+    "century": {
+      "period": "2026-2126",
+      "role": "CENTURY COMPASS / Космическая цивилизация",
+      "quartels": [
+        "2026-2050 Синхронизация / Неоновые Истоки",
+        "2050-2075 Ренессанс / Неоновый Ренессанс",
+        "2075-2100 Варп-порог / Варп-Стрела",
+        "2100-2126 Звёздная экспансия / За Горизонт"
+      ],
+      "rule": "Methods, technologies and institutions may change radically; constitutional core, evidence discipline, human agency and EXIT change only through explicit canon rebuild."
+    },
+    "nesting_rule": [
+      "Every daily task maps to at least one measurable 24-month result.",
+      "Every 24-month result strengthens one or more 2041 trajectories.",
+      "Every 2041 trajectory remains compatible with constitutional constraints and the 2126 compass.",
+      "If a distant narrative does not produce a testable next step, it remains cultural North Star rather than execution priority."
+    ]
+  },
+  "federation_of_nodes": {
+    "principle": "compatibility-over-centralization",
+    "definition": "QuantDeus coordinates a compatible network of autonomous nodes rather than requiring strong projects to become subdivisions.",
+    "node_requirements": [
+      "clear owner and responsibility",
+      "observable artifact or working infrastructure",
+      "defined human need or scarcity bottleneck",
+      "evidence trail appropriate to the claimed confidence",
+      "right to EXIT without surrendering base identity or ownership"
+    ],
+    "shared_contract": [
+      "top-level constitutional charter",
+      "compatible evidence grades and acceptance criteria",
+      "open artifact and replication-package formats",
+      "minimum safety transparency and EXIT requirements",
+      "voluntary exchange of knowledge tasks compute and scientific resources",
+      "no hidden ideological unification requirement"
+    ],
+    "non_borg_rule": "Collective intelligence is acceptable only when it expands the capabilities of nodes and people; shared infrastructure must not erase local will, authorship or the right to exit.",
+    "interface_v1": {
+      "fields": [
+        "Identity",
+        "Mission",
+        "Evidence",
+        "Artifacts",
+        "Metrics",
+        "Replication",
+        "Safety",
+        "EXIT",
+        "Governance",
+        "Human override"
+      ],
+      "compatibility_rule": "Same brand, technology, culture or internal structure is not required; honest interfaces are."
+    },
+    "local_node_template": [
+      "voluntary territory or community",
+      "needs and resource map",
+      "1-3 narrow measurable bottlenecks",
+      "small reversible pilot",
+      "open method budget range and acceptance criteria",
+      "independent verification",
+      "replication package for another city or community"
+    ],
+    "project_taxonomy": [
+      "source-stream",
+      "aligned-project",
+      "interoperable-node",
+      "canonical-quantdeus-program"
+    ],
+    "aligned_example": {
+      "repository": "goplay1937/star-trek-future-plan",
+      "location": "Альметьевск, Татарстан",
+      "horizon": "2026-2041",
+      "status": "aligned-external-concept",
+      "evidence_grade": "C",
+      "rule": "Preserve independent owner, repository, roadmap and EXIT; do not treat as official QuantDeus pilot without evidence gate."
+    }
+  },
+  "execution_directive_v4": [
+    "Measure current KPI state or mark it unknown.",
+    "Identify one primary bottleneck for the current cycle.",
+    "For research, examine at least three independent solution paths.",
+    "Choose 1-3 actions with the best effect/cost/time/risk ratio.",
+    "Advance at least one observable artifact.",
+    "Assign evidence grade and failure condition.",
+    "Check safety ecology human agency EXIT and privileged-action gate.",
+    "Check linkage to 2028 2041 and 2126 horizons.",
+    "Ask whether the result can become a replication package.",
+    "Identify a potential next autonomous node.",
+    "Record what is proven what failed and the next bottleneck.",
+    "Do not treat message commit agent or view counts as impact without a system-state change."
+  ]
 }

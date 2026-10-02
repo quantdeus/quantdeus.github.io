@@ -11,12 +11,12 @@
 - coordination_url: `https://quantdeus.github.io/coordination/`
 - homunculi_url: `https://quantdeus.github.io/homunculi/`
 - active_language: `Russian UI; technical identifiers remain stable`
-- doctrine_version: `2026.09-post-scarcity-v3`
+- doctrine_version: `2026.10-neon-horizon-v4`
 - doctrine_source: `coordination/civilization-doctrine.json`
 - doctrine_inheritance: `all 26 registered agents`
 - collective_cognition: `borg-collective-v1 / all 26 agents / deduction + induction + abduction + emotional intelligence + prudence + anti-duplication handoff discipline`
 - canonical_manifest_sources:
-  - `Манифест Неонового Горизонта — QuantDeus v3.0 / Dropbox: /quantdeus/QuantDeus_Manifest_Neon_Horizon_v3.0.pdf`
+  - `Манифест Неонового Горизонта — QuantDeus v4.0 / Dropbox: /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf`
   - `Эпидемия Добра — 24-месячный план / Dropbox: QuantDeus_2Y_Epidemiya_Dobra_Cron.pdf`
 - adaptive_manifest: `coordination/manifesto-living.md / living-v1 / updated from evidence-backed world + Russia + science/technology/economic/community signals`
 - agent_cron_registry: `coordination/agent-cron-map.json / all 26 registered agents`
