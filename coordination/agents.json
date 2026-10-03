@@ -274,9 +274,6 @@
       "department": "Growth, Marketing & Partnerships",
       "kpi": "organic contributor discovery / onboarding completion",
       "operational_status": "active",
-      "acting_for": [
-        "synthesis"
-      ],
       "cognitive_protocol": "borg-collective-v1"
     },
     {
@@ -290,9 +287,6 @@
       "department": "Growth, Marketing & Partnerships",
       "kpi": "qualified invitations / response rate / first-PR conversion",
       "operational_status": "active",
-      "acting_for": [
-        "unity"
-      ],
       "cognitive_protocol": "borg-collective-v1"
     },
     {
@@ -336,10 +330,6 @@
       "department": "Quality & Reliability",
       "kpi": "mean time to repair / escaped defects",
       "operational_status": "active",
-      "acting_for": [
-        "qa-syntax",
-        "qa-contract"
-      ],
       "cognitive_protocol": "borg-collective-v1"
     }
   ],
