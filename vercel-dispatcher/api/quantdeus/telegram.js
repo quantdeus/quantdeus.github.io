@@ -314,7 +314,11 @@ async function setupWebhook(req, res) {
       { command: 'agents', description: '🐒 Мартышки · AI Fleet' },
       { command: 'monkeys', description: '🐒 Мартышки · AI Fleet' },
       { command: 'pro', description: '⭐ QuantDeus Free / Pro' },
-      { command: 'shield', description: 'Статус защиты QuantDeus Shield' }
+      { command: 'shield', description: 'Статус защиты QuantDeus Shield' },
+      { command: 'agent', description: 'Обратиться к конкретной роли AI Fleet' },
+      { command: 'propose', description: 'Предложить идею для admin-публикации' },
+      { command: 'status', description: 'Состояние очереди QuantDeus' },
+      { command: 'task', description: 'Прямой task для Telegram admin' }
     ]
   });
   const webAppUrl = String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
