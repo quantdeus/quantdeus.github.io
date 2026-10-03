@@ -9,6 +9,7 @@
   const qsa = (s, root=document) => [...root.querySelectorAll(s)];
   const canonicalOrigin = String(cfg.canonicalOrigin || 'https://quantdeus.github.io').replace(/\/$/,'');
   const telegramBrokerUrl = cfg.telegramBrokerUrl || cfg.telegramMiniappUrl || '';
+  const telegramStartUrl = cfg.telegramStartUrl || '';
   const githubBrokerUrl = cfg.githubBrokerUrl || '';
   const githubStartUrl = cfg.githubStartUrl || '';
   const githubConfigUrl = cfg.githubConfigUrl || '';
@@ -57,6 +58,16 @@
     return body;
   }
 
+  function consumeQueryParam(name) {
+    const url = new URL(window.location.href);
+    const value = url.searchParams.get(name) || '';
+    if (!value) return '';
+    url.searchParams.delete(name);
+    const cleanUrl = url.pathname + (url.search || '') + (url.hash || '');
+    history.replaceState({}, document.title, cleanUrl || '/');
+    return value;
+  }
+
   function requestTelegramAssertionFromParent() {
     return new Promise((resolve,reject) => {
       if (window.parent === window) {
@@ -85,7 +96,27 @@
   }
 
   async function syncTelegramBotSession() {
-    if (!telegramBrokerUrl || window.parent === window) return false;
+    if (!telegramBrokerUrl) return false;
+
+    const directAssertion = consumeQueryParam('qd_telegram_assertion');
+    if (directAssertion) {
+      try {
+        setTelegramStatus('QuantDeus Store Bot · создаю WordPress-сессию…');
+        await establish(telegramBrokerUrl, {assertion:directAssertion});
+        location.replace(cfg.loginUrl || '/login/');
+        return true;
+      } catch (err) {
+        const map = {
+          telegram_bot_assertion_invalid:'Ссылка Store Bot истекла. Войди ещё раз.',
+          telegram_invalid:'Store Bot не подтвердил вход.',
+          telegram_broker_unavailable:'Store Bot verifier временно недоступен.'
+        };
+        setTelegramStatus(map[err.message] || ('Telegram: ' + String(err.message || 'ошибка входа')));
+        return false;
+      }
+    }
+
+    if (window.parent === window) return false;
     try {
       const result = await requestTelegramAssertionFromParent();
       if (!result?.assertion) return false;
@@ -96,7 +127,6 @@
       return true;
     } catch (err) {
       const map = {
-        canonical_origin_required:'Открой QuantDeus через https://quantdeus.github.io/.',
         telegram_bridge_timeout:'Store Bot bridge не ответил. Обнови страницу и повтори вход.',
         telegram_bot_assertion_invalid:'Ссылка Store Bot истекла. Войди ещё раз.',
         telegram_invalid:'Store Bot не подтвердил вход.'
@@ -108,10 +138,18 @@
 
   async function telegramBrowserLogin(button) {
     if (!telegramBrokerUrl) throw new Error('telegram_broker_missing');
-    if (window.parent === window) throw new Error('canonical_origin_required');
     button.disabled = true;
     button.textContent = 'Открываю Store Bot…';
     setTelegramStatus('QuantDeus Store Bot · откроется Telegram для подтверждения');
+
+    if (window.parent === window) {
+      if (!telegramStartUrl) throw new Error('telegram_bot_auth_unconfigured');
+      const start = new URL(telegramStartUrl, window.location.href);
+      start.searchParams.set('start','1');
+      location.assign(start.toString());
+      return;
+    }
+
     window.parent.postMessage({type:'qd:telegram-login',action:'start'}, canonicalOrigin);
   }
 
@@ -203,7 +241,41 @@
   }
 
   async function syncGithubSession() {
-    if (!githubBrokerUrl || window.parent === window) return false;
+    if (!githubBrokerUrl) return false;
+
+    const directError = consumeQueryParam('qd_github_error');
+    if (directError) {
+      const map = {
+        github_staff_required:'Этот GitHub-аккаунт не имеет прав модератора/администратора QuantDeus.',
+        github_assertion_invalid:'GitHub-сессия истекла. Войди ещё раз.',
+        github_oauth_unconfigured:'GitHub OAuth ещё не настроен на Vercel.',
+        github_oauth_exchange:'GitHub не завершил OAuth-обмен.'
+      };
+      qsa('[data-github-status]').forEach(el => el.textContent = map[directError] || ('GitHub: ' + directError));
+      return false;
+    }
+
+    const directAssertion = consumeQueryParam('qd_github_assertion');
+    if (directAssertion) {
+      try {
+        qsa('[data-github-status]').forEach(el => el.textContent = 'GitHub · подтверждаю права репозитория…');
+        await establish(githubBrokerUrl, {assertion:directAssertion});
+        location.replace(cfg.loginUrl || '/login/');
+        return true;
+      } catch (err) {
+        const map = {
+          github_staff_required:'Этот GitHub-аккаунт не имеет прав модератора/администратора QuantDeus.',
+          github_assertion_invalid:'GitHub-сессия истекла. Войди ещё раз.',
+          github_auth_invalid:'GitHub-проверка не прошла. Войди ещё раз.',
+          github_oauth_unconfigured:'GitHub OAuth ещё не настроен на Vercel.',
+          github_broker_unavailable:'GitHub verifier временно недоступен.'
+        };
+        qsa('[data-github-status]').forEach(el => el.textContent = map[err.message] || ('GitHub: ' + err.message));
+        return false;
+      }
+    }
+
+    if (window.parent === window) return false;
     try {
       const result = await requestGithubFromParent();
       if (!result?.assertion) return false;
@@ -214,7 +286,6 @@
       return true;
     } catch (err) {
       const map = {
-        canonical_origin_required:'Открой QuantDeus через https://quantdeus.github.io/.',
         github_bridge_timeout:'GitHub bridge не ответил. Обнови страницу и повтори вход.',
         github_staff_required:'Этот GitHub-аккаунт не имеет прав модератора/администратора QuantDeus.',
         github_assertion_invalid:'GitHub-сессия истекла. Войди ещё раз.',
@@ -230,14 +301,41 @@
     const buttons = qsa('[data-github-admin-login]');
     const status = qsa('[data-github-status]');
     if (!buttons.length) return;
+
     buttons.forEach(button => {
       button.disabled = true;
       button.setAttribute('aria-disabled','true');
     });
-    if (!githubStartUrl || !githubBrokerUrl || !githubConfigUrl) {
+
+    if (!githubStartUrl || !githubBrokerUrl) {
       status.forEach(el => el.textContent = 'GitHub OAuth · broker не настроен');
       return;
     }
+
+    // Native WordPress production can start OAuth directly. This path does not
+    // depend on cross-origin CORS health checks or an iframe parent.
+    if (window.parent === window) {
+      status.forEach(el => el.textContent = 'GitHub OAuth · прямой защищённый вход для staff');
+      buttons.forEach(button => {
+        button.disabled = false;
+        button.removeAttribute('aria-disabled');
+        button.addEventListener('click', () => {
+          button.disabled = true;
+          button.textContent = 'Открываю GitHub…';
+          const start = new URL(githubStartUrl, window.location.href);
+          start.searchParams.set('start','1');
+          start.searchParams.set('return_to', cfg.loginUrl || (canonicalOrigin + '/login/'));
+          location.assign(start.toString());
+        });
+      });
+      return;
+    }
+
+    if (!githubConfigUrl) {
+      status.forEach(el => el.textContent = 'GitHub OAuth · health endpoint не настроен');
+      return;
+    }
+
     let health = null;
     try {
       const response = await fetch(githubConfigUrl, {cache:'no-store', credentials:'omit'});
@@ -254,15 +352,12 @@
       status.forEach(el => el.textContent = 'GitHub OAuth · ' + missing);
       return;
     }
+
     status.forEach(el => el.textContent = 'GitHub · права write/maintain/admin проверяются сервером');
     buttons.forEach(button => {
       button.disabled = false;
       button.removeAttribute('aria-disabled');
       button.addEventListener('click', () => {
-        if (window.parent === window) {
-          status.forEach(el => el.textContent = 'Открой QuantDeus через https://quantdeus.github.io/.');
-          return;
-        }
         button.disabled = true;
         button.textContent = 'Открываю GitHub…';
         window.parent.postMessage({type:'qd:github-login',action:'start'}, canonicalOrigin);
