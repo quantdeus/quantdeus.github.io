@@ -67,6 +67,15 @@ function setOwner(body = '', username = null) {
   return username ? `${clean}\n\n<!-- quantdeus-owner:@${username} -->\n` : `${clean}\n`;
 }
 
+function hasAcceptanceEvidence(issue) {
+  const body = String(issue?.body || '');
+  const marker = /<!--\s*quantdeus-acceptance:evidence\s*-->/i.test(body);
+  const checked = /- \[[xX]\]/.test(body);
+  const linked = /https:\/\/github\.com\/[^\s]+\/(?:commit|pull|actions\/runs)\//i.test(body);
+  const explicit = /(?:acceptance evidence|доказательства приёмки|acceptance criteria)[\s\S]{0,1200}(?:✅|PASS|https:\/\/github\.com\/|commit|PR|workflow|test)/i.test(body);
+  return marker || (checked && linked) || explicit;
+}
+
 function ensureLabels() {
   const labels = [
     ['coord:task', '1f6feb', 'QuantDeus coordination task'],
@@ -196,7 +205,9 @@ function handleCommentEvent(event) {
 
   normalizeTask(issue);
   const currentOwner = getOwner(issue.body || '');
-  const command = cmd.match(/^\/(take|release|block|ready|done)/i)[1].toLowerCase();
+  const commandMatch = cmd.match(/^\/(take|release|block|ready|done)(?:\s+([\s\S]*))?$/i);
+  const command = commandMatch[1].toLowerCase();
+  const argument = String(commandMatch[2] || '').trim();
 
   if (command === 'take') {
     if (currentOwner && currentOwner.toLowerCase() !== actor.toLowerCase()) {
@@ -220,13 +231,24 @@ function handleCommentEvent(event) {
     editLabels(number, ['coord:ready'], ['coord:active', 'coord:blocked', 'coord:stale']);
     comment(number, '🧭 Задача снова свободна и готова к захвату через `/take`.');
   } else if (command === 'block') {
+    if (!argument) {
+      comment(number, '🧭 Команда `/block` требует конкретную проверяемую причину: `/block причина`.');
+      return true;
+    }
     editLabels(number, ['coord:blocked', 'coord:human'], ['coord:ready', 'coord:active', 'coord:stale']);
+    comment(number, `🚧 @${actor} заблокировал задачу: ${argument.slice(0, 1000)}`);
   } else if (command === 'ready') {
+    gh(['issue', 'edit', String(number), '--body', setOwner(issue.body || '', null)]);
     editLabels(number, ['coord:ready'], ['coord:blocked', 'coord:active', 'coord:stale']);
+    comment(number, '🧭 Блокер снят. Владелец очищен; задача снова доступна через `/take`.');
   } else if (command === 'done') {
+    if (!hasAcceptanceEvidence(issue)) {
+      comment(number, '🧭 `/done` отклонён: добавь acceptance evidence (checked acceptance criteria + linked commit/PR/workflow/test, явный Acceptance evidence block или marker `<!-- quantdeus-acceptance:evidence -->`).');
+      return true;
+    }
     editLabels(number, ['coord:done'], ['coord:ready', 'coord:active', 'coord:blocked', 'coord:stale']);
     gh(['issue', 'close', String(number), '--reason', 'completed']);
-    comment(number, `✅ Принято. @${actor} завершил задачу.`);
+    comment(number, `✅ Принято. @${actor} завершил задачу с acceptance evidence.`);
   }
   return true;
 }
