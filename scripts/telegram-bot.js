@@ -12,8 +12,12 @@ const telegramToken =
   process.env.TELEGRAM_TOKEN ||
   process.env.TELEGRAM;
 const adminIds = new Set(
-  String(process.env.TELEGRAM_ADMIN_USER_IDS || '')
-    .split(',')
+  [
+    process.env.QUANTDEUS_OWNER_TELEGRAM_IDS,
+    process.env.QUANTDEUS_ADMIN_TELEGRAM_IDS,
+    process.env.TELEGRAM_ADMIN_USER_IDS,
+  ]
+    .flatMap(value => String(value || '').split(','))
     .map(x => x.trim())
     .filter(Boolean)
 );
