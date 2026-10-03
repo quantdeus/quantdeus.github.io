@@ -50,6 +50,34 @@ async function wordpressTelegramPlan(userId) {
   }
 }
 
+async function telegramGroupAdmin(message) {
+  if (!message?.chat || !message?.from || String(message.chat.type || 'private') === 'private') return false;
+  const botToken = String(
+    process.env.TELEGRAM_BOT_TOKEN ||
+    process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
+    process.env.TELEGRAM ||
+    ''
+  ).trim();
+  if (!botToken) return false;
+  try {
+    const member = await telegram(botToken, 'getChatMember', {
+      chat_id: message.chat.id,
+      user_id: message.from.id
+    });
+    return ['creator', 'administrator'].includes(String(member?.status || ''));
+  } catch (error) {
+    console.warn('[telegram-entitlement] group-admin lookup failed: ' + String(error?.message || error).slice(0, 240));
+    return false;
+  }
+}
+
+async function telegramEntitlement(message) {
+  const wordpress = await wordpressTelegramPlan(message?.from?.id);
+  if (wordpress.plan === 'pro') return wordpress;
+  if (await telegramGroupAdmin(message)) return { plan: 'pro', source: 'telegram-admin' };
+  return wordpress;
+}
+
 function decodeJsonPart(value) {
   return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
 }
@@ -877,7 +905,7 @@ async function homunculusReply(message, retryUpdate = null) {
     return 'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/agent <id> <вопрос>\n\nОбычный текст автоматически маршрутизируется к подходящему гомункулу.';
   }
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    const entitlement = await wordpressTelegramPlan(message.from?.id);
+    const entitlement = await telegramEntitlement(message);
     const statusLine = entitlement.plan === 'pro'
       ? '✅ Ваш тариф: PRO — активен. Для администраторов и создателя QuantDeus он предоставляется без оплаты.'
       : '🆓 Ваш тариф: Free.';
@@ -913,7 +941,7 @@ async function homunculusReply(message, retryUpdate = null) {
     console.info('[telegram-live-research] status=ok items=' + research.items.length + ' providers=' + JSON.stringify(research.providers || []));
   }
   const repositoryGrounding = await quantdeusSnapshot(agentId);
-  const entitlement = await wordpressTelegramPlan(message.from?.id);
+  const entitlement = await telegramEntitlement(message);
   const system = [
     `You are the QuantDeus homunculus "${agent.name || agent.id}".`,
     `Authenticated Telegram entitlement: ${String(entitlement.plan || 'free').toUpperCase()} (${String(entitlement.source || 'wordpress')}).`,
