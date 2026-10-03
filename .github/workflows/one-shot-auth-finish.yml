@@ -1,33 +1,13 @@
-name: QuantDeus One-Shot Auth Finish 🐒
+name: QuantDeus Native WordPress MCP Check
 
 on:
-  schedule:
-    # WPVibe rolling quota was expected to recover around 19:20 UTC on 2026-10-03.
-    - cron: '20 19 3 10 *'
-    # Independent QA ten minutes later.
-    - cron: '30 19 3 10 *'
   workflow_dispatch:
-    inputs:
-      phase:
-        description: implementation or qa
-        required: false
-        default: implementation
-        type: choice
-        options:
-          - implementation
-          - qa
 
 permissions:
   contents: read
-  actions: write
-  issues: write
-
-concurrency:
-  group: quantdeus-one-shot-auth-finish-${{ github.event.schedule || inputs.phase || 'manual' }}
-  cancel-in-progress: false
 
 jobs:
-  wake-swarm:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -42,45 +22,5 @@ jobs:
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Enforce one-shot date
-        id: gate
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%F)" != "2026-10-03" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Expired one-shot schedule; no action."
-            exit 0
-          fi
-          echo "run=true" >> "$GITHUB_OUTPUT"
-
-      - name: Select implementation or QA agent
-        if: steps.gate.outputs.run == 'true'
-        id: select
-        shell: bash
-        run: |
-          phase="${{ inputs.phase }}"
-          schedule="${{ github.event.schedule }}"
-          if [ "$schedule" = "30 19 3 10 *" ] || [ "$phase" = "qa" ]; then
-            echo "agent=qa-contract" >> "$GITHUB_OUTPUT"
-            echo "phase=qa" >> "$GITHUB_OUTPUT"
-          else
-            echo "agent=control-tower" >> "$GITHUB_OUTPUT"
-            echo "phase=implementation" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Dispatch canonical role agent on Issue 391
-        if: steps.gate.outputs.run == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          AGENT: ${{ steps.select.outputs.agent }}
-          PHASE: ${{ steps.select.outputs.phase }}
-        shell: bash
-        run: |
-          gh workflow run agent-role-cron.yml \
-            --repo "${{ github.repository }}" \
-            --ref main \
-            -f agent_id="$AGENT" \
-            -f issue_number=391
-          gh issue comment 391 \
-            --repo "${{ github.repository }}" \
-            --body "🐒 One-shot auth cron dispatched **$AGENT** for **$PHASE** at $(date -u +'%Y-%m-%d %H:%M:%S UTC'). ChatGPT automations were not used or modified."
+      - name: Validate native WordPress MCP contract
+        run: node scripts/qa/contract-validator.js
