@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-09-30",
+  "updated": "2026-10-03",
   "timezone": "UTC",
   "policy": {
     "source_of_truth": "coordination/agents.json",
@@ -9,7 +9,10 @@
     "rule": "Every registered agent has an explicit role-driven cron owner. A cron may create at most one bounded observable artifact per cycle unless its workflow is a validator.",
     "human_agency": "No cron may impersonate people, fabricate community activity, mass-spam, weaken safety/QA, expose secrets, spend money, or make legal/identity commitments.",
     "political_neutrality": "News and civic/political signals are researched descriptively from documented sources; agents do not endorse parties/candidates, target voters, or turn the QuantDeus growth loop into political persuasion.",
-    "medbay": "Agents with operational_status=medbay remain registered and testable, but active work is delegated to temporary_delegate until the rejoin condition is met."
+    "medbay": "Agents with operational_status=medbay remain registered and testable, but active work is delegated to temporary_delegate until the rejoin condition is met.",
+    "wordpress_mcp": "All registered agents inherit the canonical native WordPress MCP target https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp through trusted OpenClaw.",
+    "wordpress_mcp_access": "Scheduled/autonomous lanes are read-only. Direct WordPress writes require an explicitly owner-authorized trusted task plus configured MCP authorization; missing auth fails closed.",
+    "wordpress_mcp_dependency": "WPVibe is not a canonical dependency."
   },
   "agents": [
     {
