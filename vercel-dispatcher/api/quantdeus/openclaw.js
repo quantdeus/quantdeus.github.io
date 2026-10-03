@@ -950,8 +950,9 @@ export default async function handler(req, res) {
       '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task, must be reversible where possible, and must honor WPVibe approval gates.',
       '- If WPVibe OAuth is missing or authorization is required, do not invent access or fall back to hidden credentials; return a precise human authorization handoff.'
     ].join('\n') : '';
-    const effectivePrompt = productionTopologyPrompt ? productionTopologyPrompt + '\n\n' + prompt : prompt;
-    await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(effectivePrompt) }]);
+    const effectivePrompt = prompt;
+    const routedPrompt = productionTopologyPrompt ? productionTopologyPrompt + '\n\n' + effectivePrompt : effectivePrompt;
+    await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(routedPrompt) }]);
     const runtimeEnv = {
       ...providerRuntimeEnv,
       OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5'
