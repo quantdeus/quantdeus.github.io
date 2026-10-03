@@ -6,6 +6,7 @@ const AUDIENCE = 'quantdeus-vercel-telegram';
 const ENDPOINT = process.env.TELEGRAM_WEBHOOK_SETUP_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 
 async function main() {
+  // A setup run also refreshes Bot API commands (including /pro) after runtime deploys.
   const botToken = process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
   if (!botToken) throw new Error('TELEGRAM_BOT_TOKEN_missing');
 
