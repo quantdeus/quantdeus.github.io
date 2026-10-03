@@ -10,6 +10,10 @@ fs.copyFileSync(path.join(root, "assets/qd-auth.js"), path.join(out, "assets/qd-
 
 const stripTelegram = html => html.replace(/\s*<script src="https:\/\/telegram\.org\/js\/telegram-web-app\.js"><\/script>/, "");
 
+const stabilizeMirrorFixture = html => html
+  .replace(/<meta\s+http-equiv=["']refresh["'][^>]*>/gi, "")
+  .replace(/(<img\b[^>]*\bsrc=)(["'])https?:\/\/[^"']+\2/gi, '$1$2data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==$2');
+
 const landingStub = `
 <script>
 window.fetch=async (url)=>{
@@ -71,7 +75,7 @@ window.fetch=async (url,options={})=>{
 </script>`
 
 function inject(html, stub, tail="") {
-  html = stripTelegram(html);
+  html = stabilizeMirrorFixture(stripTelegram(html));
   html = html.replace("</head>", stub + "\n</head>");
   if (tail) html = html.replace("</body>", tail + "\n</body>");
   return html;
