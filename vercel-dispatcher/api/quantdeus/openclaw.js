@@ -867,56 +867,32 @@ export default async function handler(req, res) {
           : ['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']
       }
     };
-    const wpvibeReadOnly = hourlyOffice || autonomousWorker;
-    const wpvibeMcp = {
+    const wordpressReadOnly = hourlyOffice || autonomousWorker;
+    const wordpressMcpAuth = String(process.env.QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION || '').trim();
+    const wordpressWriteCapable = !wordpressReadOnly && Boolean(wordpressMcpAuth);
+    const wordpressMcp = {
       transport: 'streamable-http',
-      url: 'https://mcp.wpvibe.ai/mcp',
-      auth: 'oauth',
-      oauth: { identity: 'shared' },
+      url: 'https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp',
+      ...(wordpressMcpAuth ? { headers: { Authorization: wordpressMcpAuth } } : {}),
       connectionTimeoutMs: 10000,
       requestTimeoutMs: 45000,
       supportsParallelToolCalls: false,
       toolFilter: {
-        include: wpvibeReadOnly ? [
-          'list_sites',
+        include: wordpressWriteCapable ? ['*'] : [
+          'wp_get_*',
+          'wp_list_*',
+          'wp_search_*',
           'site_info',
-          'discover_abilities',
-          'get_ability_info',
-          'audit_page'
-        ] : [
-          'list_sites',
-          'site_info',
-          'discover_abilities',
-          'get_ability_info',
-          'audit_page',
-          'rest_api',
-          'run_ability',
-          'run_wp_cli',
-          'content_*',
-          'request_upload',
-          'check_upload',
-          'upload_media',
-          'create_draft_theme',
-          'get_preview_url',
-          'list_files',
-          'search_files',
-          'read_file',
-          'edit_file',
-          'write_file',
-          'delete_file',
-          'publish_draft_theme',
-          'start_fleet_job',
-          'check_approval_status',
-          'show_fleet_dashboard',
-          'show_approval_panel',
-          'load_skill'
+          'audit_*',
+          'discover_*',
+          'get_*'
         ]
       }
     };
     const mcpServers = trustedOffice
       ? (smokePhase === 'github' ? { github: githubMcp }
         : smokePhase === 'playwright' ? { playwright: playwrightMcp }
-        : { github: githubMcp, playwright: playwrightMcp, wpvibe: wpvibeMcp })
+        : { github: githubMcp, playwright: playwrightMcp, wordpress: wordpressMcp })
       : {};
     if (trustedOffice && mcpServers.playwright) {
       const browserMarker = `${statePath}/.quantdeus-playwright-mcp-chrome-ready`;
@@ -945,10 +921,10 @@ export default async function handler(req, res) {
       '- Canonical public production and native WordPress admin: https://quantdeus.whf.bz',
       '- https://quantdeus.vercel.app is the reverse-proxy mirror plus API/agent control plane; it is not the canonical public production origin.',
       '- https://quantdeus.github.io is a public mirror; it is not the canonical production origin.',
-      '- WPVibe MCP, when authenticated, must target https://quantdeus.whf.bz.',
-      '- Hourly/scheduled autonomous lanes are read-only in WPVibe. Do not mutate WordPress from those lanes.',
-      '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task, must be reversible where possible, and must honor WPVibe approval gates.',
-      '- If WPVibe OAuth is missing or authorization is required, do not invent access or fall back to hidden credentials; return a precise human authorization handoff.'
+      '- Native WordPress MCP: https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp (free/self-hosted lane; no WPVibe dependency).',
+      '- Hourly/scheduled autonomous lanes are MCP read-only. Do not mutate WordPress from those lanes.',
+      '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task and only when QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION is configured.',
+      '- Missing WordPress MCP authentication fails closed for writes; never invent access, secrets or hidden credentials.'
     ].join('\n') : '';
     const effectivePrompt = prompt;
     const routedPrompt = productionTopologyPrompt ? productionTopologyPrompt + '\n\n' + effectivePrompt : effectivePrompt;
@@ -965,8 +941,8 @@ export default async function handler(req, res) {
       trusted_office: trustedOffice,
       github_mcp: trustedOffice && Boolean(githubToken) && Boolean(mcpServers.github),
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
-      wpvibe_mcp_configured: trustedOffice && Boolean(mcpServers.wpvibe),
-      wpvibe_mode: trustedOffice && mcpServers.wpvibe ? (wpvibeReadOnly ? 'read-only' : 'owner-authorized-write-capable') : 'off',
+      wordpress_mcp_configured: trustedOffice && Boolean(mcpServers.wordpress),
+      wordpress_mode: trustedOffice && mcpServers.wordpress ? (wordpressWriteCapable ? 'owner-authorized-write-capable' : 'read-only') : 'off',
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
       autonomous_worker: autonomousWorker,
