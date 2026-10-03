@@ -51,9 +51,35 @@ check(agentsReadme.includes('## Collective cognition — Borg efficiency protoco
 const cognitiveSitePrompt = fs.readFileSync(path.join(root,'scripts','site-agent-reply.js'),'utf8');
 const cognitiveOpenClawClient = fs.readFileSync(path.join(root,'scripts','openclaw-office-client.js'),'utf8');
 const cognitiveTelegram = fs.readFileSync(path.join(root,'vercel-dispatcher','api','quantdeus','telegram.js'),'utf8');
+const openclawRuntime = fs.readFileSync(path.join(root,'vercel-dispatcher','api','quantdeus','openclaw.js'),'utf8');
+const cronContext = fs.readFileSync(path.join(root,'coordination','cron-context.md'),'utf8');
+const wordpressReadme = fs.readFileSync(path.join(root,'wordpress','README.md'),'utf8');
 check(cognitiveSitePrompt.includes('registry.collective_cognition?.runtime_directive') && cognitiveSitePrompt.includes('Collective cognition:'), 'scripts/site-agent-reply.js', 'website agent prompt consumes canonical collective cognition directive');
 check(cognitiveOpenClawClient.includes('agentRegistry.collective_cognition?.runtime_directive') && cognitiveOpenClawClient.includes('Collective cognition:'), 'scripts/openclaw-office-client.js', 'OpenClaw Office consumes canonical collective cognition directive');
 check(cognitiveTelegram.includes('data.collective_cognition?.runtime_directive') && cognitiveTelegram.includes('Collective cognition:'), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram homunculus prompt consumes canonical collective cognition directive');
+check(
+  openclawRuntime.includes("url: 'https://mcp.wpvibe.ai/mcp'") &&
+  openclawRuntime.includes("auth: 'oauth'") &&
+  openclawRuntime.includes('const wpvibeReadOnly = hourlyOffice || autonomousWorker') &&
+  openclawRuntime.includes("Canonical public production and native WordPress admin: https://quantdeus.whf.bz") &&
+  openclawRuntime.includes("wpvibe_mode"),
+  'vercel-dispatcher/api/quantdeus/openclaw.js',
+  'trusted OpenClaw config declares guarded WPVibe OAuth MCP with read-only autonomous lanes and whf.bz production grounding'
+);
+check(
+  cronContext.includes('- canonical_url: `https://quantdeus.whf.bz/`') &&
+  cronContext.includes('wpvibe_mcp:') &&
+  cronContext.includes('https://quantdeus.vercel.app = reverse-proxy mirror + API/OpenClaw control plane') &&
+  cronContext.includes('https://quantdeus.github.io = public mirror'),
+  'coordination/cron-context.md',
+  'swarm context names whf.bz as canonical production and Vercel/GitHub as mirrors'
+);
+check(
+  wordpressReadme.includes('Current production is the native WordPress runtime at `https://quantdeus.whf.bz`') &&
+  wordpressReadme.includes('guarded WPVibe MCP lane'),
+  'wordpress/README.md',
+  'WordPress runtime documentation matches production and guarded WPVibe topology'
+);
 
 check(
   cognitiveTelegram.includes('quantdeusSnapshot(agentId)') &&
