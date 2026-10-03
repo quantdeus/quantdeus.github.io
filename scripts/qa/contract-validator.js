@@ -305,6 +305,11 @@ check(
 );
 check(!telegramSource.includes("getUpdates") && !telegramSource.includes("deleteWebhook"), 'scripts/telegram-bot.js', 'Telegram bot never polls or deletes the production webhook');
 check(telegramSource.includes('TELEGRAM_UPDATE_B64'), 'scripts/telegram-bot.js', 'Telegram bot consumes one dispatched webhook update');
+check(
+  telegramSource.includes("/^\\/pro") && telegramSource.includes('https://quantdeus.whf.bz/ai-fleet/pro/'),
+  'scripts/telegram-bot.js',
+  'Telegram Actions fallback exposes the QuantDeus Pro command without embedding payment credentials'
+);
 const telegramTransientRetries = (telegramSource.match(/retryTransient:\s*true/g) || []).length;
 check(telegramTransientRetries === 3, 'scripts/telegram-bot.js', 'only two read-only Telegram chat lanes plus the isolated synthetic smoke enable one transient OpenClaw retry');
 const retrySmokeBlock = telegramSource.slice(telegramSource.indexOf('async function runRetrySmoke'), telegramSource.indexOf('function gh(args)'));
@@ -337,6 +342,14 @@ check(fs.existsSync(telegramBridgePath), 'vercel-dispatcher/api/quantdeus/telegr
 if (fs.existsSync(telegramBridgePath)) {
   const telegramBridge = fs.readFileSync(telegramBridgePath,'utf8');
   check(telegramBridge.includes('x-telegram-bot-api-secret-token') && telegramBridge.includes("TELEGRAM_CIDRS") && telegramBridge.includes("generateText") && telegramBridge.includes("method: 'sendMessage'"), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram webhook verifies secret/IP source and answers directly through the Vercel AI SDK homunculus lane');
+  check(
+    telegramBridge.includes("/^\\/pro") &&
+    telegramBridge.includes("setMyCommands") &&
+    telegramBridge.includes("command: 'pro'") &&
+    telegramBridge.includes('https://quantdeus.whf.bz/ai-fleet/pro/'),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Telegram webhook exposes /pro and registers it in the Bot API command menu'
+  );
   check(
     telegramBridge.includes('needsLiveResearch') &&
     telegramBridge.includes('news.google.com/rss/search') &&
