@@ -17,12 +17,37 @@ const REGISTRY_URL = 'https://raw.githubusercontent.com/quantdeus/quantdeus.gith
 const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
 const LIVE_RESEARCH_TIMEOUT_MS = 7000;
 const LIVE_RESEARCH_MAX_ITEMS = 8;
+const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
 let jwksCache = [];
 let jwksAt = 0;
 let registryCache = null;
 let registryAt = 0;
 let quantdeusSnapshotCache = null;
 let quantdeusSnapshotAt = 0;
+
+const telegramPlanCache = new Map();
+
+async function wordpressTelegramPlan(userId) {
+  const id = String(userId || '').trim();
+  if (!id) return { plan: 'free', source: 'unknown' };
+  const cached = telegramPlanCache.get(id);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  try {
+    const response = await fetch(WORDPRESS_TELEGRAM_PLAN_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ telegram_id: id })
+    });
+    const data = await response.json().catch(() => ({}));
+    const value = response.ok && data?.ok === true
+      ? { plan: data.plan === 'pro' ? 'pro' : 'free', source: String(data.source || 'wordpress') }
+      : { plan: 'free', source: 'unavailable' };
+    telegramPlanCache.set(id, { expiresAt: Date.now() + 120000, value });
+    return value;
+  } catch {
+    return { plan: 'free', source: 'unavailable' };
+  }
+}
 
 function decodeJsonPart(value) {
   return JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
@@ -764,14 +789,20 @@ async function homunculusReply(message, retryUpdate = null) {
   const raw = String(message.text || '').trim();
 
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) && !explicitAgent(raw, byId)) {
-    return '🖖 QuantDeus Homunculi online.\n\nПиши обычным текстом — роль выберется автоматически.\n/agents — список ролей\n/pro — QuantDeus Free / Pro\n/agent <id> <вопрос> — обратиться к конкретному гомункулу\n/help — помощь';
+    return '🖖 QuantDeus Homunculi online.\n\nПиши обычным текстом — роль выберется автоматически.\n/agents — список ролей\n/pro — мой Free / Pro статус\n/agent <id> <вопрос> — обратиться к конкретному гомункулу\n/help — помощь';
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return 'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/agent <id> <вопрос>\n\nОбычный текст автоматически маршрутизируется к подходящему гомункулу.';
   }
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
+    const entitlement = await wordpressTelegramPlan(message.from?.id);
+    const statusLine = entitlement.plan === 'pro'
+      ? '✅ Ваш тариф: PRO — активен. Для администраторов и создателя QuantDeus он предоставляется без оплаты.'
+      : '🆓 Ваш тариф: Free.';
     return [
       '⭐ QuantDeus Pro',
+      '',
+      statusLine,
       '',
       'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
       'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
@@ -800,8 +831,10 @@ async function homunculusReply(message, retryUpdate = null) {
     console.info('[telegram-live-research] status=ok items=' + research.items.length + ' providers=' + JSON.stringify(research.providers || []));
   }
   const repositoryGrounding = await quantdeusSnapshot(agentId);
+  const entitlement = await wordpressTelegramPlan(message.from?.id);
   const system = [
     `You are the QuantDeus homunculus "${agent.name || agent.id}".`,
+    `Authenticated Telegram entitlement: ${String(entitlement.plan || 'free').toUpperCase()} (${String(entitlement.source || 'wordpress')}).`,
     `Canonical id: ${agent.id}. Role: ${agent.role || agent.startup_title || 'QuantDeus agent'}.`,
     agent.department ? `Department: ${agent.department}.` : '',
     agent.kpi ? `KPI/context: ${agent.kpi}.` : '',
