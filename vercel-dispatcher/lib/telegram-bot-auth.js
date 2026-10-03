@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const DEFAULT_BOT_USERNAME = "QuantDeus_bot";
-const DEFAULT_SITE_ORIGIN = "https://quantdeus.github.io";
+const DEFAULT_SITE_ORIGIN = "https://quantdeus.whf.bz";
 const REQUEST_TTL_SECONDS = 10 * 60;
 const ASSERTION_TTL_SECONDS = 5 * 60;
 
@@ -142,7 +142,7 @@ export function verifyTelegramBotAssertion(token) {
 }
 
 export function telegramReturnUrl(assertion) {
-  const url = new URL(telegramSiteOrigin() + "/");
+  const url = new URL(telegramSiteOrigin() + "/login/");
   url.searchParams.set("qd_telegram_assertion", assertion);
   return url.toString();
 }
