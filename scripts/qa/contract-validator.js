@@ -460,14 +460,13 @@ if (fs.existsSync(telegramBridgePath)) {
     'Telegram bridge hands exhausted non-live chat to the existing GitHub Actions retry lane'
   );
   check(
-    telegramBridge.includes("retryable.code = 'TELEGRAM_RETRYABLE'") &&
-    telegramBridge.includes("error?.code === 'TELEGRAM_RETRYABLE'") &&
-    telegramBridge.includes("res.status(503)") &&
-    telegramBridge.includes("'telegram_retryable_upstream_failure'") &&
-    telegramBridge.includes("[telegram-redelivery] status=retryable") &&
-    telegramBridge.includes("res.setHeader('Retry-After', '5')"),
+    telegramBridge.includes("[telegram-redelivery] status=suppressed") &&
+    telegramBridge.includes("AI-маршрут временно недоступен. Telegram webhook подтверждён") &&
+    !telegramBridge.includes("retryable.code = 'TELEGRAM_RETRYABLE'") &&
+    !telegramBridge.includes("'telegram_retryable_upstream_failure'") &&
+    !telegramBridge.includes("res.setHeader('Retry-After', '5')"),
     'vercel-dispatcher/api/quantdeus/telegram.js',
-    'When immediate Actions dispatch is unavailable, authenticated Telegram webhook fails with retryable 503 instead of falsely acknowledging a lost update'
+    'Telegram webhook always acknowledges authenticated updates even when LLM/retry transport is unavailable, preventing provider outages from clogging Bot API delivery'
   );
   check(
     telegramBridge.includes('async function retrySmokeStart(req, res)') &&
