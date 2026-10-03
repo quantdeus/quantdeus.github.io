@@ -6,7 +6,11 @@ const { execFileSync } = require('child_process');
 
 const repo = process.env.GITHUB_REPOSITORY;
 const githubToken = process.env.GITHUB_TOKEN;
-const telegramToken = process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
+const telegramToken =
+  process.env.TELEGRAM_BOT_TOKEN ||
+  process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
+  process.env.TELEGRAM_TOKEN ||
+  process.env.TELEGRAM;
 const adminIds = new Set(
   String(process.env.TELEGRAM_ADMIN_USER_IDS || '')
     .split(',')
