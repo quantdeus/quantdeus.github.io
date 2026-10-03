@@ -49,11 +49,20 @@ function normalizeUser(raw, kind) {
 }
 
 export function roleForTelegramId(id) {
-  const list = name => new Set(clean(process.env[name]).split(",").map(x => x.trim()).filter(Boolean));
+  const list = (...names) => new Set(
+    names.flatMap(name => clean(process.env[name]).split(","))
+      .map(x => x.trim())
+      .filter(Boolean)
+  );
   const key = String(id);
-  if (list("QUANTDEUS_OWNER_TELEGRAM_IDS").has(key)) return "owner";
-  if (list("QUANTDEUS_ADMIN_TELEGRAM_IDS").has(key)) return "admin";
-  if (list("QUANTDEUS_MODERATOR_TELEGRAM_IDS").has(key)) return "moderator";
+  if (list("QUANTDEUS_OWNER_TELEGRAM_IDS", "QUANTDEUS_OWNER_TELEGRAM_ID").has(key)) return "owner";
+  if (list(
+    "QUANTDEUS_ADMIN_TELEGRAM_IDS",
+    "QUANTDEUS_ADMIN_TELEGRAM_ID",
+    "TELEGRAM_ADMIN_USER_IDS",
+    "TELEGRAM_ADMIN_USER_ID"
+  ).has(key)) return "admin";
+  if (list("QUANTDEUS_MODERATOR_TELEGRAM_IDS", "QUANTDEUS_MODERATOR_TELEGRAM_ID").has(key)) return "moderator";
   return "member";
 }
 
