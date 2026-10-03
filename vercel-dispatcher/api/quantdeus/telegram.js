@@ -12,6 +12,7 @@ import {
   shieldInput,
   shieldOutput
 } from '../../lib/prompt-shield.js';
+import { findingFromShieldResult, notifySecurityAdmins } from '../../lib/security-sentinel.js';
 
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -944,6 +945,10 @@ async function siteAiRequest(req, res) {
     const siteShield = shieldInput(message);
     if (siteShield.blocked) {
       console.warn('[quantdeus-shield] channel=site status=blocked reasons=' + siteShield.reasons.join(','));
+      await notifySecurityAdmins(
+        findingFromShieldResult(siteShield, message, { source: 'website-ai' }),
+        { source: 'website-ai', user_ref: 'wp:' + String(entitlement.user_id || 'unknown'), surface: 'quantdeus.whf.bz/ai-fleet' }
+      );
       return res.status(200).json({ ok: true, plan: entitlement.plan || 'free', source: entitlement.source || 'wordpress', role: agentId, text: siteShield.response, shield: QUANTDEUS_SHIELD_VERSION });
     }
     const system = [
@@ -1019,6 +1024,14 @@ async function homunculusReply(message, retryUpdate = null) {
   const inputShield = shieldInput(raw);
   if (inputShield.blocked) {
     console.warn('[quantdeus-shield] channel=telegram status=blocked reasons=' + inputShield.reasons.join(','));
+    await notifySecurityAdmins(
+      findingFromShieldResult(inputShield, raw, { source: 'telegram' }),
+      {
+        source: 'telegram-ai',
+        user_ref: 'tg:' + String(message.from?.id || 'unknown'),
+        surface: String(message.chat?.type || 'private') === 'private' ? 'telegram-private' : 'telegram-group'
+      }
+    );
     return inputShield.response;
   }
   const safeRaw = inputShield.normalized;
