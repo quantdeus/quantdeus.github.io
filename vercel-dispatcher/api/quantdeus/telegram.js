@@ -82,6 +82,17 @@ function proReplyMarkup() {
   return { inline_keyboard: rows };
 }
 
+function mainMenuReplyMarkup() {
+  const bot = PUBLIC_BOT_USERNAME || 'QuantDeus_bot';
+  return {
+    inline_keyboard: [
+      [{ text: '🐒 Мартышки · AI Fleet', url: `https://t.me/${bot}?start=agents` }],
+      [{ text: '⭐ QuantDeus Pro', url: `https://t.me/${bot}?start=pro` }],
+      [{ text: '🌐 QuantDeus', url: 'https://quantdeus.whf.bz/' }]
+    ]
+  };
+}
+
 function proText(entitlement = { plan: 'free' }) {
   const providers = proPaymentProviders();
   return [
@@ -295,8 +306,9 @@ async function setupWebhook(req, res) {
     commands: [
       { command: 'start', description: 'Запустить QuantDeus' },
       { command: 'help', description: 'Команды QuantDeus' },
-      { command: 'agents', description: 'Список ролей AI Fleet' },
-      { command: 'pro', description: 'QuantDeus Free / Pro' },
+      { command: 'agents', description: '🐒 Мартышки · AI Fleet' },
+      { command: 'monkeys', description: '🐒 Мартышки · AI Fleet' },
+      { command: 'pro', description: '⭐ QuantDeus Free / Pro' },
       { command: 'shield', description: 'Статус защиты QuantDeus Shield' }
     ]
   });
@@ -1039,11 +1051,12 @@ async function homunculusReply(message, retryUpdate = null) {
 
   // Keep public control commands independent from GitHub registry, LLM providers and
   // research services so Telegram can always receive a fast HTTP 200 response.
-  if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) && !/^\/start(?:@[A-Za-z0-9_]+)?\s+pro(?:\s|$)/i.test(raw)) {
-    return '🖖 QuantDeus Homunculi online. Публичный чат открыт для всех.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\nПиши обычным текстом — роль выберется автоматически.\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/agents — список ролей\n/help — помощь';
+  if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) &&
+      !/^\/start(?:@[A-Za-z0-9_]+)?\s+(?:pro|agents|monkeys)(?:\s|$)/i.test(raw)) {
+    return '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь';
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    return 'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.';
+    return 'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.';
   }
   if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: DENY ALL\nPrompt injection: deterministic pre-filter + system firewall\nSecret leakage: output filter\nGroups: commands / mentions / replies only`;
@@ -1063,8 +1076,11 @@ async function homunculusReply(message, retryUpdate = null) {
       : agentId;
   };
 
-  if (/^\/agents(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    return ['🤖 QuantDeus: роли', ...agents.map(agent => `/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name || agent.role}`)].join('\n').slice(0, 3900);
+  if (
+    /^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) ||
+    /^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(raw)
+  ) {
+    return ['🐒 QuantDeus AI Fleet · мартышки', ...agents.map(agent => `/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name || agent.role}`), '', 'Напиши обычный вопрос — роль выберется автоматически.'].join('\n').slice(0, 3900);
   }
 
   const inputShield = shieldInput(raw);
@@ -1336,7 +1352,11 @@ export default async function handler(req, res) {
 
   try {
     const reply = await homunculusReply(message, update);
-    return webhookReply(res, message, reply);
+    const showMenu = (
+      /^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(?:agents|monkeys))?(?:\s|$)/i.test(rawText) ||
+      /^\/(?:help|agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
+    );
+    return webhookReply(res, message, reply, showMenu ? mainMenuReplyMarkup() : undefined);
   } catch (error) {
     console.error('[telegram-homunculus]', String(error?.message || error).slice(0, 800));
     return webhookReply(res, message, '⚠️ QuantDeus: обработчик временно недоступен, но webhook работает. Повтори сообщение чуть позже.');

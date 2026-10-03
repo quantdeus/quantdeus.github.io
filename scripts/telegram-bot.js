@@ -382,6 +382,17 @@ function proReplyMarkup() {
   return { inline_keyboard: rows };
 }
 
+function mainMenuReplyMarkup() {
+  const bot = PUBLIC_BOT_USERNAME || 'QuantDeus_bot';
+  return {
+    inline_keyboard: [
+      [{ text: '🐒 Мартышки · AI Fleet', url: `https://t.me/${bot}?start=agents` }],
+      [{ text: '⭐ QuantDeus Pro', url: `https://t.me/${bot}?start=pro` }],
+      [{ text: '🌐 QuantDeus', url: 'https://quantdeus.whf.bz/' }]
+    ]
+  };
+}
+
 function proText(entitlement = { plan: 'free' }) {
   const providers = proPaymentProviders();
   return [
@@ -446,6 +457,11 @@ async function handleMessage(message) {
     return;
   }
 
+  if (/^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(text)) {
+    await send(chatId, agentsText(), replyId, mainMenuReplyMarkup());
+    return;
+  }
+
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     const chosen = explicitAgent(text);
     if (chosen) {
@@ -453,25 +469,29 @@ async function handleMessage(message) {
       return;
     }
     await send(chatId,
-      '🖖 QuantDeus GitHub Bot online. Публичный чат открыт для всех.\n\n' +
+      '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n' +
+      '🐒 Мартышки AI Fleet работают прямо в этом боте.\n' +
+      '⭐ QuantDeus Pro доступен здесь же; админам и создателю — автоматически.\n\n' +
       `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}: public tools DENY ALL; prompt-injection и secret-exfiltration блокируются до LLM.\n\n` +
       'Пиши обычным текстом — я автоматически выберу роль гомункула по теме.\n' +
-      '/agents — список ролей\n' +
+      '/monkeys или /agents — мартышки AI Fleet\n' +
       '/pro — QuantDeus Free / Pro\n' +
       '/shield — статус защиты\n' +
       '/agent <id> <вопрос> — обратиться к конкретной роли\n' +
       '/propose <id> <идея> — proposal для admin-публикации\n' +
       '/status — состояние очереди\n' +
       '/task <id> <задача> — прямой task только для Telegram admin',
-      replyId
+      replyId,
+      mainMenuReplyMarkup()
     );
     return;
   }
 
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     await send(chatId,
-      'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n/propose <id> <идея> (admin publish)\n/status\n/task <id> <задача> (admin)\n\nЧат открыт всем; публичные пользователи не получают GitHub/WordPress/Vercel write-доступ.',
-      replyId
+      'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n/propose <id> <идея> (admin publish)\n/status\n/task <id> <задача> (admin)\n\nЧат открыт всем; публичные пользователи не получают GitHub/WordPress/Vercel write-доступ.',
+      replyId,
+      mainMenuReplyMarkup()
     );
     return;
   }
@@ -488,8 +508,8 @@ async function handleMessage(message) {
     return;
   }
 
-  if (/^\/agents(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
-    await send(chatId, agentsText(), replyId);
+  if (/^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    await send(chatId, agentsText(), replyId, mainMenuReplyMarkup());
     return;
   }
 
