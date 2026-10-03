@@ -18,6 +18,7 @@ const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
 const LIVE_RESEARCH_TIMEOUT_MS = 7000;
 const LIVE_RESEARCH_MAX_ITEMS = 8;
 const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
+const WORDPRESS_SITE_AI_VERIFY_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/verify-token';
 let jwksCache = [];
 let jwksAt = 0;
 let registryCache = null;
@@ -729,7 +730,7 @@ function validateRepositoryStatusOutput(text, snapshot, enabled) {
   return { ok: reasons.length === 0, reasons };
 }
 
-async function openClawInternalReply(agentId, requestedAgentId, system, user) {
+async function openClawInternalReply(agentId, requestedAgentId, system, user, source = 'telegram-internal', extraMetadata = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
   try {
@@ -746,10 +747,11 @@ async function openClawInternalReply(agentId, requestedAgentId, system, user) {
         profile: agentId,
         execution_mode: 'chat',
         metadata: {
-          source: 'telegram-internal',
+          source,
           agent_id: agentId,
           requested_agent_id: requestedAgentId,
-          delegated_from: requestedAgentId !== agentId ? requestedAgentId : ''
+          delegated_from: requestedAgentId !== agentId ? requestedAgentId : '',
+          ...extraMetadata
         },
         messages: [
           { role: 'system', content: system },
@@ -772,6 +774,82 @@ async function openClawInternalReply(agentId, requestedAgentId, system, user) {
     return '';
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function verifyWordPressSiteToken(token) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(WORDPRESS_SITE_AI_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ token }),
+      signal: controller.signal
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data?.ok !== true) {
+      const error = new Error('site_ai_wordpress_verification_failed');
+      error.status = response.status || 401;
+      throw error;
+    }
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function siteAiRequest(req, res) {
+  const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim().slice(0, 220);
+  const message = String(req.body?.message || '').replace(/\u0000/g, '').trim().slice(0, 6000);
+  if (!token) return res.status(401).json({ ok: false, error: 'site_token_required' });
+  if (message.length < 2) return res.status(400).json({ ok: false, error: 'message_required' });
+
+  try {
+    const entitlement = await verifyWordPressSiteToken(token);
+    const data = await registry();
+    const agents = data.agents || [];
+    const byId = new Map(agents.map(agent => [agent.id, agent]));
+    const requestedAgentId = autoAgent(message, byId);
+    const requested = byId.get(requestedAgentId);
+    const agentId = requested?.operational_status === 'medbay' && requested.temporary_delegate && byId.has(requested.temporary_delegate)
+      ? requested.temporary_delegate
+      : requestedAgentId;
+    const agent = byId.get(agentId) || agents[0] || { id: 'seven-of-nine', name: 'Seven of Nine', role: 'QuantDeus Coordinator' };
+    const system = [
+      `You are the QuantDeus homunculus "${agent.name || agent.id}".`,
+      `Authenticated website entitlement: ${String(entitlement.plan || 'free').toUpperCase()} (${String(entitlement.source || 'wordpress')}).`,
+      `Canonical id: ${agent.id}. Role: ${agent.role || agent.startup_title || 'QuantDeus agent'}.`,
+      'Answer the authenticated website user directly in the same language.',
+      'This website lane is chat-only and non-privileged. Do not claim external writes, deployments, spending, secret access, or irreversible actions.'
+    ].join('\n');
+    const answer = await openClawInternalReply(
+      agentId,
+      requestedAgentId,
+      system,
+      message,
+      'site-internal',
+      {
+        entitlement: String(entitlement.plan || 'free'),
+        entitlement_source: String(entitlement.source || 'wordpress'),
+        user_ref: 'wp:' + String(entitlement.user_id || 'unknown')
+      }
+    );
+    if (!answer) return res.status(503).json({ ok: false, error: 'site_ai_unavailable' });
+    return res.status(200).json({
+      ok: true,
+      plan: entitlement.plan || 'free',
+      source: entitlement.source || 'wordpress',
+      role: agentId,
+      text: answer
+    });
+  } catch (error) {
+    const status = Number(error?.status) || 503;
+    console.warn('[site-ai] status=error detail=' + String(error?.message || error).slice(0, 300));
+    return res.status(status >= 400 && status < 600 ? status : 503).json({
+      ok: false,
+      error: status === 401 ? 'site_auth_failed' : 'site_ai_unavailable'
+    });
   }
 }
 
@@ -978,6 +1056,8 @@ async function retrySmokeComplete(req, res) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+
+  if (req.body?.mode === 'site_ai') return siteAiRequest(req, res);
 
   if (/^Bearer\s+/i.test(String(req.headers.authorization || '')) && req.body?.mode === 'retry_smoke') {
     return retrySmokeStart(req, res);
