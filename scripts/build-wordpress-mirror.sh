@@ -107,4 +107,36 @@ for path in root.rglob("*.html"):
 print(f"mirror files: {sum(1 for p in root.rglob('*') if p.is_file())}")
 PY
 
+
+# Always ship a zero-dependency emergency entry point with the Pages artifact.
+# It intentionally does not depend on WordPress, JS, CSS, fonts, images, or third-party CDNs.
+mkdir -p "$OUT/lite"
+cat > "$OUT/lite/index.html" <<'HTML'
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="quantdeus-mirror" content="emergency-lite">
+<title>QuantDeus Lite — аварийный вход</title>
+</head>
+<body>
+<main>
+<h1>QuantDeus Lite</h1>
+<p><strong>Аварийный вход в QuantDeus.</strong> Эта страница работает без JavaScript, внешних таблиц стилей, шрифтов, изображений и аналитики.</p>
+<p>Если основной портал не открывается или отображает белый экран:</p>
+<ul>
+<li><a href="https://quantdeus.whf.bz/">Основной QuantDeus</a></li>
+<li><a href="https://quantdeus.whf.bz/lite/">WordPress Lite</a></li>
+<li><a href="https://vk.ru/neon_y2k">QuantDeus в VK</a></li>
+<li><a href="https://t.me/quantdeus_chat">QuantDeus Telegram</a></li>
+</ul>
+<p>Этот аварийный документ статичен и хранится независимо в GitHub Pages mirror.</p>
+</main>
+</body>
+</html>
+HTML
+printf 'ok\n' > "$OUT/healthz.txt"
+
 echo "Mirror built from $SOURCE into $OUT"
