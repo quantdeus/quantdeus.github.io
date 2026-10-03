@@ -38,6 +38,7 @@ function resolveActiveAgentId(agentId) {
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
 const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
+const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
 const RETRY_SMOKE_AUDIENCE = 'quantdeus-vercel-telegram';
 const RETRY_SMOKE_ENDPOINT = process.env.TELEGRAM_RETRY_SMOKE_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 
@@ -313,9 +314,31 @@ async function isTelegramAdmin(message) {
   }
 }
 
-function proText() {
+async function wordpressTelegramPlan(userId) {
+  const id = String(userId || '').trim();
+  if (!id) return { plan: 'free', source: 'unknown' };
+  try {
+    const response = await fetch(WORDPRESS_TELEGRAM_PLAN_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ telegram_id: id })
+    });
+    const data = await response.json().catch(() => ({}));
+    return response.ok && data?.ok === true
+      ? { plan: data.plan === 'pro' ? 'pro' : 'free', source: String(data.source || 'wordpress') }
+      : { plan: 'free', source: 'unavailable' };
+  } catch {
+    return { plan: 'free', source: 'unavailable' };
+  }
+}
+
+function proText(entitlement = { plan: 'free' }) {
   return [
     '⭐ QuantDeus Pro',
+    '',
+    entitlement.plan === 'pro'
+      ? '✅ Ваш тариф: PRO — активен. Для администраторов и создателя QuantDeus он предоставляется без оплаты.'
+      : '🆓 Ваш тариф: Free.',
     '',
     'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
     'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
@@ -378,7 +401,8 @@ async function handleMessage(message) {
   }
 
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
-    await send(chatId, proText(), replyId);
+    const entitlement = await wordpressTelegramPlan(message.from?.id);
+    await send(chatId, proText(entitlement), replyId);
     return;
   }
 

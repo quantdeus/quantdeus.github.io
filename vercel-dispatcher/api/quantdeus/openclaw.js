@@ -380,13 +380,14 @@ export default async function handler(req, res) {
     try {
       claims = await verify(authToken);
     } catch (githubOidcError) {
-      if (req.body?.metadata?.source !== 'telegram-internal') throw githubOidcError;
+      const internalSource = String(req.body?.metadata?.source || '');
+      if (!new Set(['telegram-internal', 'site-internal']).has(internalSource)) throw githubOidcError;
       const internalClaims = await verifyVercelInternal(authToken);
       vercelInternal = true;
       claims = {
         ...internalClaims,
-        actor: 'vercel-telegram',
-        workflow: 'vercel-internal-telegram',
+        actor: internalSource === 'site-internal' ? 'vercel-site' : 'vercel-telegram',
+        workflow: internalSource === 'site-internal' ? 'vercel-internal-site' : 'vercel-internal-telegram',
         event_name: 'vercel_internal',
         repository: REPOSITORY
       };
