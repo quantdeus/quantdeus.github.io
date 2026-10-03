@@ -1,37 +1,4 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b0b0b">
-  <meta name="robots" content="noindex,follow">
-  <title>QuantDeus — GitHub Pages Mirror</title>
-  <link id="canonical" rel="canonical" href="https://quantdeus.vercel.app/">
-  <style>
-    html,body{width:100%;height:100%;margin:0;background:#0b0b0b;overflow:hidden}
-    #mirror{position:fixed;inset:0;width:100%;height:100%;border:0;background:#fff}
-    #boot{position:fixed;inset:0;z-index:2;display:grid;place-items:center;background:#0b0b0b;color:#fff;font:500 16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;padding:24px}
-    #boot small{display:block;opacity:.65;margin-top:8px}
-    #boot a{color:#fff}
-    .ready #boot{display:none}
-  </style>
-</head>
-<body>
-  <div id="boot">🪞 QuantDeus mirror загружается…<small>Источник: quantdeus.vercel.app</small></div>
-  <iframe id="mirror" title="QuantDeus" allow="clipboard-read; clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  <noscript><p style="color:white;padding:24px;font-family:system-ui">Для зеркала нужен JavaScript. <a href="https://quantdeus.vercel.app/">Открыть QuantDeus</a>.</p></noscript>
-  <script>
-    (() => {
-      const origin = 'https://quantdeus.vercel.app';
-      const path = location.pathname + location.search + location.hash;
-      const target = new URL(path, origin).href;
-      const canonical = document.getElementById('canonical');
-      canonical.href = target;
-      const frame = document.getElementById('mirror');
-      frame.addEventListener('load', () => document.documentElement.classList.add('ready'), {once:true});
-      frame.src = target;
-      setTimeout(() => document.documentElement.classList.add('ready'), 8000);
-    })();
-  </script>
-</body>
-</html>
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#bdefff"><meta name="robots" content="index,follow,max-image-preview:large"><title>QuantDeus Portal</title><meta name="description" content="QuantDeus — Federation Portal, research, projects, AI Fleet, community and knowledge."><link rel="canonical" href="https://quantdeus.whf.bz/"><link rel="stylesheet" href="/assets/portal-shell.css"></head><body><div class="notice">🪞 Это публичное зеркало QuantDeus. Канонический production и все действия: <a href="https://quantdeus.whf.bz/">quantdeus.whf.bz</a>.</div>
+<header class="site-header"><div class="wrap head"><a class="brand" href="/"><span class="brand-orb"></span>QuantDeus</a><nav class="nav"><a href="/federation/">Federation</a><a href="/research/">Research</a><a href="/projects/">Projects</a><a href="/ai-fleet/">AI Fleet</a><a href="/community/">Community</a><a href="/knowledge/">Knowledge</a><a class="login" href="/login/">◉ Войти</a></nav></div></header>
+<main><section class="page-hero"><div class="wrap"><div class="crumb"><a href="/">QuantDeus</a> / Portal</div><h1 data-page-title>Portal</h1><p data-page-lead>QuantDeus Federation Portal.</p></div></section><section class="section"><div class="wrap"><div class="page-grid" data-page-grid></div><div class="actions"><a class="btn primary" style="background:#082d3a;color:#fff" href="/">← На главную</a><a class="btn primary" style="background:#0b91aa;color:#fff" href="/store/">Services</a><a class="btn primary" style="background:#245b70;color:#fff" href="/forum/">Forum</a></div></div></section></main>
+<footer class="footer"><div class="wrap footer-grid"><div><strong>QuantDeus // Neon Horizon</strong><div class="small">GitHub Pages read-only mirror 🪞</div></div><div class="small"><a href="https://quantdeus.github.io/">GitHub Pages mirror 🪞</a></div></div></footer><script src="/assets/portal-shell.js"></script></body></html>
