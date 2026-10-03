@@ -902,6 +902,53 @@ async function openClawInternalReply(agentId, requestedAgentId, system, user) {
   return openClawTransport(agentId, requestedAgentId, system, user, 'telegram-internal', {});
 }
 
+async function statelessPublicFallback(agentId, system, user) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 14000);
+  const endpoint = 'https://text.pollinations.ai/openai';
+  const model = String(process.env.POLLINATIONS_MODEL || 'openai').trim() || 'openai';
+  const key = String(process.env.POLLINATIONS_API_KEY || '').trim();
+  const headers = {
+    'content-type': 'application/json',
+    accept: 'application/json'
+  };
+  if (key) headers.authorization = 'Bearer ' + key;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: String(system || '').slice(0, 30000) },
+          { role: 'user', content: String(user || '').slice(0, 10000) }
+        ],
+        temperature: 0.2,
+        max_tokens: 1400,
+        stream: false,
+        private: true,
+        referrer: 'QuantDeus-Telegram'
+      }),
+      signal: controller.signal
+    });
+    const raw = await response.text();
+    let data = {};
+    try { data = JSON.parse(raw); } catch {}
+    const output = cleanModelText(data?.choices?.[0]?.message?.content || data?.text || '');
+    if (!response.ok || !output) {
+      throw new Error(`stateless_public_${response.status}: ${raw.slice(0, 500)}`);
+    }
+    console.info(`[telegram-llm] provider=stateless-pollinations model=${model} status=ok chars=${output.length} agent=${agentId}`);
+    return output;
+  } catch (error) {
+    console.warn('[telegram-llm] provider=stateless-pollinations status=error detail=' + String(error?.message || error).slice(0, 500));
+    return '';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function verifyWordPressSiteToken(token) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
@@ -1077,6 +1124,9 @@ async function homunculusReply(message, retryUpdate = null) {
     ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
     : query.slice(0, 7000);
   let answer = await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery);
+  if (!answer) {
+    answer = await statelessPublicFallback(agentId, system, groundedQuery);
+  }
   if (answer && statusRequest) {
     let validation = validateRepositoryStatusOutput(answer, repositoryGrounding, true);
     if (!validation.ok) {
@@ -1089,6 +1139,9 @@ async function homunculusReply(message, retryUpdate = null) {
         'Return a corrected answer only.'
       ].join('\n');
       answer = await openClawInternalReply(agentId, requestedAgentId, system, retryQuery);
+      if (!answer) {
+        answer = await statelessPublicFallback(agentId, system, retryQuery);
+      }
       validation = validateRepositoryStatusOutput(answer, repositoryGrounding, true);
       if (!validation.ok) {
         console.warn('[telegram-grounding] corrected status answer rejected: ' + validation.reasons.slice(0, 8).join(','));

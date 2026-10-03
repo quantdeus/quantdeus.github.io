@@ -450,6 +450,15 @@ if (fs.existsSync(telegramBridgePath)) {
     'Telegram OpenClaw lane passes the requested agent id explicitly instead of relying on an out-of-scope variable'
   );
   check(
+    telegramBridge.includes('async function statelessPublicFallback(agentId, system, user)') &&
+    telegramBridge.includes("'https://text.pollinations.ai/openai'") &&
+    telegramBridge.includes('private: true') &&
+    telegramBridge.includes('answer = await statelessPublicFallback(agentId, system, groundedQuery)') &&
+    telegramBridge.includes('shieldOutput(answer)'),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Telegram public chat has a stateless tool-less fallback behind the same output shield when OpenClaw is transiently unavailable'
+  );
+  check(
     telegramBridge.includes('async function dispatchTelegramRetry(update)') &&
     telegramBridge.includes("actions/workflows/telegram-bot.yml/dispatches") &&
     telegramBridge.includes('telegram_update_b64') &&
