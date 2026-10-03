@@ -53,7 +53,7 @@ jobs:
       - name: Ensure Telegram webhook points at Vercel
         if: ${{ inputs.telegram_update_b64 == '' }}
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_TOKEN || secrets.TELEGRAM }}
         run: node scripts/telegram-webhook-setup.js
 
       - name: Verify Vercel → Actions retry lane
@@ -64,7 +64,7 @@ jobs:
         if: ${{ inputs.telegram_update_b64 != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_TOKEN || secrets.TELEGRAM }}
           QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON: ${{ secrets.QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON }}
           TELEGRAM_ADMIN_USER_IDS: ${{ vars.TELEGRAM_ADMIN_USER_IDS }}
           TELEGRAM_UPDATE_B64: ${{ inputs.telegram_update_b64 }}
