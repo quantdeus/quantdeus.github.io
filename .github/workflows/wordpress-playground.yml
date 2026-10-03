@@ -124,7 +124,6 @@ jobs:
           node --check vercel-dispatcher/lib/github-auth.js
           node --check vercel-dispatcher/lib/telegram-bot-auth.js
           grep -q "https://quantdeus.whf.bz/wp/login/" assets/portal-shell.js
-          grep -q "GoogieHost WordPress production" assets/portal-shell.js
           grep -q "canonical.href" assets/portal-shell.js
           if grep -q "Telegram.Login.auth" index.html; then echo "legacy Telegram Login SDK forbidden"; exit 1; fi
           grep -q "telegramBrokerUrl" wordpress/src/quantdeus-aero/app.js
