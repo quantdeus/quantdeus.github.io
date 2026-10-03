@@ -730,7 +730,7 @@ function validateRepositoryStatusOutput(text, snapshot, enabled) {
   return { ok: reasons.length === 0, reasons };
 }
 
-async function openClawInternalReply(agentId, requestedAgentId, system, user, source = 'telegram-internal', extraMetadata = {}) {
+async function openClawTransport(agentId, requestedAgentId, system, user, source, extraMetadata = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
   try {
@@ -775,6 +775,10 @@ async function openClawInternalReply(agentId, requestedAgentId, system, user, so
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function openClawInternalReply(agentId, requestedAgentId, system, user) {
+  return openClawTransport(agentId, requestedAgentId, system, user, 'telegram-internal', {});
 }
 
 async function verifyWordPressSiteToken(token) {
@@ -823,7 +827,7 @@ async function siteAiRequest(req, res) {
       'Answer the authenticated website user directly in the same language.',
       'This website lane is chat-only and non-privileged. Do not claim external writes, deployments, spending, secret access, or irreversible actions.'
     ].join('\n');
-    const answer = await openClawInternalReply(
+    const answer = await openClawTransport(
       agentId,
       requestedAgentId,
       system,
