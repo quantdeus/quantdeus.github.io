@@ -1,11 +1,12 @@
 # QuantDeus Daily Context Checkpoint
 
-- date: 2026-09-29
+- date: 2026-10-03
 - canonical_repo: `quantdeus/quantdeus.github.io`
 - canonical_branch: `main`
-- canonical_url: `https://quantdeus.github.io/`
-- canonical_host: `GitHub Pages / repository root`
-- active_frontend: `QuantDeus Store + Telegram Mini App`
+- canonical_url: `https://quantdeus.whf.bz/`
+- canonical_host: `native WordPress production / whf.bz`
+- production_topology: `https://quantdeus.whf.bz = canonical WordPress production; https://quantdeus.vercel.app = reverse-proxy mirror + API/OpenClaw control plane; https://quantdeus.github.io = public mirror`
+- active_frontend: `native WordPress QuantDeus portal at https://quantdeus.whf.bz`
 - active_store_name: `QuantDeus Store`
 - telegram_mini_app_target: `https://quantdeus.github.io/telegram/`
 - coordination_url: `https://quantdeus.github.io/coordination/`
@@ -50,6 +51,8 @@
 - telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`
 - telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
+- wpvibe_mcp: `official remote MCP https://mcp.wpvibe.ai/mcp / shared operator OAuth / targets https://quantdeus.whf.bz`
+- wpvibe_swarm_policy: `hourly + autonomous scheduled lanes read-only; direct WordPress writes only for explicit owner-authorized trusted tasks; WPVibe approval gates remain mandatory; missing OAuth fails closed`
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
 - legacy_hermes_scheduler: `retired; obsolete Hermes cron workflow removed; legacy scripts/routes are archive-only; scheduled autonomy belongs to OpenClaw`
