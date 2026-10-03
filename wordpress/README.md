@@ -16,7 +16,7 @@ WordPress is the canonical QuantDeus application/CMS runtime after the owner-dec
 
 WordPress owns public pages, content, users, roles, services, guest inquiries, forum/community data and admin.
 
-GitHub remains canonical for source code, CI, issues, evidence and swarm coordination. Telegram/OpenClaw integrate through WordPress REST, GitHub-native paths, and the guarded WPVibe MCP lane. WPVibe operations target `https://quantdeus.whf.bz`; scheduled autonomous lanes are read-only, while direct production writes require an explicitly owner-authorized trusted task and WPVibe's approval gates.
+GitHub remains canonical for source code, CI, issues, evidence and swarm coordination. Telegram/OpenClaw integrate through WordPress REST, GitHub-native paths, and the guarded native WordPress MCP lane at `https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp`. All registered agents inherit this production target; scheduled autonomous lanes are read-only, while direct production writes require an explicitly owner-authorized trusted task plus configured MCP authorization.
 
 **Make.com is not an application dependency.** Do not add Make scenarios, Make webhooks, polling bridges or a second orchestration layer to the canonical WordPress runtime.
 
@@ -41,7 +41,7 @@ The production gate is satisfied by the owner-selected native WordPress host at 
 - PHP 8.3.x;
 - persistent WordPress database/uploads on the host;
 - native `/wp-admin/`;
-- WPVibe plugin connected;
+- free/self-hosted WordPress MCP plugins connected; WPVibe is not required;
 - Vercel and GitHub Pages retained as mirrors/control surfaces rather than the canonical WordPress origin.
 
-Production-changing agent work must preserve rollback evidence and follow the WPVibe/OpenClaw guardrails documented in `docs/VERCEL_WORDPRESS_PRODUCTION.md`.
+Production-changing agent work must preserve rollback evidence and follow the native WordPress MCP/OpenClaw guardrails documented in `docs/VERCEL_WORDPRESS_PRODUCTION.md`.
