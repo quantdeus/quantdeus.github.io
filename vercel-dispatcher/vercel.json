@@ -13,5 +13,11 @@
     "api/**/*.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/:path((?!api/).*)",
+      "destination": "https://quantdeus.whf.bz/:path*"
+    }
+  ]
 }
