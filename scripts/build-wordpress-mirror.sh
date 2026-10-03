@@ -57,6 +57,9 @@ print(f"mirror URLs: {len(urls)}")
 PY
 
 wget \
+  --timeout=15 \
+  --tries=2 \
+  --waitretry=1 \
   --page-requisites \
   --convert-links \
   --adjust-extension \
