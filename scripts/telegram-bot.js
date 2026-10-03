@@ -37,6 +37,7 @@ function resolveActiveAgentId(agentId) {
 
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
+const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
 const RETRY_SMOKE_AUDIENCE = 'quantdeus-vercel-telegram';
 const RETRY_SMOKE_ENDPOINT = process.env.TELEGRAM_RETRY_SMOKE_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 
@@ -312,6 +313,18 @@ async function isTelegramAdmin(message) {
   }
 }
 
+function proText() {
+  return [
+    '⭐ QuantDeus Pro',
+    '',
+    'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
+    'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
+    '',
+    'Тариф, условия и активация:',
+    QUANTDEUS_PRO_URL
+  ].join('\n');
+}
+
 function agentsText() {
   const groups = new Map();
   for (const agent of agents) {
@@ -346,6 +359,7 @@ async function handleMessage(message) {
       '🖖 QuantDeus GitHub Bot online.\n\n' +
       'Пиши обычным текстом — я автоматически выберу роль гомункула по теме.\n' +
       '/agents — список ролей\n' +
+      '/pro — QuantDeus Free / Pro\n' +
       '/agent <id> <вопрос> — обратиться к конкретной роли\n' +
       '/propose <id> <идея> — создать proposal в GitHub\n' +
       '/status — состояние очереди\n' +
@@ -357,9 +371,14 @@ async function handleMessage(message) {
 
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     await send(chatId,
-      'Команды QuantDeus:\n/agents\n/agent <id> <вопрос>\n/propose <id> <идея>\n/status\n/task <id> <задача> (admin)\n\nОбычный текст маршрутизируется автоматически.',
+      'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/agent <id> <вопрос>\n/propose <id> <идея>\n/status\n/task <id> <задача> (admin)\n\nОбычный текст маршрутизируется автоматически.',
       replyId
     );
+    return;
+  }
+
+  if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    await send(chatId, proText(), replyId);
     return;
   }
 
