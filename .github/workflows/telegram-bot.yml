@@ -54,6 +54,7 @@ jobs:
         if: ${{ inputs.telegram_update_b64 == '' }}
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_TOKEN || secrets.TELEGRAM }}
+          TELEGRAM_STORE_BOT_TOKEN: ${{ secrets.QUANTDEUS_STORE_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_STORE_BOT_TOKEN || secrets.QUANTDEUS_STORE_BOT_TOKEN || secrets.STORE_TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_STORE_TOKEN }}
         run: node scripts/telegram-webhook-setup.js
 
       - name: Verify Vercel → Actions retry lane
