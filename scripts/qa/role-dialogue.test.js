@@ -43,6 +43,26 @@ test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
   assert.equal(seven.actions.length,2);
   assert.match(seven.analysis,/observed fields/);
 });
+test('role line protocol accepts single-line labelled output',async()=>{
+  const line={...valid,text:'SUMMARY: Sherlock is alive; FINDING: One concrete issue remains; NEXT_STEP: Verify the issue comment'};
+  const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>line}});
+  assert.equal(result.status,'LLM');
+  assert.equal(result.findings.length,1);
+  assert.match(result.next_step,/Verify/);
+});
+test('role labels inside payload text are not treated as protocol fields',async()=>{
+  const line={...valid,text:'SUMMARY: The central finding: no artifact exists; FINDING: Actual issue remains; NEXT_STEP: Verify one issue'};
+  const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>line}});
+  assert.equal(result.summary,'The central finding: no artifact exists');
+  assert.deepEqual(result.findings,['Actual issue remains']);
+  assert.equal(result.next_step,'Verify one issue');
+});
+test('role line protocol preserves payload-leading hyphens',async()=>{
+  const line={...valid,text:'SUMMARY: Changes are bounded; FINDING: -5% change observed; NEXT_STEP: --dry-run verify command'};
+  const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>line}});
+  assert.equal(result.findings[0],'-5% change observed');
+  assert.equal(result.next_step,'--dry-run verify command');
+});
 test('role dialogue verifies real assistant turn, model and no-tools runtime',async()=>{
   let calls=0;
   const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async opts=>{
