@@ -402,6 +402,16 @@ if (fs.existsSync(telegramBridgePath)) {
     'Vercel Telegram bot is open to all users behind deterministic injection filtering, group addressing and output secret protection'
   );
   check(
+    telegramBridge.includes('async function telegramOutbound') &&
+    telegramBridge.includes("await telegram(botToken, 'sendMessage', payload)") &&
+    telegramBridge.includes("outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback'") &&
+    telegramBridge.includes("link_preview_options: { is_disabled: true }") &&
+    telegramBridge.includes("mode=webhook-response status=fallback") &&
+    !telegramBridge.includes('disable_web_page_preview: true'),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Telegram public replies prefer observable Bot API delivery and retain only a minimal current-field webhook-response fallback'
+  );
+  check(
     telegramBridge.includes("/^\\/pro") &&
     telegramBridge.includes("setMyCommands") &&
     telegramBridge.includes("command: 'pro'") &&
