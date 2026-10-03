@@ -38,6 +38,7 @@ function resolveActiveAgentId(agentId) {
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
 const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
+const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.whf.bz/account/';
 const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
 const RETRY_SMOKE_AUDIENCE = 'quantdeus-vercel-telegram';
 const RETRY_SMOKE_ENDPOINT = process.env.TELEGRAM_RETRY_SMOKE_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
@@ -133,13 +134,14 @@ async function telegram(method, payload = {}) {
   return body.result;
 }
 
-async function send(chatId, text, replyToMessageId = null) {
+async function send(chatId, text, replyToMessageId = null, replyMarkup = null) {
   const payload = {
     chat_id: chatId,
     text: String(text).slice(0, 4096),
     disable_web_page_preview: true,
   };
   if (replyToMessageId) payload.reply_parameters = { message_id: replyToMessageId };
+  if (replyMarkup) payload.reply_markup = replyMarkup;
   return telegram('sendMessage', payload);
 }
 
@@ -332,7 +334,54 @@ async function wordpressTelegramPlan(userId) {
   }
 }
 
+function httpsUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function proPaymentProviders() {
+  const raw = String(process.env.QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON || '').trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(0, 6).map((item, index) => {
+      const label = String(item?.label || item?.name || `Касса ${index + 1}`)
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 40);
+      const monthUrl = httpsUrl(item?.month_url);
+      const yearUrl = httpsUrl(item?.year_url);
+      return monthUrl || yearUrl ? { label, monthUrl, yearUrl } : null;
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function proReplyMarkup() {
+  const rows = [];
+  for (const provider of proPaymentProviders()) {
+    if (provider.monthUrl) {
+      rows.push([{ text: `💳 ${provider.label} · 990 ₽/мес`, url: provider.monthUrl }]);
+    }
+    if (provider.yearUrl) {
+      rows.push([{ text: `💳 ${provider.label} · 9 900 ₽/год`, url: provider.yearUrl }]);
+    }
+  }
+  rows.push([
+    { text: '👤 Мой аккаунт', url: QUANTDEUS_ACCOUNT_URL },
+    { text: 'ℹ️ О Pro', url: QUANTDEUS_PRO_URL }
+  ]);
+  return { inline_keyboard: rows };
+}
+
 function proText(entitlement = { plan: 'free' }) {
+  const providers = proPaymentProviders();
   return [
     '⭐ QuantDeus Pro',
     '',
@@ -343,7 +392,11 @@ function proText(entitlement = { plan: 'free' }) {
     'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
     'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
     '',
-    'Тариф, условия и активация:',
+    providers.length
+      ? 'Выберите тариф и кассу кнопкой ниже. Оплата открывается из этого же бота, который используется для авторизации QuantDeus.'
+      : 'Кассы пока не настроены в защищённой конфигурации. После подключения платёжных провайдеров кнопки оплаты появятся здесь автоматически.',
+    '',
+    'Тариф и условия:',
     QUANTDEUS_PRO_URL
   ].join('\n');
 }
@@ -371,6 +424,14 @@ async function handleMessage(message) {
   const chatId = message.chat.id;
   const replyId = message.message_id;
   const username = String(message.from.username || '').replace(/[^A-Za-z0-9_]/g, '');
+
+  if (/^\/start(?:@[A-Za-z0-9_]+)?\s+pro(?:\s|$)/i.test(text)) {
+    const entitlement = (await isTelegramAdmin(message))
+      ? { plan: 'pro', source: 'telegram-admin' }
+      : await wordpressTelegramPlan(message.from?.id);
+    await send(chatId, proText(entitlement), replyId, proReplyMarkup());
+    return;
+  }
 
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     const chosen = explicitAgent(text);
@@ -404,7 +465,7 @@ async function handleMessage(message) {
     const entitlement = (await isTelegramAdmin(message))
       ? { plan: 'pro', source: 'telegram-admin' }
       : await wordpressTelegramPlan(message.from?.id);
-    await send(chatId, proText(entitlement), replyId);
+    await send(chatId, proText(entitlement), replyId, proReplyMarkup());
     return;
   }
 

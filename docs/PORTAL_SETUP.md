@@ -15,6 +15,7 @@ Set these in the Vercel project whose root directory is `vercel-dispatcher`:
 | Variable | Purpose |
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | Verify signed Telegram Mini App data. Secret. |
+| `QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON` | Secret JSON registry of Pro checkout providers used by the auth bot. Each entry may expose an HTTPS `month_url` and/or `year_url`; never commit real checkout URLs or provider credentials. |
 | `QUANTDEUS_GITHUB_TOKEN` | GitHub API access: Issues read/write on `quantdeus/quantdeus.github.io`, Contents read on that repo, and Contents read/write on the private order repo. Secret. |
 | `QUANTDEUS_OWNER_TELEGRAM_IDS` | Comma-separated owner IDs. Owner role cannot be changed through the site. |
 | `QUANTDEUS_ADMIN_TELEGRAM_IDS` | Optional comma-separated admin IDs. |
@@ -25,7 +26,7 @@ Set these in the Vercel project whose root directory is `vercel-dispatcher`:
 | `SBP_RECIPIENT` | Optional. Required only for fixed-price checkout. |
 | `QUANTDEUS_ORDERS_REPOSITORY` | Optional private repo override; defaults to `quantdeus/quantdeus_core.pulse`. |
 
-Do not put Telegram IDs, tokens, bank credentials, or phone configuration in HTML, JSON committed to the public repository, or client-side environment variables. Fixed product amounts are read server-side from `store/products.json`; an amount sent by the browser is ignored. Quote requests have no amount and do not expose payment instructions.
+The Pro page links to `https://t.me/QuantDeus_bot?start=pro`. Both Telegram execution lanes read the same protected `QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON` registry, so adding or disabling a cashier does not require changing public source. The bot accepts at most six providers and only HTTPS checkout URLs.\n\nDo not put Telegram IDs, tokens, bank credentials, or phone configuration in HTML, JSON committed to the public repository, or client-side environment variables. Fixed product amounts are read server-side from `store/products.json`; an amount sent by the browser is ignored. Quote requests have no amount and do not expose payment instructions.
 
 ## Product catalog
 
