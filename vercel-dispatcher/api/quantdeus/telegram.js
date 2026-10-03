@@ -261,6 +261,7 @@ function runtimeTelegramBotToken() {
   return String(
     process.env.TELEGRAM_BOT_TOKEN ||
     process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
+    process.env.TELEGRAM_TOKEN ||
     process.env.TELEGRAM ||
     ''
   ).trim();
@@ -1183,6 +1184,55 @@ async function homunculusReply(message, retryUpdate = null) {
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${guarded.text}`.slice(0, 3900);
 }
 
+function fastPublicCommandReply(raw) {
+  const text = String(raw || '').trim();
+  if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text) &&
+      !/^\/start(?:@[A-Za-z0-9_]+)?\s+(?:(?:pro|agents|monkeys)(?:\s|$)|qdl_|agent_)/i.test(text)) {
+    return {
+      text: '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь',
+      menu: true
+    };
+  }
+  if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    return {
+      text: 'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.',
+      menu: true
+    };
+  }
+  if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    return {
+      text: `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: DENY ALL\nPrompt injection: deterministic pre-filter + system firewall\nSecret leakage: output filter\nGroups: commands / mentions / replies only`,
+      menu: false
+    };
+  }
+  if (
+    /^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text) ||
+    /^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(text)
+  ) {
+    return {
+      text: [
+        '🐒 QuantDeus AI Fleet · мартышки',
+        '/seven_of_nine — координатор QuantDeus',
+        '/control_tower — инфраструктура, GitHub, Vercel, Telegram',
+        '/sherlock — расследования и научная дедукция',
+        '/tuvok — логика, guardrails, безопасность',
+        '/emh — дипломатия, medbay, мягкая проверка',
+        '',
+        'Напиши обычный вопрос — роль выберется автоматически.'
+      ].join('\n'),
+      menu: true
+    };
+  }
+  return null;
+}
+
+async function fastTelegramEntitlement(message) {
+  return Promise.race([
+    telegramEntitlement(message),
+    new Promise(resolve => setTimeout(() => resolve({ plan: 'free', source: 'timeout-fast-path' }), 1200))
+  ]);
+}
+
 async function telegramOutbound(res, message, text, replyMarkup = null, kind = 'reply') {
   const payload = {
     chat_id: message.chat.id,
@@ -1342,11 +1392,16 @@ export default async function handler(req, res) {
     }
   }
 
+  const fastReply = fastPublicCommandReply(rawText);
+  if (fastReply) {
+    return webhookReply(res, message, fastReply.text, fastReply.menu ? mainMenuReplyMarkup() : undefined);
+  }
+
   if (
     /^\/start(?:@[A-Za-z0-9_]+)?\s+pro(?:\s|$)/i.test(rawText) ||
     /^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
   ) {
-    const entitlement = await telegramEntitlement(message);
+    const entitlement = await fastTelegramEntitlement(message);
     return webhookReply(res, message, proText(entitlement), proReplyMarkup());
   }
 
