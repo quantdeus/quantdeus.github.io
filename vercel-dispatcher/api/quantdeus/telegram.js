@@ -140,6 +140,20 @@ async function wordpressTelegramPlan(userId) {
   }
 }
 
+function privilegedTelegramRole(userId) {
+  const id = String(userId || '').trim();
+  if (!id) return '';
+  const ids = name => new Set(
+    String(process.env[name] || '')
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean)
+  );
+  if (ids('QUANTDEUS_OWNER_TELEGRAM_IDS').has(id)) return 'owner';
+  if (ids('QUANTDEUS_ADMIN_TELEGRAM_IDS').has(id) || ids('TELEGRAM_ADMIN_USER_IDS').has(id)) return 'admin';
+  return '';
+}
+
 async function telegramGroupAdmin(message) {
   if (!message?.chat || !message?.from || String(message.chat.type || 'private') === 'private') return false;
   const botToken = runtimeTelegramBotToken();
@@ -157,6 +171,8 @@ async function telegramGroupAdmin(message) {
 }
 
 async function telegramEntitlement(message) {
+  const privilegedRole = privilegedTelegramRole(message?.from?.id);
+  if (privilegedRole) return { plan: 'pro', source: 'telegram-' + privilegedRole };
   const wordpress = await wordpressTelegramPlan(message?.from?.id);
   if (wordpress.plan === 'pro') return wordpress;
   if (await telegramGroupAdmin(message)) return { plan: 'pro', source: 'telegram-admin' };
