@@ -12,6 +12,7 @@ import {
   shieldInput,
   shieldOutput
 } from '../../lib/prompt-shield.js';
+import { roleForTelegramId } from '../../lib/telegram-auth.js';
 
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -69,14 +70,16 @@ function proPaymentProviders() {
   }
 }
 
-function proReplyMarkup() {
+function proReplyMarkup(entitlement = { plan: 'free' }) {
   const rows = [];
-  for (const provider of proPaymentProviders()) {
-    if (provider.monthUrl) {
-      rows.push([{ text: `💳 ${provider.label} · 990 ₽/мес`, url: provider.monthUrl }]);
-    }
-    if (provider.yearUrl) {
-      rows.push([{ text: `💳 ${provider.label} · 9 900 ₽/год`, url: provider.yearUrl }]);
+  if (entitlement.plan !== 'pro') {
+    for (const provider of proPaymentProviders()) {
+      if (provider.monthUrl) {
+        rows.push([{ text: `💳 ${provider.label} · 990 ₽/мес`, url: provider.monthUrl }]);
+      }
+      if (provider.yearUrl) {
+        rows.push([{ text: `💳 ${provider.label} · 9 900 ₽/год`, url: provider.yearUrl }]);
+      }
     }
   }
   rows.push([
@@ -97,21 +100,41 @@ function mainMenuReplyMarkup() {
   };
 }
 
-function proText(entitlement = { plan: 'free' }) {
+function proText(entitlement = { role: 'member', plan: 'free', verified: true }) {
   const providers = proPaymentProviders();
+  const role = String(entitlement.role || 'member').toLowerCase();
+  const roleLabels = {
+    owner: 'OWNER / FOUNDER / CEO',
+    admin: 'ADMIN',
+    moderator: 'MODERATOR',
+    member: 'MEMBER',
+    guest: 'GUEST'
+  };
+  const roleLabel = roleLabels[role] || role.toUpperCase();
+  const statusLine = entitlement.plan === 'pro'
+    ? '✅ Ваш тариф: PRO — активен.'
+    : entitlement.verified === false
+      ? '⚠️ Тариф временно не подтверждён. До проверки доступ работает в безопасном Free-режиме, но это не означает понижение роли.'
+      : '🆓 Ваш тариф: Free.';
+  const entitlementNote = entitlement.plan === 'pro' && ['owner', 'admin'].includes(role)
+    ? '👑 Pro закреплён за ролью автоматически и не требует оплаты.'
+    : entitlement.plan === 'pro'
+      ? '⭐ Pro активирован для этой учётной записи.'
+      : providers.length
+        ? 'Для обычных пользователей Pro можно подключить через кассу ниже.'
+        : 'Кассы пока не настроены в защищённой конфигурации.';
+
   return [
     '⭐ QuantDeus Pro',
     '',
-    entitlement.plan === 'pro'
-      ? '✅ Ваш тариф: PRO — активен. Для администраторов и создателя QuantDeus он предоставляется без оплаты.'
-      : '🆓 Ваш тариф: Free.',
+    '🪪 Роль: ' + roleLabel,
+    statusLine,
+    entitlementNote,
     '',
     'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
     'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
     '',
-    providers.length
-      ? 'Выберите тариф и кассу кнопкой ниже. Оплата открывается из этого же бота, который используется для авторизации QuantDeus.'
-      : 'Кассы пока не настроены в защищённой конфигурации. После подключения платёжных провайдеров кнопки оплаты появятся здесь автоматически.',
+    'RBAC и тариф разделены: покупка Pro не выдаёт права администратора.',
     '',
     'Тариф и условия:',
     QUANTDEUS_PRO_URL
@@ -120,38 +143,45 @@ function proText(entitlement = { plan: 'free' }) {
 
 async function wordpressTelegramPlan(userId) {
   const id = String(userId || '').trim();
-  if (!id) return { plan: 'free', source: 'unknown' };
+  if (!id) return { role: 'guest', plan: 'free', source: 'unknown', verified: false };
   const cached = telegramPlanCache.get(id);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
   try {
-    const response = await fetch(WORDPRESS_TELEGRAM_PLAN_URL, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({ telegram_id: id })
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4500);
+    let response;
+    try {
+      response = await fetch(WORDPRESS_TELEGRAM_PLAN_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ telegram_id: id }),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     const data = await response.json().catch(() => ({}));
+    const role = ['owner', 'admin', 'moderator', 'member'].includes(String(data?.role || '').toLowerCase())
+      ? String(data.role).toLowerCase()
+      : 'member';
     const value = response.ok && data?.ok === true
-      ? { plan: data.plan === 'pro' ? 'pro' : 'free', source: String(data.source || 'wordpress') }
-      : { plan: 'free', source: 'unavailable' };
+      ? {
+          role,
+          plan: data.plan === 'pro' || ['owner', 'admin'].includes(role) ? 'pro' : 'free',
+          source: String(data.source || 'wordpress'),
+          verified: true
+        }
+      : { role: 'member', plan: 'free', source: 'unavailable', verified: false };
     telegramPlanCache.set(id, { expiresAt: Date.now() + 120000, value });
     return value;
   } catch {
-    return { plan: 'free', source: 'unavailable' };
+    return { role: 'member', plan: 'free', source: 'unavailable', verified: false };
   }
 }
 
 function privilegedTelegramRole(userId) {
-  const id = String(userId || '').trim();
-  if (!id) return '';
-  const ids = name => new Set(
-    String(process.env[name] || '')
-      .split(',')
-      .map(value => value.trim())
-      .filter(Boolean)
-  );
-  if (ids('QUANTDEUS_OWNER_TELEGRAM_IDS').has(id)) return 'owner';
-  if (ids('QUANTDEUS_ADMIN_TELEGRAM_IDS').has(id) || ids('TELEGRAM_ADMIN_USER_IDS').has(id)) return 'admin';
-  return '';
+  const role = roleForTelegramId(userId);
+  return ['owner', 'admin', 'moderator'].includes(role) ? role : '';
 }
 
 async function telegramGroupAdmin(message) {
@@ -171,12 +201,26 @@ async function telegramGroupAdmin(message) {
 }
 
 async function telegramEntitlement(message) {
-  const privilegedRole = privilegedTelegramRole(message?.from?.id);
-  if (privilegedRole) return { plan: 'pro', source: 'telegram-' + privilegedRole };
+  const localRole = privilegedTelegramRole(message?.from?.id);
+  if (['owner', 'admin'].includes(localRole)) {
+    return { role: localRole, plan: 'pro', source: 'telegram-' + localRole, verified: true };
+  }
+
   const wordpress = await wordpressTelegramPlan(message?.from?.id);
-  if (wordpress.plan === 'pro') return wordpress;
-  if (await telegramGroupAdmin(message)) return { plan: 'pro', source: 'telegram-admin' };
-  return wordpress;
+  const role = wordpress.role && wordpress.role !== 'member'
+    ? wordpress.role
+    : (localRole || wordpress.role || 'member');
+
+  if (['owner', 'admin'].includes(role)) {
+    return { ...wordpress, role, plan: 'pro', verified: true };
+  }
+  if (wordpress.plan === 'pro') {
+    return { ...wordpress, role, plan: 'pro' };
+  }
+  if (await telegramGroupAdmin(message)) {
+    return { role: 'admin', plan: 'pro', source: 'telegram-group-admin', verified: true };
+  }
+  return { ...wordpress, role };
 }
 
 function decodeJsonPart(value) {
@@ -1271,10 +1315,7 @@ function fastPublicCommandReply(raw) {
 }
 
 async function fastTelegramEntitlement(message) {
-  return Promise.race([
-    telegramEntitlement(message),
-    new Promise(resolve => setTimeout(() => resolve({ plan: 'free', source: 'timeout-fast-path' }), 1200))
-  ]);
+  return telegramEntitlement(message);
 }
 
 async function telegramOutbound(res, message, text, replyMarkup = null, kind = 'reply') {
@@ -1446,7 +1487,7 @@ export default async function handler(req, res) {
     /^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
   ) {
     const entitlement = await fastTelegramEntitlement(message);
-    return webhookReply(res, message, proText(entitlement), proReplyMarkup());
+    return webhookReply(res, message, proText(entitlement), proReplyMarkup(entitlement));
   }
 
   try {
