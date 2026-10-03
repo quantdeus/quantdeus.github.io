@@ -85,4 +85,5 @@ function shieldOutput(value) {
   }
   return { ok: true, reasons: [], text };
 }
-\nmodule.exports = { QUANTDEUS_SHIELD_VERSION, PUBLIC_SAFETY_SYSTEM_PROMPT, shieldInput, shieldOutput };\n
+
+module.exports = { QUANTDEUS_SHIELD_VERSION, PUBLIC_SAFETY_SYSTEM_PROMPT, shieldInput, shieldOutput };
