@@ -1,0 +1,75 @@
+name: QuantDeus Live WordPress Mirror 🪞
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build-wordpress-mirror.sh'
+      - '.github/workflows/pages-live-mirror.yml'
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: quantdeus-live-pages-mirror
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify canonical production
+        run: |
+          set -euo pipefail
+          curl -fsSIL --max-time 20 https://quantdeus.whf.bz/ >/tmp/qd-production-headers.txt
+          grep -qi '^HTTP/.* 2' /tmp/qd-production-headers.txt
+
+      - name: Build live mirror snapshot
+        env:
+          MIRROR_SOURCE: https://quantdeus.whf.bz
+        run: bash scripts/build-wordpress-mirror.sh _site
+
+      - name: Validate mirror artifact
+        run: |
+          set -euo pipefail
+          test -s _site/index.html
+          grep -q 'quantdeus-mirror' _site/index.html
+          ! grep -RIl 'quantdeus.vercel.app' _site --include='*.html' | grep -q .
+          ! grep -RIl 'quantdeus.whf.bz/wp/' _site --include='*.html' | grep -q .
+          echo "Live mirror artifact OK"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Switch Pages to workflow deployments
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method PUT \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${{ github.repository }}/pages" \
+            -f build_type=workflow
+
+      - name: Deploy mirror to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
