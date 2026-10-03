@@ -58,27 +58,28 @@ check(cognitiveSitePrompt.includes('registry.collective_cognition?.runtime_direc
 check(cognitiveOpenClawClient.includes('agentRegistry.collective_cognition?.runtime_directive') && cognitiveOpenClawClient.includes('Collective cognition:'), 'scripts/openclaw-office-client.js', 'OpenClaw Office consumes canonical collective cognition directive');
 check(cognitiveTelegram.includes('data.collective_cognition?.runtime_directive') && cognitiveTelegram.includes('Collective cognition:'), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram homunculus prompt consumes canonical collective cognition directive');
 check(
-  openclawRuntime.includes("url: 'https://mcp.wpvibe.ai/mcp'") &&
-  openclawRuntime.includes("auth: 'oauth'") &&
-  openclawRuntime.includes('const wpvibeReadOnly = hourlyOffice || autonomousWorker') &&
+  openclawRuntime.includes("url: 'https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp'") &&
+  openclawRuntime.includes('const wordpressReadOnly = hourlyOffice || autonomousWorker') &&
+  openclawRuntime.includes('const wordpressWriteCapable = !wordpressReadOnly && Boolean(wordpressMcpAuth)') &&
   openclawRuntime.includes("Canonical public production and native WordPress admin: https://quantdeus.whf.bz") &&
-  openclawRuntime.includes("wpvibe_mode"),
+  openclawRuntime.includes("wordpress_mode"),
   'vercel-dispatcher/api/quantdeus/openclaw.js',
-  'trusted OpenClaw config declares guarded WPVibe OAuth MCP with read-only autonomous lanes and whf.bz production grounding'
+  'trusted OpenClaw config declares native WordPress MCP with read-only autonomous lanes and auth-gated owner writes'
 );
 check(
   cronContext.includes('- canonical_url: `https://quantdeus.whf.bz/`') &&
-  cronContext.includes('wpvibe_mcp:') &&
+  cronContext.includes('native_wordpress_mcp:') &&
+  cronContext.includes('wordpress_mcp_swarm_policy:') &&
   cronContext.includes('https://quantdeus.vercel.app = reverse-proxy mirror + API/OpenClaw control plane') &&
   cronContext.includes('https://quantdeus.github.io = public mirror'),
   'coordination/cron-context.md',
-  'swarm context names whf.bz as canonical production and Vercel/GitHub as mirrors'
+  'swarm context names whf.bz as canonical production, native WordPress MCP as the swarm lane, and Vercel/GitHub as mirrors'
 );
 check(
   wordpressReadme.includes('Current production is the native WordPress runtime at `https://quantdeus.whf.bz`') &&
-  wordpressReadme.includes('guarded WPVibe MCP lane'),
+  wordpressReadme.includes('guarded native WordPress MCP lane'),
   'wordpress/README.md',
-  'WordPress runtime documentation matches production and guarded WPVibe topology'
+  'WordPress runtime documentation matches production and native MCP topology'
 );
 
 check(
