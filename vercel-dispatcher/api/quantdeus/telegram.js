@@ -988,20 +988,12 @@ async function siteAiRequest(req, res) {
 }
 
 async function homunculusReply(message, retryUpdate = null) {
-  const data = await registry();
-  const agents = data.agents || [];
-  const collectiveDirective = String(data.collective_cognition?.runtime_directive || '').trim();
-  const byId = new Map(agents.map(agent => [agent.id, agent]));
-  const resolveActiveAgentId = agentId => {
-    const candidate = byId.get(agentId);
-    return candidate?.operational_status === 'medbay' && candidate.temporary_delegate && byId.has(candidate.temporary_delegate)
-      ? candidate.temporary_delegate
-      : agentId;
-  };
   const raw = String(message.text || '').trim();
 
-  if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) && !explicitAgent(raw, byId)) {
-    return '🖖 QuantDeus Homunculi online. Публичный чат открыт для всех.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\nПиши обычным текстом — роль выберется автоматически.\n/agents — список ролей\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/agent <id> <вопрос> — обратиться к конкретному гомункулу\n/help — помощь';
+  // Keep public control commands independent from GitHub registry, LLM providers and
+  // research services so Telegram can always receive a fast HTTP 200 response.
+  if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) && !/^\/start(?:@[A-Za-z0-9_]+)?\s+pro(?:\s|$)/i.test(raw)) {
+    return '🖖 QuantDeus Homunculi online. Публичный чат открыт для всех.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\nПиши обычным текстом — роль выберется автоматически.\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/agents — список ролей\n/help — помощь';
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return 'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.';
@@ -1012,6 +1004,18 @@ async function homunculusReply(message, retryUpdate = null) {
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return proText(await telegramEntitlement(message));
   }
+
+  const data = await registry();
+  const agents = data.agents || [];
+  const collectiveDirective = String(data.collective_cognition?.runtime_directive || '').trim();
+  const byId = new Map(agents.map(agent => [agent.id, agent]));
+  const resolveActiveAgentId = agentId => {
+    const candidate = byId.get(agentId);
+    return candidate?.operational_status === 'medbay' && candidate.temporary_delegate && byId.has(candidate.temporary_delegate)
+      ? candidate.temporary_delegate
+      : agentId;
+  };
+
   if (/^\/agents(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return ['🤖 QuantDeus: роли', ...agents.map(agent => `/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name || agent.role}`)].join('\n').slice(0, 3900);
   }
@@ -1101,11 +1105,9 @@ async function homunculusReply(message, retryUpdate = null) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n🛰️ Основной LLM-маршрут перегружен. Запрос передан в резервный GitHub retry lane; ответ придёт отдельным сообщением.`;
     }
     if (retryUpdate) {
-      const retryable = new Error('telegram_retry_transport_unavailable');
-      retryable.code = 'TELEGRAM_RETRYABLE';
-      throw retryable;
+      console.warn('[telegram-redelivery] status=suppressed reason=retry_transport_unavailable update_id=' + String(retryUpdate.update_id || 'unknown'));
     }
-    return `${agent.emoji || '🤖'} ${agent.name || agent.id}\nНет проверенного живого LLM-маршрута. Дохлые fallback-модели отключены; требуется провайдер, прошедший health probe.`;
+    return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n⚠️ AI-маршрут временно недоступен. Telegram webhook подтверждён; повтори запрос чуть позже.`;
   }
   const guarded = shieldOutput(answer);
   if (!guarded.ok) console.warn('[quantdeus-shield] channel=telegram status=output-blocked reasons=' + guarded.reasons.join(','));
@@ -1283,16 +1285,7 @@ export default async function handler(req, res) {
     const reply = await homunculusReply(message, update);
     return webhookReply(res, message, reply);
   } catch (error) {
-    if (error?.code === 'TELEGRAM_RETRYABLE') {
-      console.warn('[telegram-redelivery] status=retryable update_id=' + update.update_id + ' reason=' + String(error?.message || error).slice(0, 240));
-      res.setHeader('Retry-After', '5');
-      return res.status(503).json({
-        ok: false,
-        error: 'telegram_retryable_upstream_failure',
-        update_id: update.update_id
-      });
-    }
     console.error('[telegram-homunculus]', String(error?.message || error).slice(0, 800));
-    return webhookReply(res, message, '⚠️ QuantDeus: гомункул временно не ответил. Повтори сообщение.');
+    return webhookReply(res, message, '⚠️ QuantDeus: обработчик временно недоступен, но webhook работает. Повтори сообщение чуть позже.');
   }
 }
