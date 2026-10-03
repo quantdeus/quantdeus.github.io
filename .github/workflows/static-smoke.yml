@@ -96,6 +96,19 @@ jobs:
 
           const site=read('scripts/site-agent-reply.js');
           const telegram=read('vercel-dispatcher/api/quantdeus/telegram.js');
+          const openclawRoute=read('vercel-dispatcher/api/quantdeus/openclaw.js');
+          must(site.includes("getGitHubOidcToken('quantdeus-vercel-openclaw')"), 'Site fallback must use OpenClaw OIDC audience');
+          must(site.includes("source: 'github-command-center-fast'"), 'Site fallback must identify the fast GitHub command-center lane');
+          must(site.includes("data.execution_mode !== 'openclaw-agent-exec-no-tools-fast'"), 'Site fallback must verify fast no-tools execution mode');
+          must(site.includes("Object.values(data.tools).some(Boolean)"), 'Site fallback must verify zero tool capability');
+          must(site.includes('return callOpenClawFastBridge(messages);'), 'Site fallback must avoid paid AI Gateway dependency');
+          must(!site.includes('return callVercelOidcBridge(messages);'), 'Site default fallback must not depend on Vercel AI Gateway billing');
+          must(openclawRoute.includes('function githubSiteFastChatRequest'), 'OpenClaw route must authenticate the Site fast lane');
+          must(openclawRoute.includes('/site-agent-replies\\.yml'), 'Site fast lane must be bound to site-agent-replies workflow');
+          must(openclawRoute.includes("metadata.source === 'github-command-center-fast'"), 'Site fast lane must require explicit source metadata');
+          must(openclawRoute.includes('if (vercelInternal || githubSiteFastChat)'), 'Site fast lane must reuse direct-provider no-tools execution');
+          must(openclawRoute.includes("execution_mode: 'openclaw-agent-exec-no-tools-fast'"), 'Fast lane must return explicit no-tools runtime evidence');
+          must(openclawRoute.includes('github_mcp: false') && openclawRoute.includes('github_write: false'), 'Fast lane must expose no GitHub tools or writes');
           const llmBridge=read('vercel-dispatcher/api/quantdeus/llm.js');
           must(llmBridge.includes("role === 'system' ? 50000 : 16000"), 'OIDC fallback must accept the bounded repo-grounded system prompt');
           must(llmBridge.includes('total > 90000'), 'OIDC fallback total prompt budget must remain bounded');
