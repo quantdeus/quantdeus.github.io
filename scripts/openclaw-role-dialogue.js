@@ -6,13 +6,13 @@ const {turnBudget,turnEvidence} = require('./dialogue-state');
 function parseJson(text) {
   const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   try { return JSON.parse(raw); } catch (jsonError) {
-    const marker = /(?:^|\s)(SUMMARY|FINDING(?:\s*\d+)?|NEXT(?:_|\s*)STEP)\s*:\s*/gi;
+    const marker = /(?:^|[;\r\n]\s*)(SUMMARY|FINDING(?:\s*\d+)?|NEXT(?:_|\s*)STEP)\s*:\s*/gi;
     const hits = [];
     let match;
     while ((match = marker.exec(raw))) hits.push({label:match[1].toUpperCase(),start:match.index,valueStart:marker.lastIndex});
     const values = hits.map((hit,index) => ({
       label:hit.label,
-      value:raw.slice(hit.valueStart,index+1<hits.length?hits[index+1].start:raw.length).trim().replace(/^[;,\-\s]+|[;,\-\s]+$/g,'')
+      value:raw.slice(hit.valueStart,index+1<hits.length?hits[index+1].start:raw.length).trim()
     }));
     const summary = values.find(x => x.label === 'SUMMARY')?.value || '';
     const findings = values.filter(x => x.label.startsWith('FINDING')).map(x => x.value).filter(Boolean);
