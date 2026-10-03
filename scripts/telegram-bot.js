@@ -1,6 +1,7 @@
 const fs = require('fs');
 const openclawOffice = require('./openclaw-office-client');
 const { getGithubOidcToken } = require('./github-oidc');
+const { QUANTDEUS_SHIELD_VERSION, shieldInput } = require('./prompt-shield');
 const { execFileSync } = require('child_process');
 
 const repo = process.env.GITHUB_REPOSITORY;
@@ -42,6 +43,7 @@ const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.whf.bz/account/';
 const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
 const RETRY_SMOKE_AUDIENCE = 'quantdeus-vercel-telegram';
 const RETRY_SMOKE_ENDPOINT = process.env.TELEGRAM_RETRY_SMOKE_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
+const PUBLIC_BOT_USERNAME = String(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME || 'QuantDeus_bot').replace(/^@/, '').trim();
 
 async function reportRetrySmoke(payload) {
   const oidc = await getGithubOidcToken(RETRY_SMOKE_AUDIENCE);
@@ -416,10 +418,21 @@ function agentsText() {
   return lines.join('\n');
 }
 
+function publicMessageAddressed(message) {
+  const chatType = String(message?.chat?.type || 'private');
+  if (chatType === 'private') return true;
+  const text = String(message?.text || '');
+  if (/^\//.test(text.trim())) return true;
+  const safeUsername = PUBLIC_BOT_USERNAME.replace(/[^A-Za-z0-9_]/g, '');
+  if (safeUsername && new RegExp('@' + safeUsername + '\\b', 'i').test(text)) return true;
+  const replyUsername = String(message?.reply_to_message?.from?.username || '').replace(/^@/, '');
+  return Boolean(replyUsername && safeUsername && replyUsername.toLowerCase() === safeUsername.toLowerCase());
+}
 async function handleMessage(message) {
   if (!message || !message.chat || !message.from || message.from.is_bot) return;
   const text = String(message.text || '').trim();
   if (!text) return;
+  if (!publicMessageAddressed(message)) return;
 
   const chatId = message.chat.id;
   const replyId = message.message_id;
@@ -440,12 +453,14 @@ async function handleMessage(message) {
       return;
     }
     await send(chatId,
-      '🖖 QuantDeus GitHub Bot online.\n\n' +
+      '🖖 QuantDeus GitHub Bot online. Публичный чат открыт для всех.\n\n' +
+      `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}: public tools DENY ALL; prompt-injection и secret-exfiltration блокируются до LLM.\n\n` +
       'Пиши обычным текстом — я автоматически выберу роль гомункула по теме.\n' +
       '/agents — список ролей\n' +
       '/pro — QuantDeus Free / Pro\n' +
+      '/shield — статус защиты\n' +
       '/agent <id> <вопрос> — обратиться к конкретной роли\n' +
-      '/propose <id> <идея> — создать proposal в GitHub\n' +
+      '/propose <id> <идея> — proposal для admin-публикации\n' +
       '/status — состояние очереди\n' +
       '/task <id> <задача> — прямой task только для Telegram admin',
       replyId
@@ -455,7 +470,7 @@ async function handleMessage(message) {
 
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     await send(chatId,
-      'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/agent <id> <вопрос>\n/propose <id> <идея>\n/status\n/task <id> <задача> (admin)\n\nОбычный текст маршрутизируется автоматически.',
+      'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n/propose <id> <идея> (admin publish)\n/status\n/task <id> <задача> (admin)\n\nЧат открыт всем; публичные пользователи не получают GitHub/WordPress/Vercel write-доступ.',
       replyId
     );
     return;
@@ -466,6 +481,10 @@ async function handleMessage(message) {
       ? { plan: 'pro', source: 'telegram-admin' }
       : await wordpressTelegramPlan(message.from?.id);
     await send(chatId, proText(entitlement), replyId, proReplyMarkup());
+    return;
+  }
+  if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    await send(chatId, `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: DENY ALL\nPrompt injection: PRE-FILTER + SYSTEM FIREWALL\nSecret leakage: OUTPUT FILTER\nGroups: COMMANDS / MENTIONS / REPLIES ONLY`, replyId);
     return;
   }
 
@@ -491,7 +510,17 @@ async function handleMessage(message) {
       await send(chatId, 'Формат: /propose <agent-id> <идея>', replyId);
       return;
     }
-    const url = createProposal(agentId, idea, username);
+    const ideaShield = shieldInput(idea);
+    if (ideaShield.blocked) {
+      console.warn('[quantdeus-shield] channel=telegram-actions-propose status=blocked reasons=' + ideaShield.reasons.join(','));
+      await send(chatId, ideaShield.response, replyId);
+      return;
+    }
+    if (!(await isTelegramAdmin(message))) {
+      await send(chatId, '🛡️ Public mode — chat-only. Proposal можно обсудить здесь, но публикация в GitHub доступна только администратору.', replyId);
+      return;
+    }
+    const url = createProposal(agentId, ideaShield.normalized, username);
     await send(chatId, `🗳️ Proposal создан для ${agentId}:\n${url}`, replyId);
     return;
   }
@@ -508,14 +537,21 @@ async function handleMessage(message) {
       await send(chatId, 'Прямой /task доступен только Telegram admin. Используй /propose для обычного предложения.', replyId);
       return;
     }
-    const url = createAdminTask(agentId, task, username);
+    const taskShield = shieldInput(task);
+    if (taskShield.blocked) {
+      console.warn('[quantdeus-shield] channel=telegram-admin-task status=blocked reasons=' + taskShield.reasons.join(','));
+      await send(chatId, taskShield.response, replyId);
+      return;
+    }
+    const safeTask = taskShield.normalized;
+    const url = createAdminTask(agentId, safeTask, username);
     await send(chatId, `🚀 Task отправлен гомункулу ${agentId}:\n${url}`, replyId);
     if (openclawOffice.configured()) {
       try {
         const result = await openclawOffice.ask({
           profile: agentId,
           trusted: true,
-          messages: [{ role: 'user', content: `Execute this approved QuantDeus admin task. Audit Issue: ${url}\n\n${task}` }],
+          messages: [{ role: 'user', content: `Execute this approved QuantDeus admin task. Audit Issue: ${url}\n\n${safeTask}` }],
           metadata: { source: 'telegram-admin-task', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, audit_issue: url }
         });
         await send(chatId, '🦞 OpenClaw Admin Office:\n' + result.text, replyId);

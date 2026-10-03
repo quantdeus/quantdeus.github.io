@@ -20,6 +20,23 @@ The shared browser client is `assets/qd-auth.js`. The Vercel verifier is
 The current file is generated from Telegram `getMe`; no bot token is written to
 GitHub Pages.
 
+## Public bot access and QuantDeus Shield
+
+The Telegram bot is intentionally public for chat: any Telegram user may start a private conversation without an application-level allowlist. Public chat always runs in non-privileged mode.
+
+Security contract:
+
+- public OpenClaw tools are hard-denied with `deny: ['*']`;
+- deterministic prompt-injection / jailbreak / secret-exfiltration checks run before the LLM;
+- a second system-level instruction firewall treats user, quoted, research and repository text as untrusted data;
+- model output is checked for secret-like material before Telegram delivery;
+- public `/propose` and `/task` cannot mutate GitHub without Telegram-admin verification;
+- group chats answer only commands, explicit `@QuantDeus_bot` mentions, or replies to the bot, limiting ambient-message injection and loops.
+
+BotFather should keep **Allow Groups** enabled if group use is desired. Privacy Mode may remain enabled; QuantDeus does not require reading every ambient group message.
+
+The machine-readable policy is `coordination/quantdeus-public-safety.json` and the current shield version is `2026.10-qshield-v1`.
+
 ## BotFather one-time domain binding
 
 In @BotFather:

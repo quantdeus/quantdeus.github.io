@@ -90,7 +90,7 @@ for (const [ok, message] of [
   [site.includes("require('./openclaw-office-client')") && site.includes('trusted: trustedAction') && site.includes('admin_authorized: trustedAction'), 'GitHub site agent promotes only owner/admin repository actions to trusted OpenClaw'],
   [siteWorkflow.includes('QUANTDEUS_ADMIN_GITHUB_USERS') && siteWorkflow.includes('issue_comment:'), 'site agent workflow passes the repository admin allowlist on comment turns'],
   [qaSelfHealWorkflow.includes('trigger_run_id:') && qaSelfHealWorkflow.includes('Verify claimed repair PR exists') && qaFailureRadarWorkflow.includes('trigger_run_id') && qaFailureRadarWorkflow.includes('qa-self-heal.yml'), 'QA failure radar hands concrete failed-run evidence to self-heal, which verifies claimed repair artifacts'],
-  [telegram.includes("require('./openclaw-office-client')") && telegram.includes('createAdminTask(agentId, task, username)'), 'Telegram chat migrated and admin task path retained'],
+  [telegram.includes("require('./openclaw-office-client')") && telegram.includes("require('./prompt-shield')") && telegram.includes('taskShield = shieldInput(task)') && telegram.includes('createAdminTask(agentId, safeTask, username)') && telegram.includes('trusted: true') && telegram.includes('Public mode — chat-only'), 'Telegram public chat is shielded/no-write while the admin task path remains explicitly trusted'],
   [vercel.functions['api/quantdeus/openclaw.js']?.maxDuration === 300, 'OpenClaw function has adequate timeout']
 ]) {
   if (!ok) throw new Error(`OpenClaw Office contract failed: ${message}`);
