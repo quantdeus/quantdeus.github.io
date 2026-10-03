@@ -49,9 +49,22 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Mirror production security sentinel
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_USER_IDS: ${{ secrets.TELEGRAM_ADMIN_USER_IDS }}
+          QUANTDEUS_ADMIN_TELEGRAM_IDS: ${{ secrets.QUANTDEUS_ADMIN_TELEGRAM_IDS }}
+          QUANTDEUS_OWNER_TELEGRAM_IDS: ${{ secrets.QUANTDEUS_OWNER_TELEGRAM_IDS }}
+          QD_SECURITY_SOURCE: mirror-swarm
+          QD_SECURITY_OUTPUT: /tmp/qd-mirror-security.json
+          QD_SECURITY_NOTIFY: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'success' }}
+        run: node scripts/security-surface-probe.mjs
+
       - name: Validate mirror sources
         run: |
           node --check scripts/mirror-swarm-client.js
+          node --check scripts/security-surface-probe.mjs
+          node --check vercel-dispatcher/lib/security-sentinel.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
           node scripts/mission-alignment.js
 
@@ -131,9 +144,12 @@ jobs:
               contract_rc: Number(process.env.CONTRACT_RC || 0),
               openclaw_rc: Number(process.env.OPENCLAW_RC || 0)
             };
+            let securitySurface = { severity: 'unknown', attack_signal: false, posture_findings: [], source: 'security-probe-unavailable' };
+            try { securitySurface = JSON.parse(fs.readFileSync('/tmp/qd-mirror-security.json', 'utf8')); } catch {}
             const wakeRequired =
               Object.values(validatorState).some(value => value !== 0) ||
-              recentFailures.length > 0;
+              recentFailures.length > 0 ||
+              securitySurface.attack_signal === true;
             const wakeSource = String(process.env.WAKE_SOURCE || 'manual').slice(0, 80);
             const trigger = 'workflow_dispatch source=' + wakeSource;
 
@@ -141,6 +157,7 @@ jobs:
               trigger,
               wake_source: wakeSource,
               validator_state: validatorState,
+              security_surface: securitySurface,
               validator_logs: [
                 '=== syntax ===',
                 read('/tmp/qd-mirror-syntax.log'),
@@ -157,7 +174,7 @@ jobs:
               process.env.GITHUB_OUTPUT,
               'wake_required=' + (wakeRequired ? 'true' : 'false') + '\n'
             );
-            console.log(JSON.stringify({ validatorState, recentFailures, trigger, wakeRequired }, null, 2));
+            console.log(JSON.stringify({ validatorState, securitySurface, recentFailures, trigger, wakeRequired }, null, 2));
           })().catch(error => {
             console.error(error.stack || error);
             process.exit(1);
