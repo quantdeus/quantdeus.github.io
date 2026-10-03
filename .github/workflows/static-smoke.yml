@@ -252,8 +252,10 @@ jobs:
           test -f community/index.html
           test -f knowledge/index.html
           test -f login/index.html
-          grep -q 'https://quantdeus.whf.bz/wp/' index.html
-          grep -q 'Публичное зеркало QuantDeus' index.html
+          test -f 404.html
+          test ! -f CNAME
+          grep -q 'https://quantdeus.vercel.app' index.html
+          grep -q 'QuantDeus mirror загружается' index.html
           if grep -q 'playground.wordpress.net' index.html; then echo 'GitHub Pages root must not launch Playground'; exit 1; fi
           grep -q "location.replace('/')" wordpress/index.html
           grep -q '26 специализированных ИИ-агентов' README.md
@@ -264,8 +266,8 @@ jobs:
           grep -q 'Концерт Ксении Чередниковой' telegram/index.html
           grep -q '>Услуги<' telegram/index.html
           if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
-          grep -q 'https://quantdeus.whf.bz/wp/forum/' forum/index.html
-          grep -q 'https://quantdeus.whf.bz/wp/services/' store/index.html
+          grep -q 'https://quantdeus.vercel.app' forum/index.html
+          grep -q 'https://quantdeus.vercel.app' store/index.html
           grep -q 'noindex,follow' forum/index.html
           grep -q 'noindex,follow' store/index.html
           if grep -Fq '\n  <script' store/index.html forum/index.html; then echo 'literal \\n found in portal HTML'; exit 1; fi
