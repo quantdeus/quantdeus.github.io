@@ -70,7 +70,7 @@ function proPaymentProviders() {
   }
 }
 
-function proReplyMarkup(entitlement = { plan: 'free' }) {
+function proReplyMarkupForEntitlement(entitlement = { plan: 'free' }) {
   const rows = [];
   if (entitlement.plan !== 'pro') {
     for (const provider of proPaymentProviders()) {
@@ -87,6 +87,10 @@ function proReplyMarkup(entitlement = { plan: 'free' }) {
     { text: 'ℹ️ О Pro', url: QUANTDEUS_PRO_URL }
   ]);
   return { inline_keyboard: rows };
+}
+
+function proReplyMarkup() {
+  return proReplyMarkupForEntitlement({ plan: 'free' });
 }
 
 function mainMenuReplyMarkup() {
@@ -1487,7 +1491,7 @@ export default async function handler(req, res) {
     /^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
   ) {
     const entitlement = await fastTelegramEntitlement(message);
-    return webhookReply(res, message, proText(entitlement), proReplyMarkup(entitlement));
+    return webhookReply(res, message, proText(entitlement), proReplyMarkupForEntitlement(entitlement));
   }
 
   try {
