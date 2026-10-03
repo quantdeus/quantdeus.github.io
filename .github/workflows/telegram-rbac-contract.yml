@@ -1,0 +1,32 @@
+name: QuantDeus Telegram RBAC Contract
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/telegram-bot.js'
+      - 'scripts/telegram-rbac-contract.js'
+      - 'coordination/agents.json'
+      - '.github/workflows/telegram-rbac-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/telegram-bot.js'
+      - 'scripts/telegram-rbac-contract.js'
+      - 'coordination/agents.json'
+      - '.github/workflows/telegram-rbac-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Telegram RBAC and delegation invariants
+        run: node scripts/telegram-rbac-contract.js
