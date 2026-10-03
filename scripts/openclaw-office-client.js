@@ -2,6 +2,7 @@
 
 const agentRegistry = require('../coordination/agents.json');
 const { getGithubOidcToken } = require('./github-oidc');
+const { PUBLIC_SAFETY_SYSTEM_PROMPT, QUANTDEUS_SHIELD_VERSION, shieldInput, shieldOutput } = require('./prompt-shield');
 
 const DEFAULT_TIMEOUT_MS = 250000;
 const DEFAULT_VERCEL_URL = 'https://quantdeus.vercel.app/api/quantdeus/openclaw';
@@ -27,6 +28,7 @@ function normalizedMessages(messages, metadata, trusted = false) {
     trusted
       ? 'This is the trusted QuantDeus Admin Office lane. Use the available GitHub MCP, workspace filesystem and Playwright MCP when they materially help.'
       : 'This route runs OpenClaw with tools disabled. Do not claim that you inspected or changed live GitHub, Vercel, Telegram, browser, cron, or MCP state.',
+    trusted ? '' : PUBLIC_SAFETY_SYSTEM_PROMPT,
     trusted
       ? 'GitHub mutations must be reversible and auditable: prefer Issue/branch/PR plus QA evidence; do not push directly to main or weaken guardrails.'
       : 'Answer from the supplied prompt and repository context only. State clearly when a requested external action still needs an execution path.',
@@ -76,6 +78,23 @@ function sleep(ms) {
 
 async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   if (!configured()) throw new Error('OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE');
+  let safeMessages = messages || [];
+  if (!trusted) {
+    safeMessages = safeMessages.map(message => {
+      if (message?.role !== 'user') return message;
+      const shield = shieldInput(message.content);
+      if (shield.blocked) {
+        console.warn('[quantdeus-shield] channel=actions-openclaw status=blocked reasons=' + shield.reasons.join(','));
+        return { role: 'user', content: shield.normalized, __quantdeusBlocked: shield.response };
+      }
+      return { ...message, content: shield.normalized };
+    });
+    const blocked = safeMessages.find(message => message?.__quantdeusBlocked);
+    if (blocked) {
+      return { text: blocked.__quantdeusBlocked, model: null, provider: 'quantdeus-shield', assistantTurns: 0, usage: null, toolSummary: null, profile, raw: { shield: QUANTDEUS_SHIELD_VERSION }, runtime: 'local-shield' };
+    }
+    safeMessages = safeMessages.map(({ __quantdeusBlocked, ...message }) => message);
+  }
   const oidc = await getGithubOidcToken(OPENCLAW_AUDIENCE);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -94,7 +113,7 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
         headers,
         body: JSON.stringify({
           profile,
-          messages: normalizedMessages(messages, metadata, trusted),
+          messages: normalizedMessages(safeMessages, metadata, trusted),
           metadata,
           execution_mode: trusted ? 'trusted-office' : 'chat',
           // Give the server a slightly shorter budget than the caller so it can
@@ -132,8 +151,10 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
     try { data = JSON.parse(raw); }
     catch { throw new Error('OpenClaw Office returned non-JSON: ' + raw.slice(0, 400)); }
     if (!data?.text || !String(data.text).trim()) throw new Error('OpenClaw Office returned an empty response');
+    const guarded = trusted ? { ok: true, text: String(data.text).trim(), reasons: [] } : shieldOutput(data.text);
+    if (!guarded.ok) console.warn('[quantdeus-shield] channel=actions-openclaw status=output-blocked reasons=' + guarded.reasons.join(','));
     return {
-      text: String(data.text).trim(),
+      text: guarded.text,
       model: data.model || null,
       provider: data.model_provider || null,
       assistantTurns: data.assistant_turns ?? null,
