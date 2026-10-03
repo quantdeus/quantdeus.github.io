@@ -401,7 +401,9 @@ async function handleMessage(message) {
   }
 
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
-    const entitlement = await wordpressTelegramPlan(message.from?.id);
+    const entitlement = (await isTelegramAdmin(message))
+      ? { plan: 'pro', source: 'telegram-admin' }
+      : await wordpressTelegramPlan(message.from?.id);
     await send(chatId, proText(entitlement), replyId);
     return;
   }
