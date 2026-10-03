@@ -18,9 +18,9 @@ It is the persistent native WordPress runtime and owns:
 - Media Library uploads;
 - bbPress/forum data;
 - service/content administration;
-- native WordPress REST and WPVibe plugin execution.
+- native WordPress REST and free/self-hosted MCP execution.
 
-WordPress is currently running as WordPress 7.1.2 on PHP 8.3.x with the WPVibe plugin connected.
+WordPress is currently running as WordPress 7.1.2 on PHP 8.3.x with free/self-hosted MCP plugins available. WPVibe is not part of the canonical runtime.
 
 ## Mirror and control-plane topology
 
@@ -28,7 +28,7 @@ WordPress is currently running as WordPress 7.1.2 on PHP 8.3.x with the WPVibe p
 Canonical production
 https://quantdeus.whf.bz
         │
-        ├── WordPress / wp-admin / REST / WPVibe
+        ├── WordPress / wp-admin / REST / native MCP
         │
         └── content source for public mirrors
                 │
@@ -50,20 +50,21 @@ GitHub Pages remains a public mirror and repository-backed fallback surface, but
 
 ## Swarm → WordPress
 
-Trusted OpenClaw may connect to WPVibe through its official remote MCP endpoint:
+The canonical free/self-hosted MCP endpoint is:
 
-`https://mcp.wpvibe.ai/mcp`
+`https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp`
 
-The shared WPVibe OAuth identity is operator-managed and stored by OpenClaw in its persistent owner-only state. Credentials are never committed to GitHub.
+It is the WordPress lane inherited by the registered QuantDeus swarm through trusted OpenClaw. WPVibe is not required.
 
 Rules:
 
-1. WPVibe operations target only `https://quantdeus.whf.bz` unless the owner explicitly names another connected site.
-2. Hourly and autonomous scheduled swarm lanes are read-only in WPVibe.
+1. All WordPress MCP operations target only `https://quantdeus.whf.bz` unless the owner explicitly names another site.
+2. Hourly and autonomous scheduled swarm lanes are read-only; the runtime exposes only read/discovery tool families to those lanes.
 3. Direct WordPress writes require an explicitly owner-authorized trusted task.
-4. Prefer reversible content/settings operations and WPVibe's native safety gates.
-5. Destructive, privilege-changing, theme-publish, plugin/core update or equivalent high-impact operations must respect WPVibe approval requirements.
-6. Missing OAuth is fail-closed: agents report the authorization handoff instead of inventing access or using hidden credentials.
+4. Write-capable MCP exposure additionally requires `QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION`; when it is absent, writes fail closed.
+5. Prefer reversible content/settings operations with a backup or undo path and verify the rendered production result.
+6. Destructive, privilege-changing, theme-publish, plugin/core update, secret, spending or other high-impact operations remain human-controlled.
+7. Never commit MCP credentials to GitHub and never fall back to hidden or guessed credentials.
 
 ## Source of truth split
 
