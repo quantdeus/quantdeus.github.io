@@ -10,13 +10,13 @@ WordPress is the canonical QuantDeus application/CMS runtime after the owner-dec
 - root `/index.html` — canonical GitHub Pages WordPress launcher at `https://quantdeus.github.io/`.
 - `wordpress/index.html` — compatibility redirect from the former `/wordpress/` URL to the root.
 
-During migration, GitHub Pages may remain a legacy/rollback entrypoint. **WordPress Playground is preview/CI only, not the target production application runtime.** The production target is server-side WordPress 7.1.2 on a PHP 8.3-capable host with persistent MySQL/MariaDB storage and persistent uploads, exposing the normal `/wp-admin/` runtime.
+**Current production is the native WordPress runtime at `https://quantdeus.whf.bz`.** WordPress Playground is preview/CI only. Vercel (`https://quantdeus.vercel.app`) is the reverse-proxy mirror plus API/OpenClaw control plane, and GitHub Pages (`https://quantdeus.github.io`) is a public mirror.
 
 ## Runtime rule
 
 WordPress owns public pages, content, users, roles, services, guest inquiries, forum/community data and admin.
 
-GitHub remains canonical for source code, CI, issues, evidence and swarm coordination. Telegram/OpenClaw integrate directly through WordPress REST or GitHub-native paths.
+GitHub remains canonical for source code, CI, issues, evidence and swarm coordination. Telegram/OpenClaw integrate through WordPress REST, GitHub-native paths, and the guarded WPVibe MCP lane. WPVibe operations target `https://quantdeus.whf.bz`; scheduled autonomous lanes are read-only, while direct production writes require an explicitly owner-authorized trusted task and WPVibe's approval gates.
 
 **Make.com is not an application dependency.** Do not add Make scenarios, Make webhooks, polling bridges or a second orchestration layer to the canonical WordPress runtime.
 
@@ -33,19 +33,15 @@ Legacy GitHub Pages/Vercel Portal code may remain temporarily as rollback/histor
 - No third-party page builder is required by the canonical portal.
 
 
-## Production runtime gate
+## Production runtime status
 
-The repository now contains the native WordPress application layer, but a static GitHub Pages origin cannot execute a persistent PHP/MySQL WordPress installation.
-
-Production cutover therefore requires an owner-selected WordPress-capable runtime with:
+The production gate is satisfied by the owner-selected native WordPress host at `https://quantdeus.whf.bz`:
 
 - WordPress 7.1.2;
-- PHP 8.3-compatible server runtime;
-- persistent MySQL/MariaDB;
-- persistent `wp-content/uploads`;
-- HTTPS and canonical domain mapping;
-- server-side secrets for Telegram/GitHub auth;
-- backups/rollback;
-- deployment of `quantdeus-core` and `quantdeus-aero`.
+- PHP 8.3.x;
+- persistent WordPress database/uploads on the host;
+- native `/wp-admin/`;
+- WPVibe plugin connected;
+- Vercel and GitHub Pages retained as mirrors/control surfaces rather than the canonical WordPress origin.
 
-Until that runtime is explicitly selected and approved, GitHub Pages/Playground is migration preview/rollback evidence only and must not be described as the final native production WordPress engine.
+Production-changing agent work must preserve rollback evidence and follow the WPVibe/OpenClaw guardrails documented in `docs/VERCEL_WORDPRESS_PRODUCTION.md`.
