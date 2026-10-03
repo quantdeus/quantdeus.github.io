@@ -18,6 +18,10 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-telegram';
 const DEFAULT_WEBHOOK_URL = 'https://quantdeus.vercel.app/api/quantdeus/telegram';
+const DEFAULT_TELEGRAM_WEB_APP_URL = 'https://quantdeus.github.io/telegram/';
+const TELEGRAM_BOT_DESCRIPTION =
+  'QuantDeus Store Bot: AI Fleet, мартышки, Pro-доступ, Telegram Login и быстрые команды QuantDeus.';
+const TELEGRAM_BOT_SHORT_DESCRIPTION = 'QuantDeus AI Fleet, Store Bot и Mini App.';
 const PUBLIC_BOT_USERNAME = String(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME || 'QuantDeus_bot').replace(/^@/, '').trim();
 const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
 const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.whf.bz/account/';
@@ -313,6 +317,20 @@ async function setupWebhook(req, res) {
       { command: 'shield', description: 'Статус защиты QuantDeus Shield' }
     ]
   });
+  const webAppUrl = String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
+  const menuButton = await telegram(botToken, 'setChatMenuButton', {
+    menu_button: {
+      type: 'web_app',
+      text: 'QuantDeus',
+      web_app: { url: webAppUrl }
+    }
+  });
+  const description = await telegram(botToken, 'setMyDescription', {
+    description: TELEGRAM_BOT_DESCRIPTION
+  });
+  const shortDescription = await telegram(botToken, 'setMyShortDescription', {
+    short_description: TELEGRAM_BOT_SHORT_DESCRIPTION
+  });
   const info = await telegram(botToken, 'getWebhookInfo');
   const researchProbe = await liveNewsResearch('OpenAI latest news');
   // Keep setup smoke to one LLM request. Anonymous fallback providers can throttle
@@ -357,6 +375,12 @@ async function setupWebhook(req, res) {
     public_mode: 'chat-only-tools-denied',
     prompt_shield: QUANTDEUS_SHIELD_VERSION,
     outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback',
+    interface: {
+      menu_button_ok: Boolean(menuButton),
+      menu_button_url: webAppUrl,
+      description_ok: Boolean(description),
+      short_description_ok: Boolean(shortDescription)
+    },
     webhook: {
       url: info.url || webhookUrl,
       pending_update_count: info.pending_update_count || 0,
