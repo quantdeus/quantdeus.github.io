@@ -6,6 +6,11 @@ on:
     paths:
       - 'scripts/build-wordpress-mirror.sh'
       - '.github/workflows/pages-live-mirror.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/build-wordpress-mirror.sh'
+      - '.github/workflows/pages-live-mirror.yml'
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
