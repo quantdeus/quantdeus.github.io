@@ -18,7 +18,7 @@ wget \
   --execute robots=off \
   --restrict-file-names=windows \
   --domains quantdeus.whf.bz \
-  --reject-regex='/(wp-admin(?:/|$)|wp-login\\.php(?:$|\\?))' \
+  --reject-regex='/(wp-admin(/|$)|wp-login\\.php($|\\?))' \
   --user-agent='QuantDeus-GitHub-Pages-Mirror/1.0' \
   --directory-prefix "$TMP" \
   "$SOURCE/"
