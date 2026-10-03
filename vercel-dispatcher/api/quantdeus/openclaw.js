@@ -867,10 +867,56 @@ export default async function handler(req, res) {
           : ['browser_navigate', 'browser_snapshot', 'browser_find', 'browser_close']
       }
     };
+    const wpvibeReadOnly = hourlyOffice || autonomousWorker;
+    const wpvibeMcp = {
+      transport: 'streamable-http',
+      url: 'https://mcp.wpvibe.ai/mcp',
+      auth: 'oauth',
+      oauth: { identity: 'shared' },
+      connectionTimeoutMs: 10000,
+      requestTimeoutMs: 45000,
+      supportsParallelToolCalls: false,
+      toolFilter: {
+        include: wpvibeReadOnly ? [
+          'list_sites',
+          'site_info',
+          'discover_abilities',
+          'get_ability_info',
+          'audit_page'
+        ] : [
+          'list_sites',
+          'site_info',
+          'discover_abilities',
+          'get_ability_info',
+          'audit_page',
+          'rest_api',
+          'run_ability',
+          'run_wp_cli',
+          'content_*',
+          'request_upload',
+          'check_upload',
+          'upload_media',
+          'create_draft_theme',
+          'get_preview_url',
+          'list_files',
+          'search_files',
+          'read_file',
+          'edit_file',
+          'write_file',
+          'delete_file',
+          'publish_draft_theme',
+          'start_fleet_job',
+          'check_approval_status',
+          'show_fleet_dashboard',
+          'show_approval_panel',
+          'load_skill'
+        ]
+      }
+    };
     const mcpServers = trustedOffice
       ? (smokePhase === 'github' ? { github: githubMcp }
         : smokePhase === 'playwright' ? { playwright: playwrightMcp }
-        : { github: githubMcp, playwright: playwrightMcp })
+        : { github: githubMcp, playwright: playwrightMcp, wpvibe: wpvibeMcp })
       : {};
     if (trustedOffice && mcpServers.playwright) {
       const browserMarker = `${statePath}/.quantdeus-playwright-mcp-chrome-ready`;
@@ -894,8 +940,19 @@ export default async function handler(req, res) {
       ...(trustedOffice ? { mcp: { servers: mcpServers } } : {}),
       agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
     };
+    const productionTopologyPrompt = trustedOffice ? [
+      'QUANTDEUS PRODUCTION TOPOLOGY:',
+      '- Canonical public production and native WordPress admin: https://quantdeus.whf.bz',
+      '- https://quantdeus.vercel.app is the reverse-proxy mirror plus API/agent control plane; it is not the canonical public production origin.',
+      '- https://quantdeus.github.io is a public mirror; it is not the canonical production origin.',
+      '- WPVibe MCP, when authenticated, must target https://quantdeus.whf.bz.',
+      '- Hourly/scheduled autonomous lanes are read-only in WPVibe. Do not mutate WordPress from those lanes.',
+      '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task, must be reversible where possible, and must honor WPVibe approval gates.',
+      '- If WPVibe OAuth is missing or authorization is required, do not invent access or fall back to hidden credentials; return a precise human authorization handoff.'
+    ].join('\n') : '';
     const effectivePrompt = prompt;
-    await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(effectivePrompt) }]);
+    const routedPrompt = productionTopologyPrompt ? productionTopologyPrompt + '\n\n' + effectivePrompt : effectivePrompt;
+    await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(routedPrompt) }]);
     const runtimeEnv = {
       ...providerRuntimeEnv,
       OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5'
@@ -908,6 +965,8 @@ export default async function handler(req, res) {
       trusted_office: trustedOffice,
       github_mcp: trustedOffice && Boolean(githubToken) && Boolean(mcpServers.github),
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
+      wpvibe_mcp_configured: trustedOffice && Boolean(mcpServers.wpvibe),
+      wpvibe_mode: trustedOffice && mcpServers.wpvibe ? (wpvibeReadOnly ? 'read-only' : 'owner-authorized-write-capable') : 'off',
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
       autonomous_worker: autonomousWorker,

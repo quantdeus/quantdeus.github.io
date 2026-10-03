@@ -1,131 +1,77 @@
-# QuantDeus WordPress production on Vercel
+# QuantDeus production topology
 
-Status: **chosen production hosting architecture**  
-Date: 2026-10-02  
-Tracks: #359, #372, PR #379
+Status: **current production topology**  
+Effective: 2026-10-03  
+Supersedes the Vercel-as-WordPress-production decision recorded here on 2026-10-02.
 
-## Decision
+## Canonical production
 
-**Vercel is the production hosting platform for QuantDeus.**
+**The canonical public QuantDeus production site is:**
 
-The target application runtime is native WordPress 7.1.2 packaged as a PHP HTTP container and deployed through Vercel Container Functions / `Dockerfile.vercel`.
+`https://quantdeus.whf.bz`
 
-WordPress Playground remains CI/preview only.
+It is the persistent native WordPress runtime and owns:
 
-## Runtime topology
+- the public website;
+- native `/wp-admin/`;
+- WordPress content, users and roles;
+- Media Library uploads;
+- bbPress/forum data;
+- service/content administration;
+- native WordPress REST and WPVibe plugin execution.
+
+WordPress is currently running as WordPress 7.1.2 on PHP 8.3.x with the WPVibe plugin connected.
+
+## Mirror and control-plane topology
 
 ```
-Internet
-  ↓
-Vercel Edge / CDN
-  ↓
-QuantDeus WordPress container (PHP + WordPress 7.1.2)
-  ├─ quantdeus-aero theme
-  ├─ quantdeus-core plugin
-  ├─ native /wp-admin/
-  ├─ REST /wp-json/quantdeus/v1/*
-  └─ native WordPress routing
-        ↓
-External durable state
-  ├─ MySQL-compatible database
-  └─ object storage for Media Library uploads
+Canonical production
+https://quantdeus.whf.bz
+        │
+        ├── WordPress / wp-admin / REST / WPVibe
+        │
+        └── content source for public mirrors
+                │
+                ▼
+https://quantdeus.vercel.app
+        │
+        ├── reverse-proxy public mirror
+        ├── QuantDeus API / auth / Telegram
+        └── OpenClaw / agent control plane
+                │
+                ▼
+https://quantdeus.github.io
+        └── public GitHub Pages mirror
 ```
 
-## Why state is external
+Vercel remains a production **agent/API/control-plane runtime**, but it is not the canonical public WordPress origin.
 
-Vercel Container Functions are stateless. The container image is treated as immutable application code.
+GitHub Pages remains a public mirror and repository-backed fallback surface, but it is not the canonical WordPress runtime.
 
-Therefore:
+## Swarm → WordPress
 
-- WordPress database must be external and persistent;
-- `wp-content/uploads` must be offloaded to durable object storage;
-- sessions/application records must not rely on local disk;
-- themes/plugins shipped by QuantDeus are deployed from GitHub as part of the image.
+Trusted OpenClaw may connect to WPVibe through its official remote MCP endpoint:
 
-## Database
+`https://mcp.wpvibe.ai/mcp`
 
-WordPress requires a MySQL/MariaDB-compatible database.
+The shared WPVibe OAuth identity is operator-managed and stored by OpenClaw in its persistent owner-only state. Credentials are never committed to GitHub.
 
-Preferred Vercel-connected option for the staging slice:
+Rules:
 
-- Railway MySQL connected to the Vercel project through the Vercel/Railway integration.
+1. WPVibe operations target only `https://quantdeus.whf.bz` unless the owner explicitly names another connected site.
+2. Hourly and autonomous scheduled swarm lanes are read-only in WPVibe.
+3. Direct WordPress writes require an explicitly owner-authorized trusted task.
+4. Prefer reversible content/settings operations and WPVibe's native safety gates.
+5. Destructive, privilege-changing, theme-publish, plugin/core update or equivalent high-impact operations must respect WPVibe approval requirements.
+6. Missing OAuth is fail-closed: agents report the authorization handoff instead of inventing access or using hidden credentials.
 
-The exact paid/free plan, region and database creation remain owner-controlled infrastructure inputs.
+## Source of truth split
 
-## Media
+- WordPress production content/state: `https://quantdeus.whf.bz`.
+- Application source, agent policy, CI, Issues and evidence: `quantdeus/quantdeus.github.io@main`.
+- Vercel: mirror + API + OpenClaw execution plane.
+- GitHub Pages: mirror.
 
-Preferred production model:
+## Historical note
 
-- WordPress Media Library remains the editor UX;
-- a QuantDeus storage adapter offloads uploaded media to durable object storage;
-- local container disk is never the source of truth.
-
-Vercel Blob is acceptable if the adapter is implemented and verified. An S3-compatible backing store is also acceptable.
-
-## Native WordPress admin
-
-The following stay native:
-
-- Dashboard
-- Posts
-- Pages
-- Media
-- Users
-- Appearance
-- Menus
-- Customizer / Site Identity
-- Tools
-- Settings
-- QuantDeus CPTs and moderation screens
-- Forum / services / inquiries / Ksenia content
-
-### Immutable-code constraint
-
-Because Vercel containers are stateless, production theme/plugin source must be Git-backed and image-baked.
-
-Do not rely on runtime filesystem mutation for durable plugin/theme installs or source editing.
-
-WordPress content/admin remains native; application code changes go through GitHub → preview → QA → Vercel deploy.
-
-This is intentional infrastructure hardening, not a fake admin replacement.
-
-## Existing Vercel project
-
-A current Vercel project named `quantdeus` already exists and is serving production deployments.
-
-Migration rule:
-
-1. do not replace the existing dispatcher/auth production deployment in-place;
-2. first build the WordPress container as a reversible preview/staging deployment;
-3. attach durable DB/storage;
-4. smoke `/`, `/wp-admin/`, auth, Forum, Store, Media uploads and guest inquiries;
-5. only then perform an owner-approved routing/domain cutover.
-
-## Production environment names
-
-Values must never be committed.
-
-Expected categories:
-
-- WordPress DB host/name/user/password/port;
-- WordPress salts/keys;
-- canonical WordPress URL;
-- Telegram auth/broker inputs;
-- GitHub OAuth/staff verifier inputs;
-- media/object-storage credentials.
-
-## Acceptance gates
-
-Before cutover:
-
-- Vercel container build succeeds;
-- WordPress 7.1.2 boots server-side;
-- external MySQL connection passes;
-- Media Library upload survives container replacement;
-- native /wp-admin/ works;
-- Primary Menu and Customizer work;
-- Telegram ordinary-user auth works;
-- GitHub staff auth + RBAC works;
-- Forum/Store/guest inquiry flows work;
-- no local-disk persistence assumption;
-- rollback deployment is documented.
+The earlier plan to package native WordPress itself into Vercel Container Functions is no longer the active production-hosting decision. Keep related implementation artifacts only as rollback/history unless a future owner decision explicitly reactivates that architecture.
