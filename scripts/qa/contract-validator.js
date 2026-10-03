@@ -306,9 +306,19 @@ check(
 check(!telegramSource.includes("getUpdates") && !telegramSource.includes("deleteWebhook"), 'scripts/telegram-bot.js', 'Telegram bot never polls or deletes the production webhook');
 check(telegramSource.includes('TELEGRAM_UPDATE_B64'), 'scripts/telegram-bot.js', 'Telegram bot consumes one dispatched webhook update');
 check(
-  telegramSource.includes("/^\\/pro") && telegramSource.includes('https://quantdeus.whf.bz/ai-fleet/pro/'),
+  telegramSource.includes("/^\\/pro") &&
+  telegramSource.includes('https://quantdeus.whf.bz/ai-fleet/pro/') &&
+  telegramSource.includes('QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON') &&
+  telegramSource.includes('proReplyMarkup()') &&
+  telegramSource.includes("\\s+pro(?:\\s|$)") &&
+  telegramSource.includes("url.protocol === 'https:'"),
   'scripts/telegram-bot.js',
-  'Telegram Actions fallback exposes the QuantDeus Pro command without embedding payment credentials'
+  'Telegram Actions fallback exposes /start pro and /pro with protected multi-provider HTTPS checkout buttons'
+);
+check(
+  telegramWorkflow.includes('QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON: ${{ secrets.QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON }}'),
+  'telegram-bot.yml',
+  'Actions fallback receives the protected Pro payment-provider registry only through a repository secret'
 );
 const telegramTransientRetries = (telegramSource.match(/retryTransient:\s*true/g) || []).length;
 check(telegramTransientRetries === 3, 'scripts/telegram-bot.js', 'only two read-only Telegram chat lanes plus the isolated synthetic smoke enable one transient OpenClaw retry');
@@ -346,9 +356,13 @@ if (fs.existsSync(telegramBridgePath)) {
     telegramBridge.includes("/^\\/pro") &&
     telegramBridge.includes("setMyCommands") &&
     telegramBridge.includes("command: 'pro'") &&
-    telegramBridge.includes('https://quantdeus.whf.bz/ai-fleet/pro/'),
+    telegramBridge.includes('https://quantdeus.whf.bz/ai-fleet/pro/') &&
+    telegramBridge.includes('QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON') &&
+    telegramBridge.includes('proReplyMarkup()') &&
+    telegramBridge.includes("\\s+pro(?:\\s|$)") &&
+    telegramBridge.includes("url.protocol === 'https:'"),
     'vercel-dispatcher/api/quantdeus/telegram.js',
-    'Telegram webhook exposes /pro and registers it in the Bot API command menu'
+    'Telegram webhook exposes /start pro and /pro with protected multi-provider HTTPS checkout buttons'
   );
   check(
     telegramBridge.includes('needsLiveResearch') &&
