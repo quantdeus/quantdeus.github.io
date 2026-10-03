@@ -81,9 +81,9 @@ jobs:
           test -f wordpress/blueprint.json
           test -f assets/portal-shell.css
           test -f assets/portal-shell.js
-          grep -q 'https://quantdeus.vercel.app' index.html
-          grep -q 'QuantDeus mirror загружается' index.html
-          if grep -q 'playground.wordpress.net' index.html; then echo "GitHub Pages root must be the Vercel mirror, not Playground"; exit 1; fi
+          grep -q 'https://quantdeus.whf.bz/' index.html
+          grep -q 'Публичное зеркало QuantDeus' index.html
+          if grep -q 'playground.wordpress.net' index.html; then echo "GitHub Pages root must remain the independent production mirror, not Playground"; exit 1; fi
           grep -q "location.replace('/')" wordpress/index.html
           test -f wordpress/src/quantdeus-core/quantdeus-core.php
           test -f wordpress/src/quantdeus-aero/style.css
@@ -123,7 +123,7 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/telegram.js
           node --check vercel-dispatcher/lib/github-auth.js
           node --check vercel-dispatcher/lib/telegram-bot-auth.js
-          grep -q "https://quantdeus.whf.bz/wp/login/" assets/portal-shell.js
+          grep -q "https://quantdeus.whf.bz/login/" assets/portal-shell.js
           grep -q "canonical.href" assets/portal-shell.js
           if grep -q "Telegram.Login.auth" index.html; then echo "legacy Telegram Login SDK forbidden"; exit 1; fi
           grep -q "telegramBrokerUrl" wordpress/src/quantdeus-aero/app.js
