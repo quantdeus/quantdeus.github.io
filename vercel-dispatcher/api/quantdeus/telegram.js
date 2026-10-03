@@ -127,12 +127,7 @@ async function wordpressTelegramPlan(userId) {
 
 async function telegramGroupAdmin(message) {
   if (!message?.chat || !message?.from || String(message.chat.type || 'private') === 'private') return false;
-  const botToken = String(
-    process.env.TELEGRAM_BOT_TOKEN ||
-    process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
-    process.env.TELEGRAM ||
-    ''
-  ).trim();
+  const botToken = runtimeTelegramBotToken();
   if (!botToken) return false;
   try {
     const member = await telegram(botToken, 'getChatMember', {
@@ -251,6 +246,14 @@ function publicMessageAddressed(message) {
   const replyUsername = String(message?.reply_to_message?.from?.username || '').replace(/^@/, '');
   return Boolean(replyUsername && safeUsername && replyUsername.toLowerCase() === safeUsername.toLowerCase());
 }
+function runtimeTelegramBotToken() {
+  return String(
+    process.env.TELEGRAM_BOT_TOKEN ||
+    process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
+    process.env.TELEGRAM ||
+    ''
+  ).trim();
+}
 async function telegram(botToken, method, payload = {}) {
   const response = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
     method: 'POST',
@@ -340,6 +343,7 @@ async function setupWebhook(req, res) {
     public_access: true,
     public_mode: 'chat-only-tools-denied',
     prompt_shield: QUANTDEUS_SHIELD_VERSION,
+    outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback',
     webhook: {
       url: info.url || webhookUrl,
       pending_update_count: info.pending_update_count || 0,
@@ -1108,31 +1112,50 @@ async function homunculusReply(message, retryUpdate = null) {
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${guarded.text}`.slice(0, 3900);
 }
 
-function webhookLoginReply(res, message, loginUrl) {
-  return res.status(200).json({
-    method: 'sendMessage',
+async function telegramOutbound(res, message, text, replyMarkup = null, kind = 'reply') {
+  const payload = {
     chat_id: message.chat.id,
-    text: '✅ QuantDeus Store Bot подтвердил Telegram. Нажми кнопку, чтобы вернуться на сайт.',
-    disable_web_page_preview: true,
-    reply_parameters: { message_id: message.message_id },
-    reply_markup: {
+    text: String(text).slice(0, 4096),
+    link_preview_options: { is_disabled: true }
+  };
+  if (replyMarkup) payload.reply_markup = replyMarkup;
+
+  const botToken = runtimeTelegramBotToken();
+  if (botToken) {
+    try {
+      await telegram(botToken, 'sendMessage', payload);
+      console.info('[telegram-outbound] mode=bot-api status=ok kind=' + kind + ' chat_type=' + String(message.chat?.type || 'unknown'));
+      return res.status(200).json({ ok: true, status: 'sent_via_bot_api' });
+    } catch (error) {
+      console.error('[telegram-outbound] mode=bot-api status=error kind=' + kind + ' detail=' + String(error?.message || error).slice(0, 500));
+    }
+  } else {
+    console.warn('[telegram-outbound] mode=bot-api status=unavailable reason=runtime_bot_token_missing kind=' + kind);
+  }
+
+  // Telegram supports returning a Bot API method directly in the webhook response.
+  // Keep this as a minimal compatibility fallback; unlike the explicit Bot API path,
+  // Telegram does not return the send result to us for this mode.
+  console.info('[telegram-outbound] mode=webhook-response status=fallback kind=' + kind);
+  return res.status(200).json({ method: 'sendMessage', ...payload });
+}
+
+async function webhookLoginReply(res, message, loginUrl) {
+  return telegramOutbound(
+    res,
+    message,
+    '✅ QuantDeus Store Bot подтвердил Telegram. Нажми кнопку, чтобы вернуться на сайт.',
+    {
       inline_keyboard: [[
         { text: '🚀 Вернуться в QuantDeus', url: loginUrl }
       ]]
-    }
-  });
+    },
+    'login'
+  );
 }
 
-function webhookReply(res, message, text, replyMarkup = null) {
-  const payload = {
-    method: 'sendMessage',
-    chat_id: message.chat.id,
-    text: String(text).slice(0, 4096),
-    disable_web_page_preview: true,
-    reply_parameters: { message_id: message.message_id }
-  };
-  if (replyMarkup) payload.reply_markup = replyMarkup;
-  return res.status(200).json(payload);
+async function webhookReply(res, message, text, replyMarkup = null) {
+  return telegramOutbound(res, message, text, replyMarkup, 'chat');
 }
 
 async function retrySmokeStart(req, res) {
