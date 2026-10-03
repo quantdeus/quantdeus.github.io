@@ -8,7 +8,7 @@ import {
 } from "node:crypto";
 
 const DEFAULT_REPOSITORY = "quantdeus/quantdeus.github.io";
-const DEFAULT_SITE_ORIGIN = "https://quantdeus.github.io";
+const DEFAULT_SITE_ORIGIN = "https://quantdeus.whf.bz";
 const DEFAULT_CALLBACK_URL = "https://quantdeus.vercel.app/api/quantdeus/github-auth";
 const STATE_TTL_SECONDS = 10 * 60;
 const ASSERTION_TTL_SECONDS = 8 * 60 * 60;
@@ -158,7 +158,8 @@ function safeReturnTo(value, config) {
   try {
     const url = new URL(clean(value) || config.canonical_origin + "/");
     if (url.origin !== config.canonical_origin) return config.canonical_origin + "/";
-    return url.origin + "/";
+    url.hash = "";
+    return url.toString();
   } catch {
     return config.canonical_origin + "/";
   }
