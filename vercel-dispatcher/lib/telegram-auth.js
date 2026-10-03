@@ -22,7 +22,12 @@ const same = (a, b) => {
 };
 
 function botToken() {
-  return clean(process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM);
+  return clean(
+    process.env.TELEGRAM_BOT_TOKEN ||
+    process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
+    process.env.TELEGRAM_TOKEN ||
+    process.env.TELEGRAM
+  );
 }
 
 function normalizeUser(raw, kind) {
