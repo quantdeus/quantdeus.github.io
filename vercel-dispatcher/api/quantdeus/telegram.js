@@ -12,6 +12,7 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-telegram';
 const DEFAULT_WEBHOOK_URL = 'https://quantdeus.vercel.app/api/quantdeus/telegram';
+const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
 const REGISTRY_URL = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/coordination/agents.json';
 const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
 const LIVE_RESEARCH_TIMEOUT_MS = 7000;
@@ -148,6 +149,14 @@ async function setupWebhook(req, res) {
   if (secret) webhookPayload.secret_token = secret;
 
   await telegram(botToken, 'setWebhook', webhookPayload);
+  await telegram(botToken, 'setMyCommands', {
+    commands: [
+      { command: 'start', description: 'Запустить QuantDeus' },
+      { command: 'help', description: 'Команды QuantDeus' },
+      { command: 'agents', description: 'Список ролей AI Fleet' },
+      { command: 'pro', description: 'QuantDeus Free / Pro' }
+    ]
+  });
   const info = await telegram(botToken, 'getWebhookInfo');
   const researchProbe = await liveNewsResearch('OpenAI latest news');
   // Keep setup smoke to one LLM request. Anonymous fallback providers can throttle
@@ -755,10 +764,21 @@ async function homunculusReply(message, retryUpdate = null) {
   const raw = String(message.text || '').trim();
 
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) && !explicitAgent(raw, byId)) {
-    return '🖖 QuantDeus Homunculi online.\n\nПиши обычным текстом — роль выберется автоматически.\n/agents — список ролей\n/agent <id> <вопрос> — обратиться к конкретному гомункулу\n/help — помощь';
+    return '🖖 QuantDeus Homunculi online.\n\nПиши обычным текстом — роль выберется автоматически.\n/agents — список ролей\n/pro — QuantDeus Free / Pro\n/agent <id> <вопрос> — обратиться к конкретному гомункулу\n/help — помощь';
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    return 'Команды QuantDeus:\n/agents\n/agent <id> <вопрос>\n\nОбычный текст автоматически маршрутизируется к подходящему гомункулу.';
+    return 'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/agent <id> <вопрос>\n\nОбычный текст автоматически маршрутизируется к подходящему гомункулу.';
+  }
+  if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
+    return [
+      '⭐ QuantDeus Pro',
+      '',
+      'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
+      'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
+      '',
+      'Тариф, условия и активация:',
+      QUANTDEUS_PRO_URL
+    ].join('\n');
   }
   if (/^\/agents(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return ['🤖 QuantDeus: роли', ...agents.map(agent => `/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name || agent.role}`)].join('\n').slice(0, 3900);
