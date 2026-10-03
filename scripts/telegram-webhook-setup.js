@@ -7,7 +7,11 @@ const ENDPOINT = process.env.TELEGRAM_WEBHOOK_SETUP_URL || 'https://quantdeus.ve
 
 async function main() {
   // A setup run also refreshes Bot API commands (including /pro) after runtime deploys.
-  const botToken = process.env.TELEGRAM_BOT_TOKEN || process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN;
+  const botToken =
+    process.env.TELEGRAM_BOT_TOKEN ||
+    process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
+    process.env.TELEGRAM_TOKEN ||
+    process.env.TELEGRAM;
   if (!botToken) throw new Error('TELEGRAM_BOT_TOKEN_missing');
 
   const oidc = await getGithubOidcToken(AUDIENCE);
