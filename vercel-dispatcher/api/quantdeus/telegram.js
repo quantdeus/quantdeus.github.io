@@ -13,6 +13,7 @@ const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-telegram';
 const DEFAULT_WEBHOOK_URL = 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
+const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.whf.bz/account/';
 const REGISTRY_URL = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/coordination/agents.json';
 const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
 const LIVE_RESEARCH_TIMEOUT_MS = 7000;
@@ -27,6 +28,73 @@ let quantdeusSnapshotCache = null;
 let quantdeusSnapshotAt = 0;
 
 const telegramPlanCache = new Map();
+
+function httpsUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function proPaymentProviders() {
+  const raw = String(process.env.QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON || '').trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(0, 6).map((item, index) => {
+      const label = String(item?.label || item?.name || `Касса ${index + 1}`)
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 40);
+      const monthUrl = httpsUrl(item?.month_url);
+      const yearUrl = httpsUrl(item?.year_url);
+      return monthUrl || yearUrl ? { label, monthUrl, yearUrl } : null;
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function proReplyMarkup() {
+  const rows = [];
+  for (const provider of proPaymentProviders()) {
+    if (provider.monthUrl) {
+      rows.push([{ text: `💳 ${provider.label} · 990 ₽/мес`, url: provider.monthUrl }]);
+    }
+    if (provider.yearUrl) {
+      rows.push([{ text: `💳 ${provider.label} · 9 900 ₽/год`, url: provider.yearUrl }]);
+    }
+  }
+  rows.push([
+    { text: '👤 Мой аккаунт', url: QUANTDEUS_ACCOUNT_URL },
+    { text: 'ℹ️ О Pro', url: QUANTDEUS_PRO_URL }
+  ]);
+  return { inline_keyboard: rows };
+}
+
+function proText(entitlement = { plan: 'free' }) {
+  const providers = proPaymentProviders();
+  return [
+    '⭐ QuantDeus Pro',
+    '',
+    entitlement.plan === 'pro'
+      ? '✅ Ваш тариф: PRO — активен. Для администраторов и создателя QuantDeus он предоставляется без оплаты.'
+      : '🆓 Ваш тариф: Free.',
+    '',
+    'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
+    'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
+    '',
+    providers.length
+      ? 'Выберите тариф и кассу кнопкой ниже. Оплата открывается из этого же бота, который используется для авторизации QuantDeus.'
+      : 'Кассы пока не настроены в защищённой конфигурации. После подключения платёжных провайдеров кнопки оплаты появятся здесь автоматически.',
+    '',
+    'Тариф и условия:',
+    QUANTDEUS_PRO_URL
+  ].join('\n');
+}
 
 async function wordpressTelegramPlan(userId) {
   const id = String(userId || '').trim();
@@ -905,21 +973,7 @@ async function homunculusReply(message, retryUpdate = null) {
     return 'Команды QuantDeus:\n/agents\n/pro — Free / Pro\n/agent <id> <вопрос>\n\nОбычный текст автоматически маршрутизируется к подходящему гомункулу.';
   }
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    const entitlement = await telegramEntitlement(message);
-    const statusLine = entitlement.plan === 'pro'
-      ? '✅ Ваш тариф: PRO — активен. Для администраторов и создателя QuantDeus он предоставляется без оплаты.'
-      : '🆓 Ваш тариф: Free.';
-    return [
-      '⭐ QuantDeus Pro',
-      '',
-      statusLine,
-      '',
-      'Free — базовая пользовательская очередь AI Fleet и стандартный приоритет.',
-      'Pro — 990 ₽/месяц или 9 900 ₽/год: приоритетная очередь, multi-agent, Research + QA и рабочие артефакты.',
-      '',
-      'Тариф, условия и активация:',
-      QUANTDEUS_PRO_URL
-    ].join('\n');
+    return proText(await telegramEntitlement(message));
   }
   if (/^\/agents(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return ['🤖 QuantDeus: роли', ...agents.map(agent => `/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name || agent.role}`)].join('\n').slice(0, 3900);
@@ -1025,14 +1079,16 @@ function webhookLoginReply(res, message, loginUrl) {
   });
 }
 
-function webhookReply(res, message, text) {
-  return res.status(200).json({
+function webhookReply(res, message, text, replyMarkup = null) {
+  const payload = {
     method: 'sendMessage',
     chat_id: message.chat.id,
     text: String(text).slice(0, 4096),
     disable_web_page_preview: true,
     reply_parameters: { message_id: message.message_id }
-  });
+  };
+  if (replyMarkup) payload.reply_markup = replyMarkup;
+  return res.status(200).json(payload);
 }
 
 async function retrySmokeStart(req, res) {
@@ -1143,6 +1199,14 @@ export default async function handler(req, res) {
       console.warn('[telegram-bot-auth] status=rejected code=' + code);
       return webhookReply(res, message, '⚠️ Ссылка входа устарела или недействительна. Вернись на QuantDeus и нажми «Войти через Telegram» ещё раз.');
     }
+  }
+
+  if (
+    /^\/start(?:@[A-Za-z0-9_]+)?\s+pro(?:\s|$)/i.test(rawText) ||
+    /^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
+  ) {
+    const entitlement = await telegramEntitlement(message);
+    return webhookReply(res, message, proText(entitlement), proReplyMarkup());
   }
 
   try {
