@@ -320,7 +320,14 @@ jobs:
       - name: Detect duplicate custom Pages deployers
         run: |
           set -euo pipefail
-          mapfile -t deployers < <(grep -Rl "actions/deploy-pages@" .github/workflows --include='*.yml' --include='*.yaml' || true)
+          mapfile -t deployers < <(grep -Rl "actions/deploy-pages@" .github/workflows --include='*.yml' --include='*.yaml' | grep -v '/static-smoke.yml
+          if [ "${#deployers[@]}" -ne 1 ] || [ "${deployers[0]:-}" != ".github/workflows/pages-live-mirror.yml" ]; then
+            printf 'Unexpected Pages deployer set: %s\n' "${deployers[*]:-none}"
+            exit 1
+          fi
+          echo "Single Pages source: auto-synced WordPress mirror workflow"
+
+ || true)
           if [ "${#deployers[@]}" -ne 1 ] || [ "${deployers[0]:-}" != ".github/workflows/pages-live-mirror.yml" ]; then
             printf 'Unexpected Pages deployer set: %s\n' "${deployers[*]:-none}"
             exit 1
