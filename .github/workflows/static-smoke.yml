@@ -127,8 +127,8 @@ jobs:
           must(coordinator.includes("startsWith(github.event.comment.body, '/coord ')"), 'coordinator must require an explicit /coord command for ordinary comments');
 
           const seven=read('.github/workflows/seven-priority-cycle.yml');
-          must(seven.includes('trusted:false'), 'Seven priority planner must be no-tools');
-          must(seven.includes("result.runtime!=='openclaw-agent-exec-no-tools'"), 'Seven priority planner must verify no-tools runtime');
+          must(seven.includes('trusted:false'), 'Seven priority planner must be brokered read-only');
+          must(seven.includes("result.runtime!=='openclaw-agent-exec-brokered-read-tools'"), 'Seven priority planner must verify brokered read runtime');
           must(seven.includes('Seven dispatch selected non-executable Issue'), 'Seven must reject blocked/review Issues before dispatch');
           must(seven.includes('Seven dispatch selected Issue already has an open implementation PR'), 'Seven snapshot preflight must reject already represented Issues');
           must(seven.includes('agent-role dispatch Issue already has an open implementation PR'), 'Seven fresh dispatch preflight must reject already represented Issues');
@@ -143,7 +143,7 @@ jobs:
             'actions: write',
             'id-token: write',
             'trusted: false',
-            "result.runtime !== 'openclaw-agent-exec-no-tools'",
+            "result.runtime !== 'openclaw-agent-exec-brokered-read-tools'",
             'delete process.env.GITHUB_TOKEN',
             'delete process.env.GH_TOKEN',
             'quantdeus-hourly-openclaw.yml'
