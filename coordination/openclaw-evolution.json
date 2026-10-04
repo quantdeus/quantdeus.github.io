@@ -2,7 +2,7 @@
   "schema_version": 2,
   "version": "openclaw-evolution-v2",
   "status": "active",
-  "updated": "2026-09-30",
+  "updated": "2026-10-04",
   "workflow": ".github/workflows/openclaw-evolution.yml",
   "cadence": "31 2 * * *",
   "branch_prefix": "automation/openclaw-evolution/",
@@ -24,7 +24,7 @@
     "core_auto_merge": false,
     "auto_merge": "tier-a-guarded-only",
     "human_review_required": "tier-b-only",
-    "analysis_tools": false,
+    "analysis_tools": true,
     "mutation_broker": "scripts/openclaw-evolution.js",
     "pre_mutation_semantic_guard": "scripts/openclaw-evolution-guard.js",
     "tier_b_mutation": "proposal-record-only",
@@ -33,7 +33,9 @@
       "qa",
       "smoke",
       "evolution-guard"
-    ]
+    ],
+    "tool_access_model": "tools-by-default-capability-broker-v1",
+    "prompt_injection_guard": "2026.10-qshield-v2"
   },
   "auto_merge_paths": [
     ".openclaw/skills/quantdeus-self-evolution/SKILL.md",
@@ -49,13 +51,14 @@
   "protected_invariants": [
     "github-oidc-authentication",
     "trusted-workflow-gating",
-    "public-no-tools",
     "mcp-deny-lists",
     "secret-isolation",
     "branch-pr-auditability",
     "qa-and-static-smoke",
     "mission-alignment",
-    "human-approval-for-privileged-actions"
+    "human-approval-for-privileged-actions",
+    "brokered-tool-access-without-privilege-escalation",
+    "prompt-injection-firewall-on-user-and-tool-content"
   ],
   "metrics": [
     "workflow-success-rate",

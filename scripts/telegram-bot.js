@@ -553,7 +553,7 @@ async function handleMessage(message) {
       '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n' +
       '🐒 Мартышки AI Fleet работают прямо в этом боте.\n' +
       '⭐ QuantDeus Pro доступен здесь же; админам и создателю — автоматически.\n\n' +
-      `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}: public tools DENY ALL; prompt-injection и secret-exfiltration блокируются до LLM.\n\n` +
+      `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}: public tools BROKERED READ/QUERY; prompt-injection и secret-exfiltration блокируются до LLM.\n\n` +
       'Пиши обычным текстом — я автоматически выберу роль гомункула по теме.\n' +
       '/monkeys или /agents — мартышки AI Fleet\n' +
       '/pro — QuantDeus Free / Pro\n' +
@@ -583,7 +583,7 @@ async function handleMessage(message) {
     return;
   }
   if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
-    await send(chatId, `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: DENY ALL\nPrompt injection: PRE-FILTER + SYSTEM FIREWALL\nSecret leakage: OUTPUT FILTER\nGroups: COMMANDS / MENTIONS / REPLIES ONLY`, replyId);
+    await send(chatId, `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: BROKERED READ / QUERY\nPrivileged writes: OWNER/ADMIN BROKER ONLY\nPrompt injection: PRE-FILTER + SYSTEM FIREWALL + UNTRUSTED TOOL OUTPUT\nSecret leakage: OUTPUT FILTER\nGroups: COMMANDS / MENTIONS / REPLIES ONLY`, replyId);
     return;
   }
 
@@ -616,7 +616,7 @@ async function handleMessage(message) {
       return;
     }
     if (!(await isTelegramAdmin(message))) {
-      await send(chatId, '🛡️ Public mode — chat-only. Proposal можно обсудить здесь, но публикация в GitHub доступна только администратору.', replyId);
+      await send(chatId, '🛡️ Public mode — brokered read-tools. Proposal можно исследовать и обсудить здесь, но публикация/мутация GitHub доступна только администратору.', replyId);
       return;
     }
     const url = createProposal(agentId, ideaShield.normalized, username);
@@ -636,7 +636,7 @@ async function handleMessage(message) {
       await send(chatId, 'Прямой /task доступен только Telegram admin. Используй /propose для обычного предложения.', replyId);
       return;
     }
-    const taskShield = shieldInput(task);
+    const taskShield = shieldInput(task, { allowToolRequests: true });
     if (taskShield.blocked) {
       console.warn('[quantdeus-shield] channel=telegram-admin-task status=blocked reasons=' + taskShield.reasons.join(','));
       await send(chatId, taskShield.response, replyId);

@@ -26,7 +26,7 @@ function skipDialogue(comments, marker, eventName = process.env.GITHUB_EVENT_NAM
   return !retry;
 }
 function turnEvidence(result, trusted = false) {
-  const expected = trusted ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-no-tools';
+  const expected = trusted ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-brokered-read-tools';
   if (result.runtime !== expected || !Number.isInteger(result.assistantTurns) || result.assistantTurns < 1 ||
       typeof result.model !== 'string' || !result.model.trim()) throw new Error('ROLE_DIALOGUE_UNVERIFIED_LLM_TURN');
   return {runtime:result.runtime,model:result.model,provider:result.provider || null,

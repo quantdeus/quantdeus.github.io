@@ -47,7 +47,7 @@ The automated evolution lane cannot write those core files. It can create only a
 Never weaken or bypass:
 - GitHub OIDC authentication;
 - trusted-workflow gating;
-- public no-tools mode;
+- brokered public read-only tool boundary and authenticated mutation authority;
 - MCP tool filters/deny lists;
 - secret isolation and cleanup;
 - branch/PR auditability;
