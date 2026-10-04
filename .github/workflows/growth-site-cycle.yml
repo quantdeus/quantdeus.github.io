@@ -19,7 +19,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: quantdeus-growth-site-cycle-${{ inputs.agent_id || github.event.schedule || 'manual' }}
+  group: quantdeus-openclaw-trusted-office
   cancel-in-progress: false
 
 jobs:
