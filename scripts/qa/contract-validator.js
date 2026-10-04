@@ -48,6 +48,7 @@ check(agentsReadme.includes('### EMH operational treatment loop'), 'AGENTS.md', 
 check(agentsReadme.includes('QA watches the doctor'), 'AGENTS.md', 'independent QA oversight of EMH treatment is declared');
 check(agentsReadme.includes('The treatment PR must change **`AGENTS.md` only**'), 'AGENTS.md', 'EMH treatment document scope is AGENTS.md only');
 check(agentsReadme.includes('## Collective cognition — Borg efficiency protocol') && agentsReadme.includes('OBSERVE → DEDUCE → INDUCE → ABDUCE → FALSIFY'), 'AGENTS.md', 'all-agent Borg cognition protocol and reasoning loop are documented');
+check(agentsReadme.includes('## Duty execution vs guardrails') && agentsReadme.includes('**Do not invent restrictions.**') && agentsReadme.includes('**Authorized duty must execute.**') && agentsReadme.includes('**Authority does not erase safety.**'), 'AGENTS.md', 'all-swarm duty execution policy forbids invented restrictions while preserving hard safety boundaries');
 const cognitiveSitePrompt = fs.readFileSync(path.join(root,'scripts','site-agent-reply.js'),'utf8');
 const cognitiveOpenClawClient = fs.readFileSync(path.join(root,'scripts','openclaw-office-client.js'),'utf8');
 const cognitiveTelegram = fs.readFileSync(path.join(root,'vercel-dispatcher','api','quantdeus','telegram.js'),'utf8');
@@ -206,6 +207,7 @@ const roleCronWorkflow = fs.readFileSync(path.join(root,'.github','workflows','a
 check(roleCronWorkflow.includes("agent.id==='emh'") && roleCronWorkflow.includes('EMH TREATMENT LANE') && roleCronWorkflow.includes('AGENTS.md only') && roleCronWorkflow.includes('/pulls/') && roleCronWorkflow.includes("names[0] !== 'AGENTS.md'"), 'agent-role-cron.yml', 'EMH treatment cron is runtime-guarded to AGENTS.md-only PRs');
 check(roleCronWorkflow.includes("pr.head?.ref !== expectedBranch") && roleCronWorkflow.includes("pr.head?.repo?.full_name !== process.env.GITHUB_REPOSITORY") && roleCronWorkflow.includes("pr.base?.ref !== 'main'"), 'agent-role-cron.yml', 'EMH treatment PR number is bound to the declared canonical branch targeting main');
 check(roleCronWorkflow.includes('action=open_issue') && roleCronWorkflow.includes('scripts/publish-agent-issue.js') && roleCronWorkflow.includes('issue_proposal='), 'agent-role-cron.yml', 'role-agent new-Issue proposals use the deterministic publisher instead of relying on an LLM MCP mutation');
+check(roleCronWorkflow.includes('EXECUTION AUTHORITY: Do not invent or broaden restrictions') && roleCronWorkflow.includes('One-artifact/WIP limits constrain concurrency') && roleCronWorkflow.includes('action=open_issue'), 'agent-role-cron.yml', 'role-agent runtime receives duty-execution policy and approved-route fallback instead of self-imposed refusal');
 check(agentsReadme.includes('Seven of Nine (\`seven-of-nine\`)'), 'AGENTS.md', 'Seven is explicitly named as stress-test authority');
 const qaTriadWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-triad.yml'),'utf8');
 const staticSmokeWorkflow = fs.readFileSync(path.join(root,'.github','workflows','static-smoke.yml'),'utf8');
