@@ -47,6 +47,7 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/browser.js
           node --check vercel-dispatcher/api/quantdeus/hermes.js
           node --check vercel-dispatcher/api/quantdeus/openclaw.js
+          node --check vercel-dispatcher/lib/public-read-mcp-source.js
           node --check vercel-dispatcher/api/quantdeus/telegram.js
           node --check vercel-dispatcher/api/quantdeus/community.js
           node --check vercel-dispatcher/api/quantdeus/orders.js
