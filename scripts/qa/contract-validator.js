@@ -332,11 +332,15 @@ const nativeSchedulerBootstrap = fs.readFileSync(path.join(root,'scripts','openc
 const nativeSchedulerDispatcher = fs.readFileSync(path.join(root,'scripts','openclaw-dispatch-workflow.js'),'utf8');
 check(nativeSchedulerBootstrap.includes("'automations'") && nativeSchedulerBootstrap.includes("'--command-argv'") && nativeSchedulerBootstrap.includes('quantdeus-native:'), 'scripts/openclaw-automations-bootstrap.js', 'native scheduler bootstrap declares deterministic OpenClaw command jobs');
 check(nativeSchedulerBootstrap.includes('manifest_hash') && nativeSchedulerBootstrap.includes('quantdeus-native-jobs.json'), 'scripts/openclaw-automations-bootstrap.js', 'native scheduler bootstrap reconciles declarations idempotently through persisted registry state');
-check(nativeSchedulerDispatcher.includes("REPOSITORY = 'quantdeus/quantdeus.github.io'") && nativeSchedulerDispatcher.includes('QUANTDEUS_GITHUB_TOKEN') && nativeSchedulerDispatcher.includes('watchdog_recursion_denied'), 'scripts/openclaw-dispatch-workflow.js', 'native scheduler dispatcher is repository-pinned, credential-gated and recursion-safe');
+check(nativeSchedulerDispatcher.includes("REPOSITORY = 'quantdeus/quantdeus.github.io'") && nativeSchedulerDispatcher.includes('QUANTDEUS_GITHUB_TOKEN') && nativeSchedulerDispatcher.includes('watchdog_recursion_denied') && nativeSchedulerDispatcher.includes('AbortSignal.timeout(15000)'), 'scripts/openclaw-dispatch-workflow.js', 'native scheduler dispatcher is repository-pinned, credential-gated, recursion-safe and network-time-bounded');
 check(
   openclawRuntime.includes("SCHEDULER_SANDBOX = 'quantdeus-openclaw-scheduler'") &&
   openclawRuntime.includes('function schedulerWatchdogRequest') &&
   openclawRuntime.includes('runNativeSchedulerTick') &&
+  openclawRuntime.includes('SCHEDULER_SESSION_TIMEOUT_MS = 20 * 60 * 1000') &&
+  openclawRuntime.includes('SCHEDULER_SESSION_EXTENSION_MS = 15 * 60 * 1000') &&
+  openclawRuntime.includes('await scheduler.extendTimeout(SCHEDULER_SESSION_EXTENSION_MS)') &&
+  openclawRuntime.includes("sessionLifecycle = 'rotated'") &&
   openclawRuntime.includes('skipMissedJobs: false') &&
   openclawRuntime.includes("execution_mode: 'openclaw-native-scheduler'"),
   'vercel-dispatcher/api/quantdeus/openclaw.js',
