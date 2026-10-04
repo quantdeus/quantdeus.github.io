@@ -1,9 +1,6 @@
 name: QuantDeus Crew Health Check 🩺🖖
 
 on:
-  schedule:
-    # Every 2 hours at :19 UTC, staggered away from Seven (:11) and hourly OpenClaw (:00).
-    - cron: '19 */2 * * *'
   workflow_dispatch:
   push:
     branches: [main]
