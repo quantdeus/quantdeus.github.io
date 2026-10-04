@@ -10,6 +10,8 @@ const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const EVENTS = new Set(['issue_comment', 'issues', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
+const SCHEDULER_SANDBOX = 'quantdeus-openclaw-scheduler';
+const SCHEDULER_GATEWAY_PORT = 18791;
 const VERCEL_INTERNAL_AUDIENCE = 'quantdeus-internal-openclaw';
 const VERCEL_INTERNAL_ISSUER = 'https://oidc.vercel.com/energotrons-projects-2705eaed';
 const VERCEL_INTERNAL_JWKS_URL = 'https://oidc.vercel.com/.well-known/jwks';
@@ -140,6 +142,182 @@ function trustedOfficeRequest(req, claims) {
     new RegExp('^squad-b/issue-' + octetIssue + '-\\d+-\\d+$').test(octetBranch);
 
   return siteOwnerAction || octetHeraldAction;
+}
+
+function schedulerWatchdogRequest(req, claims) {
+  if (req.body?.execution_mode !== 'trusted-office') return false;
+  const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  return /\.github\/workflows\/openclaw-scheduler-watchdog\.yml(?:@|$)/.test(workflowRef) &&
+    req.body?.metadata?.source === 'openclaw-scheduler-watchdog' &&
+    new Set(['schedule', 'workflow_dispatch']).has(String(claims.event_name || ''));
+}
+
+async function runNativeSchedulerTick(githubToken) {
+  let scheduler;
+  try {
+    scheduler = await Sandbox.getOrCreate({
+      name: SCHEDULER_SANDBOX,
+      image: 'vercel/sandbox/universal',
+      resources: { vcpus: 1 },
+      timeout: 2 * 60 * 1000,
+      persistent: true,
+      snapshotExpiration: 30 * 24 * 60 * 60 * 1000,
+      resume: true,
+      tags: { app: 'quantdeus', runtime: 'openclaw-native-scheduler' }
+    });
+
+    const home = await text(await scheduler.runCommand({ cmd: 'bash', args: ['-lc', 'printf %s "$HOME"'] }));
+    const root = `${home}/quantdeus-native-scheduler`;
+    const repoDir = `${root}/repo`;
+    const stateDir = `${home}/.openclaw/quantdeus-native-scheduler-state`;
+    const configPath = `${stateDir}/openclaw.json`;
+    const tokenPath = `${stateDir}/gateway.token`;
+    const logPath = `${stateDir}/gateway.log`;
+    const gatewayUrl = `ws://127.0.0.1:${SCHEDULER_GATEWAY_PORT}`;
+
+    await checked(scheduler, { cmd: 'mkdir', args: ['-p', root, stateDir] }, 'native_scheduler_mkdir');
+    const install = await scheduler.runCommand({
+      cmd: 'bash',
+      args: ['-lc', 'command -v openclaw >/dev/null 2>&1 || npm install --global openclaw@2026.9.6 --allow-scripts=openclaw']
+    });
+    if (install.exitCode !== 0) throw new Error(`openclaw_native_scheduler_install_failed: ${(await install.stderr()).slice(-1200)}`);
+
+    const repoExists = await scheduler.runCommand({ cmd: 'test', args: ['-d', `${repoDir}/.git`] });
+    if (repoExists.exitCode !== 0) {
+      await scheduler.runCommand({ cmd: 'rm', args: ['-rf', repoDir] });
+      await checked(scheduler, {
+        cmd: 'git',
+        args: ['clone', '--depth', '1', '--branch', 'main', 'https://github.com/quantdeus/quantdeus.github.io.git', repoDir],
+        cwd: root
+      }, 'native_scheduler_repo_clone');
+    } else {
+      await checked(scheduler, {
+        cmd: 'git',
+        args: ['fetch', '--depth', '1', 'origin', 'main'],
+        cwd: repoDir
+      }, 'native_scheduler_repo_fetch');
+      await checked(scheduler, {
+        cmd: 'git',
+        args: ['reset', '--hard', 'origin/main'],
+        cwd: repoDir
+      }, 'native_scheduler_repo_reset');
+    }
+
+    let gatewayToken = '';
+    const tokenRead = await scheduler.runCommand({ cmd: 'cat', args: [tokenPath] });
+    if (tokenRead.exitCode === 0) gatewayToken = (await tokenRead.stdout()).trim();
+    if (!/^[a-f0-9]{64}$/.test(gatewayToken)) {
+      gatewayToken = crypto.randomBytes(32).toString('hex');
+      await scheduler.writeFiles([{ path: tokenPath, content: Buffer.from(gatewayToken + '\n') }]);
+      await scheduler.runCommand({ cmd: 'chmod', args: ['600', tokenPath] });
+    }
+
+    const config = {
+      gateway: {
+        mode: 'local',
+        port: SCHEDULER_GATEWAY_PORT,
+        bind: 'loopback',
+        auth: { mode: 'token' }
+      },
+      cron: {
+        enabled: true,
+        skipMissedJobs: false,
+        triggers: { enabled: true },
+        sessionRetention: '24h'
+      }
+    };
+    await scheduler.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }]);
+
+    const runtimeEnv = {
+      OPENCLAW_HOME: home,
+      OPENCLAW_STATE_DIR: stateDir,
+      OPENCLAW_CONFIG_PATH: configPath,
+      OPENCLAW_GATEWAY_TOKEN: gatewayToken,
+      QUANTDEUS_GITHUB_TOKEN: githubToken,
+      QUANTDEUS_SCHEDULER_LOG: logPath,
+      CI: '1'
+    };
+    const gatewayArgs = [
+      'gateway', 'status',
+      '--url', gatewayUrl,
+      '--token', gatewayToken,
+      '--require-rpc',
+      '--json'
+    ];
+    let gateway = await scheduler.runCommand({ cmd: 'openclaw', args: gatewayArgs, env: runtimeEnv });
+    if (gateway.exitCode !== 0) {
+      const start = await scheduler.runCommand({
+        cmd: 'bash',
+        args: ['-lc', `nohup openclaw gateway --port ${SCHEDULER_GATEWAY_PORT} --bind loopback --auth token --token "$OPENCLAW_GATEWAY_TOKEN" >"$QUANTDEUS_SCHEDULER_LOG" 2>&1 &`],
+        cwd: repoDir,
+        env: runtimeEnv
+      });
+      if (start.exitCode !== 0) throw new Error(`openclaw_native_scheduler_gateway_start_failed: ${(await start.stderr()).slice(-1200)}`);
+
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        gateway = await scheduler.runCommand({ cmd: 'openclaw', args: gatewayArgs, env: runtimeEnv });
+        if (gateway.exitCode === 0) break;
+      }
+    }
+    if (gateway.exitCode !== 0) {
+      const logs = await scheduler.runCommand({ cmd: 'tail', args: ['-80', logPath] });
+      throw new Error(`openclaw_native_scheduler_gateway_unready: ${((await gateway.stderr()) || (await logs.stdout())).slice(-2400)}`);
+    }
+
+    const bootstrap = await scheduler.runCommand({
+      cmd: 'node',
+      args: ['scripts/openclaw-automations-bootstrap.js'],
+      cwd: repoDir,
+      env: {
+        ...runtimeEnv,
+        QUANTDEUS_OPENCLAW_SCHEDULER_URL: gatewayUrl,
+        QUANTDEUS_OPENCLAW_SCHEDULER_TOKEN: gatewayToken,
+        QUANTDEUS_SCHEDULER_STATE_DIR: stateDir
+      }
+    });
+    const bootstrapOut = ((await bootstrap.stdout()) || (await bootstrap.stderr())).trim();
+    if (bootstrap.exitCode !== 0) {
+      throw new Error(`openclaw_native_scheduler_bootstrap_failed: ${bootstrapOut.slice(-2400)}`);
+    }
+
+    const status = await scheduler.runCommand({
+      cmd: 'openclaw',
+      args: ['automations', '--url', gatewayUrl, '--token', gatewayToken, 'status', '--json'],
+      cwd: repoDir,
+      env: runtimeEnv
+    });
+    if (status.exitCode !== 0) {
+      throw new Error(`openclaw_native_scheduler_status_failed: ${(await status.stderr()).slice(-1600)}`);
+    }
+    const list = await scheduler.runCommand({
+      cmd: 'openclaw',
+      args: ['automations', '--url', gatewayUrl, '--token', gatewayToken, 'list', '--all', '--json'],
+      cwd: repoDir,
+      env: runtimeEnv
+    });
+    if (list.exitCode !== 0) {
+      throw new Error(`openclaw_native_scheduler_list_failed: ${(await list.stderr()).slice(-1600)}`);
+    }
+
+    let statusJson = null;
+    let listJson = null;
+    try { statusJson = JSON.parse((await status.stdout()).trim()); } catch {}
+    try { listJson = JSON.parse((await list.stdout()).trim()); } catch {}
+    const jobs = Array.isArray(listJson) ? listJson : (Array.isArray(listJson?.jobs) ? listJson.jobs : []);
+    return {
+      ok: true,
+      scheduler: 'openclaw-native',
+      gateway: statusJson?.enabled === false ? 'disabled' : 'ready',
+      jobs: jobs.length,
+      bootstrap: bootstrapOut.slice(-1600),
+      sandbox: SCHEDULER_SANDBOX
+    };
+  } catch (error) {
+    error.status = 503;
+    error.retrySafe = true;
+    throw error;
+  }
 }
 
 function hourlyOfficeRequest(req, claims) {
@@ -393,6 +571,7 @@ export default async function handler(req, res) {
         repository: REPOSITORY
       };
     }
+    const schedulerWatchdog = !vercelInternal && schedulerWatchdogRequest(req, claims);
     const trustedOffice = vercelInternal ? false : trustedOfficeRequest(req, claims);
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
@@ -411,7 +590,7 @@ export default async function handler(req, res) {
         ? executorGithubToken
         : (callerGithubToken || executorGithubToken)
     ).trim();
-    if (req.body?.execution_mode === 'trusted-office' && !trustedOffice) {
+    if (req.body?.execution_mode === 'trusted-office' && !trustedOffice && !schedulerWatchdog) {
       return res.status(403).json({ ok: false, error: 'openclaw_trusted_office_not_authorized' });
     }
     if (vercelInternal && req.body?.execution_mode !== 'chat') {
@@ -419,6 +598,23 @@ export default async function handler(req, res) {
     }
     if (trustedOffice && !githubToken) {
       return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
+    }
+    if (schedulerWatchdog) {
+      if (!executorGithubToken) {
+        return res.status(503).json({ ok: false, error: 'openclaw_native_scheduler_github_token_missing', retry_safe: true });
+      }
+      const schedulerResult = await runNativeSchedulerTick(executorGithubToken);
+      return res.status(200).json({
+        ok: true,
+        provider: 'quantdeus-openclaw-native-scheduler',
+        runtime: 'openclaw',
+        model: null,
+        model_provider: null,
+        execution_mode: 'openclaw-native-scheduler',
+        tools: { scheduler: true, github_dispatch: true, model: false },
+        text: JSON.stringify(schedulerResult),
+        github_run: { actor: claims.actor || null, workflow: claims.workflow || null, event: claims.event_name, repository: claims.repository }
+      });
     }
 
     if (octetHerald) {
@@ -1402,7 +1598,7 @@ export default async function handler(req, res) {
       ? explicitStatus
       : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502);
     const retrySafe = Boolean(error?.retrySafe) ||
-      /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted)/i.test(message);
+      /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted|native_scheduler)/i.test(message);
     return res.status(status).json({
       ok: false,
       error: 'openclaw_office_failed',
