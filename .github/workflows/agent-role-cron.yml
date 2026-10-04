@@ -1,8 +1,6 @@
 name: QuantDeus Agent Role Cron 🧬
 
 on:
-  schedule:
-    - cron: '23 0-14 * * *'
   workflow_dispatch:
     inputs:
       agent_id:
