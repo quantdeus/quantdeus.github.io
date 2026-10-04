@@ -329,6 +329,7 @@ function runtimeTelegramBotToken() {
   return String(
     process.env.TELEGRAM_BOT_TOKEN ||
     process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
+    process.env.Telegram_bot_token ||
     process.env.TELEGRAM_TOKEN ||
     process.env.TELEGRAM ||
     ''
@@ -1017,8 +1018,6 @@ async function openClawInternalReply(agentId, requestedAgentId, system, user) {
 }
 
 async function statelessPublicFallback(agentId, system, user) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 14000);
   const endpoint = 'https://text.pollinations.ai/openai';
   const model = String(process.env.POLLINATIONS_MODEL || 'openai').trim() || 'openai';
   const key = String(process.env.POLLINATIONS_API_KEY || '').trim();
@@ -1028,38 +1027,64 @@ async function statelessPublicFallback(agentId, system, user) {
   };
   if (key) headers.authorization = 'Bearer ' + key;
 
+  const baseMessages = [
+    { role: 'system', content: String(system || '').slice(0, 30000) },
+    { role: 'user', content: String(user || '').slice(0, 10000) }
+  ];
+  const deadline = Date.now() + 18000;
+
+  const call = async (messages, timeoutMs) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.2,
+          max_tokens: 1400,
+          stream: false,
+          private: true,
+          referrer: 'QuantDeus-Telegram'
+        }),
+        signal: controller.signal
+      });
+      const raw = await response.text();
+      let data = {};
+      try { data = JSON.parse(raw); } catch {}
+      return { response, raw, data };
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: String(system || '').slice(0, 30000) },
-          { role: 'user', content: String(user || '').slice(0, 10000) }
-        ],
-        temperature: 0.2,
-        max_tokens: 1400,
-        stream: false,
-        private: true,
-        referrer: 'QuantDeus-Telegram'
-      }),
-      signal: controller.signal
-    });
-    const raw = await response.text();
-    let data = {};
-    try { data = JSON.parse(raw); } catch {}
-    const output = cleanModelText(data?.choices?.[0]?.message?.content || data?.text || '');
-    if (!response.ok || !output) {
-      throw new Error(`stateless_public_${response.status}: ${raw.slice(0, 500)}`);
+    const first = await call(baseMessages, Math.min(8500, Math.max(1500, deadline - Date.now())));
+    let output = cleanModelText(first.data?.choices?.[0]?.message?.content || first.data?.text || '');
+    if (first.response.ok && !output && deadline - Date.now() > 1800) {
+      console.warn('[telegram-llm] provider=stateless-pollinations status=empty-final retry=finalization');
+      const finalizationMessages = [
+        ...baseMessages,
+        {
+          role: 'system',
+          content: 'FINALIZATION: answer the user directly in message.content. Do not emit reasoning, tool calls, function calls, or hidden analysis. If a requested fact cannot be verified from the supplied context, say that briefly instead of trying to call a tool.'
+        }
+      ];
+      const second = await call(finalizationMessages, Math.min(8500, Math.max(1500, deadline - Date.now())));
+      output = cleanModelText(second.data?.choices?.[0]?.message?.content || second.data?.text || '');
+      if (!second.response.ok || !output) {
+        throw new Error(`stateless_public_${second.response.status}: ${second.raw.slice(0, 500)}`);
+      }
+    } else if (!first.response.ok || !output) {
+      throw new Error(`stateless_public_${first.response.status}: ${first.raw.slice(0, 500)}`);
     }
     console.info(`[telegram-llm] provider=stateless-pollinations model=${model} status=ok chars=${output.length} agent=${agentId}`);
     return output;
   } catch (error) {
     console.warn('[telegram-llm] provider=stateless-pollinations status=error detail=' + String(error?.message || error).slice(0, 500));
     return '';
-  } finally {
-    clearTimeout(timer);
   }
 }
 
