@@ -1,0 +1,61 @@
+name: OpenClaw Native Scheduler Watchdog
+
+on:
+  schedule:
+    # Sole external clock. It only wakes the persistent native OpenClaw scheduler.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: openclaw-native-scheduler-watchdog
+  cancel-in-progress: false
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Wake native OpenClaw scheduler
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+          (async () => {
+            const result = await office.ask({
+              profile: 'seven-of-nine',
+              trusted: true,
+              messages: [{ role: 'user', content: 'Wake the native QuantDeus OpenClaw scheduler. Do not run an LLM turn.' }],
+              metadata: {
+                source: 'openclaw-scheduler-watchdog',
+                repository: process.env.GITHUB_REPOSITORY,
+                purpose: 'liveness-only'
+              },
+              timeoutMs: 180000,
+              retryTransient: true
+            });
+            const payload = JSON.parse(result.text);
+            if (!payload.ok || payload.scheduler !== 'openclaw-native') {
+              throw new Error('Native scheduler watchdog did not receive verified scheduler evidence');
+            }
+            console.log(JSON.stringify(payload, null, 2));
+          })().catch(error => {
+            console.error(error.stack || error.message || error);
+            process.exit(1);
+          });
+          NODE
