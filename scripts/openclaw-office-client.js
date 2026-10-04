@@ -172,7 +172,7 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
 
 async function ask(options) {
   const retryTransient = options?.retryTransient === true;
-  const attempts = retryTransient ? 2 : 1;
+  const attempts = retryTransient ? (options?.trusted === true ? 4 : 2) : 1;
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -182,7 +182,11 @@ async function ask(options) {
       const retryAllowed = options?.trusted !== true || error?.retrySafe === true;
       if (!retryTransient || !isTransientError(error) || !retryAllowed || attempt >= attempts) throw error;
       const message = String(error.message || error);
-      const retryDelayMs = error?.retrySafe === true && /openclaw_office_busy/i.test(message) ? 15000 : 1000;
+      const officeBusy = error?.retrySafe === true && /openclaw_office_busy/i.test(message);
+      // Trusted Office turns are safe to retry only when the server explicitly marks
+      // the busy response retry_safe. Three bounded 15s waits cover ordinary lock
+      // contention without introducing a second scheduler or an unbounded queue.
+      const retryDelayMs = officeBusy ? 15000 : 1000;
       console.warn('[openclaw-office] transient failure; retrying once', {
         attempt,
         code: error.code || null,
