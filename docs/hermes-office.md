@@ -118,7 +118,7 @@ Bootstrap adds Microsoft's `@playwright/mcp@latest` to every profile. Use it for
 
 ### Evolution
 
-Each legacy Hermes profile keeps skills, browser, code execution, delegation and connection management. Unattended Hermes cron creation is disabled; scheduled autonomous QuantDeus execution belongs to the OpenClaw workflow lane. Agent-created skills are security-scanned, writes remain autonomous, and the mutation ledger remains available for manual legacy sessions.
+Each legacy Hermes profile keeps skills, browser, code execution, delegation and connection management. Unattended Hermes cron creation is disabled; scheduled autonomous QuantDeus execution belongs to native OpenClaw Gateway automations. Agent-created skills are security-scanned, writes remain autonomous, and the mutation ledger remains available for manual legacy sessions.
 
 Project-local skills:
 - `quantdeus-autonomy`
@@ -140,7 +140,7 @@ Inference is fail-closed: no repository-default model or anonymous provider rout
 
 Hermes profiles only add an OpenRouter fallback when an explicit runtime credential is present; no unhealthy or unverified provider is inserted automatically.
 
-Vercel Sandbox is stopped after each request, so its in-process scheduler cannot stay alive. Automatic Hermes fleet scheduling is retired and the obsolete `.github/workflows/hermes-office-cron.yml` workflow has been removed. Legacy Hermes cron scripts/routes remain archive/compatibility code only and are not an active QuantDeus scheduler. The active unattended execution lane is `.github/workflows/quantdeus-hourly-openclaw.yml` → the authenticated Vercel OpenClaw Office. Native OpenClaw automations require a running OpenClaw Gateway and are not emulated through the legacy Hermes pulse.
+The request-scoped Hermes/Office Sandboxes still stop and resume, so they do not own recurring cadence. Automatic Hermes fleet scheduling is retired and the obsolete `.github/workflows/hermes-office-cron.yml` workflow remains removed. QuantDeus now runs a separate persistent named Sandbox, `quantdeus-openclaw-scheduler`, whose loopback OpenClaw Gateway owns recurring work through native SQLite-backed automations. Because Vercel Hobby caps one continuous Sandbox session at 45 minutes, `.github/workflows/openclaw-native-watchdog.yml` is a liveness/auth relay only: it resumes/rotates that scheduler session and drains its allowlisted dispatch spool with a short-lived Actions token. The executor workflows themselves are `workflow_dispatch`/event-driven and no longer own recurring GitHub cron schedules.
 
 GitHub access is also short-lived. The calling GitHub Actions run passes its repository-scoped `GITHUB_TOKEN` to the Sandbox only for that Hermes turn, and the official remote GitHub MCP reads it from `MCP_GITHUB_API_KEY`. No long-lived GitHub token is written into the repository or persistent Hermes configuration.
 
