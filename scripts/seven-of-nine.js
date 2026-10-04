@@ -2,6 +2,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const office = require('./openclaw-office-client');
 const { reason, inputDigest, render } = require('./seven-reasoning');
+const { privileged, parseIssueCreateCommand, containsSensitiveMaterial } = require('./seven-command-gate');
 
 async function main() {
   const repo = process.env.GITHUB_REPOSITORY;
@@ -48,6 +49,80 @@ async function main() {
     open_non_draft_prs:reviewQueue.length
   };
   const hub = ghJson(['issue','view',String(hubIssue),'--json','comments,title,url']);
+
+  // Direct owner/admin commands use a narrow deterministic execution gate.
+  // The LLM remains tool-free; only CREATE_ISSUE is allowed here.
+  if ((process.env.GITHUB_EVENT_NAME || '') === 'issue_comment') {
+    const comments = hub.comments || [];
+    const latest = comments[comments.length - 1] || null;
+    const login = latest?.author?.login || '';
+    const repoOwner = repo.split('/')[0];
+    const isPrivileged = privileged(login, repoOwner, process.env.QUANTDEUS_ADMIN_GITHUB_USERS || '');
+    const proposal = parseIssueCreateCommand(latest?.body || '');
+
+    if (proposal && isPrivileged) {
+      if (containsSensitiveMaterial(latest.body || '')) {
+        gh(['issue','comment',String(hubIssue),'--body',
+          '🛡️ Seven execution gate: Issue creation was rejected because the directive appears to contain credential/secret material. Store secrets privately and send only the non-secret task description.'
+        ]);
+        console.log('Seven of Nine: rejected direct Issue command containing sensitive material.');
+        return;
+      }
+
+      const commandId = String(latest.id || 'unknown');
+      proposal.body = [
+        proposal.body,
+        '',
+        'Authorized by: @' + login,
+        'Source: Coordination Hub comment ' + commandId,
+        '<!-- qd-seven-command:' + commandId + ' -->'
+      ].join('\n');
+
+      const outputPath = '/tmp/quantdeus-seven-command-output.txt';
+      try { fs.unlinkSync(outputPath); } catch {}
+      execFileSync(process.execPath,['scripts/publish-agent-issue.js'],{
+        encoding:'utf8',
+        env:{
+          ...process.env,
+          ISSUE_PROPOSAL_B64:Buffer.from(JSON.stringify(proposal)).toString('base64'),
+          ISSUE_SOURCE_AGENT:'seven-of-nine',
+          ISSUE_SOURCE_WORKFLOW:'quantdeus-coordinator.yml',
+          GITHUB_OUTPUT:outputPath
+        },
+        stdio:['ignore','pipe','pipe']
+      });
+      const outputs = Object.fromEntries(
+        fs.readFileSync(outputPath,'utf8').split(/\r?\n/).filter(Boolean).map(line=>{
+          const i=line.indexOf('=');
+          return i < 0 ? [line,''] : [line.slice(0,i),line.slice(i+1)];
+        })
+      );
+      const evidence = {
+        agent:'seven-of-nine',
+        timestamp:new Date().toISOString(),
+        status:'DIRECT_EXECUTION',
+        action:'create_issue',
+        authorized_by:login,
+        command_id:commandId,
+        issue_number:Number(outputs.issue_number || 0) || null,
+        issue_status:outputs.issue_status || null,
+        issue_url:outputs.issue_url || null
+      };
+      fs.writeFileSync('/tmp/quantdeus-seven-reasoning.json',JSON.stringify(evidence,null,2));
+      gh(['issue','comment',String(hubIssue),'--body',[
+        '🖖 **Seven of Nine — direct execution**',
+        '',
+        'Authenticated owner/admin directive accepted.',
+        'Issue ' + (outputs.issue_status === 'duplicate' ? 'reused' : 'created') + ': **#' + outputs.issue_number + '**',
+        outputs.issue_url || '',
+        '',
+        'Safety policy unchanged: this lane can only create/deduplicate a bounded Issue; secrets, spending, irreversible production changes and guardrail bypass remain prohibited.'
+      ].filter(Boolean).join('\n')]);
+      console.log(JSON.stringify(evidence,null,2));
+      return;
+    }
+  }
+
   // Generated swarm comments never become new requests or trigger an inference loop.
   const humanComments = (hub.comments || []).filter(c =>
     c.author?.login && c.author.login.toLowerCase() === repo.split('/')[0].toLowerCase()
