@@ -3,6 +3,7 @@ import { Sandbox } from '@vercel/sandbox';
 import { getVercelOidcToken } from '@vercel/oidc';
 import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
+import { runNativeSchedulerWatchdog } from '../../lib/native-scheduler.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -10,6 +11,7 @@ const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const EVENTS = new Set(['issue_comment', 'issues', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
+const SCHEDULER_SANDBOX = 'quantdeus-openclaw-scheduler';
 const VERCEL_INTERNAL_AUDIENCE = 'quantdeus-internal-openclaw';
 const VERCEL_INTERNAL_ISSUER = 'https://oidc.vercel.com/energotrons-projects-2705eaed';
 const VERCEL_INTERNAL_JWKS_URL = 'https://oidc.vercel.com/.well-known/jwks';
@@ -140,6 +142,14 @@ function trustedOfficeRequest(req, claims) {
     new RegExp('^squad-b/issue-' + octetIssue + '-\\d+-\\d+$').test(octetBranch);
 
   return siteOwnerAction || octetHeraldAction;
+}
+
+function nativeWatchdogRequest(req, claims) {
+  if (req.body?.execution_mode !== 'native-watchdog') return false;
+  const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+  return /\\.github\\/workflows\\/openclaw-native-watchdog\\.yml(?:@|$)/.test(workflowRef) &&
+    req.body?.metadata?.source === 'quantdeus-native-watchdog' &&
+    new Set(['schedule', 'workflow_dispatch']).has(String(claims.event_name || ''));
 }
 
 function hourlyOfficeRequest(req, claims) {
@@ -393,6 +403,7 @@ export default async function handler(req, res) {
         repository: REPOSITORY
       };
     }
+    const nativeWatchdog = !vercelInternal && nativeWatchdogRequest(req, claims);
     const trustedOffice = vercelInternal ? false : trustedOfficeRequest(req, claims);
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
@@ -411,6 +422,9 @@ export default async function handler(req, res) {
         ? executorGithubToken
         : (callerGithubToken || executorGithubToken)
     ).trim();
+    if (req.body?.execution_mode === 'native-watchdog' && !nativeWatchdog) {
+      return res.status(403).json({ ok: false, error: 'openclaw_native_watchdog_not_authorized' });
+    }
     if (req.body?.execution_mode === 'trusted-office' && !trustedOffice) {
       return res.status(403).json({ ok: false, error: 'openclaw_trusted_office_not_authorized' });
     }
@@ -419,6 +433,63 @@ export default async function handler(req, res) {
     }
     if (trustedOffice && !githubToken) {
       return res.status(503).json({ ok: false, error: 'openclaw_trusted_github_token_missing' });
+    }
+
+    if (nativeWatchdog) {
+      if (!callerGithubToken) {
+        return res.status(503).json({ ok: false, error: 'openclaw_native_watchdog_github_token_missing' });
+      }
+      const schedulerOptions = {
+        name: SCHEDULER_SANDBOX,
+        image: 'vercel/sandbox/universal',
+        resources: { vcpus: 2 },
+        timeout: 15 * 60 * 1000,
+        persistent: true,
+        snapshotExpiration: 30 * 24 * 60 * 60 * 1000,
+        resume: true,
+        tags: { app: 'quantdeus', runtime: 'openclaw-native-scheduler' }
+      };
+      sandbox = await Sandbox.getOrCreate(schedulerOptions);
+      try {
+        // A Hobby session can run continuously for at most 45 minutes. Extend in
+        // 10-minute slices; once the plan ceiling is reached, stop/resume the
+        // persistent scheduler so the limit resets without losing SQLite state.
+        await sandbox.extendTimeout(10 * 60 * 1000);
+      } catch (extendError) {
+        console.warn('[openclaw-native-scheduler] rotating capped Sandbox session: ' + String(extendError?.message || extendError).slice(0, 300));
+        try { await sandbox.stop(); } catch (stopError) {
+          console.warn('[openclaw-native-scheduler] stop before rotation: ' + String(stopError?.message || stopError).slice(0, 300));
+        }
+        sandbox = await Sandbox.getOrCreate(schedulerOptions);
+      }
+
+      const install = await sandbox.runCommand({
+        cmd: 'bash',
+        args: ['-lc', 'command -v openclaw >/dev/null 2>&1 || npm install --global openclaw@' + OPENCLAW_RUNTIME_VERSION + ' --allow-scripts=openclaw']
+      });
+      if (install.exitCode !== 0) {
+        throw new Error('openclaw_native_scheduler_install_failed: ' + (await install.stderr()).slice(-1000));
+      }
+
+      const result = await runNativeSchedulerWatchdog({
+        sandbox,
+        githubToken: callerGithubToken,
+        runtimeVersion: OPENCLAW_RUNTIME_VERSION
+      });
+      console.log('[openclaw-native-scheduler] ' + JSON.stringify({
+        jobs: result.jobs,
+        schedule_changed: result.schedule_changed,
+        gateway_restarted: result.gateway_restarted,
+        dispatched: result.dispatched,
+        deferred: result.deferred
+      }));
+      return res.status(200).json({
+        ok: true,
+        native_scheduler: true,
+        provider: 'quantdeus-openclaw-native-scheduler',
+        sandbox: SCHEDULER_SANDBOX,
+        ...result
+      });
     }
 
     if (octetHerald) {
