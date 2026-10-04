@@ -31,6 +31,10 @@ jobs:
       github.event.comment.body == '/coord' ||
       startsWith(github.event.comment.body, '/coordinate ') ||
       github.event.comment.body == '/coordinate' ||
+      startsWith(github.event.comment.body, '/seven ') ||
+      github.event.comment.body == '/seven' ||
+      startsWith(github.event.comment.body, '@seven ') ||
+      startsWith(github.event.comment.body, '@seven-of-nine ') ||
       startsWith(github.event.comment.body, '@coordinator ')
     runs-on: ubuntu-latest
     timeout-minutes: 12
