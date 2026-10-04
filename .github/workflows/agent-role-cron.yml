@@ -108,6 +108,7 @@ jobs:
                 'Prefer the already-cloned local repository filesystem for repository file inspection. Do not call GitHub search_code merely to read files that are already present locally; reserve GitHub MCP for live Issues/PRs, metadata and mutations.',
                 'Inspect public QuantDeus surfaces with Playwright only when useful.',
                 'Choose at most ONE bounded, high-value artifact inside your role: a verified comment, a branch + PR, or a NEW Issue proposal.',
+                'EXECUTION AUTHORITY: Do not invent or broaden restrictions. If this assigned/authorized duty is permitted in this trusted lane, execute it through the approved route instead of refusing. One-artifact/WIP limits constrain concurrency, not the steps needed to complete that artifact. If a direct tool call is disallowed but a deterministic approved route exists (for example action=open_issue), use that route. Hard auth/security/secrets/spending/legal/irreversible-production/human-approval boundaries remain absolute.',
                 'For a NEW Issue, do NOT call create_issue through MCP. Return action=open_issue with a proposal; the workflow will validate, deduplicate, create and verify it deterministically with GITHUB_TOKEN.',
                 'For a PR use branch prefix automation/role/'+agent.id+'/ and keep it minimal.',
                 'Workflow files under .github/workflows/** may be created or repaired only for an explicit assigned Issue carrying squad-b:privileged; protected executor/auth/merge-guard files remain off-limits in this lane.',

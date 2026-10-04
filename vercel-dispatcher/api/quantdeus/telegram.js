@@ -852,6 +852,15 @@ function cleanModelText(value) {
   return text.replace(/^["']|["']$/g, '').trim().slice(0, 3600);
 }
 
+function isPrivilegedRepositoryActionRequest(text) {
+  const value = String(text || '').trim();
+  if (!value) return false;
+  if (/^\/task(?:@[A-Za-z0-9_]+)?\s+/i.test(value)) return true;
+  const action = /(?:создай|создать|открой|открыть|заведи|завести|исправь|почини|обнови|измени|закрой|закрыть|удали|убери|смёрджи|мердж|merge|create|open|fix|patch|update|close|delete|remove|commit)/i.test(value);
+  const target = /(?:github|репозитор|repo|issue|ишью|pr\b|pull request|ветк|branch|commit|коммит|workflow|action|ci\b|код|code)/i.test(value);
+  return action && target;
+}
+
 async function dispatchTelegramRetry(update) {
   const token = String(process.env.QUANTDEUS_GITHUB_TOKEN || '').trim();
   if (!token || !update || !Number.isInteger(update.update_id)) {
@@ -1183,10 +1192,14 @@ async function homunculusReply(message, retryUpdate = null) {
   }
   const safeRaw = inputShield.normalized;
 
-  const requestedAgentId = autoAgent(safeRaw, byId);
+  const directTaskMatch = safeRaw.match(/^\/task(?:@[A-Za-z0-9_]+)?\s+([a-z0-9_-]+)\s+([\s\S]+)/i);
+  const directTaskAgentId = directTaskMatch ? String(directTaskMatch[1] || '').toLowerCase() : '';
+  const requestedAgentId = directTaskAgentId && byId.has(directTaskAgentId)
+    ? directTaskAgentId
+    : autoAgent(safeRaw, byId);
   const agentId = resolveActiveAgentId(requestedAgentId);
   const agent = byId.get(agentId) || agents[0] || { id: 'seven-of-nine', name: 'Seven of Nine', role: 'QuantDeus Coordinator', emoji: '🧭' };
-  const query = stripAgentCommand(safeRaw) || safeRaw;
+  const query = directTaskMatch ? String(directTaskMatch[2] || '').trim() : (stripAgentCommand(safeRaw) || safeRaw);
   const chatType = String(message.chat?.type || 'private');
   const statusRequest = isRepositoryStatusRequest(query);
   const researchRequired = needsLiveResearch(query);
@@ -1200,6 +1213,34 @@ async function homunculusReply(message, retryUpdate = null) {
   }
   const repositoryGrounding = await quantdeusSnapshot(agentId);
   const entitlement = await telegramEntitlement(message);
+  const privilegedRole = ['owner', 'admin'].includes(String(entitlement.role || '').toLowerCase());
+  const privilegedRepositoryAction = privilegedRole && (Boolean(directTaskMatch) || isPrivilegedRepositoryActionRequest(query));
+
+  if (directTaskMatch && !privilegedRole) {
+    return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n🔒 Прямой /task доступен только owner/admin. Публичный чат остаётся no-tools.`;
+  }
+
+  if (privilegedRepositoryAction) {
+    if (!retryUpdate) {
+      return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n⚠️ Команда распознана как owner/admin repository action, но отсутствует проверяемый Telegram Update для trusted handoff. Никакой шаблон вместо исполнения не выдаю.`;
+    }
+    const taskUpdate = {
+      ...retryUpdate,
+      quantdeus_admin_handoff: true,
+      message: {
+        ...message,
+        text: `/task ${agentId} ${query}`
+      }
+    };
+    const dispatched = await dispatchTelegramRetry(taskUpdate);
+    if (dispatched) {
+      console.info('[telegram-admin-handoff] status=dispatched role=' + String(entitlement.role || '') + ' agent=' + agentId + ' update_id=' + String(retryUpdate.update_id || 'unknown'));
+      return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n🚀 Команда owner/admin передана в trusted GitHub Actions → OpenClaw Admin Office. Дальше исполнительный контур создаст/обновит проверяемый GitHub-артефакт и пришлёт результат отдельным сообщением.`;
+    }
+    console.warn('[telegram-admin-handoff] status=failed agent=' + agentId + ' update_id=' + String(retryUpdate.update_id || 'unknown'));
+    return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n⚠️ Команда разрешена, но trusted handoff сейчас недоступен. Причина: GitHub Actions dispatch не подтвердился. Я не подменяю исполнение шаблоном для ручного копирования.`;
+  }
+
   const system = [
     `You are the QuantDeus homunculus "${agent.name || agent.id}".`,
     PUBLIC_SAFETY_SYSTEM_PROMPT,
