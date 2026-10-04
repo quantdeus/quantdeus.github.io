@@ -10,6 +10,7 @@ on:
       - '.github/workflows/seven-priority-cycle.yml'
       - '.github/workflows/agent-role-cron.yml'
       - 'scripts/openclaw-office-client.js'
+      - 'scripts/untrusted-evidence.js'
 
 permissions:
   contents: write
