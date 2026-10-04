@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { Sandbox } from '@vercel/sandbox';
 import { getVercelOidcToken } from '@vercel/oidc';
 import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
+import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -965,7 +966,8 @@ export default async function handler(req, res) {
     const requestsDir = `${home}/.openclaw/requests`;
     const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
     const promptPath = `${requestsDir}/quantdeus-prompt-${requestId}.txt`;
-    ephemeralFiles = [configPath, promptPath];
+    const publicReadMcpPath = `${requestsDir}/quantdeus-public-read-mcp-${requestId}.js`;
+    ephemeralFiles = [configPath, promptPath, publicReadMcpPath];
     // Separate inference-only and tool-enabled OpenClaw state so a long MCP turn
     // cannot block or corrupt lightweight Sherlock/Tuvok/Seven dialogue cycles.
     const statePath = `${home}/.openclaw/quantdeus-state-${trustedOffice ? 'trusted-tools' : 'brokered-read-tools'}`;
@@ -985,19 +987,9 @@ export default async function handler(req, res) {
       codeMode: false,
       allow: [
         'bundle-mcp',
-        'github__list_branches',
-        'github__get_commit',
-        'github__list_commits',
-        'github__get_file_contents',
-        'github__search_code',
-        'github__search_issues',
-        'github__search_pull_requests',
-        'github__get_issue',
-        'github__get_pull_request',
-        'github__get_pull_request_diff',
-        'github__get_pull_request_status',
-        'github__actions_list',
-        'github__actions_get'
+        'publicrepo__repository_status',
+        'publicrepo__get_issue',
+        'publicrepo__get_file'
       ],
       deny: trustedDeny
     };
@@ -1046,15 +1038,11 @@ export default async function handler(req, res) {
         ]
       }
     };
-    const publicGithubMcp = {
-      ...githubMcp,
+    const publicReadMcp = {
+      command: 'node',
+      args: [publicReadMcpPath],
       toolFilter: {
-        include: [
-          'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
-          'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
-          'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
-          'actions_list', 'actions_get'
-        ]
+        include: ['repository_status', 'get_issue', 'get_file']
       }
     };
     const playwrightMcp = {
@@ -1092,7 +1080,7 @@ export default async function handler(req, res) {
       ? (smokePhase === 'github' ? { github: githubMcp }
         : smokePhase === 'playwright' ? { playwright: playwrightMcp }
         : { github: githubMcp, playwright: playwrightMcp, wordpress: wordpressMcp })
-      : (githubToken ? { github: publicGithubMcp } : {});
+      : { publicrepo: publicReadMcp };
     if (trustedOffice && mcpServers.playwright) {
       const browserMarker = `${statePath}/.quantdeus-playwright-mcp-chrome-ready`;
       const browserCheck = await sandbox.runCommand({ cmd: 'test', args: ['-f', browserMarker] });
@@ -1127,7 +1115,11 @@ export default async function handler(req, res) {
     ].join('\n') : '';
     const effectivePrompt = prompt;
     const routedPrompt = productionTopologyPrompt ? productionTopologyPrompt + '\n\n' + effectivePrompt : effectivePrompt;
-    await sandbox.writeFiles([{ path: configPath, content: Buffer.from(JSON.stringify(config)) }, { path: promptPath, content: Buffer.from(routedPrompt) }]);
+    await sandbox.writeFiles([
+      { path: configPath, content: Buffer.from(JSON.stringify(config)) },
+      { path: promptPath, content: Buffer.from(routedPrompt) },
+      { path: publicReadMcpPath, content: Buffer.from(publicReadMcpSource()) }
+    ]);
     const runtimeEnv = {
       ...providerRuntimeEnv,
       OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5'
@@ -1139,6 +1131,7 @@ export default async function handler(req, res) {
       fallbacks: fallbackModels,
       trusted_office: trustedOffice,
       github_mcp: trustedOffice && Boolean(githubToken) && Boolean(mcpServers.github),
+      public_repo_mcp: !trustedOffice && Boolean(mcpServers.publicrepo),
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       wordpress_mcp_configured: trustedOffice && Boolean(mcpServers.wordpress),
       wordpress_mode: trustedOffice && mcpServers.wordpress ? (wordpressWriteCapable ? 'owner-authorized-write-capable' : 'read-only') : 'off',
@@ -1355,7 +1348,9 @@ export default async function handler(req, res) {
       configured_primary: model,
       configured_fallbacks: fallbackModels,
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-brokered-read-tools',
-      tools: trustedOffice ? { filesystem: true, github_mcp: true, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, shell: false } : { filesystem: false, github_mcp: Boolean(githubToken), github_write: false, playwright_mcp: false, shell: false },
+      tools: trustedOffice
+        ? { filesystem: true, github_mcp: true, public_repo_mcp: false, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, shell: false }
+        : { filesystem: false, github_mcp: false, public_repo_mcp: true, github_write: false, playwright_mcp: false, shell: false },
       doctor,
       tool_summary: toolSummary,
       assistant_turns: result.assistantTurns ?? null,
