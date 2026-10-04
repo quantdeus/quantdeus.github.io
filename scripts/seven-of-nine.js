@@ -54,7 +54,18 @@ async function main() {
   // The LLM remains tool-free; only CREATE_ISSUE is allowed here.
   if ((process.env.GITHUB_EVENT_NAME || '') === 'issue_comment') {
     const comments = hub.comments || [];
-    const latest = comments[comments.length - 1] || null;
+    let latest = comments[comments.length - 1] || null;
+    try {
+      const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+      if (event?.comment?.body && event?.comment?.user?.login) {
+        latest = {
+          id:event.comment.id,
+          body:event.comment.body,
+          author:{login:event.comment.user.login},
+          url:event.comment.html_url || ''
+        };
+      }
+    } catch {}
     const login = latest?.author?.login || '';
     const repoOwner = repo.split('/')[0];
     const isPrivileged = privileged(login, repoOwner, process.env.QUANTDEUS_ADMIN_GITHUB_USERS || '');
