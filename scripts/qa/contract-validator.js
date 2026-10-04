@@ -589,6 +589,9 @@ check(
 
 const coordinatorSource = fs.readFileSync(path.join(root,'scripts/coordinator.js'),'utf8');
 check(coordinatorSource.includes('function drainCommandComments()') && coordinatorSource.includes('quantdeus-secretary-command:') && coordinatorSource.includes("drainCommandComments();"), 'scripts/coordinator.js', 'Secretary drains and receipts pending task commands so cancelled events are recovered');
+check(coordinatorSource.includes('function drainTargetedIssueDispatches()') && coordinatorSource.includes('coord:dispatched') && coordinatorSource.includes("drainTargetedIssueDispatches();"), 'scripts/coordinator.js', 'Secretary durably drains targeted READY/ACTIVE Issues after collapsed GitHub events');
+const sevenCoordinatorSource = fs.readFileSync(path.join(root,'scripts','seven-of-nine.js'),'utf8');
+check(sevenCoordinatorSource.includes('conversationIssueNumber') && sevenCoordinatorSource.includes("String(conversationIssueNumber)"), 'scripts/seven-of-nine.js', 'Seven replies to the Issue that invoked the coordinator instead of hardwiring every conversation to the Hub');
 
 const activeText = [
   fs.readFileSync(path.join(root,'coordination/agents.json'),'utf8'),
