@@ -603,6 +603,15 @@ check(
     'Telegram public chat uses one OpenClaw LLM route behind QShield; no independent stateless model fallback can diverge from the Office runtime'
   );
   check(
+    telegramBridge.includes('function repositoryStatusEvidenceBlock(snapshot)') &&
+    telegramBridge.includes('function normalizeRepositoryStatusOutput(text, snapshot)') &&
+    telegramBridge.includes("reason === 'percentages_forbidden' || reason.startsWith('unsupported_term:')") &&
+    telegramBridge.includes('[telegram-grounding] corrected status answer normalized with deterministic evidence block') &&
+    telegramBridge.includes('answer = normalized'),
+    'vercel-dispatcher/api/quantdeus/telegram.js',
+    'Telegram status grounding repairs format-only failures with deterministic evidence while still failing closed on unsupported claims'
+  );
+  check(
     telegramBridge.includes('async function dispatchTelegramRetry(update)') &&
     telegramBridge.includes("actions/workflows/telegram-bot.yml/dispatches") &&
     telegramBridge.includes('telegram_update_b64') &&

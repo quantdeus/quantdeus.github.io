@@ -966,6 +966,43 @@ function validateRepositoryStatusOutput(text, snapshot, enabled) {
   return { ok: reasons.length === 0, reasons };
 }
 
+
+function repositoryStatusEvidenceBlock(snapshot) {
+  const h = snapshot?.action_health || {};
+  return [
+    'VERIFIED',
+    'main_sha=' + String(snapshot?.main?.sha || 'UNKNOWN'),
+    'task_counts total=' + String(snapshot?.task_counts?.total ?? 'UNKNOWN') +
+      ' ready=' + String(snapshot?.task_counts?.ready ?? 'UNKNOWN') +
+      ' active=' + String(snapshot?.task_counts?.active ?? 'UNKNOWN') +
+      ' blocked=' + String(snapshot?.task_counts?.blocked ?? 'UNKNOWN'),
+    'open_issues=' + String(snapshot?.open_issue_count ?? 'UNKNOWN'),
+    'open_prs=' + String(snapshot?.open_pr_count ?? 'UNKNOWN'),
+    'action_health sampled=' + String(h.sampled_main_runs ?? 'UNKNOWN') +
+      ' success=' + String(h.success ?? 'UNKNOWN') +
+      ' failure=' + String(h.failure ?? 'UNKNOWN') +
+      ' in_progress=' + String(h.in_progress ?? 'UNKNOWN'),
+    '',
+    'INFERRED',
+    'See the coordinator analysis below; statements not directly represented by the VERIFIED lines remain inference.',
+    '',
+    'UNKNOWN',
+    'Measurements absent from CURRENT_QUANTDEUS_REPOSITORY_GROUNDING remain unknown.'
+  ].join('\n');
+}
+
+function normalizeRepositoryStatusOutput(text, snapshot) {
+  const value = String(text || '').trim();
+  if (!value) return '';
+  const validation = validateRepositoryStatusOutput(value, snapshot, true);
+  if (validation.ok) return value;
+  const unsafeReasons = validation.reasons.filter(reason =>
+    reason === 'percentages_forbidden' || reason.startsWith('unsupported_term:')
+  );
+  if (unsafeReasons.length) return '';
+  return [repositoryStatusEvidenceBlock(snapshot), '', value].join('\n').slice(0, 3600);
+}
+
 async function openClawTransport(agentId, requestedAgentId, system, user, source, extraMetadata = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
@@ -1247,7 +1284,13 @@ async function homunculusReply(message, retryUpdate = null) {
       validation = validateRepositoryStatusOutput(answer, repositoryGrounding, true);
       if (!validation.ok) {
         console.warn('[telegram-grounding] corrected status answer rejected: ' + validation.reasons.slice(0, 8).join(','));
-        answer = '';
+        const normalized = normalizeRepositoryStatusOutput(answer, repositoryGrounding);
+        if (normalized) {
+          console.info('[telegram-grounding] corrected status answer normalized with deterministic evidence block');
+          answer = normalized;
+        } else {
+          answer = '';
+        }
       }
     }
   }
