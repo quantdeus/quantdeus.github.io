@@ -40,6 +40,7 @@ export const NATIVE_SCHEDULE = [
 
   job('swarm-secretary', 'Seven + Swarm Secretary', '27 6 * * *', 'quantdeus-coordinator.yml'),
   job('openclaw-evolution', 'OpenClaw evolution', '31 2 * * *', 'openclaw-evolution.yml'),
+  job('daily-learning', 'Daily swarm learning', '17 6 * * *', 'daily-swarm-learning.yml'),
   job('six-pillar', 'Six-Pillar executor', '37 6 * * *', 'quantdeus-pulse.yml'),
   job('news-manifest', 'News to Living Manifest', '41 */6 * * *', 'news-manifest-cycle.yml'),
   job('contributor-growth', 'Contributor growth', '42 6 * * *', 'contributor-growth.yml'),
