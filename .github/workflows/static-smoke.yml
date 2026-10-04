@@ -29,6 +29,8 @@ jobs:
           node --check scripts/hermes-office-bootstrap.js
           node --check scripts/hermes-office-client.js
           node --check scripts/openclaw-office-client.js
+          node --check scripts/openclaw-automations-bootstrap.js
+          node --check scripts/openclaw-dispatch-workflow.js
           node --check scripts/guarded-automerge.js
           node --check scripts/openclaw-evolution.js
           node --check scripts/openclaw-evolution-guard.js
