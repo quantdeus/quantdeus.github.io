@@ -616,7 +616,7 @@ async function handleMessage(message) {
       return;
     }
     if (!(await isTelegramAdmin(message))) {
-      await send(chatId, '🛡️ Public mode — chat-only. Proposal можно обсудить здесь, но публикация в GitHub доступна только администратору.', replyId);
+      await send(chatId, '🛡️ Public mode — brokered read-tools. Proposal можно исследовать и обсудить здесь, но публикация/мутация GitHub доступна только администратору.', replyId);
       return;
     }
     const url = createProposal(agentId, ideaShield.normalized, username);
