@@ -40,9 +40,23 @@ function sanitizeEvidence(value, stats = freshStats(), depth = 0) {
   return value;
 }
 
+function sanitizeEvidenceTextLines(value) {
+  const stats = freshStats();
+  const lines = String(value || '').split(/\r?\n/);
+  const sanitized = lines.map(line => {
+    const shield = shieldInput(line);
+    if (shield.blocked) {
+      recordReasons(stats, shield.reasons);
+      return '[QSHIELD_QUARANTINED_EVIDENCE]';
+    }
+    return shield.normalized;
+  }).join('\n');
+  return { value: sanitized, stats };
+}
+
 function sanitizeEvidenceJson(value) {
   const stats = freshStats();
   return { value: sanitizeEvidence(value, stats), stats };
 }
 
-module.exports = { sanitizeEvidence, sanitizeEvidenceJson };
+module.exports = { sanitizeEvidence, sanitizeEvidenceTextLines, sanitizeEvidenceJson };
