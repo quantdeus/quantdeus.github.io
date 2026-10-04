@@ -1,11 +1,6 @@
 name: QuantDeus QA Self-Heal 🛠️
 
 on:
-  schedule:
-    # Site lane: 00:17 / 06:17 / 12:17 / 18:17 UTC.
-    - cron: '17 */6 * * *'
-    # Actions lane: 03:47 / 09:47 / 15:47 / 21:47 UTC.
-    - cron: '47 3-23/6 * * *'
   workflow_dispatch:
     inputs:
       lane:
