@@ -659,7 +659,7 @@ async function buildReply(agentId, query) {
 async function postReply(result) {
   const providerLabel =
     activeProvider === 'openclaw-agent-exec-trusted-tools' ? 'OpenClaw Office (trusted GitHub MCP)' :
-    activeProvider === 'openclaw-agent-exec-no-tools' ? 'OpenClaw Office (tools disabled)' :
+    activeProvider === 'openclaw-agent-exec-brokered-read-tools' ? 'OpenClaw Office (brokered read tools)' :
     activeProvider === 'openrouter' ? 'OpenRouter' :
     activeProvider === 'oidc-bridge' ? 'Authenticated provider bridge' :
     'OpenClaw Office';
