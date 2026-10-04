@@ -5,7 +5,7 @@ const {reasonRole}=require('../openclaw-role-dialogue');
 const {parseDecision}=require('../seven-reasoning');
 const {privileged,parseIssueCreateCommand,containsSensitiveMaterial}=require('../seven-command-gate');
 const decision={summary:'Observed delay; provider and contract failures are alternatives.',findings:['No completed artifact observed'],next_step:'Verify one bounded run'};
-const valid={text:JSON.stringify(decision),runtime:'openclaw-agent-exec-no-tools',model:'model-a',assistantTurns:1};
+const valid={text:JSON.stringify(decision),runtime:'openclaw-agent-exec-brokered-read-tools',model:'model-a',assistantTurns:1};
 const args={profile:'sherlock',role:'Science Officer',context:{issue:{number:1}},protocol:'Use facts',repository:'quantdeus/quantdeus.github.io'};
 test('four serial role turns stay inside shared four-minute inference budget',()=>{
   const env={QUANTDEUS_DIALOGUE_DEADLINE_MS:'241000'}; let now=1000;
@@ -44,7 +44,7 @@ test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
   assert.equal(seven.actions.length,2);
   assert.match(seven.analysis,/observed fields/);
 });
-test('role dialogue verifies real assistant turn, model and no-tools runtime',async()=>{
+test('role dialogue verifies real assistant turn, model and brokered read-tool runtime',async()=>{
   let calls=0;
   const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async opts=>{
     calls++; assert.equal(opts.retryTransient,false); assert.equal(opts.timeoutMs,100000); assert.equal(opts.trusted,false);
