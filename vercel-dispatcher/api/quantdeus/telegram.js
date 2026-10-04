@@ -440,7 +440,7 @@ async function setupWebhook(req, res) {
     },
     auth_mode: secret ? 'secret_token' : 'telegram_ip_allowlist',
     public_access: true,
-    public_mode: 'chat-only-tools-denied',
+    public_mode: 'brokered-read-tools',
     prompt_shield: QUANTDEUS_SHIELD_VERSION,
     outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback',
     interface: {
@@ -1338,7 +1338,7 @@ function fastPublicCommandReply(raw) {
   }
   if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     return {
-      text: `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: DENY ALL\nPrompt injection: deterministic pre-filter + system firewall\nSecret leakage: output filter\nGroups: commands / mentions / replies only`,
+      text: `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: BROKERED READ / QUERY / RESEARCH\nPrivileged writes: authenticated owner/admin broker only\nPrompt injection: deterministic pre-filter + system firewall + untrusted-tool-output rule\nSecret leakage: output filter\nGroups: commands / mentions / replies only`,
       menu: false
     };
   }
