@@ -892,6 +892,31 @@ export default async function handler(req, res) {
             }
           }
 
+          if (first.response.ok && !output && !calls.length) {
+            const finalRemaining = deadline - Date.now();
+            if (finalRemaining > 1800) {
+              const finalOnly = await callProvider(selected, {
+                model: selected.model,
+                messages: [
+                  ...baseMessages,
+                  {
+                    role: 'system',
+                    content: 'FINALIZATION: return only the user-facing final answer in message.content. Do not emit reasoning, tool calls, function calls, or hidden analysis.'
+                  }
+                ],
+                temperature: 0.2,
+                max_tokens: 1000
+              }, Math.min(FAST_CHAT_ATTEMPT_MS, Math.max(1500, finalRemaining)));
+              const finalText = typeof finalOnly.data?.choices?.[0]?.message?.content === 'string'
+                ? finalOnly.data.choices[0].message.content.trim()
+                : '';
+              if (finalOnly.response.ok && finalText) {
+                output = finalText;
+                console.warn('[openclaw-internal-fast] provider=' + selected.ref + ' recovered=empty-finalization');
+              }
+            }
+          }
+
           if (first.response.ok && output) {
             console.log('[openclaw-internal-fast] provider=' + selected.ref + ' attempt=' + attempts + ' status=200 chars=' + output.length + ' tools=' + usedTools.join(','));
             return res.status(200).json({
