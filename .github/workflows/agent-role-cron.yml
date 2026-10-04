@@ -26,9 +26,12 @@ permissions:
   checks: read
   id-token: write
 
+# The Vercel OpenClaw Office has one guarded agent-exec lock. Serialize role runs at
+# the workflow layer so a newer dispatch cannot cancel an HTTP request while its
+# sandbox command keeps the flock and makes the replacement run fail as "office_busy".
 concurrency:
-  group: quantdeus-agent-role-cron-${{ inputs.issue_number || github.event.schedule || inputs.agent_id || 'manual' }}
-  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+  group: quantdeus-agent-role-cron
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   role-cycle:
