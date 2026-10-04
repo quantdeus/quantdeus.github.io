@@ -203,6 +203,27 @@ const openclawOfficeClient = fs.readFileSync(path.join(root,'scripts','openclaw-
 check(openclawOfficeClient.includes("options?.trusted === true ? 4 : 2"), 'openclaw-office-client.js', 'trusted Office contention gets a bounded multi-retry window');
 check(openclawOfficeClient.includes("error?.retrySafe === true") && openclawOfficeClient.includes("openclaw_office_busy") && openclawOfficeClient.includes("15000"), 'openclaw-office-client.js', 'Office-busy retries require server retry_safe and use bounded 15s backoff');
 
+
+const openclawAdminSmoke = fs.readFileSync(path.join(root,'.github','workflows','openclaw-admin-smoke.yml'),'utf8');
+check(
+  openclawAdminSmoke.includes('Verify brokered-read OpenClaw publicrepo MCP lane') &&
+  openclawAdminSmoke.includes('trusted: false') &&
+  openclawAdminSmoke.includes("result.runtime !== 'openclaw-agent-exec-brokered-read-tools'") &&
+  openclawAdminSmoke.includes("summary.tools[0] !== 'publicrepo__get_file'") &&
+  openclawAdminSmoke.includes('OPENCLAW_BROKERED_READ_MCP_OK'),
+  'openclaw-admin-smoke.yml',
+  'live smoke separately proves credentialless brokered-read MCP execution instead of reusing trusted Office evidence'
+);
+
+const dailyLearningWorkflow = fs.readFileSync(path.join(root,'.github','workflows','daily-swarm-learning.yml'),'utf8');
+check(
+  !dailyLearningWorkflow.includes('This lane has credentialless brokered public-read tools') &&
+  dailyLearningWorkflow.includes('bounded repository evidence helpers may inspect public QuantDeus state') &&
+  dailyLearningWorkflow.includes("result.runtime !== 'openclaw-agent-exec-brokered-read-tools'"),
+  'daily-swarm-learning.yml',
+  'daily brokered learning keeps its runtime assertion without self-triggering qShield tool-escalation wording'
+);
+
 const sevenPriorityWorkflow = fs.readFileSync(path.join(root,'.github','workflows','seven-priority-cycle.yml'),'utf8');
 check(sevenPriorityWorkflow.includes('unfinished coord:active/coord:ready') && sevenPriorityWorkflow.includes('agent-role-cron.yml') && sevenPriorityWorkflow.includes('to wake that homunculus'), 'seven-priority-cycle.yml', 'Seven prioritizes unfinished work and can wake the owning homunculus');
 check(sevenPriorityWorkflow.includes('action=open_issue') && sevenPriorityWorkflow.includes('scripts/publish-agent-issue.js') && sevenPriorityWorkflow.includes('body,labels'), 'seven-priority-cycle.yml', 'Seven new-Issue path is deterministic and receives Issue body/ownership context');
