@@ -19,7 +19,7 @@ const requiredPrinciples = [
   'prototype-before-scale',
   'space-capability-must-also-create-earthside-value'
 ];
-const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml'];
+const nativeExecutorWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml','daily-swarm-learning.yml'];
 
 const failures = [];
 const checks = [];
@@ -67,13 +67,25 @@ for(const [name,registry] of [['agents',agents],['homunculi',homunculi]]){
   for(const id of requiredManifests) check((registry.doctrine?.manifest_sources||[]).includes(id),name,'inherits manifesto: '+id);
 }
 
-for(const name of scheduledWorkflows){
+const nativeSchedulerPath=path.join(root,'vercel-dispatcher','lib','native-scheduler.js');
+check(fs.existsSync(nativeSchedulerPath),'native-scheduler','native OpenClaw scheduler manifest exists');
+const nativeSchedulerText=fs.existsSync(nativeSchedulerPath)?fs.readFileSync(nativeSchedulerPath,'utf8'):'';
+for(const name of nativeExecutorWorkflows){
   const file=path.join(root,'.github','workflows',name);
-  check(fs.existsSync(file),name,'scheduled workflow exists');
+  check(fs.existsSync(file),name,'native-scheduled executor workflow exists');
   if(!fs.existsSync(file)) continue;
   const text=fs.readFileSync(file,'utf8');
-  check(/schedule:\s*[\s\S]*cron:/m.test(text),name,'has cron schedule');
+  check(!/schedule:\s*[\s\S]*cron:/m.test(text),name,'executor has no duplicate GitHub cron schedule');
+  check(text.includes('workflow_dispatch:'),name,'executor remains dispatchable by native OpenClaw scheduler');
   check(text.includes('node scripts/mission-alignment.js'),name,'runs shared mission guard');
+  check(nativeSchedulerText.includes("'"+name+"'"),name,'native OpenClaw scheduler owns executor cadence');
+}
+const nativeWatchdogPath=path.join(root,'.github','workflows','openclaw-native-watchdog.yml');
+check(fs.existsSync(nativeWatchdogPath),'openclaw-native-watchdog.yml','native scheduler liveness watchdog exists');
+if(fs.existsSync(nativeWatchdogPath)){
+  const watchdog=fs.readFileSync(nativeWatchdogPath,'utf8');
+  check(watchdog.includes("cron: '4,14,24,34,44,54 * * * *'"),'openclaw-native-watchdog.yml','watchdog heartbeat is the only external scheduler pulse');
+  check(watchdog.includes('"execution_mode":"native-watchdog"'),'openclaw-native-watchdog.yml','watchdog only resumes/drains the native OpenClaw scheduler');
 }
 
 check(cronContext.includes('canonical_repo: `quantdeus/quantdeus.github.io`'),'cron-context','canonical repository current');
@@ -112,7 +124,7 @@ check(
   'zero-medbay state is explicitly grounded by the current CEO override'
 );
 
-const report={timestamp:new Date().toISOString(),doctrine_version:doctrine.version,agent_count:(agents.agents||[]).length,source_streams:sourceIds,manifest_sources:manifestIds,scheduled_workflows:scheduledWorkflows,failures,checks};
+const report={timestamp:new Date().toISOString(),doctrine_version:doctrine.version,agent_count:(agents.agents||[]).length,source_streams:sourceIds,manifest_sources:manifestIds,scheduled_workflows:nativeExecutorWorkflows,failures,checks};
 fs.writeFileSync('/tmp/quantdeus-mission-alignment.json',JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 if(failures.length) process.exit(1);

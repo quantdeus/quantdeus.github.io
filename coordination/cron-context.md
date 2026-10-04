@@ -47,32 +47,36 @@
 - kpis: `R_QD; Active Nodes; Action Conversion; Open Artifacts; Verified Results; Partner Density; Future Fund Flow; Automation Ratio; Impact Ledger; Transparency Score`
 - phase_gates: `M1-6 Synchronization → M7-12 Renaissance → M13-18 Warp Threshold → M19-24 Federation; no gate advance without evidence`
 - future_fund_rule: `fund only testable outcomes with falsifier/failure condition and a resulting verifiable/open artifact after reserves and obligations`
-- shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
+- shared_cron_guard: `native OpenClaw automations own cadence; every dispatched executor workflow must run node scripts/mission-alignment.js before project work`
 - telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`
 - telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
-- dispatcher_runtime: `Vercel Swarm Dispatcher`
+- dispatcher_runtime: `OpenClaw native automations on dedicated persistent Vercel Sandbox + guarded workflow executors`
+- native_openclaw_scheduler: `dedicated named Sandbox quantdeus-openclaw-scheduler → loopback OpenClaw Gateway → SQLite-backed native automations → local allowlisted dispatch spool; OpenClaw owns all swarm cadence`
+- scheduler_heartbeat: `.github/workflows/openclaw-native-watchdog.yml at 04/14/24/34/44/54 UTC minutes is liveness/auth relay only: resume/rotate Hobby Sandbox session, sync native automations, drain allowlisted spool with the run-scoped GITHUB_TOKEN; it does not choose tasks or own mission cadence`
 - native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.whf.bz / inherited by all 26 registered agents through trusted OpenClaw`
 - wordpress_mcp_swarm_policy: `hourly + autonomous scheduled lanes read-only; direct WordPress writes only for explicit owner-authorized trusted tasks and only with configured MCP authorization; missing auth fails closed for writes; WPVibe is not a dependency`
-- vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
-- vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
-- legacy_hermes_scheduler: `retired; obsolete Hermes cron workflow removed; legacy scripts/routes are archive-only; scheduled autonomy belongs to OpenClaw`
-- qa_self_heal: `bounded autonomous repair: site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
-- openclaw_evolution: `daily 02:31 UTC evidence loop; OpenClaw reads its fresh-main self-evolution skill on trusted runs; Tier A skill/docs/ledger improvements may auto-merge after QA+Smoke; Tier B runtime/auth/MCP/workflow changes remain reviewable PRs`
+- vercel_swarm_dispatcher: `OpenClaw native automation → durable local dispatch intent → watchdog auth relay → workflow_dispatch executor → Vercel OpenClaw Office → guarded tools/artifact`
+- vercel_swarm_status: `scheduler ownership moved from GitHub cron to native OpenClaw automations; GitHub executor workflows are dispatch/event-driven and the single watchdog remains the external liveness pulse required by the 45-minute Hobby Sandbox session ceiling`
+- legacy_hermes_scheduler: `retired; obsolete Hermes cron workflow removed; legacy scripts/routes are archive-only; scheduled autonomy belongs to native OpenClaw automations`
+- qa_self_heal: `bounded autonomous repair: native OpenClaw site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
+- openclaw_evolution: `native OpenClaw automation at 02:31 UTC daily; evidence loop reads fresh-main self-evolution skill; Tier A skill/docs/ledger improvements may auto-merge after QA+Smoke; Tier B runtime/auth/MCP/workflow changes remain reviewable PRs`
 - scheduled_workflows:
-  - `every 2 hours at :19 UTC — QuantDeus Crew Health Check / 26-agent registry + bridge crew + medbay/delegates + READY/ACTIVE/BLOCKED + key Actions`
-  - `06:27 UTC — QuantDeus Swarm Secretary`
-  - `06:37 UTC — QuantDeus Six-Pillar Executor`
-  - `06:42 UTC — QuantDeus Contributor Growth`
-  - `06:47 UTC — QuantDeus QA Triad`
-  - `hourly at minute 0 — QuantDeus Hourly OpenClaw Swarm + deterministic EMH cognitive-hygiene scan`
-  - `00:17/06:17/12:17/18:17 UTC — QuantDeus QA Self-Heal / site lane`
-  - `03:47/09:47/15:47/21:47 UTC — QuantDeus QA Self-Heal / Actions lane`
-  - `23 minutes past 00-14 UTC — QuantDeus Agent Role Cron / one scheduled specialist per hour`
-  - `every 2 hours at :11 — Seven Priority Cycle / Actions + PRs + Issues + public community + manifesto`
-  - `every 6 hours at :41 — News → Living Manifest / world + Russia + science/technology/economics`
-  - `every 4 hours at :53 — Growth + Site Cycle / unity → synthesis → archivist → herald → tasksmith → control-tower`
-  - `02:31 UTC daily — OpenClaw Self-Evolution / observe → diagnose → hypothesize → bounded PR → QA → compare`
-- cron_cadence_rule: `Telegram is webhook/event-driven rather than cron-polled; crew health runs every 2h at :19; OpenClaw swarm + EMH cognitive-hygiene scan hourly; Seven priority cycle every 2h; news/manifest every 6h; growth/site every 4h; specialist role cron fills the daily 00-14 UTC window; QA self-heal remains staggered every 6h; OpenClaw self-evolution runs daily at 02:31 UTC`
+  - `NATIVE OPENCLAW — hourly at :00 — QuantDeus Hourly OpenClaw Swarm + deterministic EMH cognitive-hygiene scan`
+  - `NATIVE OPENCLAW — every 2 hours at :07 — QuantDeus QA Failure Radar`
+  - `NATIVE OPENCLAW — every 2 hours at :11 — Seven Priority Cycle / Actions + PRs + Issues + public community + manifesto`
+  - `NATIVE OPENCLAW — 00:17/06:17/12:17/18:17 — QuantDeus QA Self-Heal / site lane`
+  - `NATIVE OPENCLAW — 06:17 daily — QuantDeus Daily Swarm Learning`
+  - `NATIVE OPENCLAW — every 2 hours at :19 — QuantDeus Crew Health Check / 26-agent registry + bridge crew + medbay/delegates + READY/ACTIVE/BLOCKED + key Actions`
+  - `NATIVE OPENCLAW — :23 at UTC hours 00-14 — one explicit Agent Role Cron specialist per hour`
+  - `NATIVE OPENCLAW — 06:27 — QuantDeus Swarm Secretary`
+  - `NATIVE OPENCLAW — 02:31 — OpenClaw Self-Evolution / observe → diagnose → hypothesize → bounded PR → QA → compare`
+  - `NATIVE OPENCLAW — 06:37 — QuantDeus Six-Pillar Executor`
+  - `NATIVE OPENCLAW — every 6 hours at :41 — News → Living Manifest / world + Russia + science/technology/economics`
+  - `NATIVE OPENCLAW — 06:42 — QuantDeus Contributor Growth`
+  - `NATIVE OPENCLAW — 03:47/09:47/15:47/21:47 — QuantDeus QA Self-Heal / Actions lane`
+  - `NATIVE OPENCLAW — 06:47 — QuantDeus QA Triad`
+  - `NATIVE OPENCLAW — :53 at 00/04/08/12/16/20 — Growth + Site Cycle / unity → synthesis → archivist → herald → tasksmith → control-tower`
+- cron_cadence_rule: `Telegram stays webhook/event-driven; native OpenClaw Gateway is the only owner of recurring swarm cadence; GitHub Actions schedules are forbidden on executor workflows, except the isolated OpenClaw liveness watchdog required to bridge Vercel Hobby session limits`
 - cron_cycle_rule: `find one primary bottleneck; evaluate independent solution paths; select 1-3 high-leverage actions; leave an observable artifact; test replication/automation; record evidence and next bottleneck`
 - cron_rhythms: `daily momentum; weekly Top-3 + kill/pause; monthly State of QuantDeus; quarterly portfolio review; six-month phase gate`
 - cron_output_rule: `health/compliance check or concrete observable artifact; no empty activity reports; reach alone is not outcome`

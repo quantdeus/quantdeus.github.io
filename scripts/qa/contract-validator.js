@@ -277,7 +277,25 @@ const staticSmokeWorkflow = fs.readFileSync(path.join(root,'.github','workflows'
 check(qaTriadWorkflow.includes('pull_request:') && staticSmokeWorkflow.includes('pull_request:'), 'EMH QA oversight', 'QA Triad and Static Smoke independently run on treatment PRs');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml']);
+const nativeSchedulerSource = fs.readFileSync(path.join(root,'vercel-dispatcher','lib','native-scheduler.js'),'utf8');
+const nativeExecutorWorkflows = [
+  'agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml',
+  'qa-triad.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml',
+  'seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml',
+  'qa-failure-radar.yml','daily-swarm-learning.yml'
+];
+for (const name of nativeExecutorWorkflows) {
+  const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
+  check(!/^\s{2}schedule:/m.test(text), name, 'native executor has no duplicate GitHub schedule');
+  check(text.includes('workflow_dispatch:'), name, 'native executor remains workflow_dispatch-capable');
+  check(nativeSchedulerSource.includes("'"+name+"'"), name, 'native OpenClaw scheduler owns this executor cadence');
+}
+const nativeWatchdogWorkflow = fs.readFileSync(path.join(workflowDir,'openclaw-native-watchdog.yml'),'utf8');
+check(nativeWatchdogWorkflow.includes("cron: '4,14,24,34,44,54 * * * *'"), 'openclaw-native-watchdog.yml', 'single external heartbeat cadence is pinned');
+check(nativeWatchdogWorkflow.includes('"execution_mode":"native-watchdog"'), 'openclaw-native-watchdog.yml', 'watchdog only resumes/drains native scheduler');
+check(openclawRuntime.includes("SCHEDULER_SANDBOX = 'quantdeus-openclaw-scheduler'") && openclawRuntime.includes('runNativeSchedulerWatchdog'), 'vercel-dispatcher/api/quantdeus/openclaw.js', 'native scheduler has a dedicated Sandbox and authenticated watchdog route');
+
+const missionGuardWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml','daily-swarm-learning.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -285,7 +303,9 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     const parts = cron.trim().split(/\s+/);
     check(parts.length===5, name, 'cron has 5 fields: '+cron);
     if (parts.length===5) {
-      if (name === 'quantdeus-hourly-openclaw.yml') {
+      if (name === 'openclaw-native-watchdog.yml') {
+        check(cron === '4,14,24,34,44,54 * * * *', name, 'native scheduler heartbeat uses the approved ten-minute cadence: '+cron);
+      } else if (name === 'quantdeus-hourly-openclaw.yml') {
         check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
       } else if (name === 'agent-health-daily.yml') {
         check(parts[0] === '19' && parts[1] === '*/2', name, 'crew health uses the approved two-hour cadence: '+cron);
@@ -316,7 +336,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     check(text.indexOf('node scripts/seven-of-nine.js') < text.indexOf('node scripts/coordinator.js'), name, 'Seven of Nine runs before the Swarm Secretary');
     check(text.includes('bridge_fail=0') && text.includes('run_stage emh node scripts/emh.js') && text.includes('run_stage sherlock node scripts/sherlock.js') && text.includes('run_stage tuvok node scripts/tuvok.js') && text.includes('exit "$bridge_fail"'), name, 'Bridge crew stages continue after one role-contract failure while preserving a failing final job status');
   }
-  if (scheduledMissionWorkflows.has(name)) {
+  if (missionGuardWorkflows.has(name)) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
   }
 }
