@@ -77,6 +77,7 @@ function ensureLabels() {
     ['coord:stale', '8c959f', 'No update for 72+ hours'],
     ['coord:done', '8250df', 'Completed coordination task'],
     ['coord:human', '0969da', 'Human action requested'],
+    ['coord:dispatched', '6f42c1', 'Queued or handed to a role agent'],
   ];
 
   for (const [name, color, description] of labels) {
@@ -224,7 +225,7 @@ function maybeDispatchIssueAgent(event) {
   if (!relevant) return false;
 
   const names = labelsOf(issue);
-  if (!names.includes('coord:task') || names.includes('coord:blocked') || (!names.includes('coord:ready') && !names.includes('coord:active'))) return false;
+  if (!names.includes('coord:task') || names.includes('coord:blocked') || names.includes('squad-b:blocked') || names.includes('squad-b:review') || names.includes('coord:dispatched') || (!names.includes('coord:ready') && !names.includes('coord:active'))) return false;
 
   const requested = targetAgentOf(issue);
   const target = effectiveAgentId(requested);
@@ -236,7 +237,65 @@ function maybeDispatchIssueAgent(event) {
     '-f','agent_id='+target,
     '-f','issue_number='+String(issue.number),
   ]);
+  editLabels(issue.number, ['coord:dispatched'], []);
   console.log(JSON.stringify({dispatched:true,issue:issue.number,requested_agent:requested,target_agent:target}));
+  return true;
+}
+
+function representsIssue(pr, number) {
+  const n = String(number);
+  const title = String(pr.title || '');
+  const branch = String(pr.headRefName || '');
+  return new RegExp('#' + n + '\\b','i').test(title) ||
+    new RegExp('issue[-_/ ]' + n + '(?:\\b|[-_/])','i').test(title + '\\n' + branch) ||
+    new RegExp('(?:^|[-_/])' + n + '(?:[-_/]|$)','i').test(branch);
+}
+
+function drainTargetedIssueDispatches() {
+  const issues = ghJson(['issue','list','--state','open','--label','coord:task','--limit','100','--json','number,title,body,labels,updatedAt']) || [];
+  const prs = ghJson(['pr','list','--state','open','--limit','100','--json','number,title,headRefName']) || [];
+  const candidates = issues.filter(issue => {
+    const names = labelsOf(issue);
+    if (names.includes('coord:blocked') || names.includes('squad-b:blocked') || names.includes('squad-b:review') || names.includes('coord:dispatched')) return false;
+    if (!names.includes('coord:ready') && !names.includes('coord:active')) return false;
+    if (prs.some(pr => representsIssue(pr, issue.number))) return false;
+    return Boolean(effectiveAgentId(targetAgentOf(issue)));
+  }).sort((a,b) => {
+    const la = new Set(labelsOf(a));
+    const lb = new Set(labelsOf(b));
+    const score = (issue, labels) =>
+      (labels.has('coord:active') ? 0 : 20) +
+      (/\\[P0\\]/i.test(String(issue.title || '')) || labels.has('priority:p0') ? 0 :
+        /\\[P1\\]/i.test(String(issue.title || '')) || labels.has('priority:p1') ? 5 : 10);
+    return score(a,la) - score(b,lb) ||
+      Date.parse(a.updatedAt || 0) - Date.parse(b.updatedAt || 0) ||
+      a.number - b.number;
+  });
+
+  const issue = candidates[0];
+  if (!issue) {
+    console.log('Targeted Issue dispatch drain found no pending role-agent work.');
+    return false;
+  }
+  const requested = targetAgentOf(issue);
+  const target = effectiveAgentId(requested);
+  gh([
+    'workflow','run','agent-role-cron.yml',
+    '--ref','main',
+    '-f','agent_id='+target,
+    '-f','issue_number='+String(issue.number),
+  ]);
+  editLabels(issue.number, ['coord:dispatched'], []);
+  comment(issue.number, [
+    '🧬 **QuantDeus role dispatch queued**',
+    '',
+    'Target agent: `' + target + '`',
+    'Issue: #' + issue.number,
+    'The durable coordinator queue will hand off the next targeted READY/ACTIVE Issue after this role run completes.',
+    '',
+    '<!-- qd-role-dispatch:' + issue.number + ':' + target + ' -->'
+  ].join('\\n'));
+  console.log(JSON.stringify({dispatch_drain:true,issue:issue.number,requested_agent:requested,target_agent:target}));
   return true;
 }
 
@@ -450,6 +509,7 @@ async function main() {
   }
 
   drainCommandComments();
+  drainTargetedIssueDispatches();
   await refreshHub();
 }
 
