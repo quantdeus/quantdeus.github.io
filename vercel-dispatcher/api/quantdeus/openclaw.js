@@ -621,8 +621,16 @@ export default async function handler(req, res) {
       addProvider({ id: 'quantdeus-hermes', keyEnv: 'HERMES_LOCAL_API_KEY', key: hermesKey, model: hermesModel, baseUrl: hermesBaseUrl, priority: trustedOffice ? 15 : 25 });
     }
 
-    // Reuse deployment OIDC for an explicitly configured Gateway model.
-    const gatewayModel = String(process.env.OPENCLAW_GATEWAY_MODEL || process.env.LLM_BRIDGE_MODEL || process.env.BROWSER_PLANNER_MODEL || '').trim();
+    // Reuse deployment OIDC for the Gateway. On Vercel, keep a free
+    // tool-capable model as a zero-key failover so Hermes throttling does not
+    // collapse straight onto the legacy anonymous Pollinations route.
+    const defaultGatewayModel = process.env.VERCEL ? 'inclusionai/ling-3.0-flash-vl-free' : '';
+    const gatewayModel = String(
+      process.env.OPENCLAW_GATEWAY_MODEL ||
+      process.env.LLM_BRIDGE_MODEL ||
+      process.env.BROWSER_PLANNER_MODEL ||
+      defaultGatewayModel
+    ).trim();
     if (gatewayModel) {
       let gatewayToken = String(process.env.AI_GATEWAY_API_KEY || '').trim();
       if (!gatewayToken) { try { gatewayToken = await getVercelOidcToken(); } catch {} }
