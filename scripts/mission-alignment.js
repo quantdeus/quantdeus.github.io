@@ -124,7 +124,7 @@ check(
   'zero-medbay state is explicitly grounded by the current CEO override'
 );
 
-const report={timestamp:new Date().toISOString(),doctrine_version:doctrine.version,agent_count:(agents.agents||[]).length,source_streams:sourceIds,manifest_sources:manifestIds,scheduled_workflows:scheduledWorkflows,failures,checks};
+const report={timestamp:new Date().toISOString(),doctrine_version:doctrine.version,agent_count:(agents.agents||[]).length,source_streams:sourceIds,manifest_sources:manifestIds,scheduled_workflows:nativeExecutorWorkflows,failures,checks};
 fs.writeFileSync('/tmp/quantdeus-mission-alignment.json',JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));
 if(failures.length) process.exit(1);
