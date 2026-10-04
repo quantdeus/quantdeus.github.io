@@ -139,8 +139,9 @@ jobs:
           must(!seven.includes('or {"action":"pr"'), 'Seven planner must not directly request PR mutation');
 
           const daily=read('.github/workflows/daily-swarm-learning.yml');
+          const nativeScheduler=read('vercel-dispatcher/lib/native-scheduler.js');
           for(const invariant of [
-            "cron: '17 6 * * *'",
+            'workflow_dispatch:',
             'contents: read',
             'actions: write',
             'id-token: write',
@@ -150,6 +151,8 @@ jobs:
             'delete process.env.GH_TOKEN',
             'quantdeus-hourly-openclaw.yml'
           ]) must(daily.includes(invariant), 'daily learning invariant missing: '+invariant);
+          must(!/^\s{2}schedule:/m.test(daily), 'daily learning must not own a duplicate GitHub cron');
+          must(nativeScheduler.includes("job('daily-learning', 'Daily swarm learning', '17 6 * * *', 'daily-swarm-learning.yml')"), 'native OpenClaw scheduler must own the 06:17 daily learning cadence');
           must(!/contents:\s*write/.test(daily), 'daily learning has contents write');
           must(!/issues:\s*write/.test(daily), 'daily learning has issues write');
           must(!/pull-requests:\s*write/.test(daily), 'daily learning has PR write');
