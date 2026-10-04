@@ -104,7 +104,8 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
       'content-type': 'application/json',
       accept: 'application/json'
     };
-    if (process.env.GITHUB_TOKEN) headers['x-quantdeus-github-token'] = process.env.GITHUB_TOKEN;
+    const brokerGithubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+    if (brokerGithubToken) headers['x-quantdeus-github-token'] = brokerGithubToken;
 
     let response;
     try {
