@@ -76,6 +76,46 @@ jobs:
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
+      - name: Verify brokered-read OpenClaw publicrepo MCP lane
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+          (async () => {
+            // Deliberately do not provide GITHUB_TOKEN/GH_TOKEN: this smoke must prove
+            // the credentialless publicrepo MCP lane, not the trusted GitHub MCP lane.
+            delete process.env.GITHUB_TOKEN;
+            delete process.env.GH_TOKEN;
+            const result = await office.ask({
+              profile: 'seven-of-nine',
+              trusted: false,
+              messages: [{
+                role: 'user',
+                content: 'Repository evidence regression smoke. Call publicrepo__get_file exactly once with path README.md. Do not request changes. After the read returns, reply exactly OPENCLAW_BROKERED_READ_MCP_OK.'
+              }],
+              metadata: { source: 'openclaw-admin-smoke', phase: 'brokered-read', repository: process.env.GITHUB_REPOSITORY }
+            });
+            if (result.runtime !== 'openclaw-agent-exec-brokered-read-tools') throw new Error('Unexpected brokered runtime: ' + result.runtime);
+            const capabilities = result.raw?.tools || {};
+            if (
+              capabilities.public_repo_mcp !== true ||
+              capabilities.github_write !== false ||
+              capabilities.filesystem !== false ||
+              capabilities.playwright_mcp !== false ||
+              capabilities.shell !== false
+            ) {
+              throw new Error('Brokered capability boundary mismatch: ' + JSON.stringify(capabilities));
+            }
+            const summary = result.raw?.tool_summary;
+            if (!summary || !Array.isArray(summary.tools) || summary.tools.length !== 1 || summary.tools[0] !== 'publicrepo__get_file' || Number(summary.failures || 0) !== 0) {
+              throw new Error('Brokered publicrepo MCP trace missing/failed: ' + JSON.stringify(summary));
+            }
+            if (String(result.text || '').trim() !== 'OPENCLAW_BROKERED_READ_MCP_OK') {
+              throw new Error('Brokered publicrepo MCP final response mismatch: ' + String(result.text || '').slice(0, 300));
+            }
+            console.log(JSON.stringify({ ok: true, runtime: result.runtime, model: result.model, capabilities, tool_summary: summary, smoke: result.text }));
+          })().catch(error => { console.error(error.message || error); process.exit(1); });
+          NODE
+
       - name: Verify trusted OpenClaw Playwright MCP lane
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -111,6 +151,7 @@ jobs:
           - run: ${GITHUB_RUN_ID}
           - verified_at_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)
           - GitHub MCP: OPENCLAW_GITHUB_MCP_OK (2 consecutive get_file_contents passes)
+          - brokered-read publicrepo MCP: OPENCLAW_BROKERED_READ_MCP_OK (credentialless get_file pass)
           - Playwright MCP: OPENCLAW_PLAYWRIGHT_MCP_OK
           - production endpoint: https://quantdeus.vercel.app/api/quantdeus/openclaw
           EOF
