@@ -54,13 +54,13 @@ async function reason({office,context,persona,doctrine,repository}) {
         'Never invent operational metrics, percentages, throughput, latency, duplicate-rate, sprint/WIP history, trends, integrations or communication systems. If a measurement is absent from the supplied snapshot, explicitly treat it as UNKNOWN / not measured.',
         'Do not claim Slack, Jira, stand-ups, sprints or another process exists unless the supplied snapshot or persona explicitly proves it. Suggestions must be labeled as suggestions.',
         'For every current-state claim, anchor it to an observable snapshot field or concrete Issue/PR reference. Separate VERIFIED facts from INFERRED hypotheses and UNKNOWN measurements.',
-        'Prefer finishing existing work. Preserve QA, human override and voluntary participation. No tools or mutations in this briefing; action items are recommendations.',
+        'Prefer finishing existing work. Preserve QA, human override and voluntary participation. Read/query tools may be used for evidence. No mutations in this briefing; action items are recommendations.',
         'Return ONLY plain text using this exact line protocol, with each value on one line and no Markdown/JSON: ANALYSIS: <facts, alternatives and uncertainty>; DIRECTIVE: <chosen priority and why>; then 1-3 lines ACTION: <precise recommendation>.',
         persona, doctrine
       ].join('\n')},{role:'user',content:JSON.stringify(context)}],
       metadata:{source:'quantdeus-seven-hub-briefing',repository}
     });
-    if (result.runtime !== 'openclaw-agent-exec-no-tools') throw new Error('SEVEN_UNEXPECTED_RUNTIME');
+    if (result.runtime !== 'openclaw-agent-exec-brokered-read-tools') throw new Error('SEVEN_UNEXPECTED_RUNTIME');
     return {status:'LLM',...turnEvidence(result),...parseDecision(result.text)};
   } catch (error) {
     // No raw provider body/credentials in public evidence. Contract errors remain failures.
