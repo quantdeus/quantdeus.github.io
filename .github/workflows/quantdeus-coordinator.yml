@@ -8,6 +8,9 @@ on:
     types: [opened, edited, reopened, closed, labeled, unlabeled]
   issue_comment:
     types: [created]
+  workflow_run:
+    workflows: ["QuantDeus Agent Role Cron 🧬"]
+    types: [completed]
 
 permissions:
   contents: read
