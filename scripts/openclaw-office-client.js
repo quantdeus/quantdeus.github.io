@@ -181,13 +181,16 @@ async function ask(options) {
       lastError = error;
       const retryAllowed = options?.trusted !== true || error?.retrySafe === true;
       if (!retryTransient || !isTransientError(error) || !retryAllowed || attempt >= attempts) throw error;
+      const message = String(error.message || error);
+      const retryDelayMs = error?.retrySafe === true && /openclaw_office_busy/i.test(message) ? 15000 : 1000;
       console.warn('[openclaw-office] transient failure; retrying once', {
         attempt,
         code: error.code || null,
         status: error.status || null,
-        message: String(error.message || error).slice(0, 500)
+        retry_delay_ms: retryDelayMs,
+        message: message.slice(0, 500)
       });
-      await sleep(1000);
+      await sleep(retryDelayMs);
     }
   }
   throw lastError;

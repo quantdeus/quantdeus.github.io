@@ -14,7 +14,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: quantdeus-openclaw-trusted-office
+  group: quantdeus-news-manifest-cycle
   cancel-in-progress: false
 
 jobs:
