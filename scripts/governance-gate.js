@@ -115,9 +115,20 @@ function normalizeProposal(issue) {
   editLabels(issue.number, add.filter(x => !hasLabel(issue,x)), remove);
 }
 
+function trustedAutomation(issue) {
+  const author = String(issue.author?.login || issue.user?.login || '').toLowerCase();
+  if (author !== 'github-actions[bot]') return false;
+  const body = String(issue.body || '');
+  const sourceAgent = body.match(/^Source agent:\s*([^\r\n]+)$/mi)?.[1]?.trim();
+  const sourceWorkflow = body.match(/^Source workflow:\s*([^\r\n]+)$/mi)?.[1]?.trim();
+  const allowedWorkflows = new Set(['seven-priority-cycle.yml','quantdeus-coordinator.yml']);
+  return sourceAgent === 'seven-of-nine' && allowedWorkflows.has(sourceWorkflow);
+}
+
 function taskAuthorized(issue) {
   if (hasLabel(issue,'governance:passed')) return true;
-  return privileged(issue.author?.login || issue.user?.login);
+  if (privileged(issue.author?.login || issue.user?.login)) return true;
+  return trustedAutomation(issue);
 }
 
 function normalizeAuthorizedTask(issue) {
