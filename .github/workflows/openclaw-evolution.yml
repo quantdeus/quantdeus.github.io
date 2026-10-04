@@ -48,7 +48,7 @@ jobs:
           gh run list --repo "$GITHUB_REPOSITORY" --limit 80 --json databaseId,workflowName,status,conclusion,headSha,url > /tmp/qd-openclaw-evolution/actions.json
           gh pr list --repo "$GITHUB_REPOSITORY" --state all --limit 60 --json number,title,state,headRefName,url > /tmp/qd-openclaw-evolution/prs.json
           gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 80 --json number,title,state,url > /tmp/qd-openclaw-evolution/issues.json
-      - name: Inference-only evidence-backed proposal (no tools, no GitHub token)
+      - name: Inference-only evidence-backed proposal (credentialless read tools, no write credential)
         env:
           EVOLUTION_BASE_SHA: ${{ steps.base.outputs.sha }}
         run: node scripts/openclaw-evolution.js observe
