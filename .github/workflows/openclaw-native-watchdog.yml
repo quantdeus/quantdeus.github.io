@@ -1,0 +1,46 @@
+name: QuantDeus OpenClaw Native Scheduler Watchdog 🐒⏱️
+
+on:
+  # Vercel Hobby Sandbox sessions are capped at 45 minutes. This heartbeat only
+  # keeps/resumes the native OpenClaw Gateway and relays its durable dispatch queue.
+  # All real QuantDeus schedules live in OpenClaw automations, not in GitHub cron.
+  schedule:
+    - cron: '4,14,24,34,44,54 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  id-token: write
+
+concurrency:
+  group: quantdeus-openclaw-native-watchdog
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Resume native OpenClaw scheduler and drain due dispatches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENCLAW_URL: https://quantdeus.vercel.app/api/quantdeus/openclaw
+        shell: bash
+        run: |
+          set -euo pipefail
+          oidc_url="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=quantdeus-vercel-openclaw"
+          oidc_json="$(curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "$oidc_url")"
+          oidc="$(printf '%s' "$oidc_json" | jq -r '.value')"
+          test -n "$oidc"
+          test "$oidc" != "null"
+
+          response="$(curl -fsS --retry 2 --retry-delay 2 \
+            -X POST "$OPENCLAW_URL" \
+            -H "Authorization: Bearer $oidc" \
+            -H "x-quantdeus-github-token: $GITHUB_TOKEN" \
+            -H "content-type: application/json" \
+            --data '{"execution_mode":"native-watchdog","metadata":{"source":"quantdeus-native-watchdog"}}')"
+
+          printf '%s\n' "$response" | jq .
+          printf '%s\n' "$response" | jq -e '.ok == true and .native_scheduler == true and (.jobs | tonumber) >= 1' >/dev/null
