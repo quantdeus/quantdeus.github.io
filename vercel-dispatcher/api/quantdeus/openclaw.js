@@ -12,6 +12,9 @@ const EVENTS = new Set(['issue_comment', 'issues', 'schedule', 'workflow_dispatc
 const SANDBOX = 'quantdeus-openclaw-office';
 const SCHEDULER_SANDBOX = 'quantdeus-openclaw-scheduler';
 const SCHEDULER_GATEWAY_PORT = 18791;
+const SCHEDULER_SESSION_TIMEOUT_MS = 20 * 60 * 1000;
+const SCHEDULER_SESSION_EXTENSION_MS = 15 * 60 * 1000;
+const SCHEDULER_ROTATION_DRAIN_MS = 20 * 1000;
 const VERCEL_INTERNAL_AUDIENCE = 'quantdeus-internal-openclaw';
 const VERCEL_INTERNAL_ISSUER = 'https://oidc.vercel.com/energotrons-projects-2705eaed';
 const VERCEL_INTERNAL_JWKS_URL = 'https://oidc.vercel.com/.well-known/jwks';
@@ -159,7 +162,7 @@ async function runNativeSchedulerTick(githubToken) {
       name: SCHEDULER_SANDBOX,
       image: 'vercel/sandbox/universal',
       resources: { vcpus: 1 },
-      timeout: 2 * 60 * 1000,
+      timeout: SCHEDULER_SESSION_TIMEOUT_MS,
       persistent: true,
       snapshotExpiration: 30 * 24 * 60 * 60 * 1000,
       resume: true,
@@ -245,6 +248,29 @@ async function runNativeSchedulerTick(githubToken) {
       '--json'
     ];
     let gateway = await scheduler.runCommand({ cmd: 'openclaw', args: gatewayArgs, env: runtimeEnv });
+    let sessionLifecycle = gateway.exitCode === 0 ? 'extended' : 'fresh-or-resumed';
+    if (gateway.exitCode === 0) {
+      try {
+        await scheduler.extendTimeout(SCHEDULER_SESSION_EXTENSION_MS);
+      } catch (extensionError) {
+        // Hobby sessions cap at 45 minutes. Drain bounded command jobs, snapshot,
+        // and resume the same persistent sandbox into a fresh session.
+        await new Promise(resolve => setTimeout(resolve, SCHEDULER_ROTATION_DRAIN_MS));
+        await scheduler.stop();
+        scheduler = await Sandbox.getOrCreate({
+          name: SCHEDULER_SANDBOX,
+          image: 'vercel/sandbox/universal',
+          resources: { vcpus: 1 },
+          timeout: SCHEDULER_SESSION_TIMEOUT_MS,
+          persistent: true,
+          snapshotExpiration: 30 * 24 * 60 * 60 * 1000,
+          resume: true,
+          tags: { app: 'quantdeus', runtime: 'openclaw-native-scheduler' }
+        });
+        sessionLifecycle = 'rotated';
+        gateway = await scheduler.runCommand({ cmd: 'openclaw', args: gatewayArgs, env: runtimeEnv });
+      }
+    }
     if (gateway.exitCode !== 0) {
       const start = await scheduler.runCommand({
         cmd: 'bash',
@@ -311,7 +337,10 @@ async function runNativeSchedulerTick(githubToken) {
       gateway: statusJson?.enabled === false ? 'disabled' : 'ready',
       jobs: jobs.length,
       bootstrap: bootstrapOut.slice(-1600),
-      sandbox: SCHEDULER_SANDBOX
+      sandbox: SCHEDULER_SANDBOX,
+      session_lifecycle: sessionLifecycle,
+      initial_timeout_ms: SCHEDULER_SESSION_TIMEOUT_MS,
+      heartbeat_extension_ms: SCHEDULER_SESSION_EXTENSION_MS
     };
   } catch (error) {
     error.status = 503;
