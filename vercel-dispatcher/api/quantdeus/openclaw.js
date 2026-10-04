@@ -147,7 +147,7 @@ function trustedOfficeRequest(req, claims) {
 function nativeWatchdogRequest(req, claims) {
   if (req.body?.execution_mode !== 'native-watchdog') return false;
   const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
-  return /\\.github\\/workflows\\/openclaw-native-watchdog\\.yml(?:@|$)/.test(workflowRef) &&
+  return /\.github\/workflows\/openclaw-native-watchdog\.yml(?:@|$)/.test(workflowRef) &&
     req.body?.metadata?.source === 'quantdeus-native-watchdog' &&
     new Set(['schedule', 'workflow_dispatch']).has(String(claims.event_name || ''));
 }
