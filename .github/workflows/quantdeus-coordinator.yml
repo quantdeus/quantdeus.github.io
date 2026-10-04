@@ -1,8 +1,6 @@
 name: QuantDeus Seven + Swarm Secretary 🖖🗂️
 
 on:
-  schedule:
-    - cron: '27 6 * * *'
   workflow_dispatch:
   issues:
     types: [opened, edited, reopened, closed, labeled, unlabeled]
