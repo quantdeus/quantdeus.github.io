@@ -51,8 +51,17 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const office=require('./scripts/openclaw-office-client');
-          const read=p=>{try{return fs.readFileSync(p,'utf8').slice(0,40000)}catch{return ''}};
+          const {sanitizeEvidenceJson}=require('./scripts/untrusted-evidence');
           const readJson=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const readEvidence=p=>{
+            try{
+              const {value,stats}=sanitizeEvidenceJson(readJson(p));
+              if(stats.quarantined){
+                console.warn('[quantdeus-shield] channel=seven-snapshot status=quarantined count='+stats.quarantined+' reasons='+JSON.stringify(stats.reasons));
+              }
+              return JSON.stringify(value).slice(0,40000);
+            }catch{return ''}
+          };
           const representsIssue=(pr,number)=>{
             const n=String(number);
             const title=String(pr.title||'');
@@ -76,10 +85,10 @@ jobs:
                 'Seven of Nine priority cycle for QuantDeus.',
                 'Before acting, read the canonical doctrine, the living manifesto, agent cron map, contributor-growth contract and fresh main.',
                 'Use this public execution/community snapshot:',
-                'ISSUES='+read('/tmp/qd-seven/issues.json'),
-                'PRS='+read('/tmp/qd-seven/prs.json'),
-                'ACTIONS='+read('/tmp/qd-seven/actions.json'),
-                'CONTRIBUTORS='+read('/tmp/qd-seven/contributors.json'),
+                'ISSUES='+readEvidence('/tmp/qd-seven/issues.json'),
+                'PRS='+readEvidence('/tmp/qd-seven/prs.json'),
+                'ACTIONS='+readEvidence('/tmp/qd-seven/actions.json'),
+                'CONTRIBUTORS='+readEvidence('/tmp/qd-seven/contributors.json'),
                 '',
                 'Priority order: (1) broken production/Actions/security, (2) unfinished coord:active/coord:ready work with a concrete owner, (3) active manifesto commitments and measured outcomes, (4) stale/high-value PRs or execution gaps, (5) growth/site opportunities backed by real artifacts. Blocked work is diagnostic context, not an executable priority.',
                 'Act as the coordinator, not as another implementer: before opening new work, inspect unfinished coord:active/coord:ready Issues and their body/labels. If an actionable Issue has a quantdeus-target-agent marker or agent:<id> label and no open implementation PR, prefer dispatching agent-role-cron.yml with inputs.agent_id=<id> to wake that homunculus.',
