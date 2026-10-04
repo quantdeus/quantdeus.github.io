@@ -24,8 +24,8 @@ permissions:
 
 # production re-smoke after bounded MCP deploy cc83cb2
 concurrency:
-  group: qd-openclaw-admin-smoke
-  cancel-in-progress: true
+  group: quantdeus-openclaw-trusted-office
+  cancel-in-progress: false
 
 jobs:
   smoke:
