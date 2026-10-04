@@ -449,12 +449,12 @@ check(
   'Vercel-internal fast chat recovers bounded 200-with-empty-content provider responses without exposing reasoning'
 );
 check(
-  openclawRuntimeSource.includes("const defaultGatewayModel = process.env.VERCEL ? 'inclusionai/ling-3.0-flash-vl-free' : ''") &&
-  openclawRuntimeSource.includes("getVercelOidcToken()") &&
-  openclawRuntimeSource.includes("id: 'quantdeus-vercel-gateway'") &&
-  openclawRuntimeSource.includes("priority: 110"),
+  openclawRuntimeSource.includes("const hermesFallbackModel = String(process.env.HERMES_FALLBACK_MODEL || 'ministral-3b-latest').trim()") &&
+  openclawRuntimeSource.includes("id: 'quantdeus-hermes-lite'") &&
+  openclawRuntimeSource.includes("priority: trustedOffice ? 16 : 26") &&
+  !openclawRuntimeSource.includes("const defaultGatewayModel = process.env.VERCEL"),
   'vercel-dispatcher/api/quantdeus/openclaw.js',
-  'Vercel OpenClaw keeps a free OIDC-authenticated tool-capable Gateway route ahead of Pollinations fallback'
+  'OpenClaw probes a lighter same-credential Hermes fallback and never makes Vercel Gateway an implicit dependency'
 );
 check(
   openclawRuntimeSource.includes("name: 'quantdeus_repository_status'") &&
