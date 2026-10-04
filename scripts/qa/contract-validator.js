@@ -391,6 +391,16 @@ check(fs.existsSync(telegramBridgePath), 'vercel-dispatcher/api/quantdeus/telegr
 if (fs.existsSync(telegramBridgePath)) {
   const telegramBridge = fs.readFileSync(telegramBridgePath,'utf8');
   check(telegramBridge.includes('x-telegram-bot-api-secret-token') && telegramBridge.includes("TELEGRAM_CIDRS") && telegramBridge.includes("generateText") && telegramBridge.includes("method: 'sendMessage'"), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram webhook verifies secret/IP source and answers directly through the Vercel AI SDK homunculus lane');
+check(
+  telegramBridge.includes('function isPrivilegedRepositoryActionRequest') &&
+  telegramBridge.includes("const privilegedRole = ['owner', 'admin'].includes") &&
+  telegramBridge.includes('quantdeus_admin_handoff: true') &&
+  telegramBridge.includes('text: \`/task \${agentId} \${query}\`') &&
+  telegramBridge.includes("await dispatchTelegramRetry(taskUpdate)") &&
+  telegramBridge.includes("Я не подменяю исполнение шаблоном"),
+  'vercel-dispatcher/api/quantdeus/telegram.js',
+  'verified owner/admin repository actions are promoted from webhook chat to the existing GitHub Actions /task trusted lane without granting public tools'
+);
   check(
     telegramBridge.includes("from '../../lib/prompt-shield.js'") &&
     telegramBridge.includes('PUBLIC_SAFETY_SYSTEM_PROMPT') &&
