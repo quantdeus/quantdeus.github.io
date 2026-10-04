@@ -1,8 +1,6 @@
 name: QuantDeus Seven Priority Cycle 🖖
 
 on:
-  schedule:
-    - cron: '11 */2 * * *'
   workflow_dispatch:
   push:
     branches: [main]
