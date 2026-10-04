@@ -593,16 +593,14 @@ check(
     'Telegram OpenClaw lane passes the requested agent id explicitly instead of relying on an out-of-scope variable'
   );
   check(
-    telegramBridge.includes('async function statelessPublicFallback(agentId, system, user)') &&
-    telegramBridge.includes('process.env.Telegram_bot_token') &&
-    telegramBridge.includes('status=empty-final retry=finalization') &&
-    telegramBridge.includes('FINALIZATION: answer the user directly in message.content') &&
-    telegramBridge.includes("'https://text.pollinations.ai/openai'") &&
-    telegramBridge.includes('private: true') &&
-    telegramBridge.includes('answer = await statelessPublicFallback(agentId, system, groundedQuery)') &&
+    !telegramBridge.includes('async function statelessPublicFallback(') &&
+    !telegramBridge.includes("'https://text.pollinations.ai/openai'") &&
+    !telegramBridge.includes('answer = await statelessPublicFallback(') &&
+    telegramBridge.includes('let answer = await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery)') &&
+    telegramBridge.includes('answer = await openClawInternalReply(agentId, requestedAgentId, system, retryQuery)') &&
     telegramBridge.includes('shieldOutput(answer)'),
     'vercel-dispatcher/api/quantdeus/telegram.js',
-    'Telegram public chat has a stateless tool-less fallback behind the same output shield when OpenClaw is transiently unavailable'
+    'Telegram public chat uses one OpenClaw LLM route behind QShield; no independent stateless model fallback can diverge from the Office runtime'
   );
   check(
     telegramBridge.includes('async function dispatchTelegramRetry(update)') &&
