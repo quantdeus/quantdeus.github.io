@@ -39,7 +39,8 @@ async function main() {
         'content-type': 'application/json',
         'user-agent': 'quantdeus-openclaw-native-scheduler'
       },
-      body: JSON.stringify({ ref: 'main', ...(Object.keys(inputs).length ? { inputs } : {}) })
+      body: JSON.stringify({ ref: 'main', ...(Object.keys(inputs).length ? { inputs } : {}) }),
+      signal: AbortSignal.timeout(15000)
     }
   );
 
