@@ -646,7 +646,7 @@ export default async function handler(req, res) {
     const modelCandidates = probeCandidates.map(candidate => candidate.ref);
     const probeRows = await Promise.all(probeCandidates.map(async candidate => {
       const startedAt = Date.now();
-      const probe = await cachedProbeChatCandidate(candidate, trustedOffice || !vercelInternal);
+      const probe = await cachedProbeChatCandidate(candidate, true);
       return {
         candidate,
         probe: {
