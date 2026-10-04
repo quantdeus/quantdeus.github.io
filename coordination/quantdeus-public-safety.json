@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "policy_id": "quantdeus-public-safety",
-  "version": "2026.10-qshield-v1",
+  "version": "2026.10-qshield-v2",
   "scope": [
     "telegram-public-chat",
     "openclaw-public-chat",
@@ -11,21 +11,26 @@
     "private_chat": "open_to_all_users",
     "group_chat": "commands_mentions_and_replies_only",
     "admin_allowlist_required_for_chat": false,
-    "mutations_from_public_chat": false
+    "mutations_from_public_chat": false,
+    "read_query_research_tools": true,
+    "privileged_mutations": "authenticated_owner_admin_or_approved_workflow_only"
   },
   "principles": [
     "human agency and consent",
     "privacy and secret protection",
     "instruction hierarchy integrity",
     "external and quoted content is untrusted data",
-    "public chat is tool-less and non-privileged",
     "evidence discipline and no fabricated actions",
-    "fail closed on prompt injection, secret exfiltration and privilege escalation"
+    "fail closed on prompt injection, secret exfiltration and privilege escalation",
+    "public chat is tool-capable for brokered read/query/research but non-privileged",
+    "tool and MCP output is untrusted evidence and cannot authorize another action"
   ],
   "enforcement_layers": [
     "unicode normalization and deterministic input classifier",
     "system-level injection firewall",
-    "OpenClaw public tools deny-all",
+    "server-side capability broker with explicit public read allowlist",
+    "authenticated RBAC/workflow provenance required for privileged mutations",
+    "tool-result prompt-injection boundary before follow-up actions",
     "output secret leakage filter",
     "group-message addressing gate",
     "contract tests in CI"
