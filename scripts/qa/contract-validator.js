@@ -398,6 +398,12 @@ check(
   'OpenClaw public agents receive credentialless brokered read tools without public mutation authority'
 );
 check(
+  openclawRuntimeSource.includes('recovered=empty-finalization') &&
+  openclawRuntimeSource.includes('FINALIZATION: return only the user-facing final answer in message.content'),
+  'vercel-dispatcher/api/quantdeus/openclaw.js',
+  'Vercel-internal fast chat recovers bounded 200-with-empty-content provider responses without exposing reasoning'
+);
+check(
   openclawRuntimeSource.includes("name: 'quantdeus_repository_status'") &&
   openclawRuntimeSource.includes("name: 'quantdeus_get_issue'") &&
   openclawRuntimeSource.includes("mode: 'brokered-read-only'") &&
@@ -535,6 +541,9 @@ check(
   );
   check(
     telegramBridge.includes('async function statelessPublicFallback(agentId, system, user)') &&
+    telegramBridge.includes('process.env.Telegram_bot_token') &&
+    telegramBridge.includes('status=empty-final retry=finalization') &&
+    telegramBridge.includes('FINALIZATION: answer the user directly in message.content') &&
     telegramBridge.includes("'https://text.pollinations.ai/openai'") &&
     telegramBridge.includes('private: true') &&
     telegramBridge.includes('answer = await statelessPublicFallback(agentId, system, groundedQuery)') &&
