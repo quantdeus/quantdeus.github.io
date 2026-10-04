@@ -620,17 +620,18 @@ export default async function handler(req, res) {
     if (hermesBaseUrl && hermesKey && hermesModel) {
       addProvider({ id: 'quantdeus-hermes', keyEnv: 'HERMES_LOCAL_API_KEY', key: hermesKey, model: hermesModel, baseUrl: hermesBaseUrl, priority: trustedOffice ? 15 : 25 });
     }
+    // Keep a lighter model on the same already-configured Hermes/Mistral
+    // credential as the first failover. Live capability probes decide whether
+    // the account/model is actually usable before any request is routed to it.
+    const hermesFallbackModel = String(process.env.HERMES_FALLBACK_MODEL || 'ministral-3b-latest').trim();
+    if (hermesBaseUrl && hermesKey && hermesFallbackModel && hermesFallbackModel !== hermesModel) {
+      addProvider({ id: 'quantdeus-hermes-lite', keyEnv: 'HERMES_LOCAL_API_KEY', key: hermesKey, model: hermesFallbackModel, baseUrl: hermesBaseUrl, priority: trustedOffice ? 16 : 26 });
+    }
 
-    // Reuse deployment OIDC for the Gateway. On Vercel, keep a free
-    // tool-capable model as a zero-key failover so Hermes throttling does not
-    // collapse straight onto the legacy anonymous Pollinations route.
-    const defaultGatewayModel = process.env.VERCEL ? 'inclusionai/ling-3.0-flash-vl-free' : '';
-    const gatewayModel = String(
-      process.env.OPENCLAW_GATEWAY_MODEL ||
-      process.env.LLM_BRIDGE_MODEL ||
-      process.env.BROWSER_PLANNER_MODEL ||
-      defaultGatewayModel
-    ).trim();
+    // Reuse deployment OIDC only when a Gateway model is explicitly configured.
+    // Some Vercel accounts require payment verification even for zero-price models,
+    // so the Gateway must not be an implicit production dependency.
+    const gatewayModel = String(process.env.OPENCLAW_GATEWAY_MODEL || process.env.LLM_BRIDGE_MODEL || process.env.BROWSER_PLANNER_MODEL || '').trim();
     if (gatewayModel) {
       let gatewayToken = String(process.env.AI_GATEWAY_API_KEY || '').trim();
       if (!gatewayToken) { try { gatewayToken = await getVercelOidcToken(); } catch {} }
