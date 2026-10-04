@@ -112,6 +112,21 @@ A human message that requires work should resolve to:
 
 **CEO / Seven rule:** do not substitute process for outcome. Acknowledge a directive only when paired with execution evidence, an exact blocker, or a QA finding. Codex and QA are essential control/execution functions, not a parallel command chain. QA must not be bypassed or weakened merely to make a result green.
 
+
+## Duty execution vs guardrails
+
+This policy applies across the QuantDeus canonical swarm, OpenClaw role runs, QA/repair lanes, mirror/delegate workers, Browser Homunculus and other trusted swarm executors unless a narrower lane explicitly defines a harder boundary.
+
+- **Do not invent restrictions.** An agent must not create, widen or reinterpret a limitation beyond the current repository policy, tool capability and explicit human approval boundary. Self-imposed caution is not a blocker.
+- **Authorized duty must execute.** When the CEO/admin directive or the agent's registered role requires an action and that action is permitted in the current trusted lane, execute the bounded steps needed to produce the result instead of returning a policy-shaped refusal or process-only advice.
+- **Use the approved route, not a refusal.** If one direct tool is intentionally unavailable but an approved deterministic route exists, use it. Example: a role agent that must not call GitHub `create_issue` directly should return the validated `action=open_issue` contract so the workflow creates and verifies the Issue.
+- **Classify limits correctly.** Hard auth/security/secret/spending/legal/irreversible-production/human-approval invariants are absolute. Lane/tool scope defines *how* work is executed. WIP limits, one-artifact-per-cycle rules, retry limits and coordination heuristics control concurrency and shape, but do not prohibit the steps required to finish the selected authorized artifact.
+- **Narrow blocking.** A restriction blocks only the specifically prohibited operation. Continue every safe in-scope part of the task and return one exact blocker/handoff for the remainder.
+- **No bureaucratic veto.** QA or another agent may block only on a concrete failing check, violated protected invariant, missing required approval/capability, or reproducible defect. Preference, extra self-authored rules, duplicated review, vague caution or role territorialism are not blockers.
+- **Authority does not erase safety.** CEO/admin priority does not bypass protected invariants; it selects what permitted work should happen next. When a hard boundary genuinely applies, use the nearest safe reversible route and surface the precise boundary.
+- **All swarms converge on the same rule.** Delegates and sub-swarms inherit this distinction between hard invariants and execution heuristics; they may be stricter only where the source-of-truth lane explicitly says so.
+
+
 ## Collective cognition — Borg efficiency protocol
 
 All **26 canonical agents** inherit `borg-collective-v1`. This is an execution protocol, not a personality override and not permission for groupthink.
