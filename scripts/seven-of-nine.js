@@ -48,7 +48,16 @@ async function main() {
     tasks:{total:tasks.length,ready:ready.length,active:active.length,blocked:blocked.length,stale_active:staleActive.length},
     open_non_draft_prs:reviewQueue.length
   };
-  const hub = ghJson(['issue','view',String(hubIssue),'--json','comments,title,url']);
+  let eventPayload = null;
+  let conversationIssueNumber = hubIssue;
+  if ((process.env.GITHUB_EVENT_NAME || '') === 'issue_comment' && process.env.GITHUB_EVENT_PATH) {
+    try {
+      eventPayload = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+      const current = Number(eventPayload?.issue?.number || 0);
+      if (Number.isInteger(current) && current > 0) conversationIssueNumber = current;
+    } catch {}
+  }
+  const hub = ghJson(['issue','view',String(conversationIssueNumber),'--json','comments,title,url']);
 
   // Direct owner/admin commands use a narrow deterministic execution gate.
   // The LLM remains tool-free; only CREATE_ISSUE is allowed here.
@@ -56,7 +65,7 @@ async function main() {
     const comments = hub.comments || [];
     let latest = comments[comments.length - 1] || null;
     try {
-      const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+      const event = eventPayload || JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
       if (event?.comment?.body && event?.comment?.user?.login) {
         latest = {
           id:event.comment.id,
@@ -73,7 +82,7 @@ async function main() {
 
     if (proposal && isPrivileged) {
       if (containsSensitiveMaterial(latest.body || '')) {
-        gh(['issue','comment',String(hubIssue),'--body',
+        gh(['issue','comment',String(conversationIssueNumber),'--body',
           '🛡️ Seven execution gate: Issue creation was rejected because the directive appears to contain credential/secret material. Store secrets privately and send only the non-secret task description.'
         ]);
         console.log('Seven of Nine: rejected direct Issue command containing sensitive material.');
@@ -115,12 +124,13 @@ async function main() {
         action:'create_issue',
         authorized_by:login,
         command_id:commandId,
+        source_issue_number:conversationIssueNumber,
         issue_number:Number(outputs.issue_number || 0) || null,
         issue_status:outputs.issue_status || null,
         issue_url:outputs.issue_url || null
       };
       fs.writeFileSync('/tmp/quantdeus-seven-reasoning.json',JSON.stringify(evidence,null,2));
-      gh(['issue','comment',String(hubIssue),'--body',[
+      gh(['issue','comment',String(conversationIssueNumber),'--body',[
         '🖖 **Seven of Nine — direct execution**',
         '',
         'Authenticated owner/admin directive accepted.',
@@ -160,7 +170,7 @@ async function main() {
   const evidence = {...snapshot, ...result, input_digest:hash, run_id:process.env.GITHUB_RUN_ID || null};
   fs.writeFileSync('/tmp/quantdeus-seven-reasoning.json',JSON.stringify(evidence,null,2));
   if (!(unchanged && result.status === 'DEGRADED')) {
-    gh(['issue','comment',String(hubIssue),'--body',render(context,result,marker)]);
+    gh(['issue','comment',String(conversationIssueNumber),'--body',render(context,result,marker)]);
   }
   console.log(JSON.stringify(evidence,null,2));
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,render(context,result,marker)+'\n');
