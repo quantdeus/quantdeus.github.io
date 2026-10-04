@@ -30,7 +30,7 @@ permissions:
 # the workflow layer so a newer dispatch cannot cancel an HTTP request while its
 # sandbox command keeps the flock and makes the replacement run fail as "office_busy".
 concurrency:
-  group: quantdeus-openclaw-trusted-office
+  group: quantdeus-agent-role-cron
   cancel-in-progress: false
 
 jobs:
