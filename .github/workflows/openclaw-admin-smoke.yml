@@ -1,4 +1,5 @@
 name: QuantDeus OpenClaw Admin Office Smoke
+# production re-smoke after LLM Gateway failover 2026-10-04
 # production re-smoke after direct MCP schemas 16e6f1f
 # production re-smoke after hardened MCP runtime 84c6ffe
 # production re-smoke after Playwright MCP Chrome install dbfe582
