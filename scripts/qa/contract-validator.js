@@ -277,37 +277,48 @@ const staticSmokeWorkflow = fs.readFileSync(path.join(root,'.github','workflows'
 check(qaTriadWorkflow.includes('pull_request:') && staticSmokeWorkflow.includes('pull_request:'), 'EMH QA oversight', 'QA Triad and Static Smoke independently run on treatment PRs');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml']);
+const nativeSchedulerManifest = readJson('coordination/openclaw-automations.json');
+const nativeSchedulerWorkers = new Set((nativeSchedulerManifest.jobs || []).map(job => job.workflow));
+const expectedNativeSchedules = new Map([
+  ['hourly-openclaw-swarm','0 * * * *'],
+  ['seven-priority-cycle','11 */2 * * *'],
+  ['agent-health','19 */2 * * *'],
+  ['agent-role-cycle','23 0-14 * * *'],
+  ['coordinator','27 6 * * *'],
+  ['openclaw-evolution','31 2 * * *'],
+  ['six-pillar-pulse','37 6 * * *'],
+  ['news-manifest','41 */6 * * *'],
+  ['contributor-growth','42 6 * * *'],
+  ['qa-triad','47 6 * * *'],
+  ['qa-failure-radar','7 */2 * * *'],
+  ['qa-self-heal-site','17 */6 * * *'],
+  ['qa-self-heal-actions','47 3-23/6 * * *'],
+  ['growth-site-cycle','53 */4 * * *'],
+  ['daily-swarm-learning','17 6 * * *']
+]);
+check(nativeSchedulerManifest.version === 1, 'coordination/openclaw-automations.json', 'native OpenClaw scheduler manifest schema version is pinned');
+check(nativeSchedulerManifest.owner === 'openclaw-native-gateway', 'coordination/openclaw-automations.json', 'OpenClaw Gateway owns business schedules');
+check(nativeSchedulerManifest.timezone === 'UTC' && nativeSchedulerManifest.watchdog_cadence === '*/15 * * * *', 'coordination/openclaw-automations.json', 'native scheduler timezone and liveness cadence are pinned');
+check((nativeSchedulerManifest.jobs || []).length === expectedNativeSchedules.size, 'coordination/openclaw-automations.json', 'native scheduler declares the complete QuantDeus recurring job set');
+check(new Set((nativeSchedulerManifest.jobs || []).map(job => job.id)).size === expectedNativeSchedules.size, 'coordination/openclaw-automations.json', 'native scheduler job ids are unique');
+for (const job of nativeSchedulerManifest.jobs || []) {
+  check(expectedNativeSchedules.get(job.id) === job.cron, 'coordination/openclaw-automations.json', 'native cadence matches approved contract: '+job.id);
+  check(Boolean(job.workflow && fs.existsSync(path.join(workflowDir,job.workflow))), job.id, 'native scheduler worker workflow exists');
+}
+const schedulerWatchdogPath = path.join(workflowDir,'openclaw-scheduler-watchdog.yml');
+check(fs.existsSync(schedulerWatchdogPath), 'openclaw-scheduler-watchdog.yml', 'single external liveness watchdog exists');
+if (fs.existsSync(schedulerWatchdogPath)) {
+  const watchdog = fs.readFileSync(schedulerWatchdogPath,'utf8');
+  check(/^  schedule:\s*$/m.test(watchdog) && watchdog.includes("cron: '*/15 * * * *'"), 'openclaw-scheduler-watchdog.yml', 'external watchdog only wakes native scheduler every 15 minutes');
+  check(watchdog.includes("source: 'openclaw-scheduler-watchdog'") && watchdog.includes("purpose: 'liveness-only'"), 'openclaw-scheduler-watchdog.yml', 'watchdog is liveness-only and cannot own business task cadence');
+  check(watchdog.includes('node scripts/mission-alignment.js'), 'openclaw-scheduler-watchdog.yml', 'watchdog enforces shared mission alignment before scheduler wake');
+}
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
-  const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
-  for (const cron of crons) {
-    const parts = cron.trim().split(/\s+/);
-    check(parts.length===5, name, 'cron has 5 fields: '+cron);
-    if (parts.length===5) {
-      if (name === 'quantdeus-hourly-openclaw.yml') {
-        check(parts[0] === '0' && parts[1] === '*', name, 'OpenClaw swarm runs at the approved hourly cadence: '+cron);
-      } else if (name === 'agent-health-daily.yml') {
-        check(parts[0] === '19' && parts[1] === '*/2', name, 'crew health uses the approved two-hour cadence: '+cron);
-      } else if (name === 'qa-self-heal.yml') {
-        const approvedQaSelfHeal =
-          (parts[0] === '17' && parts[1] === '*/6') ||
-          (parts[0] === '47' && parts[1] === '3-23/6');
-        check(approvedQaSelfHeal, name, 'QA self-heal uses the approved staggered six-hour lanes: '+cron);
-      } else if (name === 'qa-failure-radar.yml') {
-        check(parts[0] === '7' && parts[1] === '*/2', name, 'QA failure radar uses the approved two-hour cadence: '+cron);
-      } else if (name === 'agent-role-cron.yml') {
-        check(parts[0] === '23' && parts[1] === '0-14', name, 'role cron uses the approved daily hourly window: '+cron);
-      } else if (name === 'seven-priority-cycle.yml') {
-        check(parts[0] === '11' && parts[1] === '*/2', name, 'Seven priority cycle uses the approved two-hour cadence: '+cron);
-      } else if (name === 'news-manifest-cycle.yml') {
-        check(parts[0] === '41' && parts[1] === '*/6', name, 'news/manifest cycle uses the approved six-hour cadence: '+cron);
-      } else if (name === 'growth-site-cycle.yml') {
-        check(parts[0] === '53' && parts[1] === '*/4', name, 'growth/site cycle uses the approved four-hour cadence: '+cron);
-      } else {
-        check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
-      }
-    }
+  if (nativeSchedulerWorkers.has(name)) {
+    check(!/^  schedule:\s*$/m.test(text), name, 'native-scheduled worker does not own a competing GitHub schedule');
+    check(/^  workflow_dispatch:\s*$/m.test(text), name, 'native-scheduled worker remains dispatchable by the OpenClaw scheduler');
+    check(text.includes('node scripts/mission-alignment.js'), name, 'native-scheduled worker enforces shared mission alignment');
   }
   if (name === 'quantdeus-coordinator.yml') {
     check(/group:\s*quantdeus-coordinator\s/.test(text) && /cancel-in-progress:\s*false/.test(text), name, 'Coordinator command events share a non-cancelling FIFO lane');
@@ -316,10 +327,21 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     check(text.indexOf('node scripts/seven-of-nine.js') < text.indexOf('node scripts/coordinator.js'), name, 'Seven of Nine runs before the Swarm Secretary');
     check(text.includes('bridge_fail=0') && text.includes('run_stage emh node scripts/emh.js') && text.includes('run_stage sherlock node scripts/sherlock.js') && text.includes('run_stage tuvok node scripts/tuvok.js') && text.includes('exit "$bridge_fail"'), name, 'Bridge crew stages continue after one role-contract failure while preserving a failing final job status');
   }
-  if (scheduledMissionWorkflows.has(name)) {
-    check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
-  }
 }
+const nativeSchedulerBootstrap = fs.readFileSync(path.join(root,'scripts','openclaw-automations-bootstrap.js'),'utf8');
+const nativeSchedulerDispatcher = fs.readFileSync(path.join(root,'scripts','openclaw-dispatch-workflow.js'),'utf8');
+check(nativeSchedulerBootstrap.includes("'automations'") && nativeSchedulerBootstrap.includes("'--command-argv'") && nativeSchedulerBootstrap.includes('quantdeus-native:'), 'scripts/openclaw-automations-bootstrap.js', 'native scheduler bootstrap declares deterministic OpenClaw command jobs');
+check(nativeSchedulerBootstrap.includes('manifest_hash') && nativeSchedulerBootstrap.includes('quantdeus-native-jobs.json'), 'scripts/openclaw-automations-bootstrap.js', 'native scheduler bootstrap reconciles declarations idempotently through persisted registry state');
+check(nativeSchedulerDispatcher.includes("REPOSITORY = 'quantdeus/quantdeus.github.io'") && nativeSchedulerDispatcher.includes('QUANTDEUS_GITHUB_TOKEN') && nativeSchedulerDispatcher.includes('watchdog_recursion_denied'), 'scripts/openclaw-dispatch-workflow.js', 'native scheduler dispatcher is repository-pinned, credential-gated and recursion-safe');
+check(
+  openclawRuntime.includes("SCHEDULER_SANDBOX = 'quantdeus-openclaw-scheduler'") &&
+  openclawRuntime.includes('function schedulerWatchdogRequest') &&
+  openclawRuntime.includes('runNativeSchedulerTick') &&
+  openclawRuntime.includes('skipMissedJobs: false') &&
+  openclawRuntime.includes("execution_mode: 'openclaw-native-scheduler'"),
+  'vercel-dispatcher/api/quantdeus/openclaw.js',
+  'Vercel runtime wakes a separate persistent native OpenClaw scheduler sandbox without invoking a model'
+);
 
 const qaSelfHealWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-self-heal.yml'),'utf8');
 check(qaSelfHealWorkflow.includes('trigger_run_id:') && qaSelfHealWorkflow.includes('Verify claimed repair PR exists'), 'qa-self-heal.yml', 'QA self-heal receives failure evidence and verifies a real repair PR');
