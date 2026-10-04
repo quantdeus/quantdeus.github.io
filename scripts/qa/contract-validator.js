@@ -199,6 +199,10 @@ if (fs.existsSync(issuePublisherPath)) {
     (publisherResult.status === 0 ? '' : ': ' + String(publisherResult.error || publisherResult.stderr || publisherResult.stdout).slice(0, 2000)));
 }
 
+const openclawOfficeClient = fs.readFileSync(path.join(root,'scripts','openclaw-office-client.js'),'utf8');
+check(openclawOfficeClient.includes("options?.trusted === true ? 4 : 2"), 'openclaw-office-client.js', 'trusted Office contention gets a bounded multi-retry window');
+check(openclawOfficeClient.includes("error?.retrySafe === true") && openclawOfficeClient.includes("openclaw_office_busy") && openclawOfficeClient.includes("15000"), 'openclaw-office-client.js', 'Office-busy retries require server retry_safe and use bounded 15s backoff');
+
 const sevenPriorityWorkflow = fs.readFileSync(path.join(root,'.github','workflows','seven-priority-cycle.yml'),'utf8');
 check(sevenPriorityWorkflow.includes('unfinished coord:active/coord:ready') && sevenPriorityWorkflow.includes('agent-role-cron.yml') && sevenPriorityWorkflow.includes('to wake that homunculus'), 'seven-priority-cycle.yml', 'Seven prioritizes unfinished work and can wake the owning homunculus');
 check(sevenPriorityWorkflow.includes('action=open_issue') && sevenPriorityWorkflow.includes('scripts/publish-agent-issue.js') && sevenPriorityWorkflow.includes('body,labels'), 'seven-priority-cycle.yml', 'Seven new-Issue path is deterministic and receives Issue body/ownership context');
