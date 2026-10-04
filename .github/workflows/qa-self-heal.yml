@@ -35,7 +35,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: quantdeus-openclaw-trusted-office
+  group: quantdeus-qa-self-heal-${{ github.event.schedule || inputs.lane || 'manual' }}
   cancel-in-progress: false
 
 jobs:
