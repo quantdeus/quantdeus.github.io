@@ -20,7 +20,7 @@ function sanitizeEvidence(value, stats = freshStats(), depth = 0) {
     const shield = shieldInput(value);
     if (shield.blocked) {
       recordReasons(stats, shield.reasons);
-      return '[QSHIELD_QUARANTINED_EVIDENCE reasons=' + shield.reasons.join(',') + ']';
+      return '[QSHIELD_QUARANTINED_EVIDENCE]';
     }
     return shield.normalized;
   }
