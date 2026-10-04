@@ -1,8 +1,6 @@
 name: QuantDeus Contributor Growth 📣
 
 on:
-  schedule:
-    - cron: '42 6 * * *'
   workflow_dispatch:
   push:
     branches: [main]
