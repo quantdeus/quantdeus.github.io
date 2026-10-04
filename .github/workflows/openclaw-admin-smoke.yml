@@ -48,6 +48,7 @@ jobs:
               const result = await office.ask({
                 profile: 'seven-of-nine',
                 trusted: true,
+                retryTransient: true,
                 messages: [{
                   role: 'user',
                   content: 'Read-only regression smoke. Use only github__get_file_contents, exactly once, to read README.md from owner quantdeus and repo quantdeus.github.io on main. Do not call any other tool, do not call Playwright, and do not mutate GitHub. After the tool returns, reply exactly OPENCLAW_GITHUB_MCP_OK.'
@@ -88,6 +89,7 @@ jobs:
             const result = await office.ask({
               profile: 'seven-of-nine',
               trusted: false,
+              retryTransient: true,
               messages: [{
                 role: 'user',
                 content: 'Repository evidence regression smoke. Call publicrepo__get_file exactly once with path README.md. Do not request changes. After the read returns, reply exactly OPENCLAW_BROKERED_READ_MCP_OK.'
@@ -126,6 +128,7 @@ jobs:
             const result = await office.ask({
               profile: 'seven-of-nine',
               trusted: true,
+              retryTransient: true,
               messages: [{
                 role: 'user',
                 content: 'Read-only browser smoke. Use only playwright__browser_navigate. Do not call GitHub. Call playwright__browser_navigate exactly once with https://example.com. The navigate result includes the rendered page state; confirm Example Domain is visible from that result, then reply exactly OPENCLAW_PLAYWRIGHT_MCP_OK. Do not call snapshot, evaluate, run-code, or any other tools.'
