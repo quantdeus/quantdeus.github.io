@@ -359,22 +359,25 @@ const publicToolsEnd = openclawRuntimeSource.indexOf('const trustedTools =', pub
 const publicToolsBlock = publicToolsStart >= 0 && publicToolsEnd > publicToolsStart
   ? openclawRuntimeSource.slice(publicToolsStart, publicToolsEnd)
   : '';
-const publicGithubStart = openclawRuntimeSource.indexOf('const publicGithubMcp = {');
-const publicGithubEnd = openclawRuntimeSource.indexOf('const playwrightMcp =', publicGithubStart);
-const publicGithubBlock = publicGithubStart >= 0 && publicGithubEnd > publicGithubStart
-  ? openclawRuntimeSource.slice(publicGithubStart, publicGithubEnd)
+const publicReadStart = openclawRuntimeSource.indexOf('const publicReadMcp = {');
+const publicReadEnd = openclawRuntimeSource.indexOf('const playwrightMcp =', publicReadStart);
+const publicReadBlock = publicReadStart >= 0 && publicReadEnd > publicReadStart
+  ? openclawRuntimeSource.slice(publicReadStart, publicReadEnd)
   : '';
+const publicReadSource = fs.readFileSync(path.join(root,'vercel-dispatcher','lib','public-read-mcp-source.js'),'utf8');
 const publicMutationNames = ['create_issue','create_branch','create_or_update_file','add_issue_comment','create_pull_request','update_issue','update_pull_request'];
 check(
-  publicToolsBlock.includes('github__get_file_contents') &&
-  publicToolsBlock.includes('github__search_issues') &&
-  publicToolsBlock.includes('github__actions_get') &&
-  publicGithubBlock.includes("'get_file_contents'") &&
-  publicGithubBlock.includes("'search_issues'") &&
-  publicGithubBlock.includes("'actions_get'") &&
-  publicMutationNames.every(name => !publicToolsBlock.includes(name) && !publicGithubBlock.includes(name)),
+  publicToolsBlock.includes('publicrepo__repository_status') &&
+  publicToolsBlock.includes('publicrepo__get_issue') &&
+  publicToolsBlock.includes('publicrepo__get_file') &&
+  publicReadBlock.includes("include: ['repository_status', 'get_issue', 'get_file']") &&
+  publicReadSource.includes("credentialless-public-read-broker") &&
+  publicReadSource.includes("UNTRUSTED_EVIDENCE_ONLY") &&
+  publicReadSource.includes("const SAFE_PATH") &&
+  !publicReadSource.includes('Authorization:') &&
+  publicMutationNames.every(name => !publicToolsBlock.includes(name) && !publicReadBlock.includes(name) && !publicReadSource.includes(name)),
   'vercel-dispatcher/api/quantdeus/openclaw.js',
-  'OpenClaw public agents receive brokered GitHub read/query tools without public mutation tools'
+  'OpenClaw public agents receive credentialless brokered read tools without public mutation authority'
 );
 check(
   openclawRuntimeSource.includes("name: 'quantdeus_repository_status'") &&
