@@ -3,6 +3,7 @@ const {test}=require('node:test'), assert=require('node:assert/strict');
 const {turnBudget,issueContext,digest,isEmhComment,skipDialogue}=require('../dialogue-state');
 const {reasonRole}=require('../openclaw-role-dialogue');
 const {parseDecision}=require('../seven-reasoning');
+const {privileged,parseIssueCreateCommand,containsSensitiveMaterial}=require('../seven-command-gate');
 const decision={summary:'Observed delay; provider and contract failures are alternatives.',findings:['No completed artifact observed'],next_step:'Verify one bounded run'};
 const valid={text:JSON.stringify(decision),runtime:'openclaw-agent-exec-no-tools',model:'model-a',assistantTurns:1};
 const args={profile:'sherlock',role:'Science Officer',context:{issue:{number:1}},protocol:'Use facts',repository:'quantdeus/quantdeus.github.io'};
@@ -97,4 +98,40 @@ test('normal role cron and HTTP success require completed turn evidence',()=>{
   assert.ok(workflow.indexOf('turnEvidence(result,true)')<workflow.indexOf('const decision=parse(result.text)'));
   assert.match(route,/openclaw_unverified_llm_turn/);
   assert.ok(route.indexOf('openclaw_unverified_llm_turn')<route.lastIndexOf('return res.status(200)'));
+});
+
+
+test('Seven direct Issue gate authorizes only owner/admin and parses bounded commands',()=>{
+  assert.equal(privileged('quantdeus','quantdeus','goplay1937'),true);
+  assert.equal(privileged('goplay1937','quantdeus','goplay1937'),true);
+  assert.equal(privileged('random-user','quantdeus','goplay1937'),false);
+
+  const proposal=parseIssueCreateCommand('/seven создай issue Починить Telegram routing\nagent=tasksmith\nAcceptance: bot replies are verified.');
+  assert.equal(proposal.title,'[TASK][COORD] Починить Telegram routing');
+  assert.equal(proposal.target_agent,'tasksmith');
+  assert.deepEqual(proposal.labels,['coord:task','coord:ready']);
+  assert.match(proposal.body,/Acceptance/);
+
+  assert.equal(parseIssueCreateCommand('Seven, просто расскажи статус'),null);
+  assert.equal(parseIssueCreateCommand('/seven не создавай issue'),null);
+});
+
+test('Seven direct Issue gate fails closed on credential-like material',()=>{
+  assert.equal(containsSensitiveMaterial('/seven create issue Rotate token\ntoken=supersecretvalue123'),true);
+  assert.equal(containsSensitiveMaterial('/seven create issue Document webhook\nNo credentials included.'),false);
+});
+
+test('Seven coordinator keeps LLM tool-free while direct commands use audited publisher',()=>{
+  const fs=require('node:fs'),path=require('node:path');
+  const root=path.resolve(__dirname,'../..');
+  const seven=fs.readFileSync(path.join(root,'scripts/seven-of-nine.js'),'utf8');
+  const governance=fs.readFileSync(path.join(root,'scripts/governance-gate.js'),'utf8');
+  const workflow=fs.readFileSync(path.join(root,'.github/workflows/quantdeus-coordinator.yml'),'utf8');
+  assert.match(seven,/publish-agent-issue\.js/);
+  assert.match(seven,/containsSensitiveMaterial/);
+  assert.match(seven,/ISSUE_SOURCE_WORKFLOW:'quantdeus-coordinator\.yml'/);
+  assert.match(governance,/trustedAutomation/);
+  assert.match(governance,/seven-priority-cycle\.yml/);
+  assert.match(governance,/quantdeus-coordinator\.yml/);
+  assert.match(workflow,/startsWith\(github\.event\.comment\.body, '\/seven '\)/);
 });
