@@ -5,23 +5,22 @@ const {turnBudget,turnEvidence} = require('./dialogue-state');
 
 function parseJson(text) {
   const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  try { return JSON.parse(raw); } catch (jsonError) {
-    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    const field = name => {
-      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
-      const line = lines.find(x => re.test(x));
-      return line ? line.match(re)[1].trim() : '';
-    };
-    const findings = lines.map(x => {
-      const m = x.match(/^FINDING(?:\s*\d+)?\s*:\s*(.+)/i);
-      return m ? m[1].trim() : '';
-    }).filter(Boolean);
-    const summary = field('SUMMARY');
-    const nextStep = field('NEXT(?:_|\\s*)STEP');
-    if (summary && findings.length && nextStep) return {summary, findings, next_step: nextStep};
-    jsonError.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
-    throw jsonError;
+  const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const summaryMatch = lines.find(line => line.startsWith('SUMMARY:'));
+  const findingsMatches = lines.filter(line => line.startsWith('FINDING:'));
+  const nextStepMatch = lines.find(line => line.startsWith('NEXT_STEP:'));
+
+  if (!summaryMatch || !findingsMatches.length || !nextStepMatch) {
+    const error = new Error('ROLE_DIALOGUE_MALFORMED_OUTPUT');
+    error.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
+    throw error;
   }
+
+  const summary = summaryMatch.substring('SUMMARY:'.length).trim();
+  const findings = findingsMatches.map(line => line.substring('FINDING:'.length).trim());
+  const nextStep = nextStepMatch.substring('NEXT_STEP:'.length).trim();
+
+  return { summary, findings, next_step: nextStep };
 }
 
 async function reasonRole({ profile, role, context, protocol, repository, trusted = false, timeoutMs = 100000, client = office }) {
@@ -64,7 +63,8 @@ async function reasonRole({ profile, role, context, protocol, repository, truste
       next_step: d.next_step.trim(),
       tool_summary: result.toolSummary || result.raw?.tool_summary || null
     };
-  } catch (error) {
+  }
+  catch (error) {
     if (!client.isTransientError(error)) throw error;
     return { status: 'DEGRADED', runtime: null, model: null, error_code: error.code || 'OPENCLAW_TRANSIENT' };
   }
