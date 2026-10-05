@@ -198,7 +198,8 @@ jobs:
               return results;
             }
 
-            // Office is a single bounded execution queue; serial probes avoid self-inflicted queue-wait 503s.\n            const results = await runPool(targets, 1);
+            // Office is a single bounded execution queue; serial probes avoid self-inflicted queue-wait 503s.
+            const results = await runPool(targets, 1);
             const counts = {
               pass:results.filter(r=>r.status==='pass').length,
               degraded:results.filter(r=>r.status==='degraded').length,
