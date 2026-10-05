@@ -1,8 +1,8 @@
 # QuantDeus Living Manifest — Adaptive Horizon
 
-Status: **ACTIVE / automatically maintained adaptive layer**  
-Constitutional base: **Neon Horizon v4.0 + «Эпидемия Добра»**  
-Machine source: `coordination/civilization-doctrine.json`  
+Status: **ACTIVE / automatically maintained adaptive layer**
+Constitutional base: **Neon Horizon v4.0 + «Эпидемия Добра»**
+Machine source: `coordination/civilization-doctrine.json`
 Automation: `.github/workflows/news-manifest-cycle.yml`
 
 ## Purpose
@@ -23,17 +23,30 @@ This section is constitutional context, **not** an adaptive news signal. The aut
 
 ## Current adaptive horizon
 
-_No material adaptive signal has been promoted yet. The news-manifest cron updates this section only when fresh evidence changes an operational priority._
+### **Science & Technology Signals**
+
+### **AdaRIP: Autonomous Driving Adaptation via Robust Inference and Policy Learning**
+
+**Evidence:**
+- **Date:** 2026-10-05
+- **Source:** [YouTube](https://youtu.be/p743FytyjPc) · [Paper](https://proceedings.mlr.press/v119/filos20a/filos20a.pdf)
+  - AdaRIP detects distribution shifts in driving environments and recovers safely using expert feedback.
+  - Focuses on online adaptation for autonomous driving systems.
+
+**Implication:**
+- **QuantDeus Alignment:** This aligns with the **space** and **energy** execution lenses, particularly in autonomous driving and robotic systems for space exploration and resource-efficient mobility.
+- **Evidence Grade:** B (promising data with limited replication; requires further validation in real-world conditions).
+
+**Confidence:** Medium
+**Next Steps:**
+- Investigate replication potential in QuantDeus autonomous node projects.
+- Explore integration with QuantDeus’s Federation Interface for interoperable autonomous systems.
 
 ## World signals
 
 _No material signal recorded yet._
 
 ## Russia signals
-
-_No material signal recorded yet._
-
-## Science & technology signals
 
 _No material signal recorded yet._
 
@@ -62,4 +75,5 @@ _No adaptive change required yet._
 ## Change log
 
 - **2026-10-02** — Constitutional base promoted to Neon Horizon v4.0 after the canonical PDF was archived; added the three nested horizons and Federation of Nodes bridge. No adaptive news signal was promoted by this change.
-- **2026-09-29** — Living adaptive layer created. No current-world claims imported at bootstrap; future cycles must attach dated evidence.
+- **2026-10-05** — Added AdaRIP autonomous driving adaptation research as a science/technology signal.
+
