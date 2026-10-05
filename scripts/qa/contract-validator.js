@@ -808,11 +808,13 @@ check(
     'Telegram live-news lane requires fresh source grounding and fails closed instead of hallucinating current events'
   );
   check(
-    telegramBridge.includes('TELEGRAM_ROLE_OK') &&
+    telegramBridge.includes("text: '/data Кто ты? Ответь одной короткой фразой.'") &&
     telegramBridge.includes("const llmProbe = roleProbeHealthy ? 'TELEGRAM_LLM_OK' : ''") &&
+    telegramBridge.includes('data_identity_smoke') &&
+    telegramBridge.includes("!dataIdentityViolation('data', roleProbeBody)") &&
     !telegramBridge.includes('const llmProbe = await chatCompletion('),
     'vercel-dispatcher/api/quantdeus/telegram.js',
-    'Telegram webhook setup uses one role-aware LLM probe to avoid anonymous-provider burst throttling'
+    'Telegram webhook setup uses one Data identity-aware LLM probe to avoid anonymous-provider burst throttling'
   );
   check(
     telegramBridge.includes('async function openClawInternalReply(agentId, requestedAgentId, system, user)') &&
