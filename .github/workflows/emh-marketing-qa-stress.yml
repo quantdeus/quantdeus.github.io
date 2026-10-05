@@ -2,10 +2,30 @@ name: QuantDeus EMH Marketing + QA Stress Test 🩺🐒
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/emh-marketing-qa-stress.yml'
+      - '.github/workflows/growth-site-cycle.yml'
+      - 'coordination/growth/**'
+      - '.hermes/agent-skills/unity/**'
+      - '.hermes/agent-skills/synthesis/**'
+      - '.hermes/agent-skills/archivist/**'
+      - '.hermes/agent-skills/herald/**'
+      - 'scripts/openclaw-office-client.js'
+      - 'scripts/qa/contract-validator.js'
   push:
     branches: [main]
     paths:
       - '.github/workflows/emh-marketing-qa-stress.yml'
+      - '.github/workflows/growth-site-cycle.yml'
+      - 'coordination/growth/**'
+      - '.hermes/agent-skills/unity/**'
+      - '.hermes/agent-skills/synthesis/**'
+      - '.hermes/agent-skills/archivist/**'
+      - '.hermes/agent-skills/herald/**'
+      - 'scripts/openclaw-office-client.js'
+      - 'scripts/qa/contract-validator.js'
 
 permissions:
   contents: read
@@ -249,7 +269,7 @@ jobs:
 
             fs.writeFileSync('/tmp/quantdeus-emh-marketing-qa-stress.json', JSON.stringify(report,null,2));
             console.log(JSON.stringify(report,null,2));
-            if (counts.fail) process.exit(1);
+            if (counts.fail || counts.degraded) process.exit(1);
           })().catch(error=>{
             console.error(error.stack || error);
             process.exit(1);
