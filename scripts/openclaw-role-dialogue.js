@@ -5,10 +5,13 @@ const {turnBudget,turnEvidence} = require('./dialogue-state');
 
 function parseJson(text) {
   const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  try { return JSON.parse(raw); } catch (jsonError) {
+  // Explicitly check if raw is valid JSON
+  try {
+    return JSON.parse(raw);
+  } catch (jsonError) {
     const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
     const field = name => {
-      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
+      const re = new RegExp('^' + name + '\s*:\s*(.+)', 'i');
       const line = lines.find(x => re.test(x));
       return line ? line.match(re)[1].trim() : '';
     };
@@ -17,10 +20,12 @@ function parseJson(text) {
       return m ? m[1].trim() : '';
     }).filter(Boolean);
     const summary = field('SUMMARY');
-    const nextStep = field('NEXT(?:_|\\s*)STEP');
-    if (summary && findings.length && nextStep) return {summary, findings, next_step: nextStep};
-    jsonError.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
-    throw jsonError;
+    const nextStep = field('NEXT(?:_|\s*)STEP');
+    if (summary && findings.length && nextStep) {
+      return { summary, findings, next_step: nextStep };
+    }
+    // If parsing fails and structured text parsing also fails, throw a clear error
+    throw new Error('JSON parsing failed and structured text parsing also failed. Input is not valid JSON or structured text.');
   }
 }
 
@@ -47,7 +52,7 @@ async function reasonRole({ profile, role, context, protocol, repository, truste
           'Evidence snapshot:',
           JSON.stringify(context)
         ].join('\n')
-      }],
+      ],
       metadata: { source: 'quantdeus-role-dialogue', role: profile, repository }
     });
     const evidence = turnEvidence(result, trusted);
