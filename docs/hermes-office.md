@@ -11,7 +11,7 @@ Seven of Nine — Hermes orchestrator profile
    ↓
 Hermes Kanban board: quantdeus
    ↓
-26 isolated Hermes profiles (one per coordination/agents.json id)
+27 isolated Hermes profiles (one per coordination/agents.json id)
    ↓
 QA profiles → evidence / repair
    ↓
