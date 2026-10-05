@@ -143,6 +143,7 @@ for (const [id, expectedSkills] of Object.entries(expectedMarketingSkills)) {
 }
 check(
   openclawRuntime.includes("skills: { load: { extraDirs: [profileSkillRootAbsolute] } }") &&
+  openclawRuntime.includes("profileSkills.length ? { skills: profileSkills }") &&
   openclawRuntime.includes("openclaw_profile_skills_not_loaded") &&
   openclawRuntime.includes("args: ['skills', 'list', '--eligible', '--json']") &&
   growthSiteWorkflow.includes('Growth/site profile skills were not loaded by OpenClaw runtime'),
