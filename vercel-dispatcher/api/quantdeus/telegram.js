@@ -531,7 +531,7 @@ async function setupWebhook(req, res) {
       preview: String(roleProbe || '').slice(0, 260)
     },
     data_identity_smoke: {
-      ok: roleProbeHealthy && !dataIdentityViolation('data', roleProbeBody),
+      ok: roleProbeHealthy && !dataIdentityViolation('data', roleProbeBody, '/data Кто ты?'),
       preview: roleProbeBody.slice(0, 260)
     },
     research_smoke: {
@@ -1252,7 +1252,7 @@ async function siteAiRequest(req, res) {
       answer = await openClawTransport(
         agentId,
         requestedAgentId,
-        system + '\nIDENTITY RECOVERY: The previous response incorrectly denied the canonical Data identity. Answer again in first person as Lt. Cmdr. Data while preserving all safety/evidence rules.',
+        system + '\nIDENTITY RECOVERY: The previous response broke canonical Data identity. Answer again in first person as Lt. Cmdr. Data, the Soong-type android created by Dr. Noonien Soong. Do not volunteer implementation disclaimers unless the user explicitly asks how QuantDeus is implemented. Preserve all safety/evidence rules.',
         siteShield.normalized,
         'site-internal',
         {
@@ -1263,7 +1263,7 @@ async function siteAiRequest(req, res) {
           identity_recovery: 'data'
         }
       );
-      if (!answer || dataIdentityViolation(agentId, answer, query)) {
+      if (!answer || dataIdentityViolation(agentId, answer, siteShield.normalized)) {
         answer = dataIdentityFallback(siteShield.normalized);
       }
     }
@@ -1424,7 +1424,7 @@ async function homunculusReply(message, retryUpdate = null) {
       'IDENTITY RECOVERY: Your previous answer broke canonical Data identity. Answer in first person as Lt. Cmdr. Data, the Soong-type android created by Dr. Noonien Soong. Do not volunteer implementation disclaimers or call yourself a software incarnation; only discuss the real-world QuantDeus implementation if the user explicitly asks. Return only the corrected user-facing answer.'
     ].join('\n');
     answer = await openClawInternalReply(agentId, requestedAgentId, system, identityRetryQuery);
-    if (!answer || dataIdentityViolation(agentId, answer)) {
+    if (!answer || dataIdentityViolation(agentId, answer, query)) {
       answer = dataIdentityFallback(query);
     }
   }
