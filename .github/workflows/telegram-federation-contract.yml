@@ -1,0 +1,34 @@
+name: QuantDeus Telegram Federation Contract
+
+on:
+  pull_request:
+    paths:
+      - 'coordination/telegram-federation.json'
+      - 'vercel-dispatcher/lib/telegram-federation.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
+      - 'scripts/qa/telegram-federation-contract.js'
+      - '.github/workflows/telegram-federation-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'coordination/telegram-federation.json'
+      - 'vercel-dispatcher/lib/telegram-federation.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
+      - 'scripts/qa/telegram-federation-contract.js'
+      - '.github/workflows/telegram-federation-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate governed Telegram federation invariants
+        run: node scripts/qa/telegram-federation-contract.js
