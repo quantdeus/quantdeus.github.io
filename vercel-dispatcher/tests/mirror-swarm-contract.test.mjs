@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deterministicDiagnosis, safeRepairPath, fingerprint } from '../api/quantdeus/mirror.js';
+import { deterministicDiagnosis, deterministicStageDiagnosis, safeRepairPath, fingerprint, providerExhausted } from '../api/quantdeus/mirror.js';
 
 test('deterministic fallback stays healthy on clean evidence', () => {
   const result = deterministicDiagnosis({
@@ -32,4 +32,19 @@ test('protected and unsafe paths remain rejected', () => {
 test('fallback fingerprint is stable for deduplication', () => {
   assert.equal(fingerprint('same evidence'), fingerprint('same evidence'));
   assert.notEqual(fingerprint('same evidence'), fingerprint('different evidence'));
+});
+
+
+test('role-stage provider exhaustion escalates even after a successful admission probe', () => {
+  const result = deterministicStageDiagnosis({
+    validator_state: { syntax_rc:0, contract_rc:0, openclaw_rc:0 },
+    recent_failures: []
+  }, 'role');
+  assert.equal(result.status, 'escalate');
+  assert.ok(result.evidence.includes('provider_stage:role'));
+});
+
+test('provider exhaustion classifier only matches the bounded mirror exhaustion error', () => {
+  assert.equal(providerExhausted(new Error('mirror_no_healthy_provider')), true);
+  assert.equal(providerExhausted(new Error('github_token_unavailable')), false);
 });

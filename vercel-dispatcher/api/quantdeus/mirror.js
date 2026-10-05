@@ -206,7 +206,25 @@ function deterministicCritique() {
   };
 }
 
-export { safeRepairPath, deterministicDiagnosis, fingerprint };
+function deterministicStageDiagnosis(evidence, stage = 'probe') {
+  const diagnosis = deterministicDiagnosis(evidence);
+  if (stage !== 'probe' && diagnosis.status === 'healthy') {
+    return {
+      ...diagnosis,
+      status: 'escalate',
+      summary: 'A provider passed admission probing but the model plane was exhausted during ' + stage + '.',
+      root_cause: 'No provider completed the required Mirror Swarm role after admission. The mirror refused to guess a repair.',
+      evidence: ['provider_stage:' + stage]
+    };
+  }
+  return diagnosis;
+}
+
+function providerExhausted(error) {
+  return String(error?.message || error) === 'mirror_no_healthy_provider';
+}
+
+export { safeRepairPath, deterministicDiagnosis, deterministicStageDiagnosis, fingerprint, providerExhausted };
 
 async function existingArtifact(token, fp) {
   const query = encodeURIComponent('repo:' + REPOSITORY + ' is:open "' + 'mirror-fingerprint:' + fp + '"');
@@ -316,6 +334,7 @@ async function createDraftRepairPr(token, baseSha, files, diagnosis, critique, q
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
+  let deterministicFallback = null;
   try {
     const auth = String(req.headers.authorization || '');
     const oidc = auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -341,10 +360,11 @@ export default async function handler(req, res) {
       .sort((a, b) => a.route.priority - b.route.priority)
       .map(item => item.route);
 
-    if (!healthyRoutes.length) {
-      const diagnosis = deterministicDiagnosis(evidence);
+    deterministicFallback = async stage => {
+      const diagnosis = deterministicStageDiagnosis(evidence, stage);
       const fp = fingerprint(JSON.stringify({
         deterministic: true,
+        stage,
         evidence: diagnosis.evidence,
         trigger: evidence.trigger
       }));
@@ -356,6 +376,7 @@ export default async function handler(req, res) {
           diagnosis,
           model: null,
           provider_mode: 'deterministic-fallback',
+          provider_stage: stage,
           provider_probes: providerState
         });
       }
@@ -373,6 +394,7 @@ export default async function handler(req, res) {
           fingerprint: fp,
           model: null,
           provider_mode: 'deterministic-fallback',
+          provider_stage: stage,
           provider_probes: providerState
         });
       }
@@ -386,9 +408,12 @@ export default async function handler(req, res) {
         fingerprint: fp,
         model: null,
         provider_mode: 'deterministic-fallback',
+        provider_stage: stage,
         provider_probes: providerState
       });
-    }
+    };
+
+    if (!healthyRoutes.length) return deterministicFallback('probe');
 
     const diagnosis = await role(
       healthyRoutes,
@@ -550,6 +575,9 @@ export default async function handler(req, res) {
       model: diagnosis.__mirror_route || healthyRoutes[0]?.ref || null
     });
   } catch (error) {
+    if (providerExhausted(error) && deterministicFallback) {
+      return deterministicFallback('role');
+    }
     console.error('[mirror-swarm]', error?.stack || error);
     return res.status(500).json({
       error: 'mirror_swarm_failed',
