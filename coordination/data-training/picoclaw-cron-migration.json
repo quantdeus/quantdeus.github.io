@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "title": "PicoClaw → QuantDeus Data cron migration",
+  "migrated_at": "2026-10-05",
+  "source_archive_sha256": "d6ec8d3299ae6ee187722927d7d3dbdc6b3346dc06c61a66dd99bcc364c4e50b",
+  "source_jobs_path": "workspace/cron/jobs.json",
+  "source_jobs_sha256": "258077b57a4c020824cc51e66bb4d305a940e02f3f338e9771fd098711918d81",
+  "migration_policy": {
+    "preserve_function_not_mobile_frequency": true,
+    "raw_recipient_ids_imported": false,
+    "raw_device_paths_imported": false,
+    "autonomous_schedule_self_modification": false,
+    "external_mutation_from_cycle": false,
+    "current_cadence": "37 */6 * * *",
+    "runtime_mode": "credentialless-brokered-read-only",
+    "output": "GitHub Actions artifact only"
+  },
+  "legacy_jobs": [
+    {
+      "legacy_id": "173a81531ea4b162",
+      "legacy_enabled": false,
+      "legacy_interval_ms": 120000,
+      "legacy_function": "Continue positronic-brain concept round N+151",
+      "disposition": "retired",
+      "reason": "Disabled legacy duplicate; knowledge was consolidated into the canonical PicoClaw legacy pack."
+    },
+    {
+      "legacy_id": "1e9a56cfa6a1f50a",
+      "legacy_enabled": true,
+      "legacy_interval_ms": 1800000,
+      "legacy_function": "Psi-Shield anomaly/cognitive-load/gamma-boundary scan",
+      "disposition": "migrated-reframed",
+      "new_phase": "cognitive_hygiene",
+      "reason": "Retains anomaly/loop/load hygiene as software cognition monitoring; does not assert psychic phenomena."
+    },
+    {
+      "legacy_id": "72cc923f66c41ce4",
+      "legacy_enabled": true,
+      "legacy_interval_ms": 7200000,
+      "legacy_function": "Context-aware cron manager: scan goals/context and spawn-adjust-retire cron vectors",
+      "disposition": "migrated-guarded",
+      "new_phase": "context_drift",
+      "reason": "May recommend schedule changes but may not create, edit or retire cron autonomously."
+    },
+    {
+      "legacy_id": "23967b2c60e4d592",
+      "legacy_enabled": true,
+      "legacy_interval_ms": 60000,
+      "legacy_function": "Positronic Brain round trigger",
+      "disposition": "migrated-throttled",
+      "new_phase": "positronic_consolidation",
+      "reason": "Replaced one-minute repetitive writes with a six-hour evidence-backed consolidation cycle."
+    },
+    {
+      "legacy_id": "a7c8d9d72d6d1539",
+      "legacy_enabled": true,
+      "legacy_interval_ms": 180000,
+      "legacy_function": "Positronic Brain Deep Synthesis",
+      "disposition": "migrated-throttled",
+      "new_phase": "deep_synthesis",
+      "reason": "Merged into the six-hour cycle to reduce model/tool churn and consolidate before emitting output."
+    },
+    {
+      "legacy_id": "71e32233fc41a37e",
+      "legacy_enabled": true,
+      "legacy_interval_ms": 300000,
+      "legacy_function": "Local-device anti-noise shell monitor",
+      "disposition": "excluded",
+      "reason": "Personal-device/environment monitoring is unrelated to the canonical QuantDeus Data role and depends on local Android paths."
+    }
+  ],
+  "canonical_workflow": ".github/workflows/data-positronic-cycle.yml",
+  "canonical_script": "scripts/data-positronic-cycle.js"
+}

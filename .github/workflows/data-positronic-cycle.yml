@@ -1,0 +1,43 @@
+name: Data Positronic Cycle 🤖🖖
+
+on:
+  schedule:
+    - cron: '37 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-data-positronic-cycle
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate shared QuantDeus mission
+        run: node scripts/mission-alignment.js
+
+      - name: Run Data positronic maintenance cycle
+        env:
+          DATA_POSITRONIC_REPORT: /tmp/quantdeus-data-positronic-cycle.json
+        run: node scripts/data-positronic-cycle.js
+
+      - name: Upload positronic evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-data-positronic-cycle
+          path: /tmp/quantdeus-data-positronic-cycle.json
+          if-no-files-found: error
+          retention-days: 14

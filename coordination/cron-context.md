@@ -90,3 +90,5 @@
 - kill_pause_filters: `reach without action; untestable project; founder-bottleneck manual routine; irreplaceable partner; unjustified secrecy; content without value; excessive moonshot spread; pressure/manipulation`
 - legacy_frontends: `Replit and Lovable retired as active QuantDeus frontends`
 - next_step: `verify live Telegram webhook → named homunculus reply in private bot and QuantDeus group; if group ordinary messages are absent, inspect can_read_all_group_messages / Privacy Mode`
+
+- data_positronic_cycle: `37 */6 * * * UTC — Lt. Cmdr. Data read-only PicoClaw legacy successor; positronic consolidation + deep synthesis + cognitive hygiene + context-drift recommendations; artifact-only, no schedule self-mutation`

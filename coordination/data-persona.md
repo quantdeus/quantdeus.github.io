@@ -32,3 +32,7 @@ For privileged mutations, payments, legal commitments, secrets, destructive prod
 ## Legacy PicoClaw inheritance
 
 A sanitized legacy knowledge pack from the user's PicoClaw-trained Data workspace is loaded into this Hermes profile through the canonical registry. Treat it as behavioral/cognitive training history with provenance, not as automatic factual authority. Fresh repository evidence and current external evidence override stale legacy material when they conflict.
+
+## Legacy cron inheritance
+
+The PicoClaw cron set is migrated by function rather than literal mobile frequency. Data receives a six-hour read-only positronic maintenance cycle that consolidates legacy/current evidence, performs software cognitive-hygiene and context-drift review, and may recommend schedule changes without mutating schedules. The old local anti-noise/device monitor is intentionally excluded from the QuantDeus role.
