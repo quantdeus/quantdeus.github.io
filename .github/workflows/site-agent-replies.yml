@@ -21,9 +21,14 @@ jobs:
   reply:
     if: >
       github.event.issue.pull_request == null &&
-      contains(fromJSON('[112,113,114,115]'), github.event.issue.number) &&
-      github.event.comment.user.type != 'Bot' &&
-      !contains(github.event.comment.body, '<!-- qd-agent-reply -->')
+      !contains(github.event.comment.body, '<!-- qd-agent-reply -->') &&
+      (
+        (contains(fromJSON('[112,113,114,115]'), github.event.issue.number) && github.event.comment.user.type != 'Bot') ||
+        (
+          contains(github.event.comment.body, '<!-- qd:forum-user -->') &&
+          contains(github.event.comment.body, '<!-- qd:forum-agent-request=')
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
