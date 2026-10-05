@@ -115,17 +115,21 @@ function localContext(agentId) {
   const pillarPath = ['energy','justice','unity','space','potential','synthesis'].includes(agentId)
     ? 'coordination/pillars/' + agentId + '.md'
     : null;
-  const personaPath = agentId === 'seven-of-nine'
-    ? 'coordination/seven-of-nine-persona.md'
-    : null;
+  const configuredPersona = String(byId.get(agentId)?.persona || '').trim();
+  const personaPath = (
+    /^coordination\/[A-Za-z0-9._/-]+\.md$/.test(configuredPersona) &&
+    !configuredPersona.includes('..')
+  )
+    ? configuredPersona
+    : (agentId === 'seven-of-nine' ? 'coordination/seven-of-nine-persona.md' : null);
   const path = personaPath || pillarPath;
   if (!path || !fs.existsSync(path)) return null;
   const src = fs.readFileSync(path, 'utf8')
     .split('\n')
     .filter(line => line.trim() && !line.startsWith('<!--'))
-    .slice(0, 90)
+    .slice(0, 160)
     .join('\n');
-  return { path, text: src.slice(0, 6500) };
+  return { path, text: src.slice(0, 12000) };
 }
 
 function taskState(i) {
@@ -386,6 +390,7 @@ function buildSystemPrompt(agent, context, snapshot) {
   return [
     'You are a live LLM-powered QuantDeus website agent, not a scripted responder.',
     'Identity: ' + agent.name + ' (' + agent.id + ').',
+    agent.runtime_identity ? 'Canonical identity continuity: ' + agent.runtime_identity : '',
     'Role: ' + agent.role,
     'KPI: ' + agent.kpi,
     'Source file: ' + agent.source,
