@@ -202,7 +202,7 @@
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
       "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
-      "agent_skill_root": ".agents/skills/unity",
+      "agent_skill_root": ".openclaw/profile-skills/unity",
       "canonical_skills": [
         "funnel-architecture",
         "growth-experimentation",
@@ -255,7 +255,7 @@
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
       "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
-      "agent_skill_root": ".agents/skills/synthesis",
+      "agent_skill_root": ".openclaw/profile-skills/synthesis",
       "canonical_skills": [
         "content-factory",
         "offer-messaging",
@@ -379,7 +379,7 @@
         "synthesis"
       ],
       "cognitive_protocol": "borg-collective-v1",
-      "agent_skill_root": ".agents/skills/archivist",
+      "agent_skill_root": ".openclaw/profile-skills/archivist",
       "canonical_skills": [
         "seo-content-intelligence",
         "programmatic-seo",
@@ -405,7 +405,7 @@
         "unity"
       ],
       "cognitive_protocol": "borg-collective-v1",
-      "agent_skill_root": ".agents/skills/herald",
+      "agent_skill_root": ".openclaw/profile-skills/herald",
       "canonical_skills": [
         "distribution-orchestration",
         "nurture-automation",

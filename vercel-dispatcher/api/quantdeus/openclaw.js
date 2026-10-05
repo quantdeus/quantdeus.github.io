@@ -1020,7 +1020,7 @@ export default async function handler(req, res) {
         throw new Error('openclaw_profile_registry_lookup_failed: ' + (await profileLookup.stderr()).slice(0, 600));
       }
       const profileMeta = JSON.parse((await profileLookup.stdout()).trim() || '{}');
-      if (profileMeta.agent_skill_root && String(profileMeta.agent_skill_root).startsWith('.agents/skills/')) {
+      if (profileMeta.agent_skill_root && String(profileMeta.agent_skill_root).startsWith('.openclaw/profile-skills/')) {
         profileSkillRoot = String(profileMeta.agent_skill_root);
         profileSkills = Array.isArray(profileMeta.canonical_skills)
           ? profileMeta.canonical_skills.map(String).filter(Boolean)

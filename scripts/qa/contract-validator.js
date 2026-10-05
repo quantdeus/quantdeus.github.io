@@ -132,11 +132,11 @@ for (const [id, expectedSkills] of Object.entries(expectedMarketingSkills)) {
   const agent = registry.agents.find(a => a.id === id);
   const mirror = hom.agents.find(a => a.id === id);
   check(
-    agent?.agent_skill_root === '.agents/skills/' + id &&
-    mirror?.agent_skill_root === '.agents/skills/' + id &&
+    agent?.agent_skill_root === '.openclaw/profile-skills/' + id &&
+    mirror?.agent_skill_root === '.openclaw/profile-skills/' + id &&
     JSON.stringify([...(agent?.canonical_skills || [])].sort()) === JSON.stringify([...expectedSkills].sort()) &&
     JSON.stringify([...(mirror?.canonical_skills || [])].sort()) === JSON.stringify([...expectedSkills].sort()) &&
-    expectedSkills.every(name => fs.existsSync(path.join(root,'.agents','skills',id,name,'SKILL.md'))),
+    expectedSkills.every(name => fs.existsSync(path.join(root,'.openclaw','profile-skills',id,name,'SKILL.md'))),
     id,
     'advanced marketing skills are profile-scoped and complete'
   );
