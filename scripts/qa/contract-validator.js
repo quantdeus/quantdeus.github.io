@@ -127,19 +127,28 @@ const marketingStack = readJson('coordination/growth/marketing-stack.json');
 const marketingScorecard = readJson('coordination/growth/marketing-scorecard.json');
 const growthSiteWorkflow = fs.readFileSync(path.join(root,'.github','workflows','growth-site-cycle.yml'),'utf8');
 const marketingStressWorkflow = fs.readFileSync(path.join(root,'.github','workflows','emh-marketing-qa-stress.yml'),'utf8');
+const openclawRuntime = fs.readFileSync(path.join(root,'vercel-dispatcher','api','quantdeus','openclaw.js'),'utf8');
 for (const [id, expectedSkills] of Object.entries(expectedMarketingSkills)) {
   const agent = registry.agents.find(a => a.id === id);
   const mirror = hom.agents.find(a => a.id === id);
   check(
-    agent?.agent_skill_root === '.hermes/agent-skills/' + id &&
-    mirror?.agent_skill_root === '.hermes/agent-skills/' + id &&
+    agent?.agent_skill_root === '.agents/skills/' + id &&
+    mirror?.agent_skill_root === '.agents/skills/' + id &&
     JSON.stringify([...(agent?.canonical_skills || [])].sort()) === JSON.stringify([...expectedSkills].sort()) &&
     JSON.stringify([...(mirror?.canonical_skills || [])].sort()) === JSON.stringify([...expectedSkills].sort()) &&
-    expectedSkills.every(name => fs.existsSync(path.join(root,'.hermes','agent-skills',id,name,'SKILL.md'))),
+    expectedSkills.every(name => fs.existsSync(path.join(root,'.agents','skills',id,name,'SKILL.md'))),
     id,
     'advanced marketing skills are profile-scoped and complete'
   );
 }
+check(
+  openclawRuntime.includes("skills: { load: { extraDirs: [profileSkillRootAbsolute] } }") &&
+  openclawRuntime.includes("openclaw_profile_skills_not_loaded") &&
+  openclawRuntime.includes("args: ['skills', 'list', '--eligible', '--json']") &&
+  growthSiteWorkflow.includes('Growth/site profile skills were not loaded by OpenClaw runtime'),
+  'vercel-dispatcher/api/quantdeus/openclaw.js',
+  'trusted Growth runtime loads canonical profile skills through OpenClaw and fails closed on missing eligibility'
+);
 check(
   marketingStack.programmatic_seo?.classic_doorway_pages === false &&
   marketingStack.programmatic_seo?.indexed_page_requires_unique_user_value === true &&

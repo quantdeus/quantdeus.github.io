@@ -82,6 +82,9 @@ jobs:
           console.log('contributor onboarding guardrails: OK');
           NODE
 
+      - name: Verify marketing funnel unknown/cohort math
+        run: node --test scripts/qa/marketing-funnel-report.test.js
+
       - name: Run QA syntax validator
         run: node scripts/qa/syntax-validator.js
 
