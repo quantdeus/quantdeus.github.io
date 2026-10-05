@@ -126,6 +126,7 @@ const marketingOperatingSystem = fs.readFileSync(path.join(root,'coordination','
 const marketingStack = readJson('coordination/growth/marketing-stack.json');
 const marketingScorecard = readJson('coordination/growth/marketing-scorecard.json');
 const growthSiteWorkflow = fs.readFileSync(path.join(root,'.github','workflows','growth-site-cycle.yml'),'utf8');
+const marketingStressWorkflow = fs.readFileSync(path.join(root,'.github','workflows','emh-marketing-qa-stress.yml'),'utf8');
 for (const [id, expectedSkills] of Object.entries(expectedMarketingSkills)) {
   const agent = registry.agents.find(a => a.id === id);
   const mirror = hom.agents.find(a => a.id === id);
@@ -160,6 +161,37 @@ check(
   growthSiteWorkflow.includes('Generated copy alone is not success'),
   'growth-site-cycle.yml',
   'autonomous growth cycle is wired to the advanced marketing OS and anti-doorway guard'
+);
+const growthNodeBlock = growthSiteWorkflow.match(/node <<'NODE'\n([\s\S]*?)\n\s+NODE/);
+let growthNodeSyntaxOk = false;
+try {
+  if (growthNodeBlock) {
+    new (require('vm').Script)(growthNodeBlock[1], { filename:'growth-site-cycle.inline.js' });
+    growthNodeSyntaxOk = true;
+  }
+} catch {}
+check(growthNodeSyntaxOk, 'growth-site-cycle.yml', 'embedded growth-cycle JavaScript compiles');
+check(
+  growthSiteWorkflow.includes("fs.appendFileSync(process.env.GITHUB_OUTPUT,'degraded=true\\n')") &&
+  growthSiteWorkflow.includes('process.exitCode=2'),
+  'growth-site-cycle.yml',
+  'transient OpenClaw degradation is explicit and fails the run instead of producing a false green'
+);
+const marketingStressNodeBlock = marketingStressWorkflow.match(/node <<'NODE'\n([\s\S]*?)\n\s+NODE/);
+let marketingStressSyntaxOk = false;
+try {
+  if (marketingStressNodeBlock) {
+    new (require('vm').Script)(marketingStressNodeBlock[1], { filename:'emh-marketing-qa-stress.inline.js' });
+    marketingStressSyntaxOk = true;
+  }
+} catch {}
+check(marketingStressSyntaxOk, 'emh-marketing-qa-stress.yml', 'embedded Marketing + QA stress JavaScript compiles');
+check(
+  ['unity','synthesis','archivist','herald'].every(id => marketingStressWorkflow.includes("'" + id + "'")) &&
+  marketingStressWorkflow.includes("'coordination/growth/**'") &&
+  marketingStressWorkflow.includes('if (counts.fail || counts.degraded) process.exit(1);'),
+  'emh-marketing-qa-stress.yml',
+  'all four marketing agents are live-smoked on relevant changes and degraded probes fail closed'
 );
 
 const expectedDataSkills = [
