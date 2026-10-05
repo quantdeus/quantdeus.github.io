@@ -403,10 +403,10 @@ final class QD_Core {
         register_rest_route(self::NS, '/forum/issues', [
             'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'forum_issue_list'],
         ]);
-        register_rest_route(self::NS, '/forum/issues/(?P<id>\\d+)', [
+        register_rest_route(self::NS, '/forum/issues/(?P<id>\d+)', [
             'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'forum_issue_detail'],
         ]);
-        register_rest_route(self::NS, '/forum/issues/(?P<id>\\d+)/reply', [
+        register_rest_route(self::NS, '/forum/issues/(?P<id>\d+)/reply', [
             'methods'=>'POST','permission_callback'=>fn()=>is_user_logged_in(),'callback'=>[self::class,'forum_issue_reply'],
         ]);
         register_rest_route(self::NS, '/forum/agent-request/(?P<token>[a-f0-9]{64})', [
