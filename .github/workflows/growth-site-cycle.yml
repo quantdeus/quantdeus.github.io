@@ -105,6 +105,14 @@ jobs:
               metadata:{source:'quantdeus-growth-site-cycle',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,requested_agent_id:requestedAgentId,delegated_from:delegatedFrom||'',hour_utc:hour,scheduled_hour_utc:scheduledHour}
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Growth/site cycle lacks trusted tools');
+            const expectedProfileSkills = Array.isArray(agent.canonical_skills) ? agent.canonical_skills : [];
+            if (expectedProfileSkills.length) {
+              const skillEvidence = result.raw?.profile_skills || {};
+              const eligibleSkills = Array.isArray(skillEvidence.eligible) ? skillEvidence.eligible : [];
+              if (skillEvidence.root !== agent.agent_skill_root || !expectedProfileSkills.every(name => eligibleSkills.includes(name))) {
+                throw new Error('Growth/site profile skills were not loaded by OpenClaw runtime: ' + JSON.stringify({agent:agentId,expected:expectedProfileSkills,evidence:skillEvidence}));
+              }
+            }
             const d=parse(result.text);
             if(!['none','issue','pr'].includes(d.action)) throw new Error('Unsupported growth/site action');
             if(d.action==='pr'){

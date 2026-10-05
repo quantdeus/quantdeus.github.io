@@ -172,7 +172,7 @@
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
       "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
-      "agent_skill_root": ".hermes/agent-skills/unity",
+      "agent_skill_root": ".openclaw/profile-skills/unity",
       "canonical_skills": [
         "funnel-architecture",
         "growth-experimentation",
@@ -219,7 +219,7 @@
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
       "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
-      "agent_skill_root": ".hermes/agent-skills/synthesis",
+      "agent_skill_root": ".openclaw/profile-skills/synthesis",
       "canonical_skills": [
         "content-factory",
         "offer-messaging",
@@ -324,7 +324,7 @@
       "kpi": "organic qualified discovery / indexed-page value / content conversion / content decay reduction",
       "operational_status": "active",
       "cognitive_protocol": "borg-collective-v1",
-      "agent_skill_root": ".hermes/agent-skills/archivist",
+      "agent_skill_root": ".openclaw/profile-skills/archivist",
       "canonical_skills": [
         "seo-content-intelligence",
         "programmatic-seo",
@@ -345,7 +345,7 @@
       "kpi": "verified distribution / nurture-to-conversion / response rate / first-contribution or request conversion",
       "operational_status": "active",
       "cognitive_protocol": "borg-collective-v1",
-      "agent_skill_root": ".hermes/agent-skills/herald",
+      "agent_skill_root": ".openclaw/profile-skills/herald",
       "canonical_skills": [
         "distribution-orchestration",
         "nurture-automation",

@@ -8,7 +8,7 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
-const EVENTS = new Set(['issue_comment', 'issues', 'schedule', 'workflow_dispatch', 'push']);
+const EVENTS = new Set(['issue_comment', 'issues', 'pull_request', 'schedule', 'workflow_dispatch', 'push']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const VERCEL_INTERNAL_AUDIENCE = 'quantdeus-internal-openclaw';
 const VERCEL_INTERNAL_ISSUER = 'https://oidc.vercel.com/energotrons-projects-2705eaed';
@@ -685,6 +685,10 @@ export default async function handler(req, res) {
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 60000);
     if (!prompt) return res.status(400).json({ ok: false, error: 'messages_required' });
+    const requestedProfile = String(req.body?.profile || 'control-tower').trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(requestedProfile)) {
+      return res.status(400).json({ ok: false, error: 'invalid_openclaw_profile' });
+    }
 
     // Vercel-internal Telegram/site lanes are tool-capable by default, but only
     // through a narrow server-side read broker. Mutation authority never comes from
@@ -997,6 +1001,35 @@ export default async function handler(req, res) {
       await cloneRequestRepo();
     }
     const agentCwd = trustedOffice && !smokePhase ? repoDir : workdir;
+    let profileSkillRoot = null;
+    let profileSkills = [];
+    if (trustedOffice && !smokePhase) {
+      const profileLookup = await sandbox.runCommand({
+        cmd: 'node',
+        args: ['-e', [
+          "const fs=require('fs');",
+          "const id=process.argv[1];",
+          "const registry=JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));",
+          "const agent=(registry.agents||[]).find(a=>a.id===id);",
+          "if(!agent){console.error('unknown_profile:'+id);process.exit(2)}",
+          "process.stdout.write(JSON.stringify({agent_skill_root:agent.agent_skill_root||null,canonical_skills:Array.isArray(agent.canonical_skills)?agent.canonical_skills:[]}));"
+        ].join(''), requestedProfile],
+        cwd: repoDir
+      });
+      if (profileLookup.exitCode !== 0) {
+        throw new Error('openclaw_profile_registry_lookup_failed: ' + (await profileLookup.stderr()).slice(0, 600));
+      }
+      const profileMeta = JSON.parse((await profileLookup.stdout()).trim() || '{}');
+      if (profileMeta.agent_skill_root && String(profileMeta.agent_skill_root).startsWith('.openclaw/profile-skills/')) {
+        profileSkillRoot = String(profileMeta.agent_skill_root);
+        profileSkills = Array.isArray(profileMeta.canonical_skills)
+          ? profileMeta.canonical_skills.map(String).filter(Boolean)
+          : [];
+      } else if (profileMeta.agent_skill_root) {
+        console.warn('[openclaw-skills] ignoring non-canonical legacy root for profile=' + requestedProfile + ' root=' + String(profileMeta.agent_skill_root));
+      }
+    }
+    const profileSkillRootAbsolute = profileSkillRoot ? `${repoDir}/${profileSkillRoot}` : null;
     const requestsDir = `${home}/.openclaw/requests`;
     const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
     const promptPath = `${requestsDir}/quantdeus-prompt-${requestId}.txt`;
@@ -1133,9 +1166,10 @@ export default async function handler(req, res) {
     const config = {
       models: modelConfig,
       memory: { search: { enabled: false } },
+      ...(profileSkillRootAbsolute ? { skills: { load: { extraDirs: [profileSkillRootAbsolute] } } } : {}),
       tools: trustedOffice ? { ...trustedTools, toolSearch: false } : { ...publicTools, toolSearch: false },
       ...(Object.keys(mcpServers).length ? { mcp: { servers: mcpServers } } : {}),
-      agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
+      agents: { defaults: { workspace: agentCwd, ...(profileSkills.length ? { skills: profileSkills } : {}), timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
     };
     const productionTopologyPrompt = trustedOffice ? [
       'QUANTDEUS PRODUCTION TOPOLOGY:',
@@ -1167,10 +1201,50 @@ export default async function handler(req, res) {
       ...providerRuntimeEnv,
       OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5'
     };
+    const profileSkillRuntime = {
+      root: profileSkillRoot,
+      requested: [...profileSkills],
+      eligible: []
+    };
+    if (profileSkills.length) {
+      const skillListRun = await sandbox.runCommand({
+        cmd: 'openclaw',
+        args: ['skills', 'list', '--eligible', '--json'],
+        cwd: agentCwd,
+        env: {
+          ...runtimeEnv,
+          OPENCLAW_HOME: home,
+          OPENCLAW_STATE_DIR: statePath,
+          OPENCLAW_CONFIG_PATH: configPath,
+          CI: '1'
+        }
+      });
+      const skillListRaw = (await skillListRun.stdout()).replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '').trim();
+      if (skillListRun.exitCode !== 0) {
+        throw new Error('openclaw_profile_skill_inventory_failed: ' + ((await skillListRun.stderr()) || skillListRaw).slice(0, 1000));
+      }
+      let skillPayload;
+      try { skillPayload = JSON.parse(skillListRaw); }
+      catch { throw new Error('openclaw_profile_skill_inventory_invalid_json: ' + skillListRaw.slice(0, 800)); }
+      const skillItems = Array.isArray(skillPayload)
+        ? skillPayload
+        : (Array.isArray(skillPayload?.skills) ? skillPayload.skills : []);
+      profileSkillRuntime.eligible = skillItems
+        .filter(skill => skill && skill.eligible !== false && skill.modelVisible !== false)
+        .map(skill => String(skill.name || '').trim())
+        .filter(Boolean);
+      const missingProfileSkills = profileSkills.filter(name => !profileSkillRuntime.eligible.includes(name));
+      if (missingProfileSkills.length) {
+        throw new Error('openclaw_profile_skills_not_loaded: profile=' + requestedProfile + ' missing=' + missingProfileSkills.join(','));
+      }
+    }
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
       probes: probeResults,
       chosen: model || null,
+      profile: requestedProfile,
+      profile_skill_root: profileSkillRoot,
+      profile_skills: profileSkillRuntime.eligible,
       fallbacks: fallbackModels,
       trusted_office: trustedOffice,
       github_mcp: trustedOffice && Boolean(githubToken) && Boolean(mcpServers.github),
@@ -1396,6 +1470,8 @@ export default async function handler(req, res) {
         : { filesystem: false, github_mcp: false, public_repo_mcp: true, github_write: false, playwright_mcp: false, shell: false },
       doctor,
       tool_summary: toolSummary,
+      profile: requestedProfile,
+      profile_skills: profileSkillRuntime,
       assistant_turns: result.assistantTurns ?? null,
       request_budget_ms: requestBudgetMs,
       agent_timeout_seconds: agentTimeoutSeconds,
