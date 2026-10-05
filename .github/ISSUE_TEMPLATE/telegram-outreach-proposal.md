@@ -9,7 +9,7 @@
 
 ## Proposal
 
-This issue proposes a structured outreach plan to attract and onboard new contributors to the QuantDeus Telegram community. The goal is to ensure that new individuals are properly introduced to the community, matched with relevant tasks, and encouraged to contribute meaningfully.
+This issue proposes a structured outreach plan to attract and onboard new contributors to the QuantDeus Telegram community. The goal is to ensure that new individuals are properly introduced, matched to tasks, and encouraged to contribute meaningfully.
 
 ### Steps:
 1. **Discover**: Identify potential candidates based on public GitHub activity, professional projects, or public collaboration paths.
