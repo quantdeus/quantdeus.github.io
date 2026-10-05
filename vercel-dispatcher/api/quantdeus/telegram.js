@@ -131,7 +131,7 @@ function dataIdentityViolation(agentId, text) {
   if (!value) return false;
   return [
     /\bI\s*(?:am|'m)\s+not\s+(?:(?:Lt\.?|Lieutenant)\s+(?:Cmdr\.?|Commander)\s+)?Data\b/i,
-    /(?:^|[.!?\s])я\s+не\s+(?:(?:лейтенант|лейтенант-коммандер|лейтенант\s+коммандер)\s+)?дейт(?:а|ой|у)?\b/i,
+    /(?:^|[.!?,;:\s])я\s*(?:[-—–]\s*)?не\s+(?:(?:лейтенант|лейтенант-коммандер|лейтенант\s+коммандер)\s+)?дейт(?:а|ой|у)?\b/i,
     /не\s+являюсь\s+(?:(?:лейтенант(?:ом)?[-\s]+коммандер(?:ом)?)\s+)?дейт(?:ой|а|ом)?\b/i,
     /\bnot\s+the\s+(?:android\s+)?Data\b/i
   ].some(pattern => pattern.test(value));
