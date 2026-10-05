@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus Growth & Marketing Stack",
+  "version": "2026.10-v1",
+  "owners": [
+    "unity",
+    "synthesis",
+    "archivist",
+    "herald"
+  ],
+  "analytics_support": [
+    "data"
+  ],
+  "funnel": [
+    "attract",
+    "capture",
+    "nurture",
+    "convert",
+    "retain",
+    "refer"
+  ],
+  "capabilities": [
+    "funnel architecture",
+    "lead segmentation",
+    "permission-based nurture",
+    "offer/message design",
+    "content factory",
+    "creative testing",
+    "SEO/content intelligence",
+    "programmatic SEO",
+    "content/post performance analysis",
+    "distribution orchestration",
+    "PR/outreach",
+    "growth experimentation",
+    "conversion analytics",
+    "retention/reactivation",
+    "attribution hygiene"
+  ],
+  "content_factory": {
+    "pipeline": [
+      "source-of-truth",
+      "audience-intent",
+      "pillar-asset",
+      "atomize",
+      "seo-expand",
+      "cta-map",
+      "qa",
+      "distribute",
+      "measure",
+      "recycle"
+    ],
+    "automatic_publish_requires_authorized_connector": true
+  },
+  "programmatic_seo": {
+    "classic_doorway_pages": false,
+    "indexed_page_requires_unique_user_value": true,
+    "thin_or_duplicate_action": [
+      "improve",
+      "consolidate",
+      "noindex",
+      "do-not-publish"
+    ],
+    "prohibited": [
+      "cloaking",
+      "keyword-stuffing",
+      "fake-reviews",
+      "fake-experts",
+      "city-keyword-swaps-with-same-destination",
+      "scaled-low-value-content"
+    ]
+  },
+  "metrics": [
+    "ctr",
+    "landing_conversion",
+    "opt_in_rate",
+    "qualified_lead_rate",
+    "nurture_to_conversion",
+    "first_contribution_conversion",
+    "quote_or_order_conversion",
+    "retention",
+    "reactivation",
+    "unsubscribe_or_decline_rate",
+    "content_assisted_conversion",
+    "time_to_conversion"
+  ],
+  "evidence_rule": "No metric or campaign outcome is VERIFIED without an observable source, event, artifact, or external analytics record."
+}

@@ -116,6 +116,52 @@ for (const department of startupOrg.departments || []) {
   }
 }
 
+const expectedMarketingSkills = {
+  unity: ['funnel-architecture','growth-experimentation','lead-segmentation'],
+  synthesis: ['content-factory','offer-messaging','creative-testing'],
+  archivist: ['seo-content-intelligence','programmatic-seo','content-performance'],
+  herald: ['distribution-orchestration','nurture-automation','campaign-operations']
+};
+const marketingOperatingSystem = fs.readFileSync(path.join(root,'coordination','growth','marketing-operating-system.md'),'utf8');
+const marketingStack = readJson('coordination/growth/marketing-stack.json');
+const marketingScorecard = readJson('coordination/growth/marketing-scorecard.json');
+const growthSiteWorkflow = fs.readFileSync(path.join(root,'.github','workflows','growth-site-cycle.yml'),'utf8');
+for (const [id, expectedSkills] of Object.entries(expectedMarketingSkills)) {
+  const agent = registry.agents.find(a => a.id === id);
+  const mirror = hom.agents.find(a => a.id === id);
+  check(
+    agent?.agent_skill_root === '.hermes/agent-skills/' + id &&
+    mirror?.agent_skill_root === '.hermes/agent-skills/' + id &&
+    JSON.stringify([...(agent?.canonical_skills || [])].sort()) === JSON.stringify([...expectedSkills].sort()) &&
+    JSON.stringify([...(mirror?.canonical_skills || [])].sort()) === JSON.stringify([...expectedSkills].sort()) &&
+    expectedSkills.every(name => fs.existsSync(path.join(root,'.hermes','agent-skills',id,name,'SKILL.md'))),
+    id,
+    'advanced marketing skills are profile-scoped and complete'
+  );
+}
+check(
+  marketingStack.programmatic_seo?.classic_doorway_pages === false &&
+  marketingStack.programmatic_seo?.indexed_page_requires_unique_user_value === true &&
+  marketingOperatingSystem.includes('Programmatic SEO — not doorway spam') &&
+  marketingOperatingSystem.includes('ATTRACT → CAPTURE → NURTURE → CONVERT → RETAIN → REFER'),
+  'coordination/growth/marketing-operating-system.md',
+  'marketing OS requires measurable funnel and people-first programmatic SEO'
+);
+check(
+  Array.isArray(marketingScorecard.campaigns) &&
+  fs.existsSync(path.join(root,'scripts','marketing-funnel-report.js')),
+  'coordination/growth/marketing-scorecard.json',
+  'marketing scorecard and deterministic funnel reporter exist'
+);
+check(
+  growthSiteWorkflow.includes('marketing-operating-system.md') &&
+  growthSiteWorkflow.includes('marketing-scorecard.json') &&
+  growthSiteWorkflow.includes('classic doorway pages') &&
+  growthSiteWorkflow.includes('Generated copy alone is not success'),
+  'growth-site-cycle.yml',
+  'autonomous growth cycle is wired to the advanced marketing OS and anti-doorway guard'
+);
+
 const expectedDataSkills = [
   'positronic-consolidation',
   'starfleet-alignment',
