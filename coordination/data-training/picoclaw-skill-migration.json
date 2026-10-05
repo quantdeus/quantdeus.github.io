@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "title": "PicoClaw → QuantDeus Data skill migration",
+  "migrated_at": "2026-10-05",
+  "source_archive_sha256": "d6ec8d3299ae6ee187722927d7d3dbdc6b3346dc06c61a66dd99bcc364c4e50b",
+  "source_skill_count": 18,
+  "destination_root": ".hermes/agent-skills/data",
+  "canonical_skills": [
+    "positronic-consolidation",
+    "starfleet-alignment",
+    "bounded-scheduling",
+    "frontier-research",
+    "companion-robot-research",
+    "low-spec-3d-reconstruction",
+    "neuromorphic-feasibility",
+    "environment-troubleshooting"
+  ],
+  "policy": {
+    "raw_skill_copy": false,
+    "agent_local_only": true,
+    "current_fact_reverification": true,
+    "private_osint_excluded": true,
+    "local_device_bridges_excluded": true,
+    "overfit_shortcuts_excluded_or_merged": true
+  },
+  "legacy_skills": [
+    {
+      "name": "ubtech-uworld-u1",
+      "sha256": "da740f8a64b963ccfb9b3262f6e857ad0e0591270f6c6d020bf6168e27f1d088",
+      "disposition": "merged",
+      "target": "companion-robot-research",
+      "reason": "Product-specific shortcut and 2026 market claims require fresh verification."
+    },
+    {
+      "name": "n",
+      "sha256": "028d8ba4520e8ff1ff7a1d8fc82f2eab51c8a19251b39185c5ac05c63c2d4404",
+      "disposition": "merged",
+      "target": "positronic-consolidation",
+      "reason": "Repeated round-writing converted into bounded consolidation."
+    },
+    {
+      "name": "task-bc950cdb",
+      "sha256": "0ee0140556abc5cf0ef53ccd163a35fce6da90c8c5b336f26db5e4213cd43d92",
+      "disposition": "merged",
+      "target": "frontier-research",
+      "reason": "Generic 'continue' shortcut overfit to warp synthesis."
+    },
+    {
+      "name": "n-positronic-brain-concept-md",
+      "sha256": "22ee08ac1546fca2eb5e62c7565400c0d31311ac514e5f766ea769eb3685d2d1",
+      "disposition": "merged",
+      "target": "positronic-consolidation",
+      "reason": "Legacy iterative concept writing consolidated."
+    },
+    {
+      "name": "task-e24505f9",
+      "sha256": "f601b92fac563fc5649b04288631ddfe5eae4f53137f04b6ef03af526f12c19f",
+      "disposition": "excluded",
+      "reason": "Trivial greeting shortcut; no durable capability."
+    },
+    {
+      "name": "llm",
+      "sha256": "4924b353dda54b710044157743a2ea7a219bfa5683d04f31d539bcbe8d9f7489",
+      "disposition": "excluded",
+      "reason": "Misdirected learned shortcut and stale provider/pricing assumptions."
+    },
+    {
+      "name": "task-d4f57dba",
+      "sha256": "18a7b9bddcecc74eb3654c45ae23ebaf1383016d387eabfb2ebe2df085b82afe",
+      "disposition": "excluded",
+      "reason": "Provider empty-response failure was learned as if it were a skill."
+    },
+    {
+      "name": "search-programmable-realistic-companion-robots",
+      "sha256": "0a913edcad0677d6722293a70c07fb5c53f91bcfe4d56afd63fa8bd6c8b43221",
+      "disposition": "migrated-sanitized",
+      "target": "companion-robot-research"
+    },
+    {
+      "name": "osint-personal-life-relationship-investigation",
+      "sha256": "fca7be2227e042cd91bc941b53c557035b4851f3a0767d93e04bb93f479f5d3c",
+      "disposition": "excluded",
+      "reason": "Person-specific private-life/relationship investigation is outside canonical Data role and privacy boundary."
+    },
+    {
+      "name": "theoretical-bionic-brain-nanorobot-construction",
+      "sha256": "fd2f461446719a48e708f1bc5fe125dec3cb24f17c8b58239bb03d32668f8fe9",
+      "disposition": "migrated-sanitized",
+      "target": "neuromorphic-feasibility",
+      "reason": "Keeps materials/energy/scaling analysis; removes operational self-replication/build instructions."
+    },
+    {
+      "name": "ufo-ftl-alien-research",
+      "sha256": "67411c3d38c636c9898456a2afb066e9e1d197791b69ee18cc8ae3eaf38b269b",
+      "disposition": "merged-sanitized",
+      "target": "frontier-research",
+      "reason": "Keeps evidence/falsification workflow without promoting anomalous claims."
+    },
+    {
+      "name": "low-poly-3d-model-from-photo",
+      "sha256": "a781cc8f09818d158ac47be3ae1048714ae758673f1aae74e59e382e5bb1e43b",
+      "disposition": "migrated-sanitized",
+      "target": "low-spec-3d-reconstruction"
+    },
+    {
+      "name": "android-troubleshooting-library-install",
+      "sha256": "e6a7be4ec5d6f34b2451b9333fd81efffe987a2cf60c632b4324dff489cb4207",
+      "disposition": "merged-sanitized",
+      "target": "environment-troubleshooting",
+      "reason": "Removes user/device-specific facts and keeps diagnostic method."
+    },
+    {
+      "name": "open-ended-research-frequency-analysis",
+      "sha256": "a6b64d7bab8301204c4b9a1891988b5ac827a0acd9087b0d9db73d25c0561401",
+      "disposition": "merged-sanitized",
+      "target": "frontier-research"
+    },
+    {
+      "name": "star-trek",
+      "sha256": "ca1f4d1e137cc96e7fbdacad5ea95a3f5da54be7d4dcfa766d6a206c485ee01c",
+      "disposition": "migrated-sanitized",
+      "target": "starfleet-alignment"
+    },
+    {
+      "name": "lightweight-cron-protocol",
+      "sha256": "6e1e6578272a6843405fc1247f8205bccecda4ed4a1f7c51a4d266293e6753d7",
+      "disposition": "migrated-sanitized",
+      "target": "bounded-scheduling"
+    },
+    {
+      "name": "star-trek-cron-roleplay",
+      "sha256": "630a9ac68368f86490a8db925e3d20ac66292485d143411281c7d47b30b9877d",
+      "disposition": "merged-sanitized",
+      "target": "starfleet-alignment + bounded-scheduling",
+      "reason": "Preserves identity and scheduling discipline; drops psi claims and roleplay timing literals."
+    },
+    {
+      "name": "termux-shell-cron",
+      "sha256": "00ebac446bfb7bf364c33a7ce94c6ac937bb9e9a26b33f36fc8812c7bf2db7df",
+      "disposition": "excluded",
+      "reason": "Android/Termux local bridge and restriction-bypass architecture does not belong in cloud QuantDeus runtime."
+    }
+  ]
+}
