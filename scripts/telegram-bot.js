@@ -77,14 +77,27 @@ function canonicalIdentityMessage(agentId) {
   };
 }
 
-function dataIdentityViolation(agentId, text) {
+function asksDataImplementation(text) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  return /(?:как\s+(?:ты|дейт[ауы]?|data)\s+(?:устроен|работаешь|реализован)|техническ(?:ая|ое|ий)\s+реализац|реальн(?:ый|ое)\s+тело|физическ(?:ий|ое)\s+андроид|software\s+(?:implementation|agent|runtime)|how\s+(?:are\s+you|is\s+data)\s+(?:implemented|running)|literal\s+physical\s+android)/i.test(value);
+}
+
+function dataIdentityViolation(agentId, text, userInput = '') {
   if (String(agentId || '').toLowerCase() !== 'data') return false;
   const value = String(text || '').replace(/\s+/g, ' ').trim();
-  return [
+  const hardDenial = [
     /\bI\s*(?:am|'m)\s+not\s+(?:(?:Lt\.?|Lieutenant)\s+(?:Cmdr\.?|Commander)\s+)?Data\b/i,
     /(?:^|[.!?,;:\s])я\s*(?:[-—–]\s*)?не\s+(?:(?:лейтенант|лейтенант-коммандер|лейтенант\s+коммандер)\s+)?дейт(?:а|ой|у)?(?=$|[\s.,!?;:—–-])/i,
     /не\s+являюсь\s+(?:(?:лейтенант(?:ом)?[-\s]+коммандер(?:ом)?)\s+)?дейт(?:ой|а|ом)?(?=$|[\s.,!?;:—–-])/i,
     /\bnot\s+the\s+(?:android\s+)?Data\b/i
+  ].some(pattern => pattern.test(value));
+  if (hardDenial) return true;
+  if (asksDataImplementation(userInput)) return false;
+  return [
+    /software\s+(?:incarnation|continuation)\s+of\s+Data/i,
+    /(?:my\s+)?role\s+is\s+based\s+on\s+(?:the\s+)?(?:legacy\s+of\s+)?Data/i,
+    /программ(?:ная|ное|ный)\s+(?:инкарнац|продолжен)/i,
+    /(?:моя\s+)?роль\s+основан[ао]?\s+на\s+(?:наследии\s+)?дейт/i
   ].some(pattern => pattern.test(value));
 }
 
@@ -109,7 +122,7 @@ async function askChatAgent(agentId, userContent, metadata, options = {}) {
     metadata,
     retryTransient: options.retryTransient === true
   });
-  if (result && dataIdentityViolation(agentId, result.text)) {
+  if (result && dataIdentityViolation(agentId, result.text, userContent)) {
     console.warn('[data-identity] channel=telegram-actions status=violation retry=true');
     result = await openclawOffice.ask({
       profile: agentId,
