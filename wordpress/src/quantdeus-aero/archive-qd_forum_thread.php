@@ -6,7 +6,12 @@
 <div class="qd-section-head"><div><span class="qd-kicker">GitHub Issues · live mirror</span><h2>Задачи QuantDeus прямо на форуме</h2></div><span class="qd-tag" data-plan-badge><?php echo esc_html(class_exists('QD_Core') && method_exists('QD_Core','current_plan') ? strtoupper(QD_Core::current_plan()) : 'FREE'); ?></span></div>
 <p>Issues читаются напрямую из <code>quantdeus/quantdeus.github.io</code>. После входа можно отвечать в Issue из форума и позвать AI Fleet. Free получает один ответ Seven of Nine; Pro может вызвать до трёх агентов в одной ветке.</p>
 <div class="qd-notice" data-issue-mirror-status>Загружаю свежие Issues…</div>
+<div class="qd-issue-toolbar">
+<input type="search" data-issue-search placeholder="Поиск по номеру, заголовку или метке" aria-label="Поиск Issues">
+<span class="qd-tag" data-issue-count>0 Issues</span>
+</div>
 <div class="qd-forum qd-issue-list" data-issue-list></div>
+<button class="qd-btn alt qd-issue-more" type="button" data-issue-more hidden>Показать ещё</button>
 </section>
 <section class="qd-card qd-forum-create" data-auth-required <?php if (!is_user_logged_in()) echo 'hidden'; ?>>
 <h2>Новая тема</h2>
