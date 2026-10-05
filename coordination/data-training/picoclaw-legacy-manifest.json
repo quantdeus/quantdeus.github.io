@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "title": "Lt. Cmdr. Data PicoClaw legacy training import",
+  "source_type": "user-supplied-picoclaw-workspace",
+  "source_archive_sha256": "d6ec8d3299ae6ee187722927d7d3dbdc6b3346dc06c61a66dd99bcc364c4e50b",
+  "archive_entries_total": 7120,
+  "archive_files_total": 6633,
+  "import_mode": "sanitized-distillation",
+  "selected_sources": [
+    {"path":"workspace/memory/positronic_brain_concept.md","sha256":"c9d70c7264028d8d4484692c7d89546393f88fd781c379251cf2925ce0f7dabf","purpose":"process-first cognition, alpha/beta/gamma modes, question/coherence/drift patterns"},
+    {"path":"workspace/memory/star_trek_log.md","sha256":"14197eecea902812ae9e3633f32258ea0fe635cac465a1c0b1cb6797a3f31891","purpose":"Data identity continuity and thematic index"},
+    {"path":"workspace/memory/star_trek_build_log.md","sha256":"73a701c7f6a6df9832f8f92a606937afe68f71ec277cb9219b55c79e9054c269","purpose":"canon/timeline/character/technology consistency audit pattern"},
+    {"path":"workspace/skills/star-trek/SKILL.md","sha256":"ca1f4d1e137cc96e7fbdacad5ea95a3f5da54be7d4dcfa766d6a206c485ee01c","purpose":"Starfleet-not-Skynet alignment"},
+    {"path":"workspace/skills/n-positronic-brain-concept-md/SKILL.md","sha256":"22ee08ac1546fca2eb5e62c7565400c0d31311ac514e5f766ea769eb3685d2d1","purpose":"iterative memory/concept consolidation pattern"},
+    {"path":"workspace/skills/lightweight-cron-protocol/SKILL.md","sha256":"6e1e6578272a6843405fc1247f8205bccecda4ed4a1f7c51a4d266293e6753d7","purpose":"event-driven bounded execution pattern"},
+    {"path":"workspace/skills/llm/SKILL.md","sha256":"4924b353dda54b710044157743a2ea7a219bfa5683d04f31d539bcbe8d9f7489","purpose":"learned-shortcut provenance and overfitting caution"}
+  ],
+  "excluded_categories": [
+    "raw-session-logs",
+    "private-biographical-meta-prompt",
+    "person-specific-osint",
+    "local-device-and-recipient-identifiers",
+    "scheduler-runtime-state",
+    "neighborhood-monitoring-data",
+    "vendor-node-modules-and-generated-assets",
+    "unverified-claims-promoted-as-facts"
+  ],
+  "secret_scan": {
+    "mode": "pattern-scan-filenames-and-text",
+    "recognized_secret_patterns_found": 0,
+    "note": "A negative pattern scan is not proof that the raw archive is safe for public publication; raw content remains excluded."
+  },
+  "canonical_output": "coordination/data-training/picoclaw-legacy-knowledge.md"
+}
