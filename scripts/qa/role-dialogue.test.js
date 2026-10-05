@@ -44,6 +44,21 @@ test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
   assert.equal(seven.actions.length,2);
   assert.match(seven.analysis,/observed fields/);
 });
+test('structured-text fallback accepts whitespace, numbered findings and NEXT STEP',async()=>{
+  const line={...valid,text:'SUMMARY : Evidence is available.\nFINDING 1 : First bounded fact.\nFINDING 2: Second bounded fact.\nNEXT STEP : Retry one scheduled role turn.'};
+  const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>line}});
+  assert.equal(result.status,'LLM');
+  assert.equal(result.summary,'Evidence is available.');
+  assert.deepEqual(result.findings,['First bounded fact.','Second bounded fact.']);
+  assert.equal(result.next_step,'Retry one scheduled role turn.');
+});
+test('malformed role output preserves ROLE_DIALOGUE_MALFORMED_OUTPUT code',async()=>{
+  const malformed={...valid,text:'This is neither JSON nor the role line protocol.'};
+  await assert.rejects(
+    reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>malformed}}),
+    error=>error && error.code==='ROLE_DIALOGUE_MALFORMED_OUTPUT'
+  );
+});
 test('role dialogue verifies real assistant turn, model and brokered read-tool runtime',async()=>{
   let calls=0;
   const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async opts=>{
