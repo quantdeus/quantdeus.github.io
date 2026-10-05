@@ -17,7 +17,7 @@ The loop is:
 
 ### Darwinian selection
 
-Each daily cycle first creates a **population of three candidate genomes** over the same immutable evidence snapshot. The candidates cover three different mutation lenses: reliability/recovery, latency/tool efficiency, and coordination/observability. A deterministic selector—not the model—scores each valid candidate using evidence strength, novelty against recorded evolution history, reversibility/blast radius, and the safer Tier A/Tier B boundary.
+Each daily cycle first creates a **population of three candidate genomes** over the same immutable evidence snapshot. The candidates cover three different mutation lenses: swarm reliability/recovery, autonomy/tool-routing efficiency, and collective learning/coordination quality. A deterministic selector—not the model—scores each valid candidate using evidence strength, novelty against recorded evolution history, reversibility/blast radius, and the safer Tier A/Tier B boundary.
 
 Only the highest-fitness surviving candidate is materialized into the existing Tier A/Tier B proposal format. The materialization step is cryptographically/equality-bound at the broker level to the selected problem, hypothesis, metric, falsifier, evidence, tier and exact target paths; if any of those change, publication fails closed.
 
@@ -33,11 +33,11 @@ The skill is consumed only by the inference-only evolution analysis as repositor
 
 **Tier A — bounded skill/evolution layer.** Only the skill/docs mutable sections and one ledger history append may change automatically. The semantic guard runs before GitHub mutation. A Tier A PR may auto-merge only after independent successful QA Triad + Static Smoke + Evolution Guard runs and a final guard revalidation against the current `main`.
 
-**Tier B — core/runtime proposal only.** The model may name approved core paths, but the broker records that proposal in `coordination/openclaw-evolution-proposals/` instead of mutating runtime/auth/MCP/workflow code. Any core implementation requires a separate human/Seven-authorized change.
+**Tier B — shared policy/core/runtime proposal only.** The model may name approved paths including `AGENTS.md`, but the broker records that proposal in `coordination/openclaw-evolution-proposals/` instead of mutating shared policy/runtime/auth/MCP/workflow code. Any implementation requires a separate human/Seven-authorized change and independent QA.
 
 ## Why the split exists
 
-A self-improving system should be able to learn from evidence, but it should not be able to remove the mechanisms that judge its own changes. Authentication, tool boundaries, secret isolation, QA, mission alignment and human control are protected invariants.
+A self-improving system should be able to learn from evidence, but it should not be able to remove the mechanisms that judge its own changes. An agent may report its own failure or hypothesis, but it may not certify its own policy mutation; collective policy changes remain review-only until independently checked. Authentication, tool boundaries, secret isolation, QA, mission alignment and human control are protected invariants.
 
 
 ## Enforced execution boundary
