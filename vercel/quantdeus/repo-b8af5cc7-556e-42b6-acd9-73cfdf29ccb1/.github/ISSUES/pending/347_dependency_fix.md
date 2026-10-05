@@ -29,7 +29,3 @@ The mirror swarm fails due to the dependency on the Vercel AI Gateway, which req
 - `coord:ready`
 - `agent:control-tower`
 - `quantdeus-target-agent:control-tower`
-
-## Next Steps
-
-This Issue will be opened via GitHub MCP to ensure proper tracking and prioritization.
