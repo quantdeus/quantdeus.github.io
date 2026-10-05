@@ -17,7 +17,8 @@ permissions:
 
 concurrency:
   group: quantdeus-openclaw-evolution-gate
-  cancel-in-progress: false
+  # Only the newest completed QA signal matters; stale queued gates otherwise build an Actions backlog.
+  cancel-in-progress: true
 
 jobs:
   gate:
