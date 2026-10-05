@@ -1147,8 +1147,17 @@ export default async function handler(req, res) {
       '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task and only when QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION is configured.',
       '- Missing WordPress MCP authentication fails closed for writes; never invent access, secrets or hidden credentials.'
     ].join('\n') : '';
+    const trustedToolContractPrompt = trustedOffice && !smokePhase ? [
+      'QUANTDEUS TRUSTED TOOL CONTRACT:',
+      '- Use only tool names that are actually exposed in this OpenClaw turn.',
+      '- GitHub reads/writes MUST use the exact github__* MCP tools. Never invent generic tool names such as edit, write, patch, commit, list_pull_requests or media:<url>.',
+      '- For repository file mutations use github__create_or_update_file; create a branch first with github__create_branch when the task requires a PR.',
+      '- For pull requests use github__search_pull_requests / github__get_pull_request / github__create_pull_request as exposed; do not guess aliases.',
+      '- A URL or Markdown link is content, never a tool name.',
+      '- If a required capability is not exposed, stop safely and report the missing exact capability instead of attempting an alias.'
+    ].join('\n') : '';
     const effectivePrompt = prompt;
-    const routedPrompt = productionTopologyPrompt ? productionTopologyPrompt + '\n\n' + effectivePrompt : effectivePrompt;
+    const routedPrompt = [productionTopologyPrompt, trustedToolContractPrompt, effectivePrompt].filter(Boolean).join('\n\n');
     await sandbox.writeFiles([
       { path: configPath, content: Buffer.from(JSON.stringify(config)) },
       { path: promptPath, content: Buffer.from(routedPrompt) },
