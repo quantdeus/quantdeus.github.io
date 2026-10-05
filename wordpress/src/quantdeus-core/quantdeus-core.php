@@ -17,6 +17,10 @@ final class QD_Core {
         add_action('init', [self::class, 'maybe_upgrade'], 20);
         add_action('rest_api_init', [self::class, 'routes']);
         add_action('admin_init', [self::class, 'guard_admin']);
+        add_action('show_user_profile', [self::class, 'plan_profile']);
+        add_action('edit_user_profile', [self::class, 'plan_profile']);
+        add_action('personal_options_update', [self::class, 'save_plan_profile']);
+        add_action('edit_user_profile_update', [self::class, 'save_plan_profile']);
         add_action('wp_dashboard_setup', [self::class, 'dashboard_widgets']);
         add_action('add_meta_boxes', [self::class, 'meta_boxes']);
         add_action('save_post', [self::class, 'save_meta_boxes']);
@@ -526,6 +530,11 @@ final class QD_Core {
         return new WP_REST_Response(['ok'=>true,'id'=>$comment],201);
     }
 
+    private static function configured_ids(string $constant): array {
+        if (!defined($constant)) return [];
+        return array_values(array_filter(array_map('trim',preg_split('/[\\s,;]+/',(string)constant($constant)))));
+    }
+
     public static function current_plan(?int $user_id=null): string {
         $uid=$user_id ?? get_current_user_id();
         if ($uid<1) return 'free';
@@ -534,7 +543,35 @@ final class QD_Core {
         foreach (['qd_plan','quantdeus_plan'] as $key) {
             if (strtolower(trim((string)get_user_meta($uid,$key,true)))==='pro') return 'pro';
         }
+        $telegram_id=trim((string)get_user_meta($uid,'qd_telegram_id',true));
+        if ($telegram_id!=='') {
+            $privileged=array_merge(self::configured_ids('QD_OWNER_TELEGRAM_IDS'),self::configured_ids('QD_ADMIN_TELEGRAM_IDS'));
+            if (in_array($telegram_id,$privileged,true)) return 'pro';
+        }
         return 'free';
+    }
+
+    public static function plan_profile($user): void {
+        if (!current_user_can('manage_options') || !($user instanceof WP_User)) return;
+        $stored=strtolower(trim((string)get_user_meta($user->ID,'qd_plan',true)))==='pro' ? 'pro' : 'free';
+        wp_nonce_field('qd_plan_'.$user->ID,'qd_plan_nonce');
+        echo '<h2>QuantDeus entitlement</h2>';
+        echo '<table class="form-table" role="presentation"><tr><th><label for="qd_plan">Plan</label></th><td>';
+        echo '<select name="qd_plan" id="qd_plan">';
+        echo '<option value="free" '.selected($stored,'free',false).'>Free</option>';
+        echo '<option value="pro" '.selected($stored,'pro',false).'>Pro</option>';
+        echo '</select>';
+        echo '<p class="description">Тариф отделён от RBAC. Pro не выдаёт moderator/admin. WordPress administrator всегда вычисляется как Pro.</p>';
+        echo '</td></tr></table>';
+    }
+
+    public static function save_plan_profile(int $user_id): void {
+        if (!current_user_can('manage_options') || !current_user_can('edit_user',$user_id)) return;
+        $nonce=(string)($_POST['qd_plan_nonce'] ?? '');
+        if ($nonce==='' || !wp_verify_nonce($nonce,'qd_plan_'.$user_id)) return;
+        $plan=strtolower(sanitize_key((string)($_POST['qd_plan'] ?? 'free')));
+        if ($plan==='pro') update_user_meta($user_id,'qd_plan','pro');
+        else delete_user_meta($user_id,'qd_plan');
     }
 
     private static function forum_github_token(): string {
