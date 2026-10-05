@@ -108,6 +108,39 @@ function mainMenuReplyMarkup() {
   };
 }
 
+function telegramRoleCommand(agent) {
+  return String(agent?.id || '').trim().toLowerCase().replace(/-/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 32);
+}
+
+function telegramCommandsForAgents(agents = []) {
+  const base = [
+    { command: 'start', description: 'Запустить QuantDeus' },
+    { command: 'help', description: 'Команды QuantDeus' },
+    { command: 'agents', description: '🐒 Мартышки · AI Fleet' },
+    { command: 'monkeys', description: '🐒 Мартышки · AI Fleet' },
+    { command: 'pro', description: '⭐ QuantDeus Free / Pro' },
+    { command: 'shield', description: 'Статус защиты QuantDeus Shield' },
+    { command: 'agent', description: 'Обратиться к конкретной роли AI Fleet' },
+    { command: 'propose', description: 'Предложить идею для admin-публикации' },
+    { command: 'status', description: 'Состояние очереди QuantDeus' },
+    { command: 'task', description: 'Прямой task для Telegram admin' }
+  ];
+  const reserved = new Set(base.map(item => item.command));
+  const roleCommands = agents
+    .map(agent => {
+      const command = telegramRoleCommand(agent);
+      if (!command || reserved.has(command)) return null;
+      reserved.add(command);
+      const title = String(agent?.startup_title || agent?.name || agent?.role || agent?.id || 'QuantDeus agent')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 220);
+      return { command, description: title || 'QuantDeus agent' };
+    })
+    .filter(Boolean);
+  return [...base, ...roleCommands].slice(0, 100);
+}
+
 function proText(entitlement = { role: 'member', plan: 'free', verified: true }) {
   const providers = proPaymentProviders();
   const role = String(entitlement.role || 'member').toLowerCase();
@@ -376,20 +409,10 @@ async function setupWebhook(req, res) {
   if (secret) webhookPayload.secret_token = secret;
 
   await telegram(botToken, 'setWebhook', webhookPayload);
-  await telegram(botToken, 'setMyCommands', {
-    commands: [
-      { command: 'start', description: 'Запустить QuantDeus' },
-      { command: 'help', description: 'Команды QuantDeus' },
-      { command: 'agents', description: '🐒 Мартышки · AI Fleet' },
-      { command: 'monkeys', description: '🐒 Мартышки · AI Fleet' },
-      { command: 'pro', description: '⭐ QuantDeus Free / Pro' },
-      { command: 'shield', description: 'Статус защиты QuantDeus Shield' },
-      { command: 'agent', description: 'Обратиться к конкретной роли AI Fleet' },
-      { command: 'propose', description: 'Предложить идею для admin-публикации' },
-      { command: 'status', description: 'Состояние очереди QuantDeus' },
-      { command: 'task', description: 'Прямой task для Telegram admin' }
-    ]
-  });
+  const setupRegistry = await registry();
+  const setupAgents = Array.isArray(setupRegistry?.agents) ? setupRegistry.agents : [];
+  const setupCommands = telegramCommandsForAgents(setupAgents);
+  await telegram(botToken, 'setMyCommands', { commands: setupCommands });
   const webAppUrl = String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
   const menuButton = await telegram(botToken, 'setChatMenuButton', {
     menu_button: {
@@ -454,7 +477,10 @@ async function setupWebhook(req, res) {
       menu_button_ok: Boolean(menuButton),
       menu_button_url: webAppUrl,
       description_ok: Boolean(description),
-      short_description_ok: Boolean(shortDescription)
+      short_description_ok: Boolean(shortDescription),
+      agent_count: setupAgents.length,
+      command_count: setupCommands.length,
+      data_command: setupCommands.some(item => item.command === 'data')
     },
     webhook: {
       url: info.url || webhookUrl,
@@ -800,13 +826,19 @@ function groundedResearchFallback(research) {
 }
 
 function explicitAgent(text, byId) {
+  const value = String(text || '');
   const patterns = [
     /^\/agent(?:@[A-Za-z0-9_]+)?\s+([a-z0-9_-]+)/i,
     /^\/start(?:@[A-Za-z0-9_]+)?\s+agent_([a-z0-9_-]+)/i
   ];
   for (const pattern of patterns) {
-    const match = String(text || '').match(pattern);
+    const match = value.match(pattern);
     if (match && byId.has(match[1].toLowerCase())) return match[1].toLowerCase();
+  }
+  const direct = value.match(/^\/([a-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i);
+  if (direct) {
+    const id = direct[1].toLowerCase().replace(/_/g, '-');
+    if (byId.has(id)) return id;
   }
   return null;
 }
@@ -820,6 +852,7 @@ function autoAgent(text, byId) {
     ['qa-syntax', /syntax|синтакс|lint|eslint|парсинг|parse error|json error/],
     ['qa-contract', /contract validator|контракт|инвариант|schema|схем[аы]|compliance/],
     ['qa-repair', /\bqa\b|smoke|регресс|repair|почин.*тест|ошибка проверки/],
+    ['data', /(?:лейтенант\s+коммандер\s+)?дейт(?:а|у|ой)?|lieutenant commander data|positronic|позитронн|операционно-аналитическ/],
     ['guardian', /security|секрет|secret|token|токен|permission|права|oauth|уязвим|безопасност/],
     ['tasksmith', /реализ|implement|кодир|patch|фикс|fix|refactor|commit|коммит/],
     ['verifier', /acceptance|критери.*при[её]м|requirements|требован|верифиц/],
@@ -847,8 +880,15 @@ function autoAgent(text, byId) {
   return byId.has('seven-of-nine') ? 'seven-of-nine' : byId.keys().next().value;
 }
 
-function stripAgentCommand(text) {
-  return String(text || '')
+function stripAgentCommand(text, byId) {
+  const value = String(text || '');
+  if (explicitAgent(value, byId)) {
+    const direct = value.match(/^\/[a-z0-9_]+(?:@[A-Za-z0-9_]+)?(?:\s+|$)/i);
+    if (direct && !/^\/agent(?:@|\s)/i.test(value) && !/^\/start(?:@|\s)/i.test(value)) {
+      return value.slice(direct[0].length).trim();
+    }
+  }
+  return value
     .replace(/^\/agent(?:@[A-Za-z0-9_]+)?\s+[a-z0-9_-]+\s*/i, '')
     .replace(/^\/start(?:@[A-Za-z0-9_]+)?\s+agent_[a-z0-9_-]+\s*/i, '')
     .trim();
@@ -1181,7 +1221,7 @@ async function homunculusReply(message, retryUpdate = null) {
     /^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) ||
     /^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(raw)
   ) {
-    return ['🐒 QuantDeus AI Fleet · мартышки', ...agents.map(agent => `/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name || agent.role}`), '', 'Напиши обычный вопрос — роль выберется автоматически.'].join('\n').slice(0, 3900);
+    return [`🐒 QuantDeus AI Fleet · ${agents.length} агентов`, ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`), '', 'Нажми команду роли или напиши /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'].join('\n').slice(0, 3900);
   }
 
   const entitlement = await telegramEntitlement(message);
@@ -1200,7 +1240,7 @@ async function homunculusReply(message, retryUpdate = null) {
     : autoAgent(safeRaw, byId);
   const agentId = resolveActiveAgentId(requestedAgentId);
   const agent = byId.get(agentId) || agents[0] || { id: 'seven-of-nine', name: 'Seven of Nine', role: 'QuantDeus Coordinator', emoji: '🧭' };
-  const query = directTaskMatch ? String(directTaskMatch[2] || '').trim() : (stripAgentCommand(safeRaw) || safeRaw);
+  const query = directTaskMatch ? String(directTaskMatch[2] || '').trim() : (stripAgentCommand(safeRaw, byId) || safeRaw);
   const chatType = String(message.chat?.type || 'private');
   const statusRequest = isRepositoryStatusRequest(query);
   const researchRequired = needsLiveResearch(query);
