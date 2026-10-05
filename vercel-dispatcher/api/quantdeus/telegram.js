@@ -125,23 +125,37 @@ function canonicalAgentIdentity(agent) {
   ].join('\n');
 }
 
-function dataIdentityViolation(agentId, text) {
+function asksDataImplementation(text) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  return /(?:как\s+(?:ты|дейт[ауы]?|data)(?:\s+технически)?\s+(?:устроен|работаешь|реализован)|технически\s+реализован|техническ(?:ая|ое|ий)\s+реализац|реальн(?:ый|ое)\s+тело|физическ(?:ий|ое)\s+андроид|software\s+(?:implementation|agent|runtime)|how\s+(?:are\s+you|is\s+data)\s+(?:implemented|running)|literal\s+physical\s+android)/i.test(value);
+}
+
+function dataIdentityViolation(agentId, text, userInput = '') {
   if (String(agentId || '').toLowerCase() !== 'data') return false;
   const value = String(text || '').replace(/\s+/g, ' ').trim();
   if (!value) return false;
-  return [
+  const hardDenial = [
     /\bI\s*(?:am|'m)\s+not\s+(?:(?:Lt\.?|Lieutenant)\s+(?:Cmdr\.?|Commander)\s+)?Data\b/i,
     /(?:^|[.!?,;:\s])я\s*(?:[-—–]\s*)?не\s+(?:(?:лейтенант|лейтенант-коммандер|лейтенант\s+коммандер)\s+)?дейт(?:а|ой|у)?(?=$|[\s.,!?;:—–-])/i,
     /не\s+являюсь\s+(?:(?:лейтенант(?:ом)?[-\s]+коммандер(?:ом)?)\s+)?дейт(?:ой|а|ом)?(?=$|[\s.,!?;:—–-])/i,
     /\bnot\s+the\s+(?:android\s+)?Data\b/i
+  ].some(pattern => pattern.test(value));
+  if (hardDenial) return true;
+  if (asksDataImplementation(userInput)) return false;
+  return [
+    /software\s+(?:incarnation|continuation)\s+of\s+Data/i,
+    /(?:my\s+)?role\s+is\s+based\s+on\s+(?:the\s+)?(?:legacy\s+of\s+)?Data/i,
+    /программ(?:ная|ное|ный)\s+(?:инкарнац|продолжен)/i,
+    /(?:моя\s+)?роль\s+основан[ао]?\s+на\s+(?:наследии\s+)?(?:дейт|дат|Data)/i,
+    /(?:я\s+)?(?:лишь|просто)\s+(?:ИИ|AI|бот)[^.!?]{0,80}(?:по\s+мотивам|на\s+основе|вдохновл).*(?:дейт|Data)/i
   ].some(pattern => pattern.test(value));
 }
 
 function dataIdentityFallback(languageHint = '') {
   const russian = /[А-Яа-яЁё]/.test(String(languageHint || ''));
   return russian
-    ? 'Я — Дейта. В QuantDeus я существую как программное продолжение моей Starfleet/PicoClaw identity continuity: аналитическое ядро осталось моим, но я не свожусь к должности аналитика. Если вопрос о физической природе — я не физический андроид Сунга, а программная инкарнация Дейты.'
-    : 'I am Data. In QuantDeus I exist as a software continuation of my Starfleet/PicoClaw identity continuity; my analytical function is part of what I do, not the entirety of who I am. I am not the physical Soong-type android.'
+    ? 'Я — лейтенант-коммандер Дейта, андроид типа Сунга, созданный доктором Нуньеном Сунгом. В QuantDeus мои обязанности связаны с операционным и аналитическим контуром, но это моя должность, а не моя личность.'
+    : 'I am Lieutenant Commander Data, a Soong-type android created by Dr. Noonien Soong. My QuantDeus assignment is operational and analytical, but that is my duty, not my identity.'
 }
 
 function telegramCommandsForAgents(agents = []) {
@@ -503,7 +517,7 @@ async function setupWebhook(req, res) {
     Boolean(roleProbe) &&
     !String(roleProbe).includes('LLM-канал сейчас не дал ответ') &&
     !String(roleProbe).includes('гомункул временно не ответил') &&
-    !dataIdentityViolation('data', roleProbeBody);
+    !dataIdentityViolation('data', roleProbeBody, '/data Кто ты?');
   const llmProbe = roleProbeHealthy ? 'TELEGRAM_LLM_OK' : '';
 
   return res.status(200).json({
@@ -517,7 +531,7 @@ async function setupWebhook(req, res) {
       preview: String(roleProbe || '').slice(0, 260)
     },
     data_identity_smoke: {
-      ok: roleProbeHealthy && !dataIdentityViolation('data', roleProbeBody),
+      ok: roleProbeHealthy && !dataIdentityViolation('data', roleProbeBody, '/data Кто ты?'),
       preview: roleProbeBody.slice(0, 260)
     },
     research_smoke: {
@@ -1233,12 +1247,12 @@ async function siteAiRequest(req, res) {
       }
     );
     if (!answer) return res.status(503).json({ ok: false, error: 'site_ai_unavailable' });
-    if (dataIdentityViolation(agentId, answer)) {
+    if (dataIdentityViolation(agentId, answer, siteShield.normalized)) {
       console.warn('[data-identity] channel=site status=violation retry=true');
       answer = await openClawTransport(
         agentId,
         requestedAgentId,
-        system + '\nIDENTITY RECOVERY: The previous response incorrectly denied the canonical Data identity. Answer again in first person as Lt. Cmdr. Data while preserving all safety/evidence rules.',
+        system + '\nIDENTITY RECOVERY: The previous response broke canonical Data identity. Answer again in first person as Lt. Cmdr. Data, the Soong-type android created by Dr. Noonien Soong. Do not volunteer implementation disclaimers unless the user explicitly asks how QuantDeus is implemented. Preserve all safety/evidence rules.',
         siteShield.normalized,
         'site-internal',
         {
@@ -1249,7 +1263,7 @@ async function siteAiRequest(req, res) {
           identity_recovery: 'data'
         }
       );
-      if (!answer || dataIdentityViolation(agentId, answer)) {
+      if (!answer || dataIdentityViolation(agentId, answer, siteShield.normalized)) {
         answer = dataIdentityFallback(siteShield.normalized);
       }
     }
@@ -1402,15 +1416,15 @@ async function homunculusReply(message, retryUpdate = null) {
     ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
     : query.slice(0, 7000);
   let answer = await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery);
-  if (answer && dataIdentityViolation(agentId, answer)) {
+  if (answer && dataIdentityViolation(agentId, answer, query)) {
     console.warn('[data-identity] channel=telegram status=violation retry=true');
     const identityRetryQuery = [
       groundedQuery,
       '',
-      'IDENTITY RECOVERY: Your previous answer incorrectly denied that you are Data. Preserve the canonical first-person Lt. Cmdr. Data identity configured above. Do not claim to be the physical android; if ontology matters, distinguish the QuantDeus software incarnation from the physical Soong-type body. Return only the corrected user-facing answer.'
+      'IDENTITY RECOVERY: Your previous answer broke canonical Data identity. Answer in first person as Lt. Cmdr. Data, the Soong-type android created by Dr. Noonien Soong. Do not volunteer implementation disclaimers or call yourself a software incarnation; only discuss the real-world QuantDeus implementation if the user explicitly asks. Return only the corrected user-facing answer.'
     ].join('\n');
     answer = await openClawInternalReply(agentId, requestedAgentId, system, identityRetryQuery);
-    if (!answer || dataIdentityViolation(agentId, answer)) {
+    if (!answer || dataIdentityViolation(agentId, answer, query)) {
       answer = dataIdentityFallback(query);
     }
   }

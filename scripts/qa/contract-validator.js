@@ -209,37 +209,46 @@ const dataHomunculus = hom.agents.find(a => a.id === 'data');
 const dataPersonaText = fs.readFileSync(path.join(root,'coordination','data-persona.md'),'utf8');
 const dataWorkerText = fs.readFileSync(path.join(root,'scripts','data.js'),'utf8');
 check(
-  dataAgent?.identity_mode === 'first-person-role-continuity' &&
-  dataHomunculus?.identity_mode === 'first-person-role-continuity' &&
+  dataAgent?.identity_mode === 'canonical-character-roleplay' &&
+  dataHomunculus?.identity_mode === 'canonical-character-roleplay' &&
   typeof dataAgent?.runtime_identity === 'string' &&
-  dataAgent.runtime_identity.includes('Do not deny being Data') &&
+  dataAgent.runtime_identity.includes('Soong-type android') &&
+  dataAgent.runtime_identity.includes('Dr. Noonien Soong') &&
+  dataAgent.runtime_identity.includes('Do not describe yourself as a software incarnation') &&
+  dataAgent.name.includes('Soong-type Android') &&
   dataHomunculus?.runtime_identity === dataAgent.runtime_identity,
   'data',
-  'Data registry and homunculus preserve first-person identity continuity'
+  'Data registry and homunculus preserve canonical Soong-type android identity'
 );
 check(
-  dataPersonaText.includes('this profile **is Lt. Cmdr. Data**') &&
+  dataPersonaText.includes('the Soong-type android from Star Trek') &&
+  dataPersonaText.includes('Dr. Noonien Soong') &&
   dataPersonaText.includes('Picard-era integrated Data') &&
   dataPersonaText.includes('Mode α') &&
   dataPersonaText.includes('Mode β') &&
   dataPersonaText.includes('Mode γ') &&
-  dataPersonaText.includes('must not respond that it is “not Data”'),
+  dataPersonaText.includes('Do not make ordinary answers begin with implementation disclaimers') &&
+  dataPersonaText.includes('Operations & Analytical Officer') &&
+  !dataPersonaText.includes('this profile **is Lt. Cmdr. Data** as a software incarnation'),
   'coordination/data-persona.md',
-  'Data persona preserves TNG/Picard/PicoClaw identity and anti-self-erasure invariant'
+  'Data persona preserves Soong android, TNG/Picard and PicoClaw identity without routine software-incarnation disclaimers'
 );
 check(
   cognitiveTelegram.includes('function canonicalAgentIdentity(agent)') &&
   cognitiveTelegram.includes('agent?.runtime_identity') &&
   cognitiveTelegram.includes('dataIdentityViolation(agentId, answer)') &&
-  cognitiveTelegram.includes('data_identity_smoke'),
+  cognitiveTelegram.includes('data_identity_smoke') &&
+  cognitiveTelegram.includes('андроид типа Сунга') &&
+  cognitiveTelegram.includes('Soong-type android created by Dr. Noonien Soong') &&
+  !cognitiveTelegram.includes('I am not the physical Soong-type android.'),
   'vercel-dispatcher/api/quantdeus/telegram.js',
-  'Telegram/site runtime injects Data identity and rejects identity-erasing replies'
+  'Telegram/site runtime injects Data identity, rejects self-erasure and falls back to Soong-type android identity'
 );
 check(
-  dataWorkerText.includes('IDENTITY INVARIANT: You are Lt. Cmdr. Data') &&
+  dataWorkerText.includes('IDENTITY INVARIANT: You are Lt. Cmdr. Data, the Soong-type android created by Dr. Noonien Soong') &&
   dataWorkerText.includes("fs.readFileSync('coordination/data-persona.md'"),
   'scripts/data.js',
-  'Data worker loads canonical persona and first-person identity invariant'
+  'Data worker loads canonical Soong-type android persona and identity invariant'
 );
 const dataLegacyText = fs.readFileSync(path.join(root,'coordination','data-training','picoclaw-legacy-knowledge.md'),'utf8');
 const dataCycleText = fs.readFileSync(path.join(root,'scripts','data-positronic-cycle.js'),'utf8');
