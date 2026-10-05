@@ -116,6 +116,24 @@ for (const department of startupOrg.departments || []) {
   }
 }
 
+const dataAgent = registry.agents.find(a => a.id === 'data');
+check(
+  Array.isArray(dataAgent?.knowledge_sources) &&
+  dataAgent.knowledge_sources.includes('coordination/data-training/picoclaw-legacy-knowledge.md'),
+  'data',
+  'PicoClaw legacy knowledge source registered'
+);
+for (const agent of registry.agents) {
+  for (const source of agent.knowledge_sources || []) {
+    check(
+      /^coordination\/data-training\/[A-Za-z0-9._/-]+$/.test(source) && !source.includes('..'),
+      agent.id,
+      'canonical knowledge source path is bounded'
+    );
+    check(fs.existsSync(path.join(root, source)), agent.id, 'canonical knowledge source exists: ' + source);
+  }
+}
+
 for (const agent of registry.agents) {
   const src = path.join(root, agent.source || '');
   check(Boolean(agent.id && agent.name && agent.role && agent.source && agent.group), agent.id || 'unknown', 'required metadata present');
@@ -406,6 +424,15 @@ check(
   telegramSource.includes('taskShield = shieldInput(task, { allowToolRequests: true })'),
   'scripts/telegram-bot.js',
   'Actions fallback is public for chat but gates repository mutations and prompt-injection before privileged execution'
+);
+const hermesBootstrapSource = fs.readFileSync(path.join(root,'scripts','hermes-office-bootstrap.js'),'utf8');
+check(
+  hermesBootstrapSource.includes('function knowledgeFor(agent)') &&
+  hermesBootstrapSource.includes('agent.knowledge_sources') &&
+  hermesBootstrapSource.includes('65536') &&
+  hermesBootstrapSource.includes("rel.includes('..')"),
+  'scripts/hermes-office-bootstrap.js',
+  'Hermes bootstrap loads only bounded canonical knowledge sources'
 );
 const openclawOfficeSource = fs.readFileSync(path.join(root,'scripts','openclaw-office-client.js'),'utf8');
 check(
