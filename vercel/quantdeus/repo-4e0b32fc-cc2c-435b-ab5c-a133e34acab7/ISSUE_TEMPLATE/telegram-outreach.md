@@ -9,7 +9,7 @@ Expand the QuantDeus Telegram community by inviting relevant contributors, resea
    - How to join the Telegram channel.
    - How to find relevant tasks and opportunities.
    - How to contribute to the QuantDeus project.
-3. **First Contribution**: Ensure the guide includes a simple, high-value task for new contributors to start with.
+3. **First Contribution**: Include a simple, high-value task for new contributors to start with.
 4. **Community Engagement**: Propose a Telegram bot or automated message to welcome new members and direct them to the onboarding path.
 
 ### Next Steps
