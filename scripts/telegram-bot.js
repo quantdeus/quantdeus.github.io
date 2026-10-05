@@ -503,7 +503,7 @@ function agentsText() {
     if (!groups.has(agent.group)) groups.set(agent.group, []);
     groups.get(agent.group).push(agent);
   }
-  const lines = ['🤖 QuantDeus: 26 ролей'];
+  const lines = ['🤖 QuantDeus: 27 ролей'];
   for (const [group, members] of groups) {
     lines.push('', '[' + group + ']');
     for (const agent of members) lines.push(`/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name}`);

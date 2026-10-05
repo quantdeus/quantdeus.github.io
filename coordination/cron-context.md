@@ -51,7 +51,7 @@
 - telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`
 - telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
-- native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.whf.bz / inherited by all 26 registered agents through trusted OpenClaw`
+- native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.whf.bz / inherited by all 27 registered agents through trusted OpenClaw`
 - wordpress_mcp_swarm_policy: `hourly + autonomous scheduled lanes read-only; direct WordPress writes only for explicit owner-authorized trusted tasks and only with configured MCP authorization; missing auth fails closed for writes; WPVibe is not a dependency`
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
@@ -59,7 +59,7 @@
 - qa_self_heal: `bounded autonomous repair: site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
 - openclaw_evolution: `daily 02:31 UTC evidence loop; OpenClaw reads its fresh-main self-evolution skill on trusted runs; Tier A skill/docs/ledger improvements may auto-merge after QA+Smoke; Tier B runtime/auth/MCP/workflow changes remain reviewable PRs`
 - scheduled_workflows:
-  - `every 2 hours at :19 UTC — QuantDeus Crew Health Check / 26-agent registry + bridge crew + medbay/delegates + READY/ACTIVE/BLOCKED + key Actions`
+  - `every 2 hours at :19 UTC — QuantDeus Crew Health Check / 27-agent registry + bridge crew + medbay/delegates + READY/ACTIVE/BLOCKED + key Actions`
   - `06:27 UTC — QuantDeus Swarm Secretary`
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:42 UTC — QuantDeus Contributor Growth`

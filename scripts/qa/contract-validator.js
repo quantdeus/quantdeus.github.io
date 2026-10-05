@@ -18,24 +18,24 @@ const agentCron = readJson('coordination/agent-cron-map.json');
 const ids = registry.agents.map(a=>a.id);
 const homIds = hom.agents.map(a=>a.id);
 
-check(ids.length === 26, 'coordination/agents.json', 'expected exactly 26 registered agents');
+check(ids.length === 27, 'coordination/agents.json', 'expected exactly 27 registered agents');
 check(new Set(ids).size === ids.length, 'coordination/agents.json', 'agent ids unique');
 check(new Set(homIds).size === homIds.length, 'coordination/homunculi.json', 'homunculus ids unique');
 check(JSON.stringify([...ids].sort()) === JSON.stringify([...homIds].sort()), 'registries', 'agents.json and homunculi.json contain identical ids');
 const cognitionVersion = 'borg-collective-v1';
-check(registry.collective_cognition?.version === cognitionVersion && registry.collective_cognition?.inheritance === 'all-26-agents', 'coordination/agents.json', 'Borg collective cognition protocol declared for all 26 agents');
-check(hom.collective_cognition?.version === cognitionVersion && hom.collective_cognition?.inheritance === 'all-26-agents', 'coordination/homunculi.json', 'homunculi registry mirrors Borg collective cognition protocol');
-check((registry.agents || []).every(a => a.cognitive_protocol === cognitionVersion), 'coordination/agents.json', 'all 26 agents inherit borg-collective-v1');
-check((hom.agents || []).every(a => a.cognitive_protocol === cognitionVersion), 'coordination/homunculi.json', 'all 26 homunculi inherit borg-collective-v1');
-check(startupOrg.workforce?.ai_agents === 26, 'coordination/startup-org.json', 'startup org declares 26 AI agents');
+check(registry.collective_cognition?.version === cognitionVersion && registry.collective_cognition?.inheritance === 'all-27-agents', 'coordination/agents.json', 'Borg collective cognition protocol declared for all 27 agents');
+check(hom.collective_cognition?.version === cognitionVersion && hom.collective_cognition?.inheritance === 'all-27-agents', 'coordination/homunculi.json', 'homunculi registry mirrors Borg collective cognition protocol');
+check((registry.agents || []).every(a => a.cognitive_protocol === cognitionVersion), 'coordination/agents.json', 'all 27 agents inherit borg-collective-v1');
+check((hom.agents || []).every(a => a.cognitive_protocol === cognitionVersion), 'coordination/homunculi.json', 'all 27 homunculi inherit borg-collective-v1');
+check(startupOrg.workforce?.ai_agents === 27, 'coordination/startup-org.json', 'startup org declares 27 AI agents');
 check(startupOrg.departments?.length === 5, 'coordination/startup-org.json', 'startup org declares 5 departments');
 const orgIds = (startupOrg.departments || []).flatMap(d => d.agents || []);
-check(orgIds.length === 26 && new Set(orgIds).size === 26, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
+check(orgIds.length === 27 && new Set(orgIds).size === 27, 'coordination/startup-org.json', 'startup org assigns every agent exactly once');
 check(JSON.stringify([...orgIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/startup-org.json', 'startup org covers the canonical agent registry');
 
 const cronIds = (agentCron.agents || []).map(a=>a.id);
 check(agentCron.schema_version === 1, 'coordination/agent-cron-map.json', 'agent cron map schema version 1');
-check(cronIds.length === 26 && new Set(cronIds).size === 26, 'coordination/agent-cron-map.json', 'agent cron map assigns exactly 26 unique agents');
+check(cronIds.length === 27 && new Set(cronIds).size === 27, 'coordination/agent-cron-map.json', 'agent cron map assigns exactly 27 unique agents');
 check(JSON.stringify([...cronIds].sort()) === JSON.stringify([...ids].sort()), 'coordination/agent-cron-map.json', 'agent cron map covers the canonical registry');
 for (const slot of agentCron.agents || []) {
   check(Boolean(slot.workflow && slot.cadence && Array.isArray(slot.utc_hours) && slot.utc_hours.length && slot.mission), slot.id || 'cron-slot', 'agent cron slot has workflow/cadence/hours/mission');
@@ -297,7 +297,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
       } else if (name === 'qa-failure-radar.yml') {
         check(parts[0] === '7' && parts[1] === '*/2', name, 'QA failure radar uses the approved two-hour cadence: '+cron);
       } else if (name === 'agent-role-cron.yml') {
-        check(parts[0] === '23' && parts[1] === '0-14', name, 'role cron uses the approved daily hourly window: '+cron);
+        check(parts[0] === '23' && parts[1] === '0-15', name, 'role cron uses the approved daily hourly window: '+cron);
       } else if (name === 'seven-priority-cycle.yml') {
         check(parts[0] === '11' && parts[1] === '*/2', name, 'Seven priority cycle uses the approved two-hour cadence: '+cron);
       } else if (name === 'news-manifest-cycle.yml') {

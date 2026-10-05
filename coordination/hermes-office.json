@@ -5,7 +5,7 @@
   "registry_source": "coordination/agents.json",
   "profile_strategy": "one-hermes-profile-per-canonical-agent",
   "profile_id": "agent.id",
-  "canonical_agent_count": 26,
+  "canonical_agent_count": 27,
   "source_of_truth": "github",
   "github_repository": "quantdeus/quantdeus.github.io",
   "model": {

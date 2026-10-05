@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-03",
+  "updated": "2026-10-05",
   "timezone": "UTC",
   "policy": {
     "source_of_truth": "coordination/agents.json",
@@ -333,6 +333,18 @@
         21
       ],
       "mission": "Coordinate bounded repair loops for site and Actions failures.",
+      "operational_status": "active"
+    },
+    {
+      "id": "data",
+      "department": "Executive & Strategy",
+      "title": "Lieutenant Commander Data / Operations & Analytical Officer",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        15
+      ],
+      "mission": "Audit cross-domain operational data, quantitative claims, contradictions and handoffs; produce one bounded evidence-backed recommendation or a justified no-op.",
       "operational_status": "active"
     }
   ]

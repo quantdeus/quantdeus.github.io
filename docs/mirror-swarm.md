@@ -66,7 +66,7 @@ The mirror never merges its own PR.
 - **Mirror Tasksmith** — minimum full-file replacement for at most two existing files.
 - **Mirror QA** — independent patch review before any draft PR is created.
 
-This mirror is an auxiliary repair plane, not four new canonical QuantDeus employees. The canonical registry remains 26 agents.
+This mirror is an auxiliary repair plane, not four new canonical QuantDeus employees. The canonical registry remains 27 agents.
 
 ## Hard guardrails
 

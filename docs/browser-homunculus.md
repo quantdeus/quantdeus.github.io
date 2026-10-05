@@ -1,6 +1,6 @@
 # 🌐 Browser Homunculus
 
-Browser Homunculus is a bounded web-execution worker for QuantDeus. It is intentionally **not a 27th canonical strategic agent**: the main registry remains at 26 agents, while this worker is an execution capability owned by Control Tower.
+Browser Homunculus is a bounded web-execution worker for QuantDeus. It is intentionally **not a 28th canonical strategic agent**: the main registry remains at 27 agents, while this worker is an execution capability owned by Control Tower.
 
 ## Architecture
 

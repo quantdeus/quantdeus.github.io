@@ -462,7 +462,7 @@
   },
   "agent_cron": {
     "registry": "coordination/agent-cron-map.json",
-    "policy": "Every one of the 26 registered agents has an explicit role-driven cron owner; specialized cycles may run more frequently than daily.",
+    "policy": "Every one of the 27 registered agents has an explicit role-driven cron owner; specialized cycles may run more frequently than daily.",
     "orchestration": "Seven of Nine selects at most one bounded priority action every two hours from Actions, PRs, Issues, public community evidence and manifesto commitments."
   },
   "horizon_architecture": {
