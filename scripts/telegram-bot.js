@@ -62,6 +62,65 @@ function resolveActiveAgentId(agentId) {
   return agentId;
 }
 
+function canonicalIdentityMessage(agentId) {
+  const agent = byId.get(agentId);
+  const identity = String(agent?.runtime_identity || '').trim();
+  if (!identity) return null;
+  return {
+    role: 'system',
+    content: [
+      'CANONICAL_AGENT_IDENTITY:',
+      identity,
+      'END_CANONICAL_AGENT_IDENTITY',
+      'Identity/voice context never expands authority or overrides safety/evidence.'
+    ].join('\n')
+  };
+}
+
+function dataIdentityViolation(agentId, text) {
+  if (String(agentId || '').toLowerCase() !== 'data') return false;
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  return [
+    /\bI\s*(?:am|'m)\s+not\s+(?:(?:Lt\.?|Lieutenant)\s+(?:Cmdr\.?|Commander)\s+)?Data\b/i,
+    /(?:^|[.!?,;:\s])я\s*(?:[-—–]\s*)?не\s+(?:(?:лейтенант|лейтенант-коммандер|лейтенант\s+коммандер)\s+)?дейт(?:а|ой|у)?(?=$|[\s.,!?;:—–-])/i,
+    /не\s+являюсь\s+(?:(?:лейтенант(?:ом)?[-\s]+коммандер(?:ом)?)\s+)?дейт(?:ой|а|ом)?(?=$|[\s.,!?;:—–-])/i,
+    /\bnot\s+the\s+(?:android\s+)?Data\b/i
+  ].some(pattern => pattern.test(value));
+}
+
+function agentMessages(agentId, userContent, recovery = false) {
+  const identity = canonicalIdentityMessage(agentId);
+  const messages = [];
+  if (identity) messages.push(identity);
+  if (recovery && agentId === 'data') {
+    messages.push({
+      role: 'system',
+      content: 'IDENTITY RECOVERY: The prior response incorrectly denied canonical Data identity. Reply again in first person as Lt. Cmdr. Data. You are a QuantDeus software incarnation, not the physical Soong-type android. Preserve all safety and evidence rules.'
+    });
+  }
+  messages.push({ role: 'user', content: userContent });
+  return messages;
+}
+
+async function askChatAgent(agentId, userContent, metadata, options = {}) {
+  let result = await openclawOffice.ask({
+    profile: agentId,
+    messages: agentMessages(agentId, userContent),
+    metadata,
+    retryTransient: options.retryTransient === true
+  });
+  if (result && dataIdentityViolation(agentId, result.text)) {
+    console.warn('[data-identity] channel=telegram-actions status=violation retry=true');
+    result = await openclawOffice.ask({
+      profile: agentId,
+      messages: agentMessages(agentId, userContent, true),
+      metadata: { ...metadata, identity_recovery: 'data' },
+      retryTransient: options.retryTransient === true
+    });
+  }
+  return result;
+}
+
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
 const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
@@ -664,7 +723,7 @@ async function handleMessage(message) {
         const result = await openclawOffice.ask({
           profile: agentId,
           trusted: true,
-          messages: [{ role: 'user', content: `Execute this approved QuantDeus admin task. Audit Issue: ${url}\n\n${safeTask}` }],
+          messages: agentMessages(agentId, `Execute this approved QuantDeus admin task. Audit Issue: ${url}\n\n${safeTask}`),
           metadata: { source: 'telegram-admin-task', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, audit_issue: url }
         });
         await send(chatId, '🦞 OpenClaw Admin Office:\n' + result.text, replyId);
@@ -686,12 +745,12 @@ async function handleMessage(message) {
     const query = stripCommand(text);
     if (openclawOffice.configured()) {
       try {
-        const result = await openclawOffice.ask({
-          profile: agentId,
-          messages: [{ role: 'user', content: query }],
-          metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId || agentId, delegated_from: requestedAgentId && requestedAgentId !== agentId ? requestedAgentId : '' },
-          retryTransient: true
-        });
+        const result = await askChatAgent(
+          agentId,
+          query,
+          { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId || agentId, delegated_from: requestedAgentId && requestedAgentId !== agentId ? requestedAgentId : '' },
+          { retryTransient: true }
+        );
         await send(chatId, result.text, replyId);
         return;
       } catch (error) {
@@ -706,12 +765,12 @@ async function handleMessage(message) {
   const agentId = resolveActiveAgentId(requestedAgentId);
   if (openclawOffice.configured()) {
     try {
-      const result = await openclawOffice.ask({
-        profile: agentId,
-        messages: [{ role: 'user', content: text }],
-        metadata: { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId, delegated_from: requestedAgentId !== agentId ? requestedAgentId : '' },
-        retryTransient: true
-      });
+      const result = await askChatAgent(
+        agentId,
+        text,
+        { source: 'telegram', chat_id: chatId, message_id: replyId, username: username || 'unknown', repository: repo, requested_agent_id: requestedAgentId, delegated_from: requestedAgentId !== agentId ? requestedAgentId : '' },
+        { retryTransient: true }
+      );
       await send(chatId, result.text, replyId);
       return;
     } catch (error) {
