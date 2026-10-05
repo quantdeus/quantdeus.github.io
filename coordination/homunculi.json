@@ -198,7 +198,15 @@
       "operational_status": "active",
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
-      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift."
+      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
+      "agent_skill_root": ".hermes/agent-skills/unity",
+      "canonical_skills": [
+        "funnel-architecture",
+        "growth-experimentation",
+        "lead-segmentation"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "space",
@@ -243,7 +251,15 @@
       "operational_status": "active",
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
-      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift."
+      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
+      "agent_skill_root": ".hermes/agent-skills/synthesis",
+      "canonical_skills": [
+        "content-factory",
+        "offer-messaging",
+        "creative-testing"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "control-tower",
@@ -359,7 +375,15 @@
       "acting_for": [
         "synthesis"
       ],
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "agent_skill_root": ".hermes/agent-skills/archivist",
+      "canonical_skills": [
+        "seo-content-intelligence",
+        "programmatic-seo",
+        "content-performance"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "herald",
@@ -377,7 +401,15 @@
       "acting_for": [
         "unity"
       ],
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "agent_skill_root": ".hermes/agent-skills/herald",
+      "canonical_skills": [
+        "distribution-orchestration",
+        "nurture-automation",
+        "campaign-operations"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "qa-syntax",
