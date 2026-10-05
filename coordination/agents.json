@@ -159,16 +159,24 @@
       "id": "unity",
       "name": "Head of Partnerships & Community Growth — unity",
       "emoji": "🌍",
-      "role": "Лидирует contributor acquisition: ищет релевантных разработчиков, исследователей и создателей, квалифицирует кандидатов, ведёт партнёрства и превращает интерес в первый полезный вклад",
+      "role": "Архитектор роста и воронок: сегментирует добровольный/публичный спрос, проектирует путь attract→capture→nurture→convert→retain→refer, ведёт growth-эксперименты, квалифицирует лиды/партнёров/контрибьюторов и отвечает за измеримый переход между стадиями",
       "source": "scripts/pillar_03_unity.js",
       "group": "growth-marketing",
       "startup_title": "Head of Partnerships & Community Growth",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "qualified contributor leads / first-PR conversion / active contributors",
+      "kpi": "qualified leads / funnel conversion / experiment win rate / first-contribution or request conversion",
       "operational_status": "active",
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
-      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift."
+      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
+      "agent_skill_root": ".hermes/agent-skills/unity",
+      "canonical_skills": [
+        "funnel-architecture",
+        "growth-experimentation",
+        "lead-segmentation"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "space",
@@ -198,16 +206,24 @@
       "id": "synthesis",
       "name": "Brand & Creative Director — synthesis",
       "emoji": "✨",
-      "role": "Упаковывает QuantDeus для новых участников: contributor-facing кампании, визуальные материалы, понятные приглашения и страницы входа в проект",
+      "role": "Директор контент-завода и креатива: превращает проверенные артефакты QuantDeus в pillar content и платформенные производные, строит офферы/хуки/CTA, ведёт creative testing и brand consistency без фабрикации доказательств",
       "source": "scripts/pillar_06_synthesis.js",
       "group": "growth-marketing",
       "startup_title": "Brand & Creative Director",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "contributor campaign conversion / brand consistency",
+      "kpi": "content-assisted conversion / creative test learning / asset reuse / brand consistency",
       "operational_status": "active",
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
-      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift."
+      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
+      "agent_skill_root": ".hermes/agent-skills/synthesis",
+      "canonical_skills": [
+        "content-factory",
+        "offer-messaging",
+        "creative-testing"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "control-tower",
@@ -297,27 +313,43 @@
       "id": "archivist",
       "name": "SEO & Content Operations Lead — archivist",
       "emoji": "🗄️",
-      "role": "Ведёт SEO, discoverability, каталог contributor opportunities, onboarding-документацию и внутреннюю перелинковку к задачам для первого вклада",
+      "role": "SEO & Content Intelligence Lead: строит search-intent/topic architecture, безопасный programmatic SEO, внутреннюю перелинковку и анализ эффективности постов/страниц; масштабирует полезные страницы и консолидирует thin/duplicate content",
       "source": "scripts/octet/archivist.js",
       "group": "growth-marketing",
       "startup_title": "SEO & Content Operations Lead",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "organic contributor discovery / onboarding completion",
+      "kpi": "organic qualified discovery / indexed-page value / content conversion / content decay reduction",
       "operational_status": "active",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "agent_skill_root": ".hermes/agent-skills/archivist",
+      "canonical_skills": [
+        "seo-content-intelligence",
+        "programmatic-seo",
+        "content-performance"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "herald",
       "name": "PR & Communications Manager — herald",
       "emoji": "📣",
-      "role": "Ведёт PR и contributor outreach: персональные приглашения, follow-up, release communications и передачу заинтересованных людей в onboarding без массового спама",
+      "role": "Distribution, Nurture & Communications Lead: оркестрирует публикацию по авторизованным каналам, permission-based прогрев/follow-up, PR и campaign operations; подтверждает доставку и связывает коммуникации с реальными funnel outcomes",
       "source": "scripts/octet/herald.js",
       "group": "growth-marketing",
       "startup_title": "PR & Communications Manager",
       "department": "Growth, Marketing & Partnerships",
-      "kpi": "qualified invitations / response rate / first-PR conversion",
+      "kpi": "verified distribution / nurture-to-conversion / response rate / first-contribution or request conversion",
       "operational_status": "active",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "agent_skill_root": ".hermes/agent-skills/herald",
+      "canonical_skills": [
+        "distribution-orchestration",
+        "nurture-automation",
+        "campaign-operations"
+      ],
+      "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
+      "marketing_stack": "coordination/growth/marketing-stack.json"
     },
     {
       "id": "qa-syntax",
