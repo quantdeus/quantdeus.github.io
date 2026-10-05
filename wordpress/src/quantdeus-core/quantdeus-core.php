@@ -412,6 +412,9 @@ final class QD_Core {
         register_rest_route(self::NS, '/forum/agent-request/(?P<token>[a-f0-9]{64})', [
             'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'forum_agent_request'],
         ]);
+        register_rest_route(self::NS, '/ai-fleet/telegram-plan', [
+            'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'telegram_plan_lookup'],
+        ]);
         register_rest_route(self::NS, '/telegram/config', [
             'methods'=>'GET','permission_callback'=>'__return_true','callback'=>fn()=>rest_ensure_response([
                 'client_id'=>defined('QD_TELEGRAM_CLIENT_ID') ? (string)QD_TELEGRAM_CLIENT_ID : '8122160274',
@@ -762,6 +765,26 @@ final class QD_Core {
             'agents'=>self::normalize_agent_ids($data['agents'] ?? []),
             'issue_id'=>$issue_id,
             'comment_id'=>$comment_id,
+        ]);
+    }
+
+    public static function telegram_plan_lookup(WP_REST_Request $req) {
+        $telegram_id=self::text($req->get_param('telegram_id'),40);
+        if ($telegram_id==='' || !preg_match('/^[0-9]{1,20}$/',$telegram_id)) {
+            return new WP_Error('telegram_id_invalid','Telegram user id required',['status'=>400]);
+        }
+        $users=get_users(['meta_key'=>'qd_telegram_id','meta_value'=>$telegram_id,'number'=>1]);
+        $user=$users ? $users[0] : null;
+        if (!$user) {
+            return rest_ensure_response(['ok'=>true,'role'=>'member','plan'=>'free','source'=>'wordpress']);
+        }
+        $wp_role=(string)($user->roles[0] ?? 'qd_member');
+        $role=$wp_role==='administrator' ? 'admin' : ($wp_role==='qd_moderator' ? 'moderator' : 'member');
+        return rest_ensure_response([
+            'ok'=>true,
+            'role'=>$role,
+            'plan'=>self::current_plan((int)$user->ID),
+            'source'=>'wordpress',
         ]);
     }
 
