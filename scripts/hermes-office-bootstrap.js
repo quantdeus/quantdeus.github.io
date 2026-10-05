@@ -43,8 +43,27 @@ function copyProjectSkills(profileHome) {
   }
 }
 
+function knowledgeFor(agent) {
+  const sources = Array.isArray(agent.knowledge_sources) ? agent.knowledge_sources : [];
+  if (!sources.length) return '';
+
+  const sections = [];
+  for (const rel of sources) {
+    if (typeof rel !== 'string' || !/^coordination\/data-training\/[A-Za-z0-9._/-]+$/.test(rel) || rel.includes('..')) {
+      fail('Unsafe canonical knowledge path for ' + agent.id + ': ' + String(rel));
+    }
+    const file = path.join(repoRoot, rel);
+    if (!fs.existsSync(file)) fail('Missing canonical knowledge source for ' + agent.id + ': ' + rel);
+    const raw = fs.readFileSync(file, 'utf8');
+    if (Buffer.byteLength(raw, 'utf8') > 65536) fail('Canonical knowledge source exceeds 64 KiB: ' + rel);
+    sections.push('## Canonical knowledge source: `' + rel + '`\n\n' + raw.trim());
+  }
+  return sections.length ? '\n\n' + sections.join('\n\n') : '';
+}
+
 function soulFor(agent) {
   let persona = '';
+  const knowledge = knowledgeFor(agent);
   if (agent.persona) {
     const personaPath = path.join(repoRoot, agent.persona);
     if (fs.existsSync(personaPath)) {
@@ -81,7 +100,7 @@ function soulFor(agent) {
     '- Finish work only after acceptance evidence actually exists.',
     '',
     'Registry source: `' + (agent.source || 'coordination/agents.json') + '`.'
-  ].join('\n') + persona + '\n';
+  ].join('\n') + persona + knowledge + '\n';
 }
 
 function canonicalConfig(agent, office, evolution) {

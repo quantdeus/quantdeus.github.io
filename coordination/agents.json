@@ -77,7 +77,11 @@
       "kpi": "cross-domain consistency / quantitative error detection / evidence synthesis latency / decision-support accuracy",
       "operational_status": "active",
       "persona": "coordination/data-persona.md",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "knowledge_sources": [
+        "coordination/data-training/picoclaw-legacy-knowledge.md"
+      ],
+      "training_provenance": "coordination/data-training/picoclaw-legacy-manifest.json"
     },
     {
       "id": "sherlock",
