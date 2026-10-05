@@ -174,6 +174,7 @@ async function send(chatId, text, replyToMessageId = null, replyMarkup = null) {
 }
 
 function explicitAgent(text) {
+  const value = String(text || '');
   const patterns = [
     /^\/agent(?:@[A-Za-z0-9_]+)?\s+([a-z0-9_-]+)/i,
     /^\/propose(?:@[A-Za-z0-9_]+)?\s+([a-z0-9_-]+)/i,
@@ -181,8 +182,13 @@ function explicitAgent(text) {
     /^\/start(?:@[A-Za-z0-9_]+)?\s+agent_([a-z0-9_-]+)/i,
   ];
   for (const pattern of patterns) {
-    const match = String(text || '').match(pattern);
+    const match = value.match(pattern);
     if (match && byId.has(match[1].toLowerCase())) return match[1].toLowerCase();
+  }
+  const direct = value.match(/^\/([a-z0-9_]+)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i);
+  if (direct) {
+    const id = direct[1].toLowerCase().replace(/_/g, '-');
+    if (byId.has(id)) return id;
   }
   return null;
 }
@@ -197,6 +203,7 @@ function autoAgent(text) {
     ['qa-syntax', /syntax|синтакс|lint|eslint|парсинг|parse error|json error|валидност.*json/],
     ['qa-contract', /contract validator|контракт.*агент|инвариант|schema|схем[аы]|compliance|совместимост.*реестр/],
     ['qa-repair', /\bqa\b|smoke|регресс|сломал|сломано|repair|почин.*тест|ошибка проверки|validator/],
+    ['data', /(?:лейтенант\s+коммандер\s+)?дейт(?:а|у|ой)?|lieutenant commander data|positronic|позитронн|операционно-аналитическ/],
     ['guardian', /security|секрет|secret|token|токен|permission|права|oauth|уязвим|privileged|безопасност.*код/],
     ['tasksmith', /реализ|implement|напис.*код|кодир|patch|фикс|fix|refactor|рефактор|commit|коммит/],
     ['verifier', /acceptance|критери.*при[её]м|requirements|требован|проверь.*тз|верифиц.*задач/],
@@ -232,7 +239,14 @@ function autoAgent(text) {
 }
 
 function stripCommand(text) {
-  return String(text || '')
+  const value = String(text || '');
+  if (explicitAgent(value)) {
+    const direct = value.match(/^\/[a-z0-9_]+(?:@[A-Za-z0-9_]+)?(?:\s+|$)/i);
+    if (direct && !/^\/(?:agent|propose|task)(?:@|\s)/i.test(value) && !/^\/start(?:@|\s)/i.test(value)) {
+      return value.slice(direct[0].length).trim();
+    }
+  }
+  return value
     .replace(/^\/(?:agent|propose|task)(?:@[A-Za-z0-9_]+)?\s+[a-z0-9_-]+\s*/i, '')
     .replace(/^\/start(?:@[A-Za-z0-9_]+)?\s+agent_[a-z0-9_-]+\s*/i, '')
     .trim();
@@ -503,12 +517,12 @@ function agentsText() {
     if (!groups.has(agent.group)) groups.set(agent.group, []);
     groups.get(agent.group).push(agent);
   }
-  const lines = ['🤖 QuantDeus: 27 ролей'];
+  const lines = [`🤖 QuantDeus: ${agents.length} ролей`];
   for (const [group, members] of groups) {
     lines.push('', '[' + group + ']');
     for (const agent of members) lines.push(`/${agent.id.replace(/-/g, '_')} — ${agent.startup_title || agent.name}`);
   }
-  lines.push('', 'Используй /agent <id> <вопрос> или просто напиши сообщение — роль выберется автоматически.');
+  lines.push('', 'Нажми команду роли, используй /agent <id> <вопрос> или просто напиши сообщение — роль выберется автоматически.');
   return lines.join('\n');
 }
 

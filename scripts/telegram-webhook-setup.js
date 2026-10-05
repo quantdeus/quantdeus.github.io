@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const { getGithubOidcToken } = require('./github-oidc');
 
 const AUDIENCE = 'quantdeus-vercel-telegram';
@@ -8,7 +9,9 @@ const DEFAULT_TELEGRAM_WEB_APP_URL = 'https://quantdeus.github.io/telegram/';
 const TELEGRAM_BOT_DESCRIPTION =
   'QuantDeus Store Bot: AI Fleet, мартышки, Pro-доступ, Telegram Login и быстрые команды QuantDeus.';
 const TELEGRAM_BOT_SHORT_DESCRIPTION = 'QuantDeus AI Fleet, Store Bot и Mini App.';
-const TELEGRAM_COMMANDS = [
+const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
+const agents = Array.isArray(registry.agents) ? registry.agents : [];
+const BASE_TELEGRAM_COMMANDS = [
   { command: 'start', description: 'Запустить QuantDeus' },
   { command: 'help', description: 'Команды QuantDeus' },
   { command: 'agents', description: 'Мартышки · AI Fleet' },
@@ -20,6 +23,26 @@ const TELEGRAM_COMMANDS = [
   { command: 'status', description: 'Состояние очереди QuantDeus' },
   { command: 'task', description: 'Прямой task для Telegram admin' }
 ];
+
+function telegramRoleCommand(agent) {
+  return String(agent?.id || '').trim().toLowerCase().replace(/-/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 32);
+}
+
+function telegramCommands() {
+  const reserved = new Set(BASE_TELEGRAM_COMMANDS.map(item => item.command));
+  const roles = agents.map(agent => {
+    const command = telegramRoleCommand(agent);
+    if (!command || reserved.has(command)) return null;
+    reserved.add(command);
+    const description = String(agent.startup_title || agent.name || agent.role || agent.id || 'QuantDeus agent')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 220);
+    return { command, description: description || 'QuantDeus agent' };
+  }).filter(Boolean);
+  return [...BASE_TELEGRAM_COMMANDS, ...roles].slice(0, 100);
+}
+
 
 async function telegram(botToken, method, payload = {}) {
   const response = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
@@ -56,16 +79,28 @@ async function configureTelegramInterface(botToken) {
 
 async function configureTelegramCommands(botToken, label) {
   const me = await telegram(botToken, 'getMe');
-  await telegram(botToken, 'setMyCommands', { commands: TELEGRAM_COMMANDS });
+  const expectedCommands = telegramCommands();
+  await telegram(botToken, 'setMyCommands', { commands: expectedCommands });
   const commands = await telegram(botToken, 'getMyCommands');
+  const commandNames = Array.isArray(commands) ? commands.map(item => item.command) : [];
+  const expectedNames = expectedCommands.map(item => item.command);
+  const missing = expectedNames.filter(command => !commandNames.includes(command));
+  if (missing.length) throw new Error('telegram_commands_missing:' + missing.join(','));
   console.log('Telegram commands configured:', JSON.stringify({
     label,
     username: me?.username || null,
     id: me?.id || null,
     command_count: Array.isArray(commands) ? commands.length : null,
-    commands: Array.isArray(commands) ? commands.map(item => item.command) : []
+    agent_count: agents.length,
+    data_command: commandNames.includes('data'),
+    commands: commandNames
   }));
-  return { username: me?.username || null, command_count: Array.isArray(commands) ? commands.length : null };
+  return {
+    username: me?.username || null,
+    command_count: Array.isArray(commands) ? commands.length : null,
+    agent_count: agents.length,
+    data_command: commandNames.includes('data')
+  };
 }
 
 async function main() {
