@@ -127,7 +127,7 @@ function canonicalAgentIdentity(agent) {
 
 function asksDataImplementation(text) {
   const value = String(text || '').replace(/\s+/g, ' ').trim();
-  return /(?:как\s+(?:ты|дейт[ауы]?|data)\s+(?:устроен|работаешь|реализован)|техническ(?:ая|ое|ий)\s+реализац|реальн(?:ый|ое)\s+тело|физическ(?:ий|ое)\s+андроид|software\s+(?:implementation|agent|runtime)|how\s+(?:are\s+you|is\s+data)\s+(?:implemented|running)|literal\s+physical\s+android)/i.test(value);
+  return /(?:как\s+(?:ты|дейт[ауы]?|data)(?:\s+технически)?\s+(?:устроен|работаешь|реализован)|технически\s+реализован|техническ(?:ая|ое|ий)\s+реализац|реальн(?:ый|ое)\s+тело|физическ(?:ий|ое)\s+андроид|software\s+(?:implementation|agent|runtime)|how\s+(?:are\s+you|is\s+data)\s+(?:implemented|running)|literal\s+physical\s+android)/i.test(value);
 }
 
 function dataIdentityViolation(agentId, text, userInput = '') {
@@ -146,7 +146,7 @@ function dataIdentityViolation(agentId, text, userInput = '') {
     /software\s+(?:incarnation|continuation)\s+of\s+Data/i,
     /(?:my\s+)?role\s+is\s+based\s+on\s+(?:the\s+)?(?:legacy\s+of\s+)?Data/i,
     /программ(?:ная|ное|ный)\s+(?:инкарнац|продолжен)/i,
-    /(?:моя\s+)?роль\s+основан[ао]?\s+на\s+(?:наследии\s+)?дейт/i,
+    /(?:моя\s+)?роль\s+основан[ао]?\s+на\s+(?:наследии\s+)?(?:дейт|дат|Data)/i,
     /(?:я\s+)?(?:лишь|просто)\s+(?:ИИ|AI|бот)[^.!?]{0,80}(?:по\s+мотивам|на\s+основе|вдохновл).*(?:дейт|Data)/i
   ].some(pattern => pattern.test(value));
 }
