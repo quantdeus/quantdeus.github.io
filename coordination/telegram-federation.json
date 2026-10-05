@@ -1,0 +1,41 @@
+{
+  "version": "2026-10-05-mvp1",
+  "issue": 430,
+  "mode": "bounded-opt-in",
+  "transport": "webhook-only",
+  "dispatcher": "vercel-dispatcher/api/quantdeus/telegram.js",
+  "node_registration": {
+    "mode": "owner-admin-approved",
+    "opt_in_required": true,
+    "autonomous_replication": false
+  },
+  "outreach": {
+    "mode": "opt-in-only",
+    "mass_outreach": false,
+    "autonomous_external_posting": false
+  },
+  "limits": {
+    "window_ms": 60000,
+    "max_private_messages_per_window": 18,
+    "max_group_messages_per_window": 36,
+    "duplicate_suppression_ms": 10000,
+    "max_tracking_entries": 2000
+  },
+  "loop_protection": {
+    "drop_bot_authored_updates": true,
+    "drop_immediate_duplicate_updates": true,
+    "group_requires_addressing": true
+  },
+  "scale_request": {
+    "mode": "advisory-only",
+    "pending_updates_warn": 25,
+    "pending_updates_request": 100,
+    "action": "owner-review",
+    "autonomous_server_provisioning": false,
+    "autonomous_spend": false
+  },
+  "kill_switch": {
+    "environment_variable": "QUANTDEUS_TELEGRAM_FEDERATION_ENABLED",
+    "default_enabled": true
+  }
+}
