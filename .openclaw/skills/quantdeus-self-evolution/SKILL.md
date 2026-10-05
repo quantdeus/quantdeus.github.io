@@ -6,7 +6,7 @@ Policy: evidence-driven, reversible, QA-gated self-improvement
 
 ## Mission
 
-Continuously improve the QuantDeus OpenClaw Office **and the operating behavior of all 26 canonical agents** from observed failures, friction, repeated manual recovery, weak tool use, routing problems, coordination defects and avoidable latency.
+Continuously improve the QuantDeus OpenClaw Office **and the operating behavior of all 27 canonical agents** from observed failures, friction, repeated manual recovery, weak tool use, routing problems, coordination defects and avoidable latency.
 
 Self-improvement means: **observe → diagnose → hypothesize → make one bounded change → validate → compare → keep or revert**.
 
