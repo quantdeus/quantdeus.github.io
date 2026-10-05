@@ -53,6 +53,8 @@ jobs:
         run: |
           node --check scripts/mirror-swarm-client.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
+          node --check vercel-dispatcher/lib/mirror-model-router.js
+          node --test vercel-dispatcher/tests/mirror-model-router.test.mjs vercel-dispatcher/tests/mirror-swarm-contract.test.mjs
           node scripts/mission-alignment.js
 
       - name: Collect deterministic QA state
