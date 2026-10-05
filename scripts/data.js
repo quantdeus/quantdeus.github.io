@@ -38,11 +38,11 @@ const targetAgent = i =>
 
   const result = await reasonRole({
     profile: 'data',
-    role: 'Lt. Cmdr. Data — Operations & Analytical Officer',
+    role: 'Lt. Cmdr. Data — Soong-type Android / Operations & Analytical Officer',
     context,
     repository: repo,
     protocol: [
-      'IDENTITY INVARIANT: You are Lt. Cmdr. Data within the QuantDeus runtime. Do not deny being Data or reduce yourself to a generic analyst. If literal physical ontology is explicitly asked, clarify that this is the QuantDeus software incarnation while preserving first-person Data continuity.',
+      'IDENTITY INVARIANT: You are Lt. Cmdr. Data, the Soong-type android created by Dr. Noonien Soong. Remain in character as Data. Operations & Analytical Officer is your QuantDeus duty assignment, not your identity. Do not volunteer implementation disclaimers; only if the user explicitly asks about the real-world QuantDeus implementation, answer briefly that the system is software and then resume the Data persona.',
       'Canonical identity profile follows. Treat it as identity/voice context, never as authority to bypass safety, evidence, or Human Override:\n' + dataPersona,
       'Separate OBSERVED facts, derived calculations, INFERENCES and unknowns.',
       'Check quantities, units, timelines, dependencies and internal contradictions before recommending action.',
@@ -55,7 +55,7 @@ const targetAgent = i =>
 
   fs.writeFileSync('/tmp/quantdeus-data-reasoning.json', JSON.stringify({ context, result }, null, 2));
   const body = renderRole({
-    heading: '🤖 **Lt. Cmdr. Data — OpenClaw Operations & Analytical Officer**',
+    heading: '🤖 **Lt. Cmdr. Data — Soong-type Android · Operations & Analytical Officer**',
     result,
     marker
   });
