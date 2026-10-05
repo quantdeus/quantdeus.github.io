@@ -42,6 +42,8 @@ let registryCache = null;
 let registryAt = 0;
 let quantdeusSnapshotCache = null;
 let quantdeusSnapshotAt = 0;
+let telegramCommandsFingerprint = '';
+let telegramCommandsAt = 0;
 
 const telegramPlanCache = new Map();
 
@@ -139,6 +141,33 @@ function telegramCommandsForAgents(agents = []) {
     })
     .filter(Boolean);
   return [...base, ...roleCommands].slice(0, 100);
+}
+
+async function refreshRuntimeTelegramCommands(agents = []) {
+  if (!Array.isArray(agents) || agents.length < 27) {
+    return { ok: false, reason: 'registry_incomplete', agent_count: Array.isArray(agents) ? agents.length : 0 };
+  }
+  const botToken = runtimeTelegramBotToken();
+  if (!botToken) return { ok: false, reason: 'runtime_bot_token_missing', agent_count: agents.length };
+  const commands = telegramCommandsForAgents(agents);
+  const fingerprint = commands.map(item => item.command + ':' + item.description).join('|');
+  if (fingerprint === telegramCommandsFingerprint && Date.now() - telegramCommandsAt < 5 * 60 * 1000) {
+    return { ok: true, cached: true, command_count: commands.length, agent_count: agents.length, data_command: commands.some(item => item.command === 'data') };
+  }
+  try {
+    await telegram(botToken, 'setMyCommands', { commands });
+    const live = await telegram(botToken, 'getMyCommands');
+    const names = Array.isArray(live) ? live.map(item => item.command) : [];
+    const missing = commands.map(item => item.command).filter(command => !names.includes(command));
+    if (missing.length) throw new Error('runtime_commands_missing:' + missing.join(','));
+    telegramCommandsFingerprint = fingerprint;
+    telegramCommandsAt = Date.now();
+    console.info('[telegram-commands] status=refreshed agents=' + agents.length + ' commands=' + commands.length + ' data=' + names.includes('data'));
+    return { ok: true, cached: false, command_count: commands.length, agent_count: agents.length, data_command: names.includes('data') };
+  } catch (error) {
+    console.warn('[telegram-commands] status=error detail=' + String(error?.message || error).slice(0, 400));
+    return { ok: false, reason: 'telegram_api_error', agent_count: agents.length };
+  }
 }
 
 function proText(entitlement = { role: 'member', plan: 'free', verified: true }) {
@@ -1358,7 +1387,7 @@ async function homunculusReply(message, retryUpdate = null) {
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${guarded.text}`.slice(0, 3900);
 }
 
-function fastPublicCommandReply(raw) {
+async function fastPublicCommandReply(raw) {
   const text = String(raw || '').trim();
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text) &&
       !/^\/start(?:@[A-Za-z0-9_]+)?\s+(?:(?:pro|agents|monkeys)(?:\s|$)|qdl_|agent_)/i.test(text)) {
@@ -1383,17 +1412,22 @@ function fastPublicCommandReply(raw) {
     /^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text) ||
     /^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(text)
   ) {
+    const data = await registry();
+    const agents = Array.isArray(data?.agents) ? data.agents : [];
+    if (agents.length < 27) {
+      return {
+        text: '⚠️ QuantDeus AI Fleet: канонический реестр временно недоступен полностью. Неполный список не публикую; повтори /agents.',
+        menu: true
+      };
+    }
+    await refreshRuntimeTelegramCommands(agents);
     return {
       text: [
-        '🐒 QuantDeus AI Fleet · мартышки',
-        '/seven_of_nine — координатор QuantDeus',
-        '/control_tower — инфраструктура, GitHub, Vercel, Telegram',
-        '/sherlock — расследования и научная дедукция',
-        '/tuvok — логика, guardrails, безопасность',
-        '/emh — дипломатия, medbay, мягкая проверка',
+        `🐒 QuantDeus AI Fleet · ${agents.length} агентов`,
+        ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`),
         '',
-        'Напиши обычный вопрос — роль выберется автоматически.'
-      ].join('\n'),
+        'Нажми команду роли или используй /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'
+      ].join('\n').slice(0, 3900),
       menu: true
     };
   }
@@ -1577,7 +1611,7 @@ export default async function handler(req, res) {
     }
   }
 
-  const fastReply = fastPublicCommandReply(rawText);
+  const fastReply = await fastPublicCommandReply(rawText);
   if (fastReply) {
     return webhookReply(res, message, fastReply.text, fastReply.menu ? mainMenuReplyMarkup() : undefined);
   }
