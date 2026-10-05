@@ -715,7 +715,7 @@ final class QD_Core {
                 'plan'=>$plan,
                 'agents'=>$agents,
                 'created_at'=>time(),
-            ],15*MINUTE_IN_SECONDS);
+            ],HOUR_IN_SECONDS);
         }
 
         $author=self::text($user->display_name ?: $user->user_login,80);
@@ -744,7 +744,7 @@ final class QD_Core {
                 'plan'=>$plan,
                 'agents'=>$agents,
                 'created_at'=>time(),
-            ],15*MINUTE_IN_SECONDS);
+            ],HOUR_IN_SECONDS);
         }
         return new WP_REST_Response([
             'ok'=>true,
