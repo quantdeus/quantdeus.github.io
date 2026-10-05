@@ -296,5 +296,5 @@ Canonical rules:
 8. Playwright stops at CAPTCHA, 2FA/passkeys, payment, identity verification, legal commitment, or destructive production actions.
 
 Hermes files under `.hermes/`, `coordination/hermes-*`, `scripts/hermes-*`, and `docs/hermes-office.md` are legacy compatibility/archive material only. They must not be treated as the canonical runtime or scheduling path. The retired Hermes fleet cron workflow is intentionally absent.
-Canonical profile-scoped OpenClaw skills live under `.agents/skills/<profile>/...`; trusted runtime exposes only the requested profile root through OpenClaw skill discovery and verifies the expected skills as eligible before execution.
+Canonical profile-scoped OpenClaw skills live under `.agents/skills/<profile>/...`; trusted runtime selects the requested profile root, applies an OpenClaw agent skill allowlist for that profile, and verifies the expected skills as eligible before execution.
 
