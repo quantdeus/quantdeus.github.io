@@ -82,4 +82,4 @@ function renderRole({ heading, result, marker, metrics = [] }) {
   return lines.join('\n');
 }
 
-module.exports = { reasonRole, renderRole };
+module.exports = { parseJson, reasonRole, renderRole };
