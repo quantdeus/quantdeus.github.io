@@ -1,12 +1,11 @@
 import crypto from 'node:crypto';
-import { generateText } from 'ai';
+import { buildMirrorCandidates, probeMirrorProviders, callMirrorJsonRole } from '../../lib/mirror-model-router.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-mirror';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ALLOWED_EVENTS = new Set(['workflow_run', 'workflow_dispatch']);
-const MODEL = process.env.QD_MIRROR_MODEL || 'openai/gpt-5.6-sol';
 const MAX_FILES = 2;
 const MAX_FILE_BYTES = 24000;
 
@@ -86,22 +85,17 @@ function parseJson(text) {
   throw new Error('mirror_agent_returned_non_json');
 }
 
-async function role(name, system, prompt) {
-  const result = await generateText({
-    model: MODEL,
-    reasoning: 'medium',
-    system: [
-      'You are ' + name + ' in the QuantDeus independent Mirror Swarm repair plane.',
-      'GitHub quantdeus/quantdeus.github.io main is the canonical source of truth.',
-      'You diagnose software/runtime defects, not people.',
-      String(system || '').trim(),
-      'Never expose secrets or invent evidence.',
-      'Never weaken authentication, RBAC, QA, branch protection, human approval, or protected policy to make a check green.',
-      'Return only the requested strict JSON object.'
-    ].join('\n'),
-    prompt
-  });
-  return parseJson(result.text);
+async function role(routes, name, system, prompt) {
+  const result = await callMirrorJsonRole({ routes, name, system, prompt });
+  const value = parseJson(result.text);
+  if (value && typeof value === 'object') {
+    Object.defineProperty(value, '__mirror_route', {
+      value: result.route.ref,
+      enumerable: false,
+      configurable: true
+    });
+  }
+  return value;
 }
 
 function boundedText(value, max = 18000) {
@@ -172,6 +166,47 @@ async function readMainFile(token, path, refSha) {
 function fingerprint(text) {
   return crypto.createHash('sha256').update(String(text || '')).digest('hex').slice(0, 12);
 }
+
+function deterministicDiagnosis(evidence) {
+  const facts = [];
+  const validators = evidence?.validator_state || {};
+  for (const [name, value] of Object.entries(validators)) {
+    if (Number(value) !== 0) facts.push('validator:' + name + '=rc' + Number(value));
+  }
+  for (const item of Array.isArray(evidence?.recent_failures) ? evidence.recent_failures : []) {
+    facts.push('workflow:' + String(item?.name || item?.id || 'unknown') + ':' + String(item?.conclusion || 'failure'));
+  }
+  if (!facts.length) {
+    return {
+      status: 'healthy',
+      summary: 'Deterministic mirror checks found no failing validator or recent failed workflow.',
+      root_cause: 'No repair signal in deterministic evidence.',
+      confidence: 1,
+      suspect_files: [],
+      evidence: []
+    };
+  }
+  return {
+    status: 'escalate',
+    summary: 'Mirror model routes unavailable; deterministic evidence captured a repair-worthy condition.',
+    root_cause: 'No healthy non-Gateway model route was available, so the mirror refused to guess a code patch.',
+    confidence: 1,
+    suspect_files: [],
+    evidence: facts
+  };
+}
+
+function deterministicCritique() {
+  return {
+    supported: true,
+    challenge: 'Model plane unavailable. Preserve the failing evidence as a deduplicated escalation artifact; do not synthesize a patch without an independent diagnosis.',
+    safe_to_patch: false,
+    preferred_files: [],
+    missing_evidence: ['model-backed diagnosis and independent critique']
+  };
+}
+
+export { safeRepairPath, deterministicDiagnosis, fingerprint };
 
 async function existingArtifact(token, fp) {
   const query = encodeURIComponent('repo:' + REPOSITORY + ' is:open "' + 'mirror-fingerprint:' + fp + '"');
@@ -299,7 +334,64 @@ export default async function handler(req, res) {
         : []
     };
 
+    const providerProbes = await probeMirrorProviders(buildMirrorCandidates(process.env));
+    const providerState = providerProbes.map(({ ref, ok, status, detail }) => ({ ref, ok, status, detail }));
+    const healthyRoutes = providerProbes
+      .filter(item => item.ok)
+      .sort((a, b) => a.route.priority - b.route.priority)
+      .map(item => item.route);
+
+    if (!healthyRoutes.length) {
+      const diagnosis = deterministicDiagnosis(evidence);
+      const fp = fingerprint(JSON.stringify({
+        deterministic: true,
+        evidence: diagnosis.evidence,
+        trigger: evidence.trigger
+      }));
+      if (diagnosis.status === 'healthy') {
+        return res.status(200).json({
+          ok: true,
+          mode,
+          action: 'none',
+          diagnosis,
+          model: null,
+          provider_mode: 'deterministic-fallback',
+          provider_probes: providerState
+        });
+      }
+
+      const critique = deterministicCritique();
+      if (mode === 'repair') {
+        const artifact = await createEscalationIssue(githubToken, diagnosis, critique, fp);
+        return res.status(200).json({
+          ok: true,
+          mode,
+          action: artifact.action,
+          artifact,
+          diagnosis,
+          critique,
+          fingerprint: fp,
+          model: null,
+          provider_mode: 'deterministic-fallback',
+          provider_probes: providerState
+        });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        mode,
+        action: 'shadow_finding',
+        diagnosis,
+        critique,
+        fingerprint: fp,
+        model: null,
+        provider_mode: 'deterministic-fallback',
+        provider_probes: providerState
+      });
+    }
+
     const diagnosis = await role(
+      healthyRoutes,
       'Mirror Sherlock',
       'Find the smallest evidence-backed root cause and name at most two existing repairable files. If evidence is insufficient or the likely fix touches protected surfaces, escalate instead of guessing.',
       [
@@ -312,10 +404,11 @@ export default async function handler(req, res) {
     );
 
     if (diagnosis.status === 'healthy') {
-      return res.status(200).json({ ok: true, mode, action: 'none', diagnosis, model: MODEL });
+      return res.status(200).json({ ok: true, mode, action: 'none', diagnosis, model: diagnosis.__mirror_route || healthyRoutes[0]?.ref || null });
     }
 
     const critique = await role(
+      healthyRoutes,
       'Mirror Tuvok',
       'Challenge the diagnosis. Look for transient provider failures, cancelled jobs, stale evidence, correlation-vs-causation mistakes, and unsafe scope. Preserve uncertainty.',
       [
@@ -353,9 +446,9 @@ export default async function handler(req, res) {
     ) {
       if (mode === 'repair') {
         const artifact = await createEscalationIssue(githubToken, diagnosis, critique, fp);
-        return res.status(200).json({ ok: true, mode, action: artifact.action, artifact, diagnosis, critique, model: MODEL });
+        return res.status(200).json({ ok: true, mode, action: artifact.action, artifact, diagnosis, critique, model: diagnosis.__mirror_route || healthyRoutes[0]?.ref || null });
       }
-      return res.status(200).json({ ok: true, mode, action: 'shadow_finding', diagnosis, critique, fingerprint: fp, model: MODEL });
+      return res.status(200).json({ ok: true, mode, action: 'shadow_finding', diagnosis, critique, fingerprint: fp, model: diagnosis.__mirror_route || healthyRoutes[0]?.ref || null });
     }
 
     const mainRef = await github(githubToken, '/git/ref/heads/main');
@@ -368,6 +461,7 @@ export default async function handler(req, res) {
     }
 
     const implementation = await role(
+      healthyRoutes,
       'Mirror Tasksmith',
       'Produce the smallest full-file replacements that fix only the diagnosed defect. Preserve unrelated behavior and comments. Do not add dependencies. Do not change protected behavior.',
       [
@@ -400,10 +494,11 @@ export default async function handler(req, res) {
 
     if (!proposed.length || proposed.length > MAX_FILES) {
       const artifact = await createEscalationIssue(githubToken, diagnosis, critique, fp);
-      return res.status(200).json({ ok: true, mode, action: artifact.action, artifact, diagnosis, critique, implementation, model: MODEL });
+      return res.status(200).json({ ok: true, mode, action: artifact.action, artifact, diagnosis, critique, implementation, model: diagnosis.__mirror_route || healthyRoutes[0]?.ref || null });
     }
 
     const qa = await role(
+      healthyRoutes,
       'Mirror QA',
       'Independently verify that the replacement is minimal, syntactically plausible, tied to evidence, and does not weaken safeguards. Reject speculative or broad rewrites.',
       [
@@ -430,7 +525,7 @@ export default async function handler(req, res) {
 
     if (qa.approved !== true || qa.risk === 'high') {
       const artifact = await createEscalationIssue(githubToken, diagnosis, critique, fp);
-      return res.status(200).json({ ok: true, mode, action: artifact.action, artifact, diagnosis, critique, qa, model: MODEL });
+      return res.status(200).json({ ok: true, mode, action: artifact.action, artifact, diagnosis, critique, qa, model: diagnosis.__mirror_route || healthyRoutes[0]?.ref || null });
     }
 
     const artifact = await createDraftRepairPr(
@@ -452,7 +547,7 @@ export default async function handler(req, res) {
       critique,
       qa,
       fingerprint: fp,
-      model: MODEL
+      model: diagnosis.__mirror_route || healthyRoutes[0]?.ref || null
     });
   } catch (error) {
     console.error('[mirror-swarm]', error?.stack || error);
