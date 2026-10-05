@@ -82,12 +82,15 @@ jobs:
                 'QuantDeus growth + site autonomous cycle.',
                 'Requested slot: '+requestedAgentId+'. Active profile: '+agentId+' — '+agent.role,
                 delegatedFrom ? 'EMH medbay delegation: '+delegatedFrom+' is temporarily inactive; preserve its requested mission while using the active delegate profile.' : '',
-                'Read coordination/manifesto-living.md, coordination/growth/platform-playbook.json, contributor recruitment contract, open Issues/PRs and the current public site.',
+                'Read coordination/manifesto-living.md, coordination/growth/marketing-operating-system.md, coordination/growth/marketing-stack.json, coordination/growth/marketing-scorecard.json, coordination/growth/platform-playbook.json, contributor recruitment contract, open Issues/PRs and the current public site.',
                 'Use Playwright to inspect https://quantdeus.github.io/ and relevant routes when site work is appropriate.',
                 '',
-                'Goal: improve truthful discovery, contributor conversion, useful public content, SEO, onboarding and site quality.',
+                'Goal: improve truthful discovery, qualified demand and measurable movement through ATTRACT → CAPTURE → NURTURE → CONVERT → RETAIN → REFER.',
+                'Use your profile-scoped marketing skills. Every proposed artifact/campaign must name audience, funnel stage, CTA, hypothesis and primary metric. Generated copy alone is not success.',
+                'Synthesis may run the content factory from one verified source into platform-native derivatives. Archivist may build programmatic SEO only when every indexed page has distinct user intent and substantive unique value; classic doorway pages, thin city/keyword permutations and scaled low-value content are forbidden.',
+                'Herald may design permission-based nurture/follow-up and distribution. Unity owns funnel architecture, segmentation and growth experiments. Use coordination/growth/marketing-scorecard.json only for VERIFIED aggregate outcomes; unknown metrics stay unknown.'
                 'For multi-platform promotion, prepare platform-native packages tied to real artifacts. Automatic third-party posting is allowed only when a specific authorized connector/account path exists; otherwise create/update a public-safe campaign artifact or Issue for later publication.',
-                'Never mass-DM strangers, fake likes/followers/contributors, impersonate people, scrape private contacts, or manufacture engagement.',
+                'Never mass-DM strangers, fake likes/followers/contributors, impersonate people, scrape private contacts, or manufacture engagement. Doorway/low-value scaled SEO is prohibited; prefer useful programmatic landing pages with unique intent/value or noindex/consolidation.'
                 'Political/civic topics must remain neutral/informational and must not be used for voter targeting, party/candidate promotion or outrage bait.',
                 '',
                 'You may create at most one branch+PR or one Issue. Site/content PR branch must start automation/site-refresh/.',
