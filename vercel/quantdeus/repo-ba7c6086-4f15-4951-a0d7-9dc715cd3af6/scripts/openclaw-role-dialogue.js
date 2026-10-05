@@ -1,4 +1,4 @@
-'use strict';
+use strict;
 
 const office = require('./openclaw-office-client');
 const {turnBudget, turnEvidence} = require('./dialogue-state');
@@ -6,24 +6,40 @@ const {turnBudget, turnEvidence} = require('./dialogue-state');
 function parseJson(text) {
   const raw = String(text || '').trim();
   try {
-    // Attempt to parse as JSON first
-    return JSON.parse(raw);
-  } catch (jsonError) {
-    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    const summaryMatch = lines.find(line => line.startsWith('SUMMARY:'));
-    const findingsMatches = lines.filter(line => line.startsWith('FINDING:'));
-    const nextStepMatch = lines.find(line => line.startsWith('NEXT_STEP:'));
-    
-    if (!summaryMatch || !findingsMatches.length || !nextStepMatch) {
-      jsonError.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
-      throw jsonError;
+    const parsed = JSON.parse(raw);
+    // Validate the expected JSON structure
+    if (typeof parsed.summary !== 'string' || !parsed.summary.trim() || parsed.summary.length > 4000) {
+      throw new Error('Invalid SUMMARY format');
     }
-    
-    const summary = summaryMatch.substring('SUMMARY:'.length).trim();
-    const findings = findingsMatches.map(line => line.substring('FINDING:'.length).trim());
-    const nextStep = nextStepMatch.substring('NEXT_STEP:'.length).trim();
-    
-    return { summary, findings, next_step: nextStep };
+    if (!Array.isArray(parsed.findings) || parsed.findings.length < 1 || parsed.findings.length > 5) {
+      throw new Error('Invalid FINDINGS array format');
+    }
+    if (parsed.findings.some(x => typeof x !== 'string' || !x.trim() || x.length > 2000)) {
+      throw new Error('Invalid FINDING content');
+    }
+    if (typeof parsed.next_step !== 'string' || !parsed.next_step.trim() || parsed.next_step.length > 2000) {
+      throw new Error('Invalid NEXT_STEP format');
+    }
+    return parsed;
+  } catch (jsonError) {
+    // Fallback to parsing as plain text if JSON parsing fails
+    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    const field = name => {
+      const re = new RegExp('^' + name + '\s*:\s*(.+)', 'i');
+      const line = lines.find(x => re.test(x));
+      return line ? line.match(re)[1].trim() : '';
+    };
+    const summary = field('SUMMARY');
+    const findings = lines.map(x => {
+      const m = x.match(/^FINDING(?:\s*\d+)?\s*:\s*(.+)/i);
+      return m ? m[1].trim() : '';
+    }).filter(Boolean);
+    const nextStep = field('NEXT(?:_|\s*)STEP');
+    if (summary && findings.length && nextStep) {
+      return { summary, findings, next_step: nextStep };
+    }
+    jsonError.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
+    throw jsonError;
   }
 }
 
@@ -32,8 +48,7 @@ async function reasonRole({ profile, role, context, protocol, repository, truste
     return { status: 'DEGRADED', runtime: null, model: null, error_code: 'OPENCLAW_OFFICE_CREDENTIALS_UNAVAILABLE' };
   }
   const budget = turnBudget(timeoutMs);
-  if (budget.timeoutMs < 1000) return { status: 'DEGRADED', runtime: null, model: null, error_code: 'DIALOGUE_BUDGET_EXHAUSTED' };
-  
+  if (budget.timeoutMs < 1000) return {status: 'DEGRADED', runtime: null, model: null, error_code: 'DIALOGUE_BUDGET_EXHAUSTED'};
   try {
     const result = await client.ask({
       profile,
@@ -51,25 +66,11 @@ async function reasonRole({ profile, role, context, protocol, repository, truste
           'Evidence snapshot:',
           JSON.stringify(context)
         ].join('\n')
-      }],
+      },
       metadata: { source: 'quantdeus-role-dialogue', role: profile, repository }
     });
     const evidence = turnEvidence(result, trusted);
     const d = parseJson(result.text);
-    
-    if (typeof d.summary !== 'string' || !d.summary.trim() || d.summary.length > 4000) {
-      throw new Error('ROLE_DIALOGUE_INVALID_SUMMARY');
-    }
-    if (!Array.isArray(d.findings) || d.findings.length < 1 || d.findings.length > 5) {
-      throw new Error('ROLE_DIALOGUE_INVALID_FINDINGS');
-    }
-    if (d.findings.some(x => typeof x !== 'string' || !x.trim() || x.length > 2000)) {
-      throw new Error('ROLE_DIALOGUE_INVALID_FINDING');
-    }
-    if (typeof d.next_step !== 'string' || !d.next_step.trim() || d.next_step.length > 2000) {
-      throw new Error('ROLE_DIALOGUE_INVALID_NEXT_STEP');
-    }
-    
     return {
       status: 'LLM',
       ...evidence,
@@ -78,11 +79,8 @@ async function reasonRole({ profile, role, context, protocol, repository, truste
       next_step: d.next_step.trim(),
       tool_summary: result.toolSummary || result.raw?.tool_summary || null
     };
-  }
-  catch (error) {
-    if (!client.isTransientError(error)) {
-      throw error;
-    }
+  } catch (error) {
+    if (!client.isTransientError(error)) throw error;
     return { status: 'DEGRADED', runtime: null, model: null, error_code: error.code || 'OPENCLAW_TRANSIENT' };
   }
 }
