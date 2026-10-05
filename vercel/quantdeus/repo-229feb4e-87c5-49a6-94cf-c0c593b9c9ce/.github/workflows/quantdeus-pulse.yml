@@ -1,0 +1,50 @@
+name: QuantDeus Six-Pillar Executor 🧭
+
+on:
+  schedule:
+    - cron: '37 6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/pillar-executor.js'
+      - 'scripts/doctrine.js'
+      - 'coordination/civilization-doctrine.json'
+      - '.github/workflows/quantdeus-pulse.yml'
+
+concurrency:
+  group: quantdeus-six-pillar-executor
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate shared THRIVE / Venus / Реновация / Рубежи mission
+        run: node scripts/mission-alignment.js
+      - name: Validate post-scarcity civilization doctrine
+        run: node -e "const d=require('./scripts/doctrine').loadDoctrine(); console.log('Doctrine', d.version)"
+      - name: Apply governance gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
+        run: node scripts/governance-gate.js
+      - name: Maintain six-pillar execution queue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/pillar-executor.js
+      - name: Refresh coordination hub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/coordinator.js
