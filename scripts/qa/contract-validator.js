@@ -295,7 +295,33 @@ const staticSmokeWorkflow = fs.readFileSync(path.join(root,'.github','workflows'
 check(qaTriadWorkflow.includes('pull_request:') && staticSmokeWorkflow.includes('pull_request:'), 'EMH QA oversight', 'QA Triad and Static Smoke independently run on treatment PRs');
 
 const workflowDir = path.join(root,'.github','workflows');
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml']);
+const dataPositronicWorkflow = fs.readFileSync(path.join(root,'.github','workflows','data-positronic-cycle.yml'),'utf8');
+const dataPositronicSource = fs.readFileSync(path.join(root,'scripts','data-positronic-cycle.js'),'utf8');
+const dataCronMigration = readJson('coordination/data-training/picoclaw-cron-migration.json');
+check(
+  dataPositronicWorkflow.includes("cron: '37 */6 * * *'") &&
+  dataPositronicWorkflow.includes('persist-credentials: false') &&
+  dataPositronicWorkflow.includes('node scripts/mission-alignment.js') &&
+  dataPositronicWorkflow.includes('node scripts/data-positronic-cycle.js') &&
+  dataPositronicSource.includes("profile: 'data'") &&
+  dataPositronicSource.includes('trusted: false') &&
+  dataPositronicSource.includes('delete process.env.GITHUB_TOKEN') &&
+  dataPositronicSource.includes("tools.github_write !== false") &&
+  dataPositronicSource.includes('NEVER mutate a schedule yourself') &&
+  dataCronMigration.migration_policy?.autonomous_schedule_self_modification === false &&
+  dataCronMigration.migration_policy?.external_mutation_from_cycle === false,
+  'data-positronic-cycle.yml',
+  'Data PicoClaw cron successor is read-only, bounded and cannot self-modify schedules'
+);
+check(
+  (dataCronMigration.legacy_jobs || []).length === 6 &&
+  dataCronMigration.legacy_jobs.some(x => x.legacy_id === '23967b2c60e4d592' && x.disposition === 'migrated-throttled') &&
+  dataCronMigration.legacy_jobs.some(x => x.legacy_id === '71e32233fc41a37e' && x.disposition === 'excluded'),
+  'coordination/data-training/picoclaw-cron-migration.json',
+  'legacy PicoClaw cron set is mapped with positronic migration and local anti-noise exclusion'
+);
+
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml','data-positronic-cycle.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -314,6 +340,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
         check(approvedQaSelfHeal, name, 'QA self-heal uses the approved staggered six-hour lanes: '+cron);
       } else if (name === 'qa-failure-radar.yml') {
         check(parts[0] === '7' && parts[1] === '*/2', name, 'QA failure radar uses the approved two-hour cadence: '+cron);
+      } else if (name === 'data-positronic-cycle.yml') {
+        check(parts[0] === '37' && parts[1] === '*/6', name, 'Data positronic cycle uses the approved six-hour cadence: '+cron);
       } else if (name === 'agent-role-cron.yml') {
         check(parts[0] === '23' && parts[1] === '0-15', name, 'role cron uses the approved daily hourly window: '+cron);
       } else if (name === 'seven-priority-cycle.yml') {
