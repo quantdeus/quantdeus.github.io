@@ -8,6 +8,7 @@ name: QuantDeus OpenClaw Admin Office Smoke
 # production re-smoke after validated provider fallbacks
 
 # Updating this workflow intentionally retriggers the live trusted-office smoke after a runtime mirror sync.
+# re-smoke after trusted tool-contract fix #452
 
 on:
   workflow_dispatch:
