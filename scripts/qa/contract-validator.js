@@ -451,7 +451,7 @@ check(
 check(
   openclawRuntimeSource.includes("const hermesFallbackModel = String(process.env.HERMES_FALLBACK_MODEL || 'ministral-3b-latest').trim()") &&
   openclawRuntimeSource.includes("id: 'quantdeus-hermes-lite'") &&
-  openclawRuntimeSource.includes("priority: trustedOffice ? 16 : 27") &&
+  openclawRuntimeSource.includes("priority: trustedOffice ? 16 : 26") &&
   !openclawRuntimeSource.includes("const defaultGatewayModel = process.env.VERCEL"),
   'vercel-dispatcher/api/quantdeus/openclaw.js',
   'OpenClaw probes a lighter same-credential Hermes fallback and never makes Vercel Gateway an implicit dependency'
