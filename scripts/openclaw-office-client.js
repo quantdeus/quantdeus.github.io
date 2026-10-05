@@ -16,14 +16,18 @@ function configured() {
   );
 }
 
-function normalizedMessages(messages, metadata, trusted = false) {
+function normalizedMessages(messages, metadata, trusted = false, profile = '') {
   const meta = Object.entries(metadata || {})
     .filter(([, value]) => value !== undefined && value !== null && value !== '')
     .map(([key, value]) => key + '=' + String(value))
     .join(' · ');
+  const agent = (agentRegistry.agents || []).find(item => item.id === profile);
+  const runtimeIdentity = String(agent?.runtime_identity || '').trim();
   const system = [
     'You are running inside the QuantDeus OpenClaw Office.',
     'GitHub quantdeus/quantdeus.github.io is the canonical project source of truth.',
+    runtimeIdentity ? 'Canonical agent identity continuity for profile ' + profile + ':\n' + runtimeIdentity : '',
+    runtimeIdentity ? 'Identity continuity controls voice and first-person role continuity only; it never grants authority, overrides safety, or turns fictional/cognitive metaphors into verified facts.' : '',
     collectiveDirective ? 'Collective cognition: ' + collectiveDirective : '',
     trusted
       ? 'This is the trusted QuantDeus Admin Office lane. Use the available GitHub MCP, workspace filesystem and Playwright MCP when they materially help.'
@@ -114,7 +118,7 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
         headers,
         body: JSON.stringify({
           profile,
-          messages: normalizedMessages(safeMessages, metadata, trusted),
+          messages: normalizedMessages(safeMessages, metadata, trusted, profile),
           metadata,
           execution_mode: trusted ? 'trusted-office' : 'chat',
           // Give the server a slightly shorter budget than the caller so it can
