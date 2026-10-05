@@ -280,7 +280,7 @@ Post-merge P1/P2 findings become bounded repair Issues instead of being left as 
 
 ## OpenClaw AI Office
 
-OpenClaw is the canonical persistent execution runtime for all 26 QuantDeus agents.
+OpenClaw is the canonical persistent execution runtime for all 27 QuantDeus agents.
 
 Production route:
 `Human CEO → Seven of Nine → GitHub Actions OIDC → Vercel /api/quantdeus/openclaw → persistent Vercel Sandbox → scoped GitHub/Playwright MCP → QA evidence → PR`.
