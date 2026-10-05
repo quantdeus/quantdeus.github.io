@@ -686,6 +686,19 @@ final class QD_Core {
         return array_slice($ids,0,3);
     }
 
+    private static function forum_issue_rate_limit(int $user_id,string $plan,bool $agent_request) {
+        $window=15*MINUTE_IN_SECONDS;
+        $limit=$agent_request ? ($plan==='pro' ? 20 : 4) : ($plan==='pro' ? 60 : 12);
+        $kind=$agent_request ? 'agent' : 'reply';
+        $bucket='qd_forum_issue_'.$kind.'_'.md5((string)$user_id);
+        $count=(int)get_transient($bucket);
+        if ($count >= $limit) {
+            return new WP_Error('rate_limited','Forum Issue rate limit reached',['status'=>429,'limit'=>$limit,'window_minutes'=>15]);
+        }
+        set_transient($bucket,$count+1,$window);
+        return null;
+    }
+
     public static function forum_issue_reply(WP_REST_Request $req) {
         $id=(int)$req['id'];
         $content=self::text($req->get_param('content'),8000);
@@ -699,6 +712,12 @@ final class QD_Core {
         $user=wp_get_current_user();
         $plan=self::current_plan($user->ID);
         $ask_agents=rest_sanitize_boolean($req->get_param('ask_agents'));
+        $limited=self::forum_issue_rate_limit((int)$user->ID,$plan,false);
+        if (is_wp_error($limited)) return $limited;
+        if ($ask_agents) {
+            $agent_limited=self::forum_issue_rate_limit((int)$user->ID,$plan,true);
+            if (is_wp_error($agent_limited)) return $agent_limited;
+        }
         $agents=[];
         if ($ask_agents) {
             $agents=$plan==='pro' ? self::normalize_agent_ids($req->get_param('agents')) : ['seven-of-nine'];
