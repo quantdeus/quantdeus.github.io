@@ -1,6 +1,6 @@
 # QuantDeus Daily Context Checkpoint
 
-- date: 2026-10-03
+- date: 2026-10-04
 - canonical_repo: `quantdeus/quantdeus.github.io`
 - canonical_branch: `main`
 - canonical_url: `https://quantdeus.whf.bz/`
@@ -47,18 +47,21 @@
 - kpis: `R_QD; Active Nodes; Action Conversion; Open Artifacts; Verified Results; Partner Density; Future Fund Flow; Automation Ratio; Impact Ledger; Transparency Score`
 - phase_gates: `M1-6 Synchronization → M7-12 Renaissance → M13-18 Warp Threshold → M19-24 Federation; no gate advance without evidence`
 - future_fund_rule: `fund only testable outcomes with falsifier/failure condition and a resulting verifiable/open artifact after reserves and obligations`
-- shared_cron_guard: `every scheduled QuantDeus workflow must run node scripts/mission-alignment.js`
+- shared_cron_guard: `every native-scheduled QuantDeus worker and the sole external liveness watchdog must run node scripts/mission-alignment.js`
 - telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`
 - telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
 - native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.whf.bz / inherited by all 26 registered agents through trusted OpenClaw`
 - wordpress_mcp_swarm_policy: `hourly + autonomous scheduled lanes read-only; direct WordPress writes only for explicit owner-authorized trusted tasks and only with configured MCP authorization; missing auth fails closed for writes; WPVibe is not a dependency`
-- vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
-- vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
-- legacy_hermes_scheduler: `retired; obsolete Hermes cron workflow removed; legacy scripts/routes are archive-only; scheduled autonomy belongs to OpenClaw`
+- vercel_swarm_dispatcher: `OpenClaw native Gateway automation / SQLite-owned cadence → guarded workflow_dispatch worker → Vercel OpenClaw trusted runtime; GitHub Actions no longer owns business-task clocks`
+- vercel_swarm_status: `native scheduler migration in progress: dedicated persistent quantdeus-openclaw-scheduler Sandbox, local token-auth Gateway, missed-run catch-up enabled, workers remain reversible workflow_dispatch executors`
+- native_scheduler_owner: `coordination/openclaw-automations.json → OpenClaw Gateway automations SQLite; command jobs dispatch only allowlisted GitHub workflows; no model turn is required for scheduling`
+- native_scheduler_watchdog: `sole external clock = .github/workflows/openclaw-scheduler-watchdog.yml every 15m; liveness-only wake/resume of scheduler Sandbox; it owns no business cadence`
+- legacy_hermes_scheduler: `retired; obsolete Hermes cron workflow removed; legacy scripts/routes are archive-only; scheduled autonomy belongs to native OpenClaw automations`
 - qa_self_heal: `bounded autonomous repair: site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
 - openclaw_evolution: `daily 02:31 UTC evidence loop; OpenClaw reads its fresh-main self-evolution skill on trusted runs; Tier A skill/docs/ledger improvements may auto-merge after QA+Smoke; Tier B runtime/auth/MCP/workflow changes remain reviewable PRs`
-- scheduled_workflows:
+- scheduled_workflows: `cadences below are declared in coordination/openclaw-automations.json and executed by OpenClaw Gateway; worker YAML files expose workflow_dispatch but no competing schedule`
+
   - `every 2 hours at :19 UTC — QuantDeus Crew Health Check / 26-agent registry + bridge crew + medbay/delegates + READY/ACTIVE/BLOCKED + key Actions`
   - `06:27 UTC — QuantDeus Swarm Secretary`
   - `06:37 UTC — QuantDeus Six-Pillar Executor`

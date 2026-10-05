@@ -8,6 +8,7 @@ const homunculi = JSON.parse(fs.readFileSync(path.join(root,'coordination','homu
 const cronContext = fs.readFileSync(path.join(root,'coordination','cron-context.md'),'utf8');
 const agentCron = JSON.parse(fs.readFileSync(path.join(root,'coordination','agent-cron-map.json'),'utf8'));
 const livingManifest = fs.readFileSync(path.join(root,'coordination','manifesto-living.md'),'utf8');
+const nativeScheduler = JSON.parse(fs.readFileSync(path.join(root,'coordination','openclaw-automations.json'),'utf8'));
 
 const requiredSources = ['thrive-1','thrive-2','venus-project','earth-renovation','gravity-frontiers'];
 const requiredManifests = ['neon-horizon-v4','epidemiya-dobra-2y'];
@@ -19,7 +20,7 @@ const requiredPrinciples = [
   'prototype-before-scale',
   'space-capability-must-also-create-earthside-value'
 ];
-const scheduledWorkflows = ['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml'];
+const scheduledWorkflows = [...new Set((nativeScheduler.jobs||[]).map(job=>job.workflow))];
 
 const failures = [];
 const checks = [];
@@ -67,14 +68,24 @@ for(const [name,registry] of [['agents',agents],['homunculi',homunculi]]){
   for(const id of requiredManifests) check((registry.doctrine?.manifest_sources||[]).includes(id),name,'inherits manifesto: '+id);
 }
 
+check(nativeScheduler.owner==='openclaw-native-gateway','openclaw-automations','native OpenClaw Gateway owns recurring business schedules');
+check(nativeScheduler.watchdog_cadence==='*/15 * * * *','openclaw-automations','native scheduler declares bounded external liveness cadence');
+check((nativeScheduler.jobs||[]).length===15,'openclaw-automations','native scheduler declares 15 recurring QuantDeus jobs');
+for(const job of nativeScheduler.jobs||[]){
+  check(Boolean(job.id&&job.workflow&&job.cron),job.id||'native-scheduler-job','native scheduler job has id/workflow/cron');
+}
 for(const name of scheduledWorkflows){
   const file=path.join(root,'.github','workflows',name);
-  check(fs.existsSync(file),name,'scheduled workflow exists');
+  check(fs.existsSync(file),name,'native-scheduled worker workflow exists');
   if(!fs.existsSync(file)) continue;
   const text=fs.readFileSync(file,'utf8');
-  check(/schedule:\s*[\s\S]*cron:/m.test(text),name,'has cron schedule');
+  check(!/^  schedule:\s*$/m.test(text),name,'business cadence is not duplicated in GitHub Actions');
+  check(/^  workflow_dispatch:\s*$/m.test(text),name,'native-scheduled worker remains explicitly dispatchable');
   check(text.includes('node scripts/mission-alignment.js'),name,'runs shared mission guard');
 }
+const schedulerWatchdog=fs.readFileSync(path.join(root,'.github','workflows','openclaw-scheduler-watchdog.yml'),'utf8');
+check(schedulerWatchdog.includes("cron: '*/15 * * * *'"),'openclaw-scheduler-watchdog.yml','sole external clock matches native scheduler liveness cadence');
+check(schedulerWatchdog.includes('node scripts/mission-alignment.js'),'openclaw-scheduler-watchdog.yml','scheduler watchdog runs shared mission guard');
 
 check(cronContext.includes('canonical_repo: `quantdeus/quantdeus.github.io`'),'cron-context','canonical repository current');
 check(cronContext.includes('doctrine_version: `'+doctrine.version+'`'),'cron-context','cron context doctrine version current');

@@ -29,6 +29,8 @@ jobs:
           node --check scripts/hermes-office-bootstrap.js
           node --check scripts/hermes-office-client.js
           node --check scripts/openclaw-office-client.js
+          node --check scripts/openclaw-automations-bootstrap.js
+          node --check scripts/openclaw-dispatch-workflow.js
           node --check scripts/guarded-automerge.js
           node --check scripts/openclaw-evolution.js
           node --check scripts/openclaw-evolution-guard.js
@@ -139,7 +141,7 @@ jobs:
 
           const daily=read('.github/workflows/daily-swarm-learning.yml');
           for(const invariant of [
-            "cron: '17 6 * * *'",
+            'workflow_dispatch:',
             'contents: read',
             'actions: write',
             'id-token: write',
@@ -202,6 +204,10 @@ jobs:
           test -f scripts/qa/openclaw-office-validator.js
           test -f .github/workflows/openclaw-evolution.yml
           test -f .github/workflows/daily-swarm-learning.yml
+          test -f .github/workflows/openclaw-scheduler-watchdog.yml
+          test -f coordination/openclaw-automations.json
+          test -f scripts/openclaw-automations-bootstrap.js
+          test -f scripts/openclaw-dispatch-workflow.js
           test -f .github/workflows/openclaw-evolution-pr-guard.yml
           test -f .github/workflows/openclaw-evolution-gate.yml
           test -f scripts/openclaw-evolution.js

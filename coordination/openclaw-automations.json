@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "owner": "openclaw-native-gateway",
+  "timezone": "UTC",
+  "watchdog_cadence": "*/15 * * * *",
+  "jobs": [
+    {
+      "id": "hourly-openclaw-swarm",
+      "name": "QuantDeus / Hourly OpenClaw Swarm",
+      "cron": "0 * * * *",
+      "workflow": "quantdeus-hourly-openclaw.yml"
+    },
+    {
+      "id": "seven-priority-cycle",
+      "name": "QuantDeus / Seven Priority Cycle",
+      "cron": "11 */2 * * *",
+      "workflow": "seven-priority-cycle.yml"
+    },
+    {
+      "id": "agent-health",
+      "name": "QuantDeus / Agent Health",
+      "cron": "19 */2 * * *",
+      "workflow": "agent-health-daily.yml"
+    },
+    {
+      "id": "agent-role-cycle",
+      "name": "QuantDeus / Agent Role Cycle",
+      "cron": "23 0-14 * * *",
+      "workflow": "agent-role-cron.yml"
+    },
+    {
+      "id": "coordinator",
+      "name": "QuantDeus / Coordinator",
+      "cron": "27 6 * * *",
+      "workflow": "quantdeus-coordinator.yml"
+    },
+    {
+      "id": "openclaw-evolution",
+      "name": "QuantDeus / OpenClaw Evolution",
+      "cron": "31 2 * * *",
+      "workflow": "openclaw-evolution.yml"
+    },
+    {
+      "id": "six-pillar-pulse",
+      "name": "QuantDeus / Six-Pillar Pulse",
+      "cron": "37 6 * * *",
+      "workflow": "quantdeus-pulse.yml"
+    },
+    {
+      "id": "news-manifest",
+      "name": "QuantDeus / News Manifest",
+      "cron": "41 */6 * * *",
+      "workflow": "news-manifest-cycle.yml"
+    },
+    {
+      "id": "contributor-growth",
+      "name": "QuantDeus / Contributor Growth",
+      "cron": "42 6 * * *",
+      "workflow": "contributor-growth.yml"
+    },
+    {
+      "id": "qa-triad",
+      "name": "QuantDeus / QA Triad",
+      "cron": "47 6 * * *",
+      "workflow": "qa-triad.yml"
+    },
+    {
+      "id": "qa-failure-radar",
+      "name": "QuantDeus / QA Failure Radar",
+      "cron": "7 */2 * * *",
+      "workflow": "qa-failure-radar.yml"
+    },
+    {
+      "id": "qa-self-heal-site",
+      "name": "QuantDeus / QA Self-Heal / Site",
+      "cron": "17 */6 * * *",
+      "workflow": "qa-self-heal.yml",
+      "inputs": {
+        "lane": "site"
+      }
+    },
+    {
+      "id": "qa-self-heal-actions",
+      "name": "QuantDeus / QA Self-Heal / Actions",
+      "cron": "47 3-23/6 * * *",
+      "workflow": "qa-self-heal.yml",
+      "inputs": {
+        "lane": "actions"
+      }
+    },
+    {
+      "id": "growth-site-cycle",
+      "name": "QuantDeus / Growth + Site Cycle",
+      "cron": "53 */4 * * *",
+      "workflow": "growth-site-cycle.yml"
+    },
+    {
+      "id": "daily-swarm-learning",
+      "name": "QuantDeus / Daily Swarm Learning",
+      "cron": "17 6 * * *",
+      "workflow": "daily-swarm-learning.yml"
+    }
+  ]
+}

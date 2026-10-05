@@ -1,8 +1,6 @@
 name: QuantDeus OpenClaw Evolution 🧬
 
 on:
-  schedule:
-    - cron: '31 2 * * *'
   workflow_dispatch:
   push:
     branches: [main]
