@@ -95,7 +95,11 @@
       "persona": "coordination/data-persona.md",
       "cognitive_protocol": "borg-collective-v1",
       "command": "/agent data",
-      "proposal_command": "/propose data"
+      "proposal_command": "/propose data",
+      "knowledge_sources": [
+        "coordination/data-training/picoclaw-legacy-knowledge.md"
+      ],
+      "training_provenance": "coordination/data-training/picoclaw-legacy-manifest.json"
     },
     {
       "id": "sherlock",
