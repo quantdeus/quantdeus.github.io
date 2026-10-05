@@ -1169,7 +1169,7 @@ export default async function handler(req, res) {
       ...(profileSkillRootAbsolute ? { skills: { load: { extraDirs: [profileSkillRootAbsolute] } } } : {}),
       tools: trustedOffice ? { ...trustedTools, toolSearch: false } : { ...publicTools, toolSearch: false },
       ...(Object.keys(mcpServers).length ? { mcp: { servers: mcpServers } } : {}),
-      agents: { defaults: { workspace: agentCwd, timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
+      agents: { defaults: { workspace: agentCwd, ...(profileSkills.length ? { skills: profileSkills } : {}), timeoutSeconds: 240, models: Object.fromEntries(orderedModels.map(ref => [ref, { codeMode: false }])), model: { primary: model, fallbacks: fallbackModels } } }
     };
     const productionTopologyPrompt = trustedOffice ? [
       'QUANTDEUS PRODUCTION TOPOLOGY:',
