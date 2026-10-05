@@ -13,6 +13,10 @@ import {
   shieldOutput
 } from '../../lib/prompt-shield.js';
 import { roleForTelegramId } from '../../lib/telegram-auth.js';
+import {
+  guardTelegramIngress,
+  telegramFederationHealth
+} from '../../lib/telegram-federation.js';
 
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
 const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -401,6 +405,7 @@ async function setupWebhook(req, res) {
     short_description: TELEGRAM_BOT_SHORT_DESCRIPTION
   });
   const info = await telegram(botToken, 'getWebhookInfo');
+  const federation = telegramFederationHealth(info);
   const researchProbe = await liveNewsResearch('OpenAI latest news');
   // Keep setup smoke to one LLM request. Anonymous fallback providers can throttle
   // back-to-back calls, which made a healthy role route look broken immediately
@@ -444,6 +449,7 @@ async function setupWebhook(req, res) {
     public_mode: 'brokered-read-tools',
     prompt_shield: QUANTDEUS_SHIELD_VERSION,
     outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback',
+    federation,
     interface: {
       menu_button_ok: Boolean(menuButton),
       menu_button_url: webAppUrl,
@@ -1491,7 +1497,21 @@ export default async function handler(req, res) {
   }
 
   const message = update.message;
-  if (!message || message.from?.is_bot || !String(message.text || '').trim()) {
+  const ingress = guardTelegramIngress(update);
+  if (!ingress.ok) {
+    console.warn(
+      '[telegram-federation] status=' + ingress.status +
+      ' reason=' + String(ingress.reason || 'policy') +
+      ' update_id=' + String(update.update_id)
+    );
+    return res.status(200).json({
+      ok: true,
+      status: ingress.status,
+      retry_after_ms: ingress.retry_after_ms || undefined,
+      update_id: update.update_id
+    });
+  }
+  if (!message || !String(message.text || '').trim()) {
     return res.status(200).json({ ok: true, status: 'ignored_non_text_or_bot_update', update_id: update.update_id });
   }
 
