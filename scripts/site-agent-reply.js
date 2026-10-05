@@ -18,6 +18,7 @@ const adminUsers = new Set(
 );
 
 function isAdminCommentAuthor() {
+  if (String(comment?.body || '').includes('<!-- qd:forum-user -->')) return false;
   const login = String(comment?.user?.login || '').trim().toLowerCase();
   return Boolean(login) && (login === repoOwner || adminUsers.has(login));
 }
@@ -46,11 +47,13 @@ const roomMap = {
   115: { key: 'build', defaultAgent: 'control-tower' },
 };
 
-const room = roomMap[issue.number];
-if (!room) process.exit(0);
-
 const body = String(comment.body || '').trim();
 if (!body || body.includes('<!-- qd-agent-reply -->')) process.exit(0);
+const forumRequestMatch = body.match(/<!-- qd:forum-agent-request=([a-f0-9]{64}) -->/i);
+const forumRequestToken = forumRequestMatch ? forumRequestMatch[1].toLowerCase() : '';
+const forumAgentRequest = Boolean(forumRequestToken);
+const room = roomMap[issue.number] || (forumAgentRequest ? { key: 'forum-issue', defaultAgent: 'seven-of-nine' } : null);
+if (!room) process.exit(0);
 
 const registry = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8'));
 const doctrine = JSON.parse(fs.readFileSync('coordination/civilization-doctrine.json', 'utf8'));
@@ -79,7 +82,35 @@ function stripAgentPrefix(text) {
   return text
     .replace(/^\/agent\s+[a-z0-9_-]+\s*/i, '')
     .replace(/^@[a-z0-9_-]+\s*/i, '')
+    .replace(/<!-- qd:forum-[^>]* -->/gi, '')
+    .replace(/^\*\*[^\n]+ via QuantDeus Forum\*\*\s*/i, '')
+    .replace(/\n?🤖 AI Fleet request:[^\n]*/gi, '')
     .trim();
+}
+
+async function verifiedForumAgentRequest() {
+  if (!forumRequestToken) return null;
+  const origin = String(process.env.QUANTDEUS_WORDPRESS_ORIGIN || 'https://quantdeus.whf.bz').replace(/\/$/, '');
+  const url = origin + '/wp-json/quantdeus/v1/forum/agent-request/' + forumRequestToken +
+    '?issue_id=' + encodeURIComponent(issue.number) + '&comment_id=' + encodeURIComponent(comment.id);
+  try {
+    const response = await fetch(url, { headers: { accept: 'application/json' } });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!data?.ok || Number(data.issue_id) !== Number(issue.number) || Number(data.comment_id) !== Number(comment.id)) return null;
+    const agents = (Array.isArray(data.agents) ? data.agents : [])
+      .map(String)
+      .map(x => x.toLowerCase())
+      .filter(id => byId.has(id))
+      .slice(0, 3);
+    return {
+      plan: data.plan === 'pro' ? 'pro' : 'free',
+      agents
+    };
+  } catch (error) {
+    console.warn('Forum entitlement verification failed:', String(error?.message || error).slice(0, 240));
+    return null;
+  }
 }
 
 async function gh(path, options = {}) {
@@ -370,6 +401,8 @@ async function threadHistory() {
     .map(c => {
       const text = String(c.body || '')
         .replace(/<!-- qd-agent-reply -->/g, '')
+        .replace(/<!-- qd:forum-[^>]* -->/gi, '')
+        .replace(/\n?🤖 AI Fleet request:[^\n]*/gi, '')
         .replace(/\n_🤖 LLM:.*$/s, '')
         .trim()
         .slice(0, 4500);
@@ -680,11 +713,26 @@ async function postReply(result) {
 }
 
 (async () => {
-  const agentId = pickAgent(body);
   const query = stripAgentPrefix(body);
-  const result = await buildReply(agentId, query);
-  await postReply(result);
-  console.log('Replied as', result.agent.id, 'to issue', issue.number, 'mode=', result.llm ? 'llm' : 'command');
+  let agentIds = [pickAgent(body)];
+  let forumEntitlement = null;
+  if (forumAgentRequest) {
+    forumEntitlement = await verifiedForumAgentRequest();
+    agentIds = forumEntitlement?.plan === 'pro'
+      ? (forumEntitlement.agents.length ? forumEntitlement.agents : ['seven-of-nine'])
+      : ['seven-of-nine'];
+  }
+
+  for (const agentId of agentIds.slice(0, forumAgentRequest ? 3 : 1)) {
+    const result = await buildReply(agentId, query);
+    await postReply(result);
+    console.log(
+      'Replied as', result.agent.id,
+      'to issue', issue.number,
+      'mode=', result.llm ? 'llm' : 'command',
+      'forum_plan=', forumEntitlement?.plan || 'n/a'
+    );
+  }
 })().catch(async err => {
   console.error(err.stack || err.message || err);
   try {
