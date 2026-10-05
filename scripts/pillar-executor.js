@@ -16,11 +16,25 @@ if (!repo || !token) {
 const ghEnv = { ...process.env, GH_TOKEN: token };
 
 function gh(args) {
-  return execFileSync('gh', args, {
-    encoding: 'utf-8',
-    env: ghEnv,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim();
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return execFileSync('gh', args, {
+        encoding: 'utf-8',
+        env: ghEnv,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }).trim();
+    } catch (error) {
+      lastError = error;
+      const stderr = String(error?.stderr || error?.message || '');
+      const transient = /HTTP (429|5\d\d)|rate limit|secondary rate limit|timed out|timeout|connection reset|connection refused|temporarily unavailable|TLS|socket hang up/i.test(stderr);
+      if (!transient || attempt >= 3) throw error;
+      const delayMs = attempt * 1500;
+      console.warn('[github-cli] transient failure; retrying', { attempt, delay_ms: delayMs, error: stderr.slice(0, 500) });
+      execFileSync('sleep', [String(delayMs / 1000)]);
+    }
+  }
+  throw lastError;
 }
 
 function ghJson(args) {
