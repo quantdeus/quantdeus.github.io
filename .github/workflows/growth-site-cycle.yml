@@ -88,9 +88,9 @@ jobs:
                 'Goal: improve truthful discovery, qualified demand and measurable movement through ATTRACT → CAPTURE → NURTURE → CONVERT → RETAIN → REFER.',
                 'Use your profile-scoped marketing skills. Every proposed artifact/campaign must name audience, funnel stage, CTA, hypothesis and primary metric. Generated copy alone is not success.',
                 'Synthesis may run the content factory from one verified source into platform-native derivatives. Archivist may build programmatic SEO only when every indexed page has distinct user intent and substantive unique value; classic doorway pages, thin city/keyword permutations and scaled low-value content are forbidden.',
-                'Herald may design permission-based nurture/follow-up and distribution. Unity owns funnel architecture, segmentation and growth experiments. Use coordination/growth/marketing-scorecard.json only for VERIFIED aggregate outcomes; unknown metrics stay unknown.'
+                'Herald may design permission-based nurture/follow-up and distribution. Unity owns funnel architecture, segmentation and growth experiments. Use coordination/growth/marketing-scorecard.json only for VERIFIED aggregate outcomes; unknown metrics stay unknown.',
                 'For multi-platform promotion, prepare platform-native packages tied to real artifacts. Automatic third-party posting is allowed only when a specific authorized connector/account path exists; otherwise create/update a public-safe campaign artifact or Issue for later publication.',
-                'Never mass-DM strangers, fake likes/followers/contributors, impersonate people, scrape private contacts, or manufacture engagement. Doorway/low-value scaled SEO is prohibited; prefer useful programmatic landing pages with unique intent/value or noindex/consolidation.'
+                'Never mass-DM strangers, fake likes/followers/contributors, impersonate people, scrape private contacts, or manufacture engagement. Doorway/low-value scaled SEO is prohibited; prefer useful programmatic landing pages with unique intent/value or noindex/consolidation.',
                 'Political/civic topics must remain neutral/informational and must not be used for voter targeting, party/candidate promotion or outrage bait.',
                 '',
                 'You may create at most one branch+PR or one Issue. Site/content PR branch must start automation/site-refresh/.',
@@ -119,8 +119,10 @@ jobs:
             if(office.isTransientError(e)){
               const decision={action:'none',degraded:true,reason:'TRANSIENT_OPENCLAW: '+String(e.message||e).slice(0,500)};
               fs.appendFileSync(process.env.GITHUB_OUTPUT,'action=none\n');
-              console.warn('Growth/site cycle degraded by transient OpenClaw failure; leaving repository unchanged.');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,'degraded=true\n');
+              console.error('Growth/site cycle degraded by transient OpenClaw failure; leaving repository unchanged and failing the run so green means healthy.');
               console.log(JSON.stringify({agent:agentId,decision},null,2));
+              process.exitCode=2;
               return;
             }
             console.error(e.stack||e);
