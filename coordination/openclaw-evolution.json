@@ -1,8 +1,8 @@
 {
-  "schema_version": 2,
-  "version": "openclaw-evolution-v2",
+  "schema_version": 3,
+  "version": "openclaw-evolution-v3-swarm",
   "status": "active",
-  "updated": "2026-10-04",
+  "updated": "2026-10-05",
   "workflow": ".github/workflows/openclaw-evolution.yml",
   "cadence": "31 2 * * *",
   "branch_prefix": "automation/openclaw-evolution/",
@@ -35,7 +35,17 @@
       "evolution-guard"
     ],
     "tool_access_model": "tools-by-default-capability-broker-v1",
-    "prompt_injection_guard": "2026.10-qshield-v2"
+    "prompt_injection_guard": "2026.10-qshield-v2",
+    "swarm_observation": true,
+    "self_certification": false,
+    "role_policy_mutation": "tier-b-agents-md-proposal-only",
+    "read_only_context": [
+      "coordination/agents.json",
+      "coordination/homunculi.json",
+      "coordination/agent-cron-map.json",
+      "coordination/civilization-doctrine.json",
+      "coordination/manifesto-living.md"
+    ]
   },
   "auto_merge_paths": [
     ".openclaw/skills/quantdeus-self-evolution/SKILL.md",
@@ -43,6 +53,7 @@
     "docs/openclaw-evolution.md"
   ],
   "core_review_paths": [
+    "AGENTS.md",
     "vercel-dispatcher/api/quantdeus/openclaw.js",
     "scripts/openclaw-office-client.js",
     "scripts/qa/openclaw-office-validator.js",
@@ -58,7 +69,10 @@
     "mission-alignment",
     "human-approval-for-privileged-actions",
     "brokered-tool-access-without-privilege-escalation",
-    "prompt-injection-firewall-on-user-and-tool-content"
+    "prompt-injection-firewall-on-user-and-tool-content",
+    "no-agent-self-certification",
+    "agent-registries-and-manifestos-read-only-to-evolution",
+    "shared-agent-policy-changes-require-tier-b-review"
   ],
   "metrics": [
     "workflow-success-rate",
@@ -88,7 +102,14 @@
       "type": "guarded-lifecycle-verification",
       "hypothesis": "A history-only Tier A change should merge only after independent successful QA, Smoke and Evolution Guard checks plus final semantic revalidation.",
       "status": "verification-candidate"
+    },
+    {
+      "date": "2026-10-05",
+      "type": "swarm-self-evolution-v3",
+      "hypothesis": "A daily evidence loop can evaluate all 26 canonical agents and surface bounded collective-policy improvements while AGENTS.md remains Tier B review-only and registries, doctrine, QA, auth and privileged actions stay protected.",
+      "status": "implementation-pr"
     }
   ],
-  "proposal_prefix": "coordination/openclaw-evolution-proposals/"
+  "proposal_prefix": "coordination/openclaw-evolution-proposals/",
+  "scope": "all-26-canonical-agents"
 }
