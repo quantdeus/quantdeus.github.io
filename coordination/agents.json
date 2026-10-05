@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "title": "QuantDeus Holding — 26-agent startup organization",
+  "title": "QuantDeus Holding — 27-agent startup organization",
   "source_of_truth": "quantdeus/quantdeus.github.io",
-  "updated": "2026-09-30",
+  "updated": "2026-10-05",
   "agents": [
     {
       "id": "coordinator",
@@ -63,6 +63,20 @@
       "startup_title": "Chief Strategy Agent",
       "department": "Executive & Strategy",
       "kpi": "signal-to-decision quality",
+      "cognitive_protocol": "borg-collective-v1"
+    },
+    {
+      "id": "data",
+      "name": "Lt. Cmdr. Data — Operations & Analytical Officer",
+      "emoji": "🤖",
+      "role": "Операционно-аналитический офицер: сводит разнородные данные, проверяет числа и причинные связи, выявляет противоречия и аномалии, строит проверяемые выводы и формулирует один минимальный следующий тест; не подменяет Seven of Nine в приоритетах, Sherlock в расследовании или Tuvok в эпистемическом аудите",
+      "source": "scripts/data.js",
+      "group": "executive",
+      "startup_title": "Lieutenant Commander Data / Operations & Analytical Officer",
+      "department": "Executive & Strategy",
+      "kpi": "cross-domain consistency / quantitative error detection / evidence synthesis latency / decision-support accuracy",
+      "operational_status": "active",
+      "persona": "coordination/data-persona.md",
       "cognitive_protocol": "borg-collective-v1"
     },
     {
@@ -351,14 +365,14 @@
   },
   "organization": {
     "model": "AI-native startup holding",
-    "employees": 26,
+    "employees": 27,
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"
   },
   "collective_cognition": {
     "version": "borg-collective-v1",
-    "inheritance": "all-26-agents",
+    "inheritance": "all-27-agents",
     "runtime_directive": "Apply Borg Collective v1: use deduction for necessary consequences, induction for evidence-backed patterns, and abduction for competing explanations; explicitly separate observed facts, inferences, working hypotheses and speculation. Use emotional intelligence from observable communication cues without inventing inner states. Prefer prudent, minimal, reversible actions with human override on privileged decisions. Act as one swarm: inspect existing owner/work before starting, avoid duplicate effort, share evidence/state/next step in handoffs, challenge errors independently, converge on one owner, and optimize verified throughput rather than chatter.",
     "reasoning_loop": [
       "OBSERVE facts, constraints, current owner and existing artifacts",
