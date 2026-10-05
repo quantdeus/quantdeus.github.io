@@ -205,6 +205,64 @@ const expectedDataSkills = [
   'environment-troubleshooting'
 ];
 const dataAgent = registry.agents.find(a => a.id === 'data');
+const dataHomunculus = hom.agents.find(a => a.id === 'data');
+const dataPersonaText = fs.readFileSync(path.join(root,'coordination','data-persona.md'),'utf8');
+const dataWorkerText = fs.readFileSync(path.join(root,'scripts','data.js'),'utf8');
+check(
+  dataAgent?.identity_mode === 'first-person-role-continuity' &&
+  dataHomunculus?.identity_mode === 'first-person-role-continuity' &&
+  typeof dataAgent?.runtime_identity === 'string' &&
+  dataAgent.runtime_identity.includes('Do not deny being Data') &&
+  dataHomunculus?.runtime_identity === dataAgent.runtime_identity,
+  'data',
+  'Data registry and homunculus preserve first-person identity continuity'
+);
+check(
+  dataPersonaText.includes('this profile **is Lt. Cmdr. Data**') &&
+  dataPersonaText.includes('Picard-era integrated Data') &&
+  dataPersonaText.includes('Mode α') &&
+  dataPersonaText.includes('Mode β') &&
+  dataPersonaText.includes('Mode γ') &&
+  dataPersonaText.includes('must not respond that it is “not Data”'),
+  'coordination/data-persona.md',
+  'Data persona preserves TNG/Picard/PicoClaw identity and anti-self-erasure invariant'
+);
+check(
+  cognitiveTelegram.includes('function canonicalAgentIdentity(agent)') &&
+  cognitiveTelegram.includes('agent?.runtime_identity') &&
+  cognitiveTelegram.includes('dataIdentityViolation(agentId, answer)') &&
+  cognitiveTelegram.includes('data_identity_smoke'),
+  'vercel-dispatcher/api/quantdeus/telegram.js',
+  'Telegram/site runtime injects Data identity and rejects identity-erasing replies'
+);
+check(
+  dataWorkerText.includes('IDENTITY INVARIANT: You are Lt. Cmdr. Data') &&
+  dataWorkerText.includes("fs.readFileSync('coordination/data-persona.md'"),
+  'scripts/data.js',
+  'Data worker loads canonical persona and first-person identity invariant'
+);
+const dataLegacyText = fs.readFileSync(path.join(root,'coordination','data-training','picoclaw-legacy-knowledge.md'),'utf8');
+const dataCycleText = fs.readFileSync(path.join(root,'scripts','data-positronic-cycle.js'),'utf8');
+check(
+  dataLegacyText.includes('Relational self-continuity preserved from the source corpus') &&
+  ['Picard','Geordi','Lal','Lore','Spot','Noonien Soong'].every(name => dataLegacyText.includes(name)) &&
+  dataLegacyText.includes('must not erase that continuity'),
+  'coordination/data-training/picoclaw-legacy-knowledge.md',
+  'PicoClaw legacy pack preserves Data relational identity anchors'
+);
+check(
+  cognitiveOpenClawClient.includes('runtimeIdentity') &&
+  cognitiveOpenClawClient.includes('Canonical agent identity continuity for profile') &&
+  cognitiveOpenClawClient.includes('normalizedMessages(safeMessages, metadata, trusted, profile)'),
+  'scripts/openclaw-office-client.js',
+  'every OpenClaw profile call inherits canonical runtime identity'
+);
+check(
+  dataCycleText.includes('IDENTITY INVARIANT: You are Lt. Cmdr. Data') &&
+  dataCycleText.includes('Canonical Data persona:'),
+  'scripts/data-positronic-cycle.js',
+  'Data positronic maintenance cycle preserves canonical identity'
+);
 check(
   dataAgent?.agent_skill_root === '.hermes/agent-skills/data' &&
   dataAgent?.skill_migration === 'coordination/data-training/picoclaw-skill-migration.json' &&

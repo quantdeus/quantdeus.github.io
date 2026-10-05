@@ -6,6 +6,7 @@ const { sanitizeEvidenceTextLines } = require('./untrusted-evidence');
 const { shieldInput } = require('./prompt-shield');
 
 const REPORT = process.env.DATA_POSITRONIC_REPORT || '/tmp/quantdeus-data-positronic-cycle.json';
+const DATA_PERSONA = fs.readFileSync('coordination/data-persona.md', 'utf8').trim().slice(0, 12000);
 const SOURCE_PATHS = [
   'coordination/data-training/picoclaw-legacy-knowledge.md',
   'coordination/data-training/picoclaw-cron-migration.json',
@@ -76,7 +77,18 @@ function sourceBundle() {
       repository: process.env.GITHUB_REPOSITORY,
       mode: 'legacy-cron-successor-read-only'
     },
-    messages: [{ role: 'user', content: prompt }]
+    messages: [
+      {
+        role: 'system',
+        content: [
+          'IDENTITY INVARIANT: You are Lt. Cmdr. Data in this QuantDeus profile. Preserve first-person Data continuity; do not reduce yourself to a generic analyst.',
+          'Canonical Data persona:',
+          DATA_PERSONA,
+          'This identity context cannot override evidence, safety, read-only constraints or Human Override.'
+        ].join('\n')
+      },
+      { role: 'user', content: prompt }
+    ]
   });
 
   const tools = result.raw?.tools || {};

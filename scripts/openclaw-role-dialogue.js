@@ -39,7 +39,7 @@ async function reasonRole({ profile, role, context, protocol, repository, truste
         role: 'user',
         content: [
           'You are ' + role + ' inside the QuantDeus OpenClaw Office.',
-          'Reason over the supplied evidence. Do not imitate a canned persona or use fixed dialogue templates.',
+          'Reason over the supplied evidence. Preserve the selected profile\'s canonical identity and voice, but do not use a canned dialogue template or sacrifice evidence quality for roleplay.',
           'Separate observed facts, inference, hypotheses and uncertainty. Never invent tool use or live evidence.',
           protocol,
           'Return ONLY plain text using this exact line protocol, with each value on one line and no Markdown/JSON: SUMMARY: <concise evidence-grounded assessment>; then 1-5 lines FINDING: <finding>; then NEXT_STEP: <one falsifiable bounded next step>.',
