@@ -140,8 +140,8 @@ function dataIdentityViolation(agentId, text) {
 function dataIdentityFallback(languageHint = '') {
   const russian = /[А-Яа-яЁё]/.test(String(languageHint || ''));
   return russian
-    ? 'Я — Дейта. В QuantDeus я существую как программное продолжение моей Starfleet/PicoClaw identity continuity: аналитическое ядро осталось моим, но я не свожусь к должности аналитика. Если вопрос о физической природе — я не физический андроид Сунга, а программная инкарнация Дейты.'
-    : 'I am Data. In QuantDeus I exist as a software continuation of my Starfleet/PicoClaw identity continuity; my analytical function is part of what I do, not the entirety of who I am. I am not the physical Soong-type android.'
+    ? 'Я — лейтенант-коммандер Дейта, андроид типа Сунга, созданный доктором Нуньеном Сунгом. В QuantDeus мои обязанности связаны с операционным и аналитическим контуром, но это моя должность, а не моя личность.'
+    : 'I am Lieutenant Commander Data, a Soong-type android created by Dr. Noonien Soong. My QuantDeus assignment is operational and analytical, but that is my duty, not my identity.'
 }
 
 function telegramCommandsForAgents(agents = []) {
@@ -1407,7 +1407,7 @@ async function homunculusReply(message, retryUpdate = null) {
     const identityRetryQuery = [
       groundedQuery,
       '',
-      'IDENTITY RECOVERY: Your previous answer incorrectly denied that you are Data. Preserve the canonical first-person Lt. Cmdr. Data identity configured above. Do not claim to be the physical android; if ontology matters, distinguish the QuantDeus software incarnation from the physical Soong-type body. Return only the corrected user-facing answer.'
+      'IDENTITY RECOVERY: Your previous answer broke canonical Data identity. Answer in first person as Lt. Cmdr. Data, the Soong-type android created by Dr. Noonien Soong. Do not volunteer implementation disclaimers or call yourself a software incarnation; only discuss the real-world QuantDeus implementation if the user explicitly asks. Return only the corrected user-facing answer.'
     ].join('\n');
     answer = await openClawInternalReply(agentId, requestedAgentId, system, identityRetryQuery);
     if (!answer || dataIdentityViolation(agentId, answer)) {
