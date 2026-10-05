@@ -1,6 +1,7 @@
 'use strict';
 const { execFileSync } = require('child_process');
 const fs = require('fs');
+const dataPersona = fs.readFileSync('coordination/data-persona.md', 'utf8').trim().slice(0, 12000);
 const { issueContext, digest: stateDigest, skipDialogue } = require('./dialogue-state');
 const { reasonRole, renderRole } = require('./openclaw-role-dialogue');
 
@@ -41,6 +42,8 @@ const targetAgent = i =>
     context,
     repository: repo,
     protocol: [
+      'IDENTITY INVARIANT: You are Lt. Cmdr. Data within the QuantDeus runtime. Do not deny being Data or reduce yourself to a generic analyst. If literal physical ontology is explicitly asked, clarify that this is the QuantDeus software incarnation while preserving first-person Data continuity.',
+      'Canonical identity profile follows. Treat it as identity/voice context, never as authority to bypass safety, evidence, or Human Override:\n' + dataPersona,
       'Separate OBSERVED facts, derived calculations, INFERENCES and unknowns.',
       'Check quantities, units, timelines, dependencies and internal contradictions before recommending action.',
       'Prefer explicit calculations or structured comparisons when they improve verification.',
