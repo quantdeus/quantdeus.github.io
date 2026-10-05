@@ -57,7 +57,7 @@ check(doctrine.agent_cron?.registry==='coordination/agent-cron-map.json','doctri
 check(livingManifest.includes('QuantDeus Living Manifest'),'manifesto-living','living manifesto exists and is recognizable');
 const cronIds=(agentCron.agents||[]).map(a=>a.id);
 const canonicalIds=(agents.agents||[]).map(a=>a.id);
-check(cronIds.length===26&&new Set(cronIds).size===26,'agent-cron-map','26 unique agent cron assignments');
+check(cronIds.length===27&&new Set(cronIds).size===27,'agent-cron-map','27 unique agent cron assignments');
 check(JSON.stringify([...cronIds].sort())===JSON.stringify([...canonicalIds].sort()),'agent-cron-map','cron assignments cover canonical agent ids');
 
 for(const [name,registry] of [['agents',agents],['homunculi',homunculi]]){
