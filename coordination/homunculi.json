@@ -99,7 +99,19 @@
       "knowledge_sources": [
         "coordination/data-training/picoclaw-legacy-knowledge.md"
       ],
-      "training_provenance": "coordination/data-training/picoclaw-legacy-manifest.json"
+      "training_provenance": "coordination/data-training/picoclaw-legacy-manifest.json",
+      "agent_skill_root": ".hermes/agent-skills/data",
+      "skill_migration": "coordination/data-training/picoclaw-skill-migration.json",
+      "canonical_skills": [
+        "positronic-consolidation",
+        "starfleet-alignment",
+        "bounded-scheduling",
+        "frontier-research",
+        "companion-robot-research",
+        "low-spec-3d-reconstruction",
+        "neuromorphic-feasibility",
+        "environment-troubleshooting"
+      ]
     },
     {
       "id": "sherlock",
