@@ -10,22 +10,24 @@ function parseJson(text) {
     return JSON.parse(raw);
   } catch (jsonError) {
     const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    const field = name => {
-      const re = new RegExp('^' + name + '\s*:\s*(.+)', 'i');
+    const field = re => {
       const line = lines.find(x => re.test(x));
-      return line ? line.match(re)[1].trim() : '';
+      const match = line && line.match(re);
+      return match ? match[1].trim() : '';
     };
     const findings = lines.map(x => {
       const m = x.match(/^FINDING(?:\s*\d+)?\s*:\s*(.+)/i);
       return m ? m[1].trim() : '';
     }).filter(Boolean);
-    const summary = field('SUMMARY');
-    const nextStep = field('NEXT(?:_|\s*)STEP');
+    const summary = field(/^SUMMARY\s*:\s*(.+)/i);
+    const nextStep = field(/^NEXT(?:_|\s*)STEP\s*:\s*(.+)/i);
     if (summary && findings.length && nextStep) {
       return { summary, findings, next_step: nextStep };
     }
-    // If parsing fails and structured text parsing also fails, throw a clear error
-    throw new Error('JSON parsing failed and structured text parsing also failed. Input is not valid JSON or structured text.');
+    const error = new Error('JSON parsing failed and structured text parsing also failed. Input is not valid JSON or structured text.');
+    error.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
+    error.cause = jsonError;
+    throw error;
   }
 }
 
