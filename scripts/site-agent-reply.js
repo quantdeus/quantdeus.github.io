@@ -718,7 +718,11 @@ async function postReply(result) {
   let forumEntitlement = null;
   if (forumAgentRequest) {
     forumEntitlement = await verifiedForumAgentRequest();
-    agentIds = forumEntitlement?.plan === 'pro'
+    if (!forumEntitlement) {
+      console.warn('Ignoring unverified or expired forum agent request for issue', issue.number, 'comment', comment.id);
+      return;
+    }
+    agentIds = forumEntitlement.plan === 'pro'
       ? (forumEntitlement.agents.length ? forumEntitlement.agents : ['seven-of-nine'])
       : ['seven-of-nine'];
   }
