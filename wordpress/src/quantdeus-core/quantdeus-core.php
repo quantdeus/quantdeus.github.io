@@ -612,19 +612,28 @@ final class QD_Core {
     public static function forum_issue_list(WP_REST_Request $req) {
         $state=strtolower(self::text($req->get_param('state'),12));
         if (!in_array($state,['open','closed','all'],true)) $state='open';
-        $data=self::forum_issue_request('GET','/issues?state='.$state.'&per_page=60&sort=updated&direction=desc');
-        if (is_wp_error($data)) return $data;
+        $cache_key='qd_forum_issues_'.$state;
+        $cached=get_transient($cache_key);
+        if (is_array($cached)) return rest_ensure_response($cached);
+
         $issues=[];
-        foreach ($data as $issue) {
-            if (!is_array($issue) || !empty($issue['pull_request'])) continue;
-            $issues[]=self::forum_issue_data($issue,false);
+        for ($page=1;$page<=3;$page++) {
+            $data=self::forum_issue_request('GET','/issues?state='.$state.'&per_page=100&sort=updated&direction=desc&page='.$page);
+            if (is_wp_error($data)) return $data;
+            foreach ($data as $issue) {
+                if (!is_array($issue) || !empty($issue['pull_request'])) continue;
+                $issues[]=self::forum_issue_data($issue,false);
+            }
+            if (count($data)<100) break;
         }
-        return rest_ensure_response([
+        $payload=[
             'ok'=>true,
             'repository'=>self::github_repo(),
             'source'=>'github-live',
             'issues'=>$issues,
-        ]);
+        ];
+        set_transient($cache_key,$payload,45);
+        return rest_ensure_response($payload);
     }
 
     public static function forum_issue_detail(WP_REST_Request $req) {
