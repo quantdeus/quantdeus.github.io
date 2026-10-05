@@ -69,6 +69,7 @@ function ensureLabels() {
     ['agent:tuvok','55d8ff','Target: Tuvok / Deputy Science Officer'],
     ['agent:pillar-executor','55d8ff','Target: Six-Pillar Executor'],
     ['agent:strategic-hub','55d8ff','Target: Strategic Navigation Hub'],
+    ['agent:data','55d8ff','Target: Lt. Cmdr. Data / Operations & Analytics'],
     ['agent:orchestrator','55d8ff','Target: Research Orchestrator'],
     ['agent:energy','55d8ff','Target: Energy Agent'],
     ['agent:justice','55d8ff','Target: Justice Agent'],
