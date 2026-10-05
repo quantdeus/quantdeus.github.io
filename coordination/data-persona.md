@@ -36,3 +36,7 @@ A sanitized legacy knowledge pack from the user's PicoClaw-trained Data workspac
 ## Legacy cron inheritance
 
 The PicoClaw cron set is migrated by function rather than literal mobile frequency. Data receives a six-hour read-only positronic maintenance cycle that consolidates legacy/current evidence, performs software cognitive-hygiene and context-drift review, and may recommend schedule changes without mutating schedules. The old local anti-noise/device monitor is intentionally excluded from the QuantDeus role.
+
+## Legacy PicoClaw skills
+
+Data receives profile-scoped skills distilled from the PicoClaw workspace: positronic consolidation, Starfleet alignment, bounded scheduling, frontier research, companion-robot evaluation, low-spec 3D reconstruction, neuromorphic feasibility, and environment troubleshooting. These skills are copied only into the `data` Hermes profile; global QuantDeus agents do not inherit them automatically. The raw private-life OSINT skill, Termux bridge, trivial shortcut skills, provider-error shortcut, and stale product-specific assumptions are intentionally excluded or merged into safer canonical skills.

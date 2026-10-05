@@ -116,7 +116,35 @@ for (const department of startupOrg.departments || []) {
   }
 }
 
+const expectedDataSkills = [
+  'positronic-consolidation',
+  'starfleet-alignment',
+  'bounded-scheduling',
+  'frontier-research',
+  'companion-robot-research',
+  'low-spec-3d-reconstruction',
+  'neuromorphic-feasibility',
+  'environment-troubleshooting'
+];
 const dataAgent = registry.agents.find(a => a.id === 'data');
+check(
+  dataAgent?.agent_skill_root === '.hermes/agent-skills/data' &&
+  dataAgent?.skill_migration === 'coordination/data-training/picoclaw-skill-migration.json' &&
+  JSON.stringify([...(dataAgent?.canonical_skills || [])].sort()) === JSON.stringify([...expectedDataSkills].sort()) &&
+  expectedDataSkills.every(name => fs.existsSync(path.join(root,'.hermes','agent-skills','data',name,'SKILL.md'))),
+  'data',
+  'Data agent-local skill migration is scoped and complete'
+);
+const skillMigration = readJson('coordination/data-training/picoclaw-skill-migration.json');
+check(
+  skillMigration.source_skill_count === 18 &&
+  skillMigration.policy?.agent_local_only === true &&
+  skillMigration.policy?.private_osint_excluded === true &&
+  skillMigration.legacy_skills?.some(x => x.name === 'osint-personal-life-relationship-investigation' && x.disposition === 'excluded') &&
+  skillMigration.legacy_skills?.some(x => x.name === 'termux-shell-cron' && x.disposition === 'excluded'),
+  'coordination/data-training/picoclaw-skill-migration.json',
+  'legacy skill manifest records privacy/local-bridge exclusions'
+);
 check(
   Array.isArray(dataAgent?.knowledge_sources) &&
   dataAgent.knowledge_sources.includes('coordination/data-training/picoclaw-legacy-knowledge.md'),
@@ -453,8 +481,18 @@ check(
   'scripts/telegram-bot.js',
   'Actions fallback is public for chat but gates repository mutations and prompt-injection before privileged execution'
 );
+const agentLocalSkillFiles = expectedDataSkills.map(name => path.join(root,'.hermes','agent-skills','data',name,'SKILL.md'));
+check(
+  agentLocalSkillFiles.every(file => fs.statSync(file).size <= 32768),
+  'data',
+  'each Data agent-local skill remains within 32 KiB bootstrap bound'
+);
 const hermesBootstrapSource = fs.readFileSync(path.join(root,'scripts','hermes-office-bootstrap.js'),'utf8');
 check(
+  hermesBootstrapSource.includes('function copyAgentSkills(profileHome, agent)') &&
+  hermesBootstrapSource.includes("path.join(agentSkillsRoot, agentId)") &&
+  hermesBootstrapSource.includes("copyAgentSkills(profileHome, agent)") &&
+  hermesBootstrapSource.includes('32768') &&
   hermesBootstrapSource.includes('function knowledgeFor(agent)') &&
   hermesBootstrapSource.includes('agent.knowledge_sources') &&
   hermesBootstrapSource.includes('65536') &&

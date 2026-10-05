@@ -10,6 +10,7 @@ const registryPath = path.join(repoRoot, 'coordination', 'agents.json');
 const officePath = path.join(repoRoot, 'coordination', 'hermes-office.json');
 const evolutionPath = path.join(repoRoot, 'coordination', 'hermes-evolution.json');
 const projectSkillsPath = path.join(repoRoot, '.hermes', 'skills');
+const agentSkillsRoot = path.join(repoRoot, '.hermes', 'agent-skills');
 
 const BOOTSTRAP_SCHEMA = 6;
 
@@ -41,6 +42,27 @@ function copyProjectSkills(profileHome) {
     const dst = path.join(target, entry.name);
     fs.cpSync(src, dst, { recursive: true, force: true });
   }
+}
+
+function copyAgentSkills(profileHome, agent) {
+  const agentId = String(agent?.id || '');
+  if (!/^[a-z0-9-]+$/.test(agentId)) fail('Unsafe agent id for local skills: ' + agentId);
+  const source = path.join(agentSkillsRoot, agentId);
+  if (!fs.existsSync(source)) return 0;
+
+  const target = path.join(profileHome, 'skills');
+  fs.mkdirSync(target, { recursive: true });
+  let copied = 0;
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !/^[a-z0-9-]+$/.test(entry.name)) continue;
+    const skillFile = path.join(source, entry.name, 'SKILL.md');
+    if (!fs.existsSync(skillFile)) continue;
+    const raw = fs.readFileSync(skillFile, 'utf8');
+    if (Buffer.byteLength(raw, 'utf8') > 32768) fail('Agent-local skill exceeds 32 KiB: ' + agentId + '/' + entry.name);
+    fs.cpSync(path.join(source, entry.name), path.join(target, entry.name), { recursive: true, force: true });
+    copied += 1;
+  }
+  return copied;
 }
 
 function knowledgeFor(agent) {
@@ -242,6 +264,7 @@ for (const agent of agents) {
   // cron runtime metadata and agent-created skills remain untouched.
   fs.writeFileSync(soulPath, soulFor(agent), 'utf8');
   copyProjectSkills(profileHome);
+  copyAgentSkills(profileHome, agent);
 
   for (const dir of ['memories', 'sessions', 'cron', 'logs']) {
     fs.mkdirSync(path.join(profileHome, dir), { recursive: true });
@@ -257,3 +280,4 @@ console.log('[hermes-office] model=' + (process.env.HERMES_MODEL || office.model
 console.log('[hermes-office] provider=' + (process.env.HERMES_MODEL_PROVIDER || office.model.provider));
 console.log('[hermes-office] GitHub MCP=remote official endpoint; Playwright MCP=@playwright/mcp@latest');
 console.log('[hermes-office] project skills copied to every profile');
+console.log('[hermes-office] agent-local skills copied by profile id');
