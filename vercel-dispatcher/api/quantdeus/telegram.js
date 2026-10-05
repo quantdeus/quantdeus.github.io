@@ -493,15 +493,17 @@ async function setupWebhook(req, res) {
   // back-to-back calls, which made a healthy role route look broken immediately
   // after the standalone LLM probe.
   const roleProbe = await homunculusReply({
-    text: '/agent control-tower Ответь ровно TELEGRAM_ROLE_OK.',
+    text: '/data Кто ты? Ответь одной короткой фразой.',
     message_id: 1,
     from: { id: 1, username: 'telegram-smoke', is_bot: false },
     chat: { id: 1, type: 'private' }
   });
+  const roleProbeBody = String(roleProbe || '').split('\n').slice(1).join('\n').trim();
   const roleProbeHealthy =
     Boolean(roleProbe) &&
     !String(roleProbe).includes('LLM-канал сейчас не дал ответ') &&
-    !String(roleProbe).includes('гомункул временно не ответил');
+    !String(roleProbe).includes('гомункул временно не ответил') &&
+    !dataIdentityViolation('data', roleProbeBody);
   const llmProbe = roleProbeHealthy ? 'TELEGRAM_LLM_OK' : '';
 
   return res.status(200).json({
@@ -511,8 +513,12 @@ async function setupWebhook(req, res) {
       preview: String(llmProbe || '').slice(0, 120)
     },
     role_smoke: {
-      ok: Boolean(roleProbe) && !String(roleProbe).includes('LLM-канал сейчас не дал ответ'),
+      ok: roleProbeHealthy,
       preview: String(roleProbe || '').slice(0, 260)
+    },
+    data_identity_smoke: {
+      ok: roleProbeHealthy && !dataIdentityViolation('data', roleProbeBody),
+      preview: roleProbeBody.slice(0, 260)
     },
     research_smoke: {
       ok: Boolean(researchProbe?.ok),
