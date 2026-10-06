@@ -84,6 +84,7 @@ jobs:
                 delegatedFrom ? 'EMH medbay delegation: '+delegatedFrom+' is temporarily inactive; preserve its requested mission while using the active delegate profile.' : '',
                 'Read coordination/manifesto-living.md, coordination/growth/marketing-operating-system.md, coordination/growth/marketing-stack.json, coordination/growth/marketing-scorecard.json, coordination/growth/platform-playbook.json, contributor recruitment contract, open Issues/PRs and the current public site.',
                 'Use Playwright to inspect https://quantdeus.github.io/ and relevant routes when site work is appropriate.',
+                'Keep evidence collection bounded: prefer the checked-out workspace for repository files and use at most two fresh GitHub read queries before deciding the action. Do not refetch workspace files through GitHub MCP.',
                 '',
                 'Goal: improve truthful discovery, qualified demand and measurable movement through ATTRACT → CAPTURE → NURTURE → CONVERT → RETAIN → REFER.',
                 'Use your profile-scoped marketing skills. Every proposed artifact/campaign must name audience, funnel stage, CTA, hypothesis and primary metric. Generated copy alone is not success.',
