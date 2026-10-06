@@ -1,0 +1,23 @@
+# Trigger QA Self-Heal for QA Failure Radar 📡
+
+workflow_dispatch:
+  inputs:
+    lane:
+      description: 'Repair lane (actions/site/full)'
+      required: true
+      default: 'actions'
+    trigger_run_id:
+      description: 'Failed GitHub Actions run id'
+      required: true
+      default: '37422184471'
+    trigger_workflow:
+      description: 'Failed workflow name'
+      required: true
+      default: 'qa-failure-radar.yml'
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger QA Self-Heal
+        run: gh workflow run qa-self-heal.yml --repo ${{ github.repository }} --ref main --input lane=${{ inputs.lane }} --input trigger_run_id=${{ inputs.trigger_run_id }} --input trigger_workflow=${{ inputs.trigger_workflow }}
