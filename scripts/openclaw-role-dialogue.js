@@ -6,7 +6,8 @@ const {turnBudget,turnEvidence} = require('./dialogue-state');
 function parseJson(text) {
   const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   try { return JSON.parse(raw); } catch (jsonError) {
-    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    const normalized = raw.replace(/\s+(?=(?:SUMMARY|FINDING(?:\s*\d+)?|NEXT(?:_|\s*)STEP)\s*:)/gi, '\n');
+    const lines = normalized.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
     const field = name => {
       const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
       const line = lines.find(x => re.test(x));
@@ -82,4 +83,4 @@ function renderRole({ heading, result, marker, metrics = [] }) {
   return lines.join('\n');
 }
 
-module.exports = { reasonRole, renderRole };
+module.exports = { parseJson, reasonRole, renderRole };
