@@ -1,15 +1,19 @@
-# QuantDeus PR Template
+# QuantDeus Pull Request Template
 
 ## Description
 
-## Root Cause
+### What this PR does:
 
-## Repair Steps
+### Root Cause
 
-## Evidence
+### Fix
 
-## Reviewers
+### Files Modified
 
-## Status
+### Verification
+
+### Impact
+
+### References
 
 ---
