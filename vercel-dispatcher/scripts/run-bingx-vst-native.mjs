@@ -21,7 +21,13 @@ function safeResult(data) {
     order_id: data?.orderId ?? null,
     degraded: data?.degraded === true,
     order_attempted: data?.orderAttempted === true,
-    requires_review: data?.requiresReview === true
+    requires_review: data?.requiresReview === true,
+    upstream_stage: data?.upstreamStage ?? null,
+    bingx_code: data?.bingxCode ?? null,
+    bingx_message: data?.bingxMessage ?? null,
+    bingx_http_status: data?.bingxHttpStatus ?? null,
+    broker_http_status: data?.brokerHttpStatus ?? null,
+    upstream_error: data?.upstreamError ?? null
   };
 }
 
@@ -40,6 +46,13 @@ async function writeSummary(safe) {
     '- symbol: ' + (safe.symbol || 'n/a') + '\n' +
     '- side: ' + (safe.side || 'n/a') + '\n' +
     '- score: ' + (safe.score ?? 'n/a') + '\n' +
+    '- confidence: ' + (safe.confidence ?? 'n/a') + '\n' +
+    '- upstream stage: ' + (safe.upstream_stage ?? 'n/a') + '\n' +
+    '- BingX code: ' + (safe.bingx_code ?? 'n/a') + '\n' +
+    '- BingX message: ' + (safe.bingx_message ?? 'n/a') + '\n' +
+    '- BingX HTTP status: ' + (safe.bingx_http_status ?? 'n/a') + '\n' +
+    '- broker HTTP status: ' + (safe.broker_http_status ?? 'n/a') + '\n' +
+    '- upstream error: ' + (safe.upstream_error ?? 'n/a') + '\n' +
     '- universe scanned: ' + (safe.universe_scanned ?? 'n/a') + '\n' +
     '- eligible universe: ' + (safe.eligible_universe ?? 'n/a') + '\n' +
     '- deep scanned: ' + (safe.deep_scanned_symbols ?? 'n/a') + '\n' +
