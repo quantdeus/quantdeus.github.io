@@ -4,7 +4,12 @@ import { getVercelOidcToken } from '@vercel/oidc';
 import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
 import bingxVstMcpHandler from '../../lib/bingx-vst-mcp-handler.js';
-import { getBalance as getBingxVstBalance } from '../../lib/bingx-vst-broker.js';
+import {
+  getBalance as getBingxVstBalance,
+  getPositions as getBingxVstPositions,
+  placeMarketOrder as placeBingxVstMarketOrder,
+  runRiskCheck as runBingxVstRiskCheck
+} from '../../lib/bingx-vst-broker.js';
 import { runVstSignalCycle } from '../../lib/bingx-vst-signal.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
@@ -398,6 +403,50 @@ export default async function handler(req, res) {
         ok: false,
         environment: 'prod-vst',
         error: String(error?.message || error).slice(0, 180)
+      });
+    }
+  }
+
+  if (qdRoute === 'bingx-vst-private-broker') {
+    if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+    try {
+      const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+      const claims = await verify(bearer);
+      const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+      const eventName = String(claims.event_name || '');
+      const ref = String(claims.ref || '');
+      const trusted =
+        /\.github\/workflows\/bingx-vst-signal\.yml(?:@|$)/.test(workflowRef) &&
+        new Set(['schedule', 'workflow_dispatch']).has(eventName) &&
+        ref === 'refs/heads/main';
+      if (!trusted) return res.status(403).json({ ok: false, error: 'forbidden_vst_broker_identity' });
+
+      const operation = String(req.body?.operation || '').trim();
+      const input = req.body?.input && typeof req.body.input === 'object' && !Array.isArray(req.body.input)
+        ? req.body.input
+        : {};
+
+      if (operation === 'positions') {
+        const result = await getBingxVstPositions(input);
+        return res.status(200).json({ ok: true, operation, result });
+      }
+      if (operation === 'risk_check') {
+        const result = await runBingxVstRiskCheck(input);
+        return res.status(200).json({ ok: true, operation, result });
+      }
+      if (operation === 'place_order') {
+        const result = await placeBingxVstMarketOrder(input);
+        return res.status(200).json({ ok: true, operation, result });
+      }
+
+      return res.status(400).json({ ok: false, error: 'unsupported_operation' });
+    } catch (error) {
+      const message = String(error?.message || error).slice(0, 180);
+      const forbidden = /oidc|identity|repository|audience|issuer|workflow/i.test(message);
+      return res.status(forbidden ? 403 : 502).json({
+        ok: false,
+        environment: 'prod-vst',
+        error: message
       });
     }
   }
