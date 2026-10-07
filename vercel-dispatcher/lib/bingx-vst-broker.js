@@ -161,13 +161,19 @@ function parseJson(raw) {
 
 const TRANSIENT_READ_BUSINESS_CODES = new Set([100500, 100503, 110500]);
 const TRANSIENT_READ_HTTP_STATUSES = new Set([500, 502, 503, 504]);
-const READ_RETRY_DELAYS_MS = Object.freeze([350, 900]);
+const READ_RETRY_DELAYS_MS = Object.freeze([750, 2000, 5000]);
 
-function isTransientReadError(error) {
+function isNetworkOrTimeout(error) {
   return (
     error?.name === 'TimeoutError' ||
     error?.name === 'AbortError' ||
-    error instanceof TypeError ||
+    error instanceof TypeError
+  );
+}
+
+function isTransientReadError(error) {
+  return (
+    isNetworkOrTimeout(error) ||
     TRANSIENT_READ_HTTP_STATUSES.has(Number(error?.status)) ||
     TRANSIENT_READ_BUSINESS_CODES.has(Number(error?.businessCode))
   );
@@ -224,8 +230,8 @@ async function vstFetch(path, init = {}, options = {}) {
     } catch (error) {
       lastError = error;
       const canFailOver =
-        options.retryTransient === true &&
-        isTransientReadError(error) &&
+        options.allowNetworkFailover === true &&
+        isNetworkOrTimeout(error) &&
         index < BINGX_VST_BASES.length - 1;
       if (canFailOver) continue;
       throw error;
@@ -238,7 +244,7 @@ async function publicGet(path, params = {}) {
   validateParams(params);
   const query = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])).toString();
   return withReadRetry(() =>
-    vstFetch(`${path}${query ? `?${query}` : ''}`, {}, { retryTransient: true })
+    vstFetch(`${path}${query ? `?${query}` : ''}`, {}, { allowNetworkFailover: true })
   );
 }
 
@@ -259,7 +265,7 @@ async function privateRequest(method, path, params = {}) {
       return vstFetch(
         `${path}?${canonical}&signature=${signature}`,
         { method, headers },
-        { retryTransient: true }
+        { allowNetworkFailover: true }
       );
     });
   }
@@ -271,7 +277,7 @@ async function privateRequest(method, path, params = {}) {
       method,
       headers: { ...headers, 'content-type': 'application/x-www-form-urlencoded' },
       body: `${canonical}&signature=${signature}`
-    });
+    }, { allowNetworkFailover: false });
   }
   throw new Error('bingx_vst_method_not_allowed');
 }
