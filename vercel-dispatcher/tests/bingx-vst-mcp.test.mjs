@@ -16,6 +16,13 @@ test('canonical signature params are deterministic and sorted', () => {
   assert.equal(broker.canonicalParams({ timestamp: 3, symbol: 'BTC-USDT', recvWindow: 5000 }), 'recvWindow=5000&symbol=BTC-USDT&timestamp=3');
 });
 
+test('signed parameter pollution is rejected', () => {
+  assert.throws(
+    () => broker.canonicalParams({ symbol: 'BTC-USDT&side=SELL', timestamp: 3 }),
+    /forbidden_param_symbol/
+  );
+});
+
 test('risk gate blocks storms and over-notional orders', () => {
   const storm = broker.evaluateRisk(
     { symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG', quantity: '0.001' },
