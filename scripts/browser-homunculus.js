@@ -120,7 +120,9 @@ function runAB(args, env, allowFailure = false) {
 }
 
 function gateDetected(snapshot) {
-  return /(captcha|recaptcha|hcaptcha|turnstile|verify you are human|two[- ]factor|2fa|verification code|sms code|authenticator|passkey)/i.test(snapshot);
+  const text = String(snapshot || '');
+  return /(?:captcha|recaptcha|hcaptcha|turnstile|verify you are human|two[- ]factor|2fa|verification code|sms code|authenticator)/i.test(text) ||
+    /(?:passkey (?:required|verification|required to continue)|use (?:a|your) passkey to continue|verify with (?:a|your) passkey)/i.test(text);
 }
 
 function parsePlannerDecision(raw) {

@@ -37,9 +37,12 @@ test('manifest requires governance and keeps target inside allowlist', () => {
   }), /target_not_in_allowed_domains/);
 });
 
-test('verification gates are detected', () => {
+test('verification gates are detected without treating an optional passkey login link as a hard gate', () => {
   assert.equal(gateDetected('Please verify you are human'), true);
   assert.equal(gateDetected('Enter authenticator code for 2FA'), true);
+  assert.equal(gateDetected('Enter verification code'), true);
+  assert.equal(gateDetected('Passkey required to continue'), true);
+  assert.equal(gateDetected('Sign in with a passkey'), false);
   assert.equal(gateDetected('Ordinary documentation page'), false);
 });
 
