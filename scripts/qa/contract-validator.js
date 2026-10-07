@@ -522,7 +522,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
       } else if (name === 'data-positronic-cycle.yml') {
         check(parts[0] === '37' && parts[1] === '*/6', name, 'Data positronic cycle uses the approved six-hour cadence: '+cron);
       } else if (name === 'bingx-vst-signal.yml') {
-        check(parts[0] === '*/15' && parts[1] === '*', name, 'BingX VST signal scan uses the approved read-only 15-minute cadence: '+cron);
+        check(parts[0] === '*/15' && parts[1] === '*', name, 'BingX VST guarded autotrade uses the approved 15-minute cadence: '+cron);
       } else if (name === 'agent-role-cron.yml') {
         check(parts[0] === '23' && parts[1] === '0-15', name, 'role cron uses the approved daily hourly window: '+cron);
       } else if (name === 'seven-priority-cycle.yml') {
@@ -547,11 +547,22 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
   }
   if (name === 'bingx-vst-signal.yml') {
+    const signalSource = fs.readFileSync(path.join(root,'vercel-dispatcher','lib','bingx-vst-signal.js'),'utf8');
     check(
       text.includes('/api/quantdeus/bingx-vst-signal') &&
-      !/place[_-]?market[_-]?order|bingx_vst_place_market_order|\/trade\/order/i.test(text),
+      signalSource.includes('listContracts()') &&
+      signalSource.includes('getTickers()') &&
+      !signalSource.includes('allowedSymbols().slice(0, 5)'),
       name,
-      'BingX VST 15-minute cron remains read-only and cannot place orders'
+      'BingX VST cycle scans the full contract/ticker universe before deep analysis'
+    );
+    check(
+      signalSource.includes("status.environment !== 'prod-vst'") &&
+      signalSource.includes('status.liveApiAllowed !== false') &&
+      signalSource.includes('const qa = await runRiskCheck(order);') &&
+      signalSource.indexOf('const qa = await runRiskCheck(order);') < signalSource.indexOf('const execution = await placeMarketOrder({'),
+      name,
+      'BingX VST execution remains VST-only and requires the deterministic QA/risk gate before every order'
     );
   }
 }
