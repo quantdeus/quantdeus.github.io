@@ -404,9 +404,10 @@ export default async function handler(req, res) {
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
     const octetHerald = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-octet-herald';
     const tradingAgentId = String(req.body?.metadata?.agent_id || '').trim();
+    const tradingPhase = String(req.body?.metadata?.trading_phase || '').trim();
     const tradingWorker = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-trading-vst-cycle' && new Set(['data', 'qa-contract', 'qa-repair']).has(tradingAgentId);
-    const tradingExecutor = tradingWorker && tradingAgentId === 'data';
-    const tradingKillAuthority = tradingWorker && new Set(['data', 'qa-repair']).has(tradingAgentId);
+    const tradingExecutor = tradingWorker && tradingAgentId === 'data' && tradingPhase === 'execute';
+    const tradingKillAuthority = tradingWorker && (tradingAgentId === 'qa-repair' || (tradingAgentId === 'data' && tradingPhase === 'execute'));
     const tradingVstToken = String(process.env.QD_TRADING_VST_BROKER_TOKEN || '').trim();
     const tradingVstEnabled = tradingWorker && Boolean(tradingVstToken);
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
@@ -1070,7 +1071,12 @@ export default async function handler(req, res) {
       url: 'https://api.githubcopilot.com/mcp/',
       headers: { Authorization: 'Bearer ' + githubToken },
       toolFilter: {
-        include: smokePhase === 'github' ? ['list_branches', 'get_file_contents'] : hourlyOffice ? [
+        include: smokePhase === 'github' ? ['list_branches', 'get_file_contents'] : tradingWorker ? [
+          'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
+          'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
+          'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
+          'actions_list', 'actions_get'
+        ] : hourlyOffice ? [
           'list_branches', 'get_commit', 'list_commits', 'get_file_contents',
           'search_code', 'search_issues', 'search_pull_requests', 'get_issue',
           'get_pull_request', 'get_pull_request_diff', 'get_pull_request_status',
@@ -1227,6 +1233,7 @@ export default async function handler(req, res) {
       trading_vst_mcp: tradingVstEnabled,
       trading_environment: tradingVstEnabled ? 'prod-vst' : 'off',
       trading_agent_id: tradingVstEnabled ? tradingAgentId : null,
+      trading_phase: tradingVstEnabled ? tradingPhase : null,
       trading_executor: tradingExecutor,
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
@@ -1442,7 +1449,7 @@ export default async function handler(req, res) {
       configured_fallbacks: fallbackModels,
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-brokered-read-tools',
       tools: trustedOffice
-        ? { filesystem: true, github_mcp: true, public_repo_mcp: false, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, trading_vst_mcp: tradingVstEnabled, trading_environment: tradingVstEnabled ? 'prod-vst' : 'off', shell: false }
+        ? { filesystem: true, github_mcp: true, public_repo_mcp: false, github_write: !hourlyOffice && !smokePhase && !tradingWorker, playwright_mcp: true, trading_vst_mcp: tradingVstEnabled, trading_environment: tradingVstEnabled ? 'prod-vst' : 'off', shell: false }
         : { filesystem: false, github_mcp: false, public_repo_mcp: true, github_write: false, playwright_mcp: false, shell: false },
       doctor,
       tool_summary: toolSummary,
