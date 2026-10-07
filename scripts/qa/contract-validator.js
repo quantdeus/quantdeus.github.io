@@ -522,7 +522,10 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
       } else if (name === 'data-positronic-cycle.yml') {
         check(parts[0] === '37' && parts[1] === '*/6', name, 'Data positronic cycle uses the approved six-hour cadence: '+cron);
       } else if (name === 'bingx-vst-signal.yml') {
-        check(parts[0] === '*/15' && parts[1] === '*', name, 'BingX VST guarded autotrade uses the approved 15-minute cadence: '+cron);
+        const approvedVstCadence =
+          parts[1] === '*' &&
+          (parts[0] === '*/15' || parts[0] === '2,17,32,47');
+        check(approvedVstCadence, name, 'BingX VST guarded autotrade uses an approved 15-minute cadence: '+cron);
       } else if (name === 'agent-role-cron.yml') {
         check(parts[0] === '23' && parts[1] === '0-15', name, 'role cron uses the approved daily hourly window: '+cron);
       } else if (name === 'seven-priority-cycle.yml') {
