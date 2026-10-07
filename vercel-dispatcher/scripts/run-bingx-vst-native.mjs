@@ -19,7 +19,9 @@ function safeResult(data) {
     eligible_universe: data?.eligibleUniverse ?? null,
     deep_scanned_symbols: data?.deepScannedSymbols ?? null,
     order_id: data?.orderId ?? null,
-    degraded: data?.degraded === true
+    degraded: data?.degraded === true,
+    order_attempted: data?.orderAttempted === true,
+    requires_review: data?.requiresReview === true
   };
 }
 
@@ -33,6 +35,8 @@ async function writeSummary(safe) {
     '- action: ' + (safe.action || 'n/a') + '\n' +
     '- reason: ' + (safe.reason || 'n/a') + '\n' +
     '- degraded: ' + (safe.degraded ? 'yes' : 'no') + '\n' +
+    '- order attempted: ' + (safe.order_attempted ? 'yes' : 'no') + '\n' +
+    '- requires review: ' + (safe.requires_review ? 'yes' : 'no') + '\n' +
     '- symbol: ' + (safe.symbol || 'n/a') + '\n' +
     '- side: ' + (safe.side || 'n/a') + '\n' +
     '- score: ' + (safe.score ?? 'n/a') + '\n' +
