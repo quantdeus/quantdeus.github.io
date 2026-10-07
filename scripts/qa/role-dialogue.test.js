@@ -44,6 +44,18 @@ test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
   assert.equal(seven.actions.length,2);
   assert.match(seven.analysis,/observed fields/);
 });
+test('structured protocol survives a single-line provider flattening',()=>{
+  const parsed=parseJson('SUMMARY: Healthy enough to continue; FINDING: Provider returned evidence; FINDING 2: No mutation was claimed; NEXT_STEP: Retry one bounded turn.');
+  assert.equal(parsed.summary,'Healthy enough to continue');
+  assert.deepEqual(parsed.findings,['Provider returned evidence','No mutation was claimed']);
+  assert.equal(parsed.next_step,'Retry one bounded turn.');
+});
+test('malformed structured protocol keeps a stable error code',()=>{
+  assert.throws(
+    ()=>parseJson('SUMMARY: Missing the required other fields'),
+    error=>error && error.code==='ROLE_DIALOGUE_MALFORMED_OUTPUT'
+  );
+});
 test('role dialogue verifies real assistant turn, model and brokered read-tool runtime',async()=>{
   let calls=0;
   const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async opts=>{
