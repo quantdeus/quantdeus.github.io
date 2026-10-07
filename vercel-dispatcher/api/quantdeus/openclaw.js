@@ -1006,6 +1006,15 @@ export default async function handler(req, res) {
                 failures: toolFailures
               },
               assistant_turns: calls.length ? 2 : 1,
+              execution_mode: 'openclaw-agent-exec-brokered-read-tools',
+              tools: {
+                filesystem: false,
+                github_mcp: false,
+                public_repo_mcp: true,
+                github_write: false,
+                playwright_mcp: false,
+                shell: false
+              },
               mode: 'vercel-internal-fast-tools',
               attempts
             });
