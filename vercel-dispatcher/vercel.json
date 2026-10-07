@@ -16,6 +16,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/quantdeus/bingx-vst-auth-smoke",
+      "destination": "/api/quantdeus/openclaw?qd_route=bingx-vst-auth-smoke"
+    },
+    {
       "source": "/api/quantdeus/bingx-vst-mcp",
       "destination": "/api/quantdeus/openclaw?qd_route=bingx-vst-mcp"
     },
