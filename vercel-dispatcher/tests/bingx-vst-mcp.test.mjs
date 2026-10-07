@@ -101,6 +101,98 @@ test('approval token is short-lived and bound to the exact order', () => {
   assert.throws(() => broker.verifyRiskApproval(token, order, 100_000, 'secret'), /expired/);
 });
 
+test('client order id is deterministic and bounded for idempotent busy recovery', () => {
+  const token = 'approval-token-for-test';
+  const first = broker.clientOrderIdFromApproval(token);
+  const second = broker.clientOrderIdFromApproval(token);
+  assert.equal(first, second);
+  assert.match(first, /^qdvst[a-f0-9]+$/);
+  assert.ok(first.length <= 40);
+});
+
+test('VST order busy recovery queries clientOrderId before one retry', async () => {
+  const previousFetch = global.fetch;
+  const previousApiKey = process.env.BINGX_VST_API_KEY;
+  const previousSecretKey = process.env.BINGX_VST_SECRET_KEY;
+  const previousDelay = process.env.BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS;
+
+  process.env.BINGX_VST_API_KEY = 'test-api-key';
+  process.env.BINGX_VST_SECRET_KEY = 'test-secret-key';
+  process.env.BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS = '1';
+
+  const order = { symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG', quantity: '0.001' };
+  const token = broker.signRiskApproval(
+    order,
+    {
+      maxReturnPct: 0.2,
+      notionalUsdt: 60,
+      indicators: {
+        '5m': { direction: 'bullish', matchingConsensus: 0.9 },
+        '15m': { direction: 'bullish', matchingConsensus: 0.9 }
+      }
+    }
+  );
+
+  const calls = [];
+  let postCount = 0;
+  global.fetch = async (url, init = {}) => {
+    const method = String(init.method || 'GET').toUpperCase();
+    calls.push({ url: String(url), method, body: String(init.body || '') });
+
+    if (method === 'POST') {
+      postCount += 1;
+      if (postCount === 1) {
+        return new Response(JSON.stringify({
+          code: 100500,
+          msg: 'The current system is busy, please try again later'
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({
+        code: 0,
+        msg: '',
+        data: {
+          orderID: '1234567890123456789',
+          clientOrderId: broker.clientOrderIdFromApproval(token)
+        }
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+
+    if (method === 'GET') {
+      return new Response(JSON.stringify({
+        code: 109421,
+        msg: 'The specified order does not exist'
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+
+    throw new Error('unexpected_method_' + method);
+  };
+
+  try {
+    const result = await broker.placeMarketOrder({ ...order, approval_token: token });
+    assert.equal(result.response.data.orderID, '1234567890123456789');
+    assert.equal(result.busyRecovery, 'retried-after-not-found');
+    assert.equal(postCount, 2);
+
+    const postBodies = calls.filter(call => call.method === 'POST').map(call => call.body);
+    const getCalls = calls.filter(call => call.method === 'GET');
+    assert.equal(getCalls.length, 1);
+    assert.ok(getCalls[0].url.includes('clientOrderId='));
+    assert.ok(postBodies.every(body => body.includes('clientOrderId=')));
+    assert.equal(
+      new URLSearchParams(postBodies[0]).get('clientOrderId'),
+      new URLSearchParams(postBodies[1]).get('clientOrderId')
+    );
+  } finally {
+    global.fetch = previousFetch;
+    if (previousApiKey === undefined) delete process.env.BINGX_VST_API_KEY;
+    else process.env.BINGX_VST_API_KEY = previousApiKey;
+    if (previousSecretKey === undefined) delete process.env.BINGX_VST_SECRET_KEY;
+    else process.env.BINGX_VST_SECRET_KEY = previousSecretKey;
+    if (previousDelay === undefined) delete process.env.BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS;
+    else process.env.BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS = previousDelay;
+  }
+});
+
 test('public status never advertises live API, withdrawals, or transfers', () => {
   const status = broker.publicStatus();
   assert.equal(status.environment, 'prod-vst');

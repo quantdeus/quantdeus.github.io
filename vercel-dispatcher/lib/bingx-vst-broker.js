@@ -282,6 +282,85 @@ async function privateRequest(method, path, params = {}) {
   throw new Error('bingx_vst_method_not_allowed');
 }
 
+const ORDER_BUSY_CODES = new Set([100500, 110500]);
+const ORDER_NOT_FOUND_CODES = new Set([109421, 80016, 80017]);
+const ORDER_DUPLICATE_CLIENT_ID_CODES = new Set([101481]);
+
+export function clientOrderIdFromApproval(approvalToken) {
+  const token = String(approvalToken || '').trim();
+  if (!token) throw new Error('bingx_vst_approval_token_missing');
+  return 'qdvst' + crypto.createHash('sha256').update(token).digest('hex').slice(0, 30);
+}
+
+async function queryOrderByClientOrderId(order, clientOrderId) {
+  try {
+    return await privateRequest('GET', '/openApi/swap/v2/trade/order', {
+      symbol: order.symbol,
+      clientOrderId
+    });
+  } catch (error) {
+    if (ORDER_NOT_FOUND_CODES.has(Number(error?.businessCode))) return null;
+    throw error;
+  }
+}
+
+async function submitMarketOrder(order, clientOrderId) {
+  return privateRequest('POST', '/openApi/swap/v2/trade/order', {
+    symbol: order.symbol,
+    side: order.side,
+    positionSide: order.positionSide,
+    type: 'MARKET',
+    quantity: order.quantity,
+    clientOrderId
+  });
+}
+
+async function submitMarketOrderWithBusyRecovery(order, clientOrderId) {
+  try {
+    return {
+      ...(await submitMarketOrder(order, clientOrderId)),
+      busyRecovery: 'not-needed'
+    };
+  } catch (error) {
+    if (!ORDER_BUSY_CODES.has(Number(error?.businessCode))) throw error;
+
+    const retryDelayMs = Math.min(
+      5000,
+      envNumber('BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS', 750)
+    );
+    await sleep(retryDelayMs);
+
+    // A business-level "system busy" response can still leave execution state unclear.
+    // Query the same clientOrderId before any retry so we never blindly double-submit.
+    const existing = await queryOrderByClientOrderId(order, clientOrderId);
+    if (existing) {
+      return {
+        ...existing,
+        busyRecovery: 'found-after-busy'
+      };
+    }
+
+    await sleep(retryDelayMs);
+    try {
+      return {
+        ...(await submitMarketOrder(order, clientOrderId)),
+        busyRecovery: 'retried-after-not-found'
+      };
+    } catch (retryError) {
+      if (ORDER_DUPLICATE_CLIENT_ID_CODES.has(Number(retryError?.businessCode))) {
+        const duplicate = await queryOrderByClientOrderId(order, clientOrderId);
+        if (duplicate) {
+          return {
+            ...duplicate,
+            busyRecovery: 'found-after-duplicate-client-id'
+          };
+        }
+      }
+      throw retryError;
+    }
+  }
+}
+
 
 function normalizeCandles(rows) {
   return (Array.isArray(rows) ? rows : [])
@@ -734,17 +813,14 @@ export async function placeMarketOrder(input = {}) {
   if (!tradingEnabled()) throw new Error('bingx_vst_kill_switch_off');
   const order = normalizeOrder(input);
   const claims = verifyRiskApproval(input.approval_token, order);
-  const response = await privateRequest('POST', '/openApi/swap/v2/trade/order', {
-    symbol: order.symbol,
-    side: order.side,
-    positionSide: order.positionSide,
-    type: 'MARKET',
-    quantity: order.quantity
-  });
+  const clientOrderId = clientOrderIdFromApproval(input.approval_token);
+  const response = await submitMarketOrderWithBusyRecovery(order, clientOrderId);
   return {
     environment: 'prod-vst',
     liveApiAllowed: false,
     upstreamBase: response.base,
+    clientOrderId,
+    busyRecovery: response.busyRecovery || 'not-needed',
     riskApproval: {
       expiresAt: claims.expiresAt,
       maxReturnPct: claims.maxReturnPct,
