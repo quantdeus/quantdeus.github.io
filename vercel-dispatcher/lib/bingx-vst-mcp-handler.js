@@ -35,7 +35,7 @@ const TOOLS = [
   },
   {
     name: 'bingx_vst_risk_check',
-    description: 'Mandatory deterministic QA/risk gate. Blocks orders when the kill switch is off, order notional exceeds the cap, or 5m market movement is stormy. Returns a short-lived order-bound approval token only when allowed.',
+    description: 'Mandatory deterministic QA/risk gate. Requires 14-indicator consensus across 5m and 15m trend/momentum/volatility/flow groups, and also blocks orders when the kill switch is off, order notional exceeds the cap, or 5m market movement is stormy. Returns a short-lived order-bound approval token only when every gate allows the order.',
     inputSchema: {
       type: 'object',
       required: ['symbol', 'side', 'positionSide', 'quantity'],
