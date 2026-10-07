@@ -1,13 +1,22 @@
 import {
-  allowedSymbols,
   getContractInfo,
   getKlines,
   getPositions,
-  publicStatus
+  getTickers,
+  listContracts,
+  placeMarketOrder,
+  publicStatus,
+  runRiskCheck,
+  symbolAllowed
 } from './bingx-vst-broker.js';
 
 const DEFAULT_TARGET_NOTIONAL_USDT = 10;
 const HARD_MAX_SIGNAL_NOTIONAL_USDT = 25;
+const DEFAULT_MIN_QUOTE_VOLUME_USDT = 1_000_000;
+const DEFAULT_MAX_24H_RANGE_PCT = 10;
+const DEFAULT_MAX_24H_CHANGE_PCT = 8;
+const DEFAULT_MAX_SPREAD_BPS = 20;
+const DEFAULT_DEEP_SCAN_LIMIT = 60;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -21,6 +30,102 @@ function envNumber(name, fallback) {
 function rowsFromKlines(result) {
   const raw = result?.response?.data ?? result?.response;
   return Array.isArray(raw) ? raw : [];
+}
+
+function envInteger(name, fallback, min = 1, max = 1000) {
+  const value = Math.trunc(Number(process.env[name]));
+  return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+}
+
+function numeric(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+export function assessTicker(ticker = {}, options = {}) {
+  const lastPrice = numeric(ticker.lastPrice);
+  const highPrice = numeric(ticker.highPrice);
+  const lowPrice = numeric(ticker.lowPrice);
+  const openPrice = numeric(ticker.openPrice);
+  const bidPrice = numeric(ticker.bidPrice);
+  const askPrice = numeric(ticker.askPrice);
+  const quoteVolume = Math.max(0, numeric(ticker.quoteVolume) ?? 0);
+  const explicitChange = numeric(ticker.priceChangePercent);
+
+  const minQuoteVolumeUsdt = Number(options.minQuoteVolumeUsdt ?? envNumber('BINGX_VST_MIN_QUOTE_VOLUME_USDT', DEFAULT_MIN_QUOTE_VOLUME_USDT));
+  const maxRangePct = Number(options.maxRangePct ?? envNumber('BINGX_VST_MAX_24H_RANGE_PCT', DEFAULT_MAX_24H_RANGE_PCT));
+  const maxChangePct = Number(options.maxChangePct ?? envNumber('BINGX_VST_MAX_24H_CHANGE_PCT', DEFAULT_MAX_24H_CHANGE_PCT));
+  const maxSpreadBps = Number(options.maxSpreadBps ?? envNumber('BINGX_VST_MAX_SPREAD_BPS', DEFAULT_MAX_SPREAD_BPS));
+
+  const rangePct = lastPrice && highPrice && lowPrice
+    ? ((highPrice - lowPrice) / lastPrice) * 100
+    : Infinity;
+  const changePct = explicitChange ?? (lastPrice && openPrice ? pctChange(lastPrice, openPrice) : Infinity);
+  const midpoint = bidPrice && askPrice ? (bidPrice + askPrice) / 2 : null;
+  const spreadBps = midpoint && askPrice >= bidPrice
+    ? ((askPrice - bidPrice) / midpoint) * 10_000
+    : Infinity;
+
+  const reasons = [];
+  if (!(lastPrice > 0)) reasons.push('invalid_last_price');
+  if (quoteVolume < minQuoteVolumeUsdt) reasons.push('liquidity_low');
+  if (!Number.isFinite(rangePct) || rangePct > maxRangePct) reasons.push('range_storm');
+  if (!Number.isFinite(changePct) || Math.abs(changePct) > maxChangePct) reasons.push('price_change_storm');
+  if (!Number.isFinite(spreadBps) || spreadBps > maxSpreadBps) reasons.push('spread_wide');
+
+  const liquidityScore = Math.log10(Math.max(quoteVolume, 1));
+  const stabilityScore = liquidityScore
+    - (Number.isFinite(rangePct) ? rangePct / Math.max(maxRangePct, 1) : 10)
+    - (Number.isFinite(spreadBps) ? spreadBps / Math.max(maxSpreadBps, 1) : 10);
+
+  return {
+    allowed: reasons.length === 0,
+    reasons,
+    lastPrice,
+    quoteVolume: Number(quoteVolume.toFixed(2)),
+    rangePct: Number.isFinite(rangePct) ? Number(rangePct.toFixed(4)) : null,
+    changePct: Number.isFinite(changePct) ? Number(changePct.toFixed(4)) : null,
+    spreadBps: Number.isFinite(spreadBps) ? Number(spreadBps.toFixed(4)) : null,
+    stabilityScore: Number(stabilityScore.toFixed(6)),
+    thresholds: { minQuoteVolumeUsdt, maxRangePct, maxChangePct, maxSpreadBps }
+  };
+}
+
+function contractActive(contract = {}) {
+  const status = String(contract.status ?? contract.state ?? '').trim().toUpperCase();
+  if (!status) return true;
+  return !/(?:SUSPEND|OFFLINE|DELIST|CLOSED|EXPIRED|DISABLED)/.test(status);
+}
+
+export function buildUniverse(contracts = [], tickers = [], options = {}) {
+  const tickerMap = new Map(
+    (Array.isArray(tickers) ? tickers : [])
+      .map(item => [String(item?.symbol || '').trim().toUpperCase(), item])
+      .filter(([symbol]) => symbol)
+  );
+
+  const all = [];
+  for (const contract of Array.isArray(contracts) ? contracts : []) {
+    const symbol = String(contract?.symbol || '').trim().toUpperCase();
+    if (!symbolAllowed(symbol) || !contractActive(contract)) continue;
+    const ticker = tickerMap.get(symbol);
+    if (!ticker) {
+      all.push({ symbol, allowed: false, reasons: ['ticker_missing'], quoteVolume: 0, stabilityScore: -Infinity });
+      continue;
+    }
+    all.push({ symbol, contract, ...assessTicker(ticker, options) });
+  }
+
+  const eligible = all
+    .filter(item => item.allowed)
+    .sort((a, b) => b.stabilityScore - a.stabilityScore || b.quoteVolume - a.quoteVolume);
+
+  return {
+    all,
+    eligible,
+    scannedSymbols: all.length,
+    eligibleSymbols: eligible.length
+  };
 }
 
 export function parseCandles(rows) {
@@ -198,14 +303,21 @@ export function buildProtectionSuggestion({ side, price, atrPct, pricePrecision 
   throw new Error('bingx_vst_signal_invalid_side');
 }
 
-function openPositionsFrom(result, symbolSet) {
+function openPositionsFrom(result, symbolSet = null) {
   const rows = result?.response?.data ?? result?.response;
   const positions = Array.isArray(rows) ? rows : (rows ? [rows] : []);
   return positions.filter(position => {
     const symbol = String(position?.symbol || '').toUpperCase();
     const amount = Math.abs(Number(position?.positionAmt ?? position?.availableAmt ?? 0));
-    return symbolSet.has(symbol) && Number.isFinite(amount) && amount > 0;
+    const inScope = symbolSet ? symbolSet.has(symbol) : symbolAllowed(symbol);
+    return inScope && Number.isFinite(amount) && amount > 0;
   });
+}
+
+function positionSideFor(side) {
+  const mode = String(process.env.BINGX_VST_POSITION_MODE || 'hedge').trim().toLowerCase();
+  if (mode === 'one-way' || mode === 'oneway' || mode === 'both') return 'BOTH';
+  return side === 'BUY' ? 'LONG' : 'SHORT';
 }
 
 function targetNotional() {
@@ -224,38 +336,89 @@ export async function runVstSignalCycle() {
   }
   if (!status.credentialsConfigured) throw new Error('bingx_vst_signal_credentials_missing');
 
-  const symbols = allowedSymbols().slice(0, 5);
-  const symbolSet = new Set(symbols);
-  const positions = await getPositions();
-  const openPositions = openPositionsFrom(positions, symbolSet);
+  const [contractsResult, tickersResult, positions] = await Promise.all([
+    listContracts(),
+    getTickers(),
+    getPositions()
+  ]);
+
+  const universe = buildUniverse(contractsResult.contracts, tickersResult.tickers);
+  const openPositions = openPositionsFrom(positions);
   if (openPositions.length) {
     return {
       ok: true,
       environment: 'prod-vst',
       action: 'none',
       reason: 'open_position_exists',
+      universeScanned: universe.scannedSymbols,
+      eligibleUniverse: universe.eligibleSymbols,
       openPositionCount: openPositions.length
     };
   }
 
+  if (!universe.eligible.length) {
+    return {
+      ok: true,
+      environment: 'prod-vst',
+      action: 'none',
+      reason: 'no_stable_liquid_assets',
+      universeScanned: universe.scannedSymbols,
+      eligibleUniverse: 0
+    };
+  }
+
+  const deepScanLimit = envInteger('BINGX_VST_DEEP_SCAN_LIMIT', DEFAULT_DEEP_SCAN_LIMIT, 5, 80);
+  const deepUniverse = universe.eligible.slice(0, deepScanLimit);
   const analyses = [];
-  for (const symbol of symbols) {
-    const klines = await getKlines({ symbol, interval: '15m', limit: 80 });
-    analyses.push({ symbol, ...analyzeMarket(rowsFromKlines(klines)) });
+
+  for (const item of deepUniverse) {
+    try {
+      const klines = await getKlines({ symbol: item.symbol, interval: '15m', limit: 80 });
+      analyses.push({
+        symbol: item.symbol,
+        quoteVolume: item.quoteVolume,
+        stabilityScore: item.stabilityScore,
+        marketFilter: {
+          rangePct: item.rangePct,
+          changePct: item.changePct,
+          spreadBps: item.spreadBps
+        },
+        ...analyzeMarket(rowsFromKlines(klines))
+      });
+    } catch (error) {
+      analyses.push({
+        symbol: item.symbol,
+        tradable: false,
+        reason: 'deep_scan_failed',
+        error: String(error?.message || error).slice(0, 120),
+        quoteVolume: item.quoteVolume,
+        stabilityScore: item.stabilityScore
+      });
+    }
   }
 
   const candidate = analyses
     .filter(item => item.tradable)
-    .sort((a, b) => Math.abs(b.score) - Math.abs(a.score) || b.confidence - a.confidence)[0];
+    .sort((a, b) =>
+      b.confidence - a.confidence ||
+      Math.abs(b.score) - Math.abs(a.score) ||
+      b.stabilityScore - a.stabilityScore ||
+      b.quoteVolume - a.quoteVolume
+    )[0];
 
   if (!candidate) {
-    const strongest = [...analyses].sort((a, b) => Math.abs(b.score || 0) - Math.abs(a.score || 0))[0];
+    const strongest = [...analyses].sort((a, b) =>
+      Math.abs(b.score || 0) - Math.abs(a.score || 0) ||
+      (b.stabilityScore || 0) - (a.stabilityScore || 0)
+    )[0];
     return {
       ok: true,
       environment: 'prod-vst',
       action: 'none',
       reason: 'no_confirmed_signal',
-      scannedSymbols: analyses.length,
+      universeScanned: universe.scannedSymbols,
+      eligibleUniverse: universe.eligibleSymbols,
+      deepScannedSymbols: analyses.length,
       strongestSymbol: strongest?.symbol ?? null,
       strongestScore: strongest?.score ?? 0
     };
@@ -277,19 +440,65 @@ export async function runVstSignalCycle() {
     pricePrecision: Number(contract.pricePrecision ?? 0)
   });
 
+  const order = {
+    symbol: candidate.symbol,
+    side: candidate.side,
+    positionSide: positionSideFor(candidate.side),
+    quantity: quantityInfo.quantity
+  };
+
+  const qa = await runRiskCheck(order);
+  if (!qa.allowed || !qa.approvalToken) {
+    return {
+      ok: true,
+      environment: 'prod-vst',
+      action: 'none',
+      reason: 'qa_risk_gate_blocked',
+      universeScanned: universe.scannedSymbols,
+      eligibleUniverse: universe.eligibleSymbols,
+      deepScannedSymbols: analyses.length,
+      symbol: candidate.symbol,
+      side: candidate.side,
+      score: candidate.score,
+      confidence: candidate.confidence,
+      qaReasons: qa.reasons || []
+    };
+  }
+
+  const execution = await placeMarketOrder({
+    ...order,
+    approval_token: qa.approvalToken
+  });
+  const upstream = execution?.response?.data ?? execution?.response ?? {};
+  const orderId = upstream?.order?.orderId ?? upstream?.orderId ?? null;
+
   return {
     ok: true,
     environment: 'prod-vst',
-    action: 'would_trade',
+    action: 'vst_order_placed',
+    reason: 'signal_and_qa_confirmed',
+    universeScanned: universe.scannedSymbols,
+    eligibleUniverse: universe.eligibleSymbols,
+    deepScannedSymbols: analyses.length,
     symbol: candidate.symbol,
     side: candidate.side,
+    positionSide: order.positionSide,
     score: candidate.score,
     confidence: candidate.confidence,
     quantity: quantityInfo.quantity,
     estimatedNotionalUsdt: Number(quantityInfo.notionalUsdt.toFixed(8)),
     riskPct: protection.riskPct,
     rewardPct: protection.rewardPct,
-    stopPrice: protection.stopPrice,
-    takeProfitPrice: protection.takeProfitPrice
+    stopPriceSuggestion: protection.stopPrice,
+    takeProfitPriceSuggestion: protection.takeProfitPrice,
+    qa: {
+      maxReturnPct: qa.maxReturnPct,
+      maxRangePct: qa.maxRangePct,
+      indicatorDirection5m: qa.indicators?.['5m']?.direction ?? null,
+      indicatorConsensus5m: qa.indicators?.['5m']?.matchingConsensus ?? null,
+      indicatorDirection15m: qa.indicators?.['15m']?.direction ?? null,
+      indicatorConsensus15m: qa.indicators?.['15m']?.matchingConsensus ?? null
+    },
+    orderId
   };
 }
