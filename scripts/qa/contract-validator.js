@@ -542,6 +542,15 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   if (name === 'quantdeus-coordinator.yml') {
     check(/group:\s*quantdeus-coordinator\s/.test(text) && /cancel-in-progress:\s*false/.test(text), name, 'Coordinator command events share a non-cancelling FIFO lane');
     check(text.includes("issue_comment:\n    types: [created]"), name, 'Coordinator receives every new Issue comment for command draining');
+    check(
+      /actions:\s*write/.test(text) &&
+      text.includes("github.actor == github.repository_owner") &&
+      text.includes("github.event.comment.body == '/coord vst-test'") &&
+      text.includes('gh workflow run bingx-vst-signal.yml') &&
+      text.includes('qd-vst-test-dispatch:'),
+      name,
+      'Coordinator fast-path dispatches only owner-requested canonical VST tests with duplicate receipts'
+    );
     check(/id-token:\s*write/.test(text) && text.includes('/tmp/quantdeus-seven-reasoning.json'), name, 'Seven Hub briefing receives OIDC and preserves inference evidence');
     check(text.indexOf('node scripts/seven-of-nine.js') < text.indexOf('node scripts/coordinator.js'), name, 'Seven of Nine runs before the Swarm Secretary');
     check(text.includes('bridge_fail=0') && text.includes('run_stage emh node scripts/emh.js') && text.includes('run_stage sherlock node scripts/sherlock.js') && text.includes('run_stage tuvok node scripts/tuvok.js') && text.includes('exit "$bridge_fail"'), name, 'Bridge crew stages continue after one role-contract failure while preserving a failing final job status');
