@@ -129,3 +129,29 @@ test('trusted OpenClaw allow-list exposes VST tools', async () => {
     assert.match(source, new RegExp(tool));
   }
 });
+
+
+test('native OpenClaw cron has one guarded full VST cycle tool without granting it to model allow-list', async () => {
+  const fs = await import('node:fs/promises');
+  const handlerSource = await fs.readFile(new URL('../lib/bingx-vst-mcp-handler.js', import.meta.url), 'utf8');
+  const openclawSource = await fs.readFile(new URL('../api/quantdeus/openclaw.js', import.meta.url), 'utf8');
+  const bootstrapSource = await fs.readFile(new URL('../../scripts/openclaw-vst-cron-bootstrap.js', import.meta.url), 'utf8');
+
+  assert.match(handlerSource, /name: 'bingx_vst_autotrade_cycle'/);
+  assert.match(handlerSource, /case 'bingx_vst_autotrade_cycle': return runVstSignalCycle\(\)/);
+  assert.doesNotMatch(openclawSource, /bingxvst__bingx_vst_autotrade_cycle/);
+
+  assert.match(bootstrapSource, /2,17,32,47 \* \* \* \*/);
+  assert.match(bootstrapSource, /'automations', 'create'/);
+  assert.match(bootstrapSource, /'--exact'/);
+  assert.match(bootstrapSource, /'--no-deliver'/);
+  assert.match(bootstrapSource, /QUANTDEUS_BINGX_VST_BROKER_TOKEN/);
+  assert.match(bootstrapSource, /bingx_vst_autotrade_cycle/);
+});
+
+test('native OpenClaw VST runner never embeds the broker secret into its generated source', async () => {
+  const fs = await import('node:fs/promises');
+  const bootstrapSource = await fs.readFile(new URL('../../scripts/openclaw-vst-cron-bootstrap.js', import.meta.url), 'utf8');
+  assert.match(bootstrapSource, /process\.env\.QUANTDEUS_BINGX_VST_BROKER_TOKEN/);
+  assert.doesNotMatch(bootstrapSource, /test-broker-secret-that-is-long-enough/);
+});

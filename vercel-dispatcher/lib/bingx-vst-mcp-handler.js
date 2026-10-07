@@ -7,6 +7,7 @@ import {
   publicStatus,
   runRiskCheck
 } from './bingx-vst-broker.js';
+import { runVstSignalCycle } from './bingx-vst-signal.js';
 
 const PROTOCOL_VERSION = '2025-03-26';
 
@@ -61,6 +62,11 @@ const TOOLS = [
     }
   },
   {
+    name: 'bingx_vst_autotrade_cycle',
+    description: 'Run one complete QuantDeus VST-only autotrade cycle: scan the stable/liquid universe, deep-analyze candidates, require the deterministic QA/risk gate, and place at most one VST MARKET order. Intended for an operator-admin OpenClaw command automation; live API, withdrawals and transfers remain unavailable.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false }
+  },
+  {
     name: 'bingx_vst_place_market_order',
     description: 'Place a MARKET order on BingX VST. Requires an unexpired approval token from bingx_vst_risk_check bound to the exact order. Live API, withdrawals and transfers are not implemented.',
     inputSchema: {
@@ -109,6 +115,7 @@ async function callTool(name, args) {
     case 'bingx_vst_tickers': return getTickers();
     case 'bingx_vst_klines': return getKlines(args);
     case 'bingx_vst_risk_check': return runRiskCheck(args);
+    case 'bingx_vst_autotrade_cycle': return runVstSignalCycle();
     case 'bingx_vst_place_market_order': return placeMarketOrder(args);
     default: throw new Error('bingx_vst_unknown_tool');
   }
