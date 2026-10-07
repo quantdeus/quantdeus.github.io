@@ -39,8 +39,26 @@ jobs:
           bun run typecheck
 
       - name: Deploy QuantDeus fallback to Prisma Compute
+        id: prisma-deploy
         uses: prisma/cloud-deploy-action@v1
         with:
           working-directory: prisma-fallback
           module: module.ts
           build-command: bun run build
+
+      - name: Require a real Prisma deployment
+        env:
+          PRISMA_DEPLOY_OUTCOME: ${{ steps.prisma-deploy.outputs.outcome }}
+          PRISMA_DEPLOY_URL: ${{ steps.prisma-deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          echo "Prisma deploy outcome: ${PRISMA_DEPLOY_OUTCOME:-missing}"
+          if [ "${PRISMA_DEPLOY_OUTCOME:-}" != "succeeded" ]; then
+            echo "::error::Prisma fallback was not deployed (outcome=${PRISMA_DEPLOY_OUTCOME:-missing})."
+            exit 1
+          fi
+          if [ -z "${PRISMA_DEPLOY_URL:-}" ]; then
+            echo "::error::Prisma deploy reported success but did not return a public URL."
+            exit 1
+          fi
+          echo "Prisma fallback URL: $PRISMA_DEPLOY_URL"
