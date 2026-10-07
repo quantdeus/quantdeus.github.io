@@ -7,6 +7,23 @@ process.env.QUANTDEUS_BINGX_VST_BROKER_TOKEN = 'test-broker-secret-that-is-long-
 
 const broker = await import('../lib/bingx-vst-broker.js');
 
+function trendingCandles(direction = 1) {
+  const rows = [];
+  let price = 100;
+  for (let index = 0; index < 120; index += 1) {
+    const open = price;
+    const drift = direction * 0.18 + Math.sin(index / 4) * 0.03;
+    const close = Math.max(5, open + drift);
+    const high = Math.max(open, close) + 0.12;
+    const low = Math.min(open, close) - 0.12;
+    const volume = 1000 + index * 7;
+    rows.push([index * 300_000, open, high, low, close, volume]);
+    price = close;
+  }
+  return rows;
+}
+
+
 test('BingX broker contains only VST hosts', () => {
   for (const base of broker.BINGX_VST_BASES) assert.equal(broker.assertVstOnlyBase(base), true);
   assert.throws(() => broker.assertVstOnlyBase('https://open-api.bingx.com'), /blocked/);
@@ -41,6 +58,39 @@ test('risk gate blocks storms and over-notional orders', () => {
   assert.ok(oversized.reasons.includes('max_notional_exceeded'));
 });
 
+
+test('indicator engine calculates 14 signals across four independent groups', () => {
+  const bullish = broker.indicatorConsensus(trendingCandles(1));
+  const bearish = broker.indicatorConsensus(trendingCandles(-1));
+
+  assert.equal(bullish.indicatorCount, 14);
+  assert.equal(bearish.indicatorCount, 14);
+  assert.equal(new Set(bullish.signals.map(signal => signal.group)).size, 4);
+  assert.equal(new Set(bearish.signals.map(signal => signal.group)).size, 4);
+  assert.equal(bullish.direction, 'bullish');
+  assert.equal(bearish.direction, 'bearish');
+  assert.ok(bullish.directional >= 8);
+  assert.ok(bearish.directional >= 8);
+});
+
+test('indicator gate requires consensus aligned with requested side', () => {
+  const bullish = broker.indicatorConsensus(trendingCandles(1));
+  const buy = broker.evaluateIndicatorGate(
+    { symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG', quantity: '0.001' },
+    bullish,
+    { minIndicators: 10, minDirectional: 8, minConsensus: 0.65, minGroups: 3 }
+  );
+  const sell = broker.evaluateIndicatorGate(
+    { symbol: 'BTC-USDT', side: 'SELL', positionSide: 'SHORT', quantity: '0.001' },
+    bullish,
+    { minIndicators: 10, minDirectional: 8, minConsensus: 0.65, minGroups: 3 }
+  );
+
+  assert.equal(buy.allowed, true);
+  assert.equal(sell.allowed, false);
+  assert.ok(sell.reasons.includes('indicator_direction_mismatch'));
+});
+
 test('approval token is short-lived and bound to the exact order', () => {
   const order = { symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG', quantity: '0.001' };
   const metrics = { maxReturnPct: 0.2, notionalUsdt: 60 };
@@ -57,6 +107,9 @@ test('public status never advertises live API, withdrawals, or transfers', () =>
   assert.equal(status.liveApiAllowed, false);
   assert.equal(status.withdrawalsExposed, false);
   assert.equal(status.transfersExposed, false);
+  assert.equal(status.indicatorGate.indicatorCount, 14);
+  assert.deepEqual(status.indicatorGate.timeframes, ['5m', '15m']);
+  assert.ok(status.indicatorGate.minIndicators >= 10);
 });
 
 
