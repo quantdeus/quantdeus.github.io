@@ -42,6 +42,69 @@ function numeric(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function remoteBrokerUrl() {
+  const raw = String(process.env.QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL || '').trim();
+  if (!raw) return '';
+  const url = new URL(raw);
+  const trusted =
+    url.protocol === 'https:' &&
+    url.hostname === 'quantdeus.vercel.app' &&
+    url.pathname === '/api/quantdeus/bingx-vst-private-broker' &&
+    !url.search &&
+    !url.hash;
+  if (!trusted) throw new Error('bingx_vst_remote_broker_url_not_allowed');
+  return url.toString();
+}
+
+function remoteBrokerEnabled() {
+  return Boolean(remoteBrokerUrl());
+}
+
+async function githubOidcToken() {
+  const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+  const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+  if (!requestUrl || !requestToken) throw new Error('github_oidc_request_context_missing');
+
+  const oidcUrl = new URL(requestUrl);
+  oidcUrl.searchParams.set('audience', 'quantdeus-vercel-openclaw');
+  const response = await fetch(oidcUrl, {
+    headers: {
+      authorization: 'Bearer ' + requestToken,
+      accept: 'application/json'
+    }
+  });
+  if (!response.ok) throw new Error('github_oidc_token_request_failed_' + response.status);
+  const data = await response.json();
+  const token = String(data?.value || '');
+  if (!token) throw new Error('github_oidc_token_missing');
+  return token;
+}
+
+async function remoteBrokerCall(operation, input = {}) {
+  const url = remoteBrokerUrl();
+  if (!url) throw new Error('bingx_vst_remote_broker_not_configured');
+  const token = await githubOidcToken();
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      authorization: 'Bearer ' + token,
+      accept: 'application/json',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({ operation, input })
+  });
+  const raw = await response.text();
+  let data = null;
+  try { data = raw ? JSON.parse(raw) : null; } catch {}
+  if (!response.ok || data?.ok !== true) {
+    throw new Error(
+      'bingx_vst_remote_broker_failed_' + response.status + '_' +
+      String(data?.error || '').slice(0, 160)
+    );
+  }
+  return data.result;
+}
+
 export function assessTicker(ticker = {}, options = {}) {
   const lastPrice = numeric(ticker.lastPrice);
   const highPrice = numeric(ticker.highPrice);
@@ -334,12 +397,15 @@ export async function runVstSignalCycle() {
   if (status.environment !== 'prod-vst' || status.liveApiAllowed !== false) {
     throw new Error('bingx_vst_signal_environment_guard_failed');
   }
-  if (!status.credentialsConfigured) throw new Error('bingx_vst_signal_credentials_missing');
+  const useRemoteBroker = remoteBrokerEnabled();
+  if (!status.credentialsConfigured && !useRemoteBroker) {
+    throw new Error('bingx_vst_signal_credentials_missing');
+  }
 
   const [contractsResult, tickersResult, positions] = await Promise.all([
     listContracts(),
     getTickers(),
-    getPositions()
+    useRemoteBroker ? remoteBrokerCall('positions') : getPositions()
   ]);
 
   const universe = buildUniverse(contractsResult.contracts, tickersResult.tickers);
@@ -447,7 +513,9 @@ export async function runVstSignalCycle() {
     quantity: quantityInfo.quantity
   };
 
-  const qa = await runRiskCheck(order);
+  const qa = useRemoteBroker
+    ? await remoteBrokerCall('risk_check', order)
+    : await runRiskCheck(order);
   if (!qa.allowed || !qa.approvalToken) {
     return {
       ok: true,
@@ -465,10 +533,13 @@ export async function runVstSignalCycle() {
     };
   }
 
-  const execution = await placeMarketOrder({
+  const executionInput = {
     ...order,
     approval_token: qa.approvalToken
-  });
+  };
+  const execution = useRemoteBroker
+    ? await remoteBrokerCall('place_order', executionInput)
+    : await placeMarketOrder(executionInput);
   const upstream = execution?.response?.data ?? execution?.response ?? {};
   const orderId = upstream?.order?.orderId ?? upstream?.orderId ?? null;
 
