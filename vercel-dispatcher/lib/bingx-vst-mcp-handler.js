@@ -1,6 +1,8 @@
 import {
   getBalance,
   getKlines,
+  getTickers,
+  listContracts,
   placeMarketOrder,
   publicStatus,
   runRiskCheck
@@ -20,8 +22,18 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }
   },
   {
+    name: 'bingx_vst_contracts',
+    description: 'Read the complete BingX VST perpetual contract universe for market-wide scanning.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false }
+  },
+  {
+    name: 'bingx_vst_tickers',
+    description: 'Read 24h VST ticker statistics for all contracts, including volume, high/low and bid/ask spread inputs.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false }
+  },
+  {
     name: 'bingx_vst_klines',
-    description: 'Read VST market candles for an allowlisted symbol.',
+    description: 'Read VST market candles for a permitted USDT perpetual symbol.',
     inputSchema: {
       type: 'object',
       required: ['symbol'],
@@ -93,6 +105,8 @@ async function callTool(name, args) {
   switch (name) {
     case 'bingx_vst_status': return publicStatus();
     case 'bingx_vst_balance': return getBalance();
+    case 'bingx_vst_contracts': return listContracts();
+    case 'bingx_vst_tickers': return getTickers();
     case 'bingx_vst_klines': return getKlines(args);
     case 'bingx_vst_risk_check': return runRiskCheck(args);
     case 'bingx_vst_place_market_order': return placeMarketOrder(args);

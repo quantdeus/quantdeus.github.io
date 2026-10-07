@@ -1115,6 +1115,8 @@ export default async function handler(req, res) {
         'playwright__browser_close',
         'bingxvst__bingx_vst_status',
         'bingxvst__bingx_vst_balance',
+        'bingxvst__bingx_vst_contracts',
+        'bingxvst__bingx_vst_tickers',
         'bingxvst__bingx_vst_klines',
         'bingxvst__bingx_vst_risk_check',
         'bingxvst__bingx_vst_place_market_order'
@@ -1192,6 +1194,8 @@ export default async function handler(req, res) {
         include: [
           'bingx_vst_status',
           'bingx_vst_balance',
+          'bingx_vst_contracts',
+          'bingx_vst_tickers',
           'bingx_vst_klines',
           'bingx_vst_risk_check',
           'bingx_vst_place_market_order'
