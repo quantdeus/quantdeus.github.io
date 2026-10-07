@@ -58,3 +58,18 @@ test('public status never advertises live API, withdrawals, or transfers', () =>
   assert.equal(status.withdrawalsExposed, false);
   assert.equal(status.transfersExposed, false);
 });
+
+
+test('trusted OpenClaw allow-list exposes VST tools', async () => {
+  const fs = await import('node:fs/promises');
+  const source = await fs.readFile(new URL('../api/quantdeus/openclaw.js', import.meta.url), 'utf8');
+  for (const tool of [
+    'bingxvst__bingx_vst_status',
+    'bingxvst__bingx_vst_balance',
+    'bingxvst__bingx_vst_klines',
+    'bingxvst__bingx_vst_risk_check',
+    'bingxvst__bingx_vst_place_market_order'
+  ]) {
+    assert.match(source, new RegExp(tool));
+  }
+});

@@ -1053,7 +1053,12 @@ export default async function handler(req, res) {
         'playwright__browser_navigate',
         'playwright__browser_snapshot',
         'playwright__browser_find',
-        'playwright__browser_close'
+        'playwright__browser_close',
+        'bingxvst__bingx_vst_status',
+        'bingxvst__bingx_vst_balance',
+        'bingxvst__bingx_vst_klines',
+        'bingxvst__bingx_vst_risk_check',
+        'bingxvst__bingx_vst_place_market_order'
       ],
       deny: trustedDeny
     };
