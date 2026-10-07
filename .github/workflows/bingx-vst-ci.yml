@@ -11,6 +11,7 @@ on:
       - '.github/workflows/bingx-vst-signal.yml'
       - 'scripts/mission-alignment.js'
       - 'scripts/openclaw-vst-cron-bootstrap.js'
+      - 'vercel-dispatcher/api/quantdeus/openclaw.js'
   push:
     branches: [main]
     paths:
@@ -21,6 +22,7 @@ on:
       - '.github/workflows/bingx-vst-signal.yml'
       - 'scripts/mission-alignment.js'
       - 'scripts/openclaw-vst-cron-bootstrap.js'
+      - 'vercel-dispatcher/api/quantdeus/openclaw.js'
   workflow_dispatch:
 
 permissions:
