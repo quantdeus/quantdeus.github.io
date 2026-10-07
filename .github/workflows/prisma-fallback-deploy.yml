@@ -1,0 +1,46 @@
+name: Prisma Fallback Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - infra/prisma-fallback
+    paths:
+      - 'prisma-fallback/**'
+      - 'coordination/agents.json'
+      - '.github/workflows/prisma-fallback-deploy.yml'
+
+concurrency:
+  group: prisma-fallback-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/infra/prisma-fallback'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install and typecheck fallback
+        working-directory: prisma-fallback
+        run: |
+          bun install
+          bun run typecheck
+
+      - name: Deploy QuantDeus fallback to Prisma Compute
+        uses: prisma/cloud-deploy-action@v1
+        with:
+          working-directory: prisma-fallback
+          module: module.ts
+          build-command: bun run build
