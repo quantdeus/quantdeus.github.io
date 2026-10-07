@@ -18,7 +18,8 @@ function safeResult(data) {
     universe_scanned: data?.universeScanned ?? null,
     eligible_universe: data?.eligibleUniverse ?? null,
     deep_scanned_symbols: data?.deepScannedSymbols ?? null,
-    order_id: data?.orderId ?? null
+    order_id: data?.orderId ?? null,
+    degraded: data?.degraded === true
   };
 }
 
@@ -31,6 +32,7 @@ async function writeSummary(safe) {
     '- environment: ' + (safe.environment || 'n/a') + '\n' +
     '- action: ' + (safe.action || 'n/a') + '\n' +
     '- reason: ' + (safe.reason || 'n/a') + '\n' +
+    '- degraded: ' + (safe.degraded ? 'yes' : 'no') + '\n' +
     '- symbol: ' + (safe.symbol || 'n/a') + '\n' +
     '- side: ' + (safe.side || 'n/a') + '\n' +
     '- score: ' + (safe.score ?? 'n/a') + '\n' +
