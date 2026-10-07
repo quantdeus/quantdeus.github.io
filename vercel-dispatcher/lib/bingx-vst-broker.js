@@ -109,7 +109,7 @@ function normalizeOrder(input = {}) {
 function approvalBody(order, expiresAt, metrics) {
   return {
     v: 1,
-    env: 'prod-vst',
+    env: 'demo-vst',
     symbol: order.symbol,
     side: order.side,
     positionSide: order.positionSide,
@@ -147,7 +147,7 @@ export function verifyRiskApproval(token, orderInput, now = Date.now(), secret =
   } catch {
     throw new Error('bingx_vst_bad_approval_payload');
   }
-  if (claims?.v !== 1 || claims?.env !== 'prod-vst') throw new Error('bingx_vst_wrong_approval_environment');
+  if (claims?.v !== 1 || claims?.env !== 'demo-vst') throw new Error('bingx_vst_wrong_approval_environment');
   if (!Number.isFinite(Number(claims.expiresAt)) || Number(claims.expiresAt) < now) throw new Error('bingx_vst_approval_expired');
   for (const key of ['symbol', 'side', 'positionSide', 'quantity']) {
     if (String(claims[key]) !== String(order[key])) throw new Error(`bingx_vst_approval_mismatch_${key}`);
@@ -601,7 +601,7 @@ export function evaluateRisk(orderInput, marketMetrics, options = {}) {
   return {
     allowed,
     reasons,
-    environment: 'prod-vst',
+    environment: 'demo-vst',
     symbol: order.symbol,
     side: order.side,
     positionSide: order.positionSide,
@@ -620,7 +620,7 @@ export function publicStatus() {
   return {
     ok: true,
     service: 'quantdeus-bingx-vst-mcp',
-    environment: 'prod-vst',
+    environment: 'demo-vst',
     primaryBase: BINGX_VST_BASES[0],
     fallbackBase: BINGX_VST_BASES[1],
     liveApiAllowed: false,
@@ -647,28 +647,28 @@ export function publicStatus() {
 
 export async function getBalance() {
   const response = await privateRequest('GET', '/openApi/swap/v3/user/balance');
-  return { environment: 'prod-vst', upstreamBase: response.base, response: response.data };
+  return { environment: 'demo-vst', upstreamBase: response.base, response: response.data };
 }
 
 export async function getPositions(input = {}) {
   const symbol = input.symbol ? String(input.symbol).trim().toUpperCase() : '';
   if (symbol && !allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
   const response = await privateRequest('GET', '/openApi/swap/v2/user/positions', symbol ? { symbol } : {});
-  return { environment: 'prod-vst', upstreamBase: response.base, symbol: symbol || null, response: response.data };
+  return { environment: 'demo-vst', upstreamBase: response.base, symbol: symbol || null, response: response.data };
 }
 
 export async function listContracts() {
   const response = await publicGet('/openApi/swap/v2/quote/contracts');
   const rows = response.data?.data;
   const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
-  return { environment: 'prod-vst', upstreamBase: response.base, contracts };
+  return { environment: 'demo-vst', upstreamBase: response.base, contracts };
 }
 
 export async function getTickers() {
   const response = await publicGet('/openApi/swap/v2/quote/ticker');
   const rows = response.data?.data;
   const tickers = Array.isArray(rows) ? rows : (rows ? [rows] : []);
-  return { environment: 'prod-vst', upstreamBase: response.base, tickers };
+  return { environment: 'demo-vst', upstreamBase: response.base, tickers };
 }
 
 export async function getContractInfo(input = {}) {
@@ -679,7 +679,7 @@ export async function getContractInfo(input = {}) {
   const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
   const contract = contracts.find(item => String(item?.symbol || '').toUpperCase() === symbol);
   if (!contract) throw new Error('bingx_vst_contract_not_found');
-  return { environment: 'prod-vst', upstreamBase: response.base, symbol, contract };
+  return { environment: 'demo-vst', upstreamBase: response.base, symbol, contract };
 }
 
 export async function getKlines(input = {}) {
@@ -691,7 +691,7 @@ export async function getKlines(input = {}) {
   }
   const limit = Math.max(3, Math.min(100, Math.trunc(Number(input.limit || 20))));
   const response = await publicGet('/openApi/swap/v3/quote/klines', { symbol, interval, limit });
-  return { environment: 'prod-vst', upstreamBase: response.base, symbol, interval, response: response.data };
+  return { environment: 'demo-vst', upstreamBase: response.base, symbol, interval, response: response.data };
 }
 
 export async function runRiskCheck(input = {}) {
@@ -742,7 +742,7 @@ export async function placeMarketOrder(input = {}) {
     quantity: order.quantity
   });
   return {
-    environment: 'prod-vst',
+    environment: 'demo-vst',
     liveApiAllowed: false,
     upstreamBase: response.base,
     riskApproval: {

@@ -1,4 +1,4 @@
-name: QuantDeus BingX VST Autotrade
+name: QuantDeus BingX VST Demo Autotrade
 
 on:
   schedule:
@@ -23,7 +23,7 @@ jobs:
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Run GitHub-native guarded BingX VST autotrade cycle
+      - name: Run GitHub-native guarded BingX VST demo cycle
         id: github_native
         continue-on-error: true
         working-directory: vercel-dispatcher
@@ -35,7 +35,7 @@ jobs:
           npm install --omit=dev --no-audit --no-fund
           node scripts/run-bingx-vst-native.mjs
 
-      - name: Run Vercel VST fallback
+      - name: Run Vercel VST demo fallback
         if: steps.github_native.outcome == 'failure'
         working-directory: vercel-dispatcher
         run: node scripts/run-bingx-vst-vercel-fallback.mjs

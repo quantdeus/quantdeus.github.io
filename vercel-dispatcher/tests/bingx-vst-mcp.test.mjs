@@ -96,14 +96,14 @@ test('approval token is short-lived and bound to the exact order', () => {
   const metrics = { maxReturnPct: 0.2, notionalUsdt: 60 };
   const token = broker.signRiskApproval(order, metrics, 1_000, 'secret');
   const claims = broker.verifyRiskApproval(token, order, 2_000, 'secret');
-  assert.equal(claims.env, 'prod-vst');
+  assert.equal(claims.env, 'demo-vst');
   assert.throws(() => broker.verifyRiskApproval(token, { ...order, quantity: '0.002' }, 2_000, 'secret'), /mismatch/);
   assert.throws(() => broker.verifyRiskApproval(token, order, 100_000, 'secret'), /expired/);
 });
 
 test('public status never advertises live API, withdrawals, or transfers', () => {
   const status = broker.publicStatus();
-  assert.equal(status.environment, 'prod-vst');
+  assert.equal(status.environment, 'demo-vst');
   assert.equal(status.liveApiAllowed, false);
   assert.equal(status.withdrawalsExposed, false);
   assert.equal(status.transfersExposed, false);
