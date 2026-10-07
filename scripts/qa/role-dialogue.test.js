@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'), assert=require('node:assert/strict');
 const {turnBudget,issueContext,digest,isEmhComment,skipDialogue}=require('../dialogue-state');
-const {reasonRole}=require('../openclaw-role-dialogue');
+const {parseJson,reasonRole}=require('../openclaw-role-dialogue');
 const {parseDecision}=require('../seven-reasoning');
 const {privileged,parseIssueCreateCommand,containsSensitiveMaterial}=require('../seven-command-gate');
 const decision={summary:'Observed delay; provider and contract failures are alternatives.',findings:['No completed artifact observed'],next_step:'Verify one bounded run'};
