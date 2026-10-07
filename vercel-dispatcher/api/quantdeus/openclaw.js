@@ -4,6 +4,7 @@ import { getVercelOidcToken } from '@vercel/oidc';
 import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
 import bingxVstMcpHandler from '../../lib/bingx-vst-mcp-handler.js';
+import { getBalance as getBingxVstBalance } from '../../lib/bingx-vst-broker.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -373,7 +374,39 @@ async function cachedProbeChatCandidate(candidate, requireTools = false) {
 }
 
 export default async function handler(req, res) {
-  if (String(req.query?.qd_route || '') === 'bingx-vst-mcp') {
+  const qdRoute = String(req.query?.qd_route || '');
+
+  if (qdRoute === 'bingx-vst-auth-smoke') {
+    if (req.method !== 'GET') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+    try {
+      const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+      const claims = await verify(bearer);
+      const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+      const eventName = String(claims.event_name || '');
+      const ref = String(claims.ref || '');
+      const trusted =
+        /\.github\/workflows\/openclaw-admin-smoke\.yml(?:@|$)/.test(workflowRef) &&
+        new Set(['push', 'workflow_dispatch']).has(eventName) &&
+        ref === 'refs/heads/main';
+      if (!trusted) return res.status(403).json({ ok: false, error: 'forbidden_smoke_identity' });
+
+      const balance = await getBingxVstBalance();
+      return res.status(200).json({
+        ok: true,
+        signed_vst_auth: true,
+        environment: balance.environment,
+        upstream_base: balance.upstreamBase
+      });
+    } catch (error) {
+      return res.status(502).json({
+        ok: false,
+        signed_vst_auth: false,
+        error: String(error?.message || error).slice(0, 160)
+      });
+    }
+  }
+
+  if (qdRoute === 'bingx-vst-mcp') {
     return bingxVstMcpHandler(req, res);
   }
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
