@@ -484,7 +484,7 @@ export default async function handler(req, res) {
     } catch (error) {
       return res.status(502).json({
         ok: false,
-        environment: 'prod-vst',
+        environment: 'demo-vst',
         error: String(error?.message || error).slice(0, 180)
       });
     }
@@ -532,7 +532,7 @@ export default async function handler(req, res) {
       const upstreamMessage = String(upstreamData?.msg ?? upstreamData?.message ?? '').slice(0, 180) || null;
       return res.status(forbidden ? 403 : 502).json({
         ok: false,
-        environment: 'prod-vst',
+        environment: 'demo-vst',
         error: message,
         upstream_code: Number.isFinite(upstreamCode) ? upstreamCode : null,
         upstream_http_status: Number.isFinite(upstreamHttpStatus) ? upstreamHttpStatus : null,
