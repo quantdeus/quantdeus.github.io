@@ -153,6 +153,7 @@ test('OpenClaw VST cron is retired while the guarded full-cycle tool remains una
   assert.match(openclawSource, /args: \['automations', 'remove', id, '--json'\]/);
   assert.match(openclawSource, /quantdeus-vst-cycle\.cjs/);
   assert.match(openclawSource, /runtime_maintenance: \{ vst_scheduler_retirement: vstSchedulerRetirement \}/);
+  // This ordering is the safety boundary: retirement must finish before any model/tool turn.
   assert.ok(
     openclawSource.indexOf('const vstSchedulerRetirement = await retireLegacyVstScheduler') <
       openclawSource.indexOf('run = await runOfficeAgent'),
