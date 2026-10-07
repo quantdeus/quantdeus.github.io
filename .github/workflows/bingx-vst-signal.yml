@@ -1,4 +1,4 @@
-name: QuantDeus BingX VST Signal
+name: QuantDeus BingX VST Autotrade
 
 on:
   schedule:
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
-      - name: Run read-only BingX VST signal cycle
+      - name: Run guarded BingX VST autotrade cycle
         run: |
           node <<'NODE'
           (async () => {
@@ -57,7 +57,7 @@ jobs:
             try { data = raw ? JSON.parse(raw) : null; } catch {}
 
             if (!response.ok || data?.ok !== true) {
-              throw new Error('VST signal cycle failed: HTTP ' + response.status + ' ' + String(data?.error || '').slice(0, 180));
+              throw new Error('VST autotrade cycle failed: HTTP ' + response.status + ' ' + String(data?.error || '').slice(0, 180));
             }
 
             const safe = {
@@ -71,19 +71,27 @@ jobs:
               confidence: data.confidence ?? null,
               estimated_notional_usdt: data.estimatedNotionalUsdt ?? null,
               risk_pct: data.riskPct ?? null,
-              reward_pct: data.rewardPct ?? null
+              reward_pct: data.rewardPct ?? null,
+              universe_scanned: data.universeScanned ?? null,
+              eligible_universe: data.eligibleUniverse ?? null,
+              deep_scanned_symbols: data.deepScannedSymbols ?? null,
+              order_id: data.orderId ?? null
             };
             console.log(JSON.stringify(safe));
             const fs = await import('node:fs/promises');
             await fs.appendFile(
               process.env.GITHUB_STEP_SUMMARY,
-              '### BingX VST signal\n\n' +
+              '### BingX VST guarded autotrade\n\n' +
               '- environment: ' + safe.environment + '\n' +
               '- action: ' + safe.action + '\n' +
               '- reason: ' + (safe.reason || 'n/a') + '\n' +
               '- symbol: ' + (safe.symbol || 'n/a') + '\n' +
               '- side: ' + (safe.side || 'n/a') + '\n' +
-              '- score: ' + (safe.score ?? 'n/a') + '\n'
+              '- score: ' + (safe.score ?? 'n/a') + '\n' +
+              '- universe scanned: ' + (safe.universe_scanned ?? 'n/a') + '\n' +
+              '- eligible universe: ' + (safe.eligible_universe ?? 'n/a') + '\n' +
+              '- deep scanned: ' + (safe.deep_scanned_symbols ?? 'n/a') + '\n' +
+              '- order id: ' + (safe.order_id ?? 'n/a') + '\n'
             );
           })().catch(error => {
             console.error(error.message || error);
