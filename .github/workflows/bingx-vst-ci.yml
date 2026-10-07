@@ -8,6 +8,9 @@ on:
       - 'vercel-dispatcher/tests/bingx-vst-*.mjs'
       - 'vercel-dispatcher/package.json'
       - '.github/workflows/bingx-vst-ci.yml'
+      - '.github/workflows/bingx-vst-signal.yml'
+      - 'scripts/mission-alignment.js'
+      - 'scripts/openclaw-vst-cron-bootstrap.js'
   push:
     branches: [main]
     paths:
@@ -15,6 +18,9 @@ on:
       - 'vercel-dispatcher/tests/bingx-vst-*.mjs'
       - 'vercel-dispatcher/package.json'
       - '.github/workflows/bingx-vst-ci.yml'
+      - '.github/workflows/bingx-vst-signal.yml'
+      - 'scripts/mission-alignment.js'
+      - 'scripts/openclaw-vst-cron-bootstrap.js'
   workflow_dispatch:
 
 permissions:
@@ -37,5 +43,6 @@ jobs:
           node --check vercel-dispatcher/lib/bingx-vst-broker.js
           node --check vercel-dispatcher/lib/bingx-vst-mcp-handler.js
           node --check vercel-dispatcher/tests/bingx-vst-mcp.test.mjs
+          node --check vercel-dispatcher/tests/bingx-vst-signal.test.mjs
       - name: Run BingX VST safety tests
-        run: node --test vercel-dispatcher/tests/bingx-vst-mcp.test.mjs
+        run: node --test vercel-dispatcher/tests/bingx-vst-mcp.test.mjs vercel-dispatcher/tests/bingx-vst-signal.test.mjs

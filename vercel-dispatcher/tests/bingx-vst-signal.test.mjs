@@ -126,13 +126,17 @@ test('scheduled VST autotrade keeps 15-minute cadence and QA precedes execution'
   const fs = await import('node:fs/promises');
   const workflow = await fs.readFile(new URL('../../.github/workflows/bingx-vst-signal.yml', import.meta.url), 'utf8');
   const source = await fs.readFile(new URL('../lib/bingx-vst-signal.js', import.meta.url), 'utf8');
+  const missionGuard = await fs.readFile(new URL('../../scripts/mission-alignment.js', import.meta.url), 'utf8');
   assert.match(workflow, /cron:\s*'\*\/15 \* \* \* \*'/);
+  assert.match(workflow, /node scripts\/mission-alignment\.js/);
+  assert.match(missionGuard, /'bingx-vst-signal\.yml'/);
   assert.match(workflow, /id:\s*github_native/);
   assert.match(workflow, /run-bingx-vst-native\.mjs/);
   assert.match(workflow, /QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL:\s*https:\/\/quantdeus\.vercel\.app\/api\/quantdeus\/bingx-vst-private-broker/);
   assert.match(workflow, /if:\s*steps\.github_native\.outcome == 'failure'/);
   assert.match(workflow, /run-bingx-vst-vercel-fallback\.mjs/);
   assert.doesNotMatch(workflow, /secrets\./);
+  assert.ok(workflow.indexOf('node scripts/mission-alignment.js') < workflow.indexOf('run-bingx-vst-native.mjs'));
   assert.ok(workflow.indexOf('run-bingx-vst-native.mjs') < workflow.indexOf('run-bingx-vst-vercel-fallback.mjs'));
   assert.match(source, /listContracts\(\)/);
   assert.match(source, /getTickers\(\)/);
