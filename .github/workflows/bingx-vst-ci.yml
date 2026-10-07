@@ -1,0 +1,41 @@
+name: BingX VST Safety Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'vercel-dispatcher/lib/bingx-vst-*.js'
+      - 'vercel-dispatcher/tests/bingx-vst-*.mjs'
+      - 'vercel-dispatcher/package.json'
+      - '.github/workflows/bingx-vst-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'vercel-dispatcher/lib/bingx-vst-*.js'
+      - 'vercel-dispatcher/tests/bingx-vst-*.mjs'
+      - 'vercel-dispatcher/package.json'
+      - '.github/workflows/bingx-vst-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vst-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dispatcher dependencies
+        working-directory: vercel-dispatcher
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Validate BingX VST JavaScript
+        run: |
+          node --check vercel-dispatcher/lib/bingx-vst-broker.js
+          node --check vercel-dispatcher/lib/bingx-vst-mcp-handler.js
+          node --check vercel-dispatcher/tests/bingx-vst-mcp.test.mjs
+      - name: Run BingX VST safety tests
+        run: node --test vercel-dispatcher/tests/bingx-vst-mcp.test.mjs
