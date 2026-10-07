@@ -97,10 +97,16 @@ async function remoteBrokerCall(operation, input = {}) {
   let data = null;
   try { data = raw ? JSON.parse(raw) : null; } catch {}
   if (!response.ok || data?.ok !== true) {
-    throw new Error(
+    const error = new Error(
       'bingx_vst_remote_broker_failed_' + response.status + '_' +
       String(data?.error || '').slice(0, 160)
     );
+    error.brokerHttpStatus = response.status;
+    error.businessCode = Number.isFinite(Number(data?.upstream_code)) ? Number(data.upstream_code) : null;
+    error.upstreamHttpStatus = Number.isFinite(Number(data?.upstream_http_status)) ? Number(data.upstream_http_status) : null;
+    error.upstreamMessage = String(data?.upstream_message || '').slice(0, 180) || null;
+    error.data = data;
+    throw error;
   }
   return data.result;
 }
@@ -392,7 +398,41 @@ function targetNotional() {
   );
 }
 
+export function upstreamErrorDetails(error) {
+  const message = String(error?.message || error || '');
+  const data = error?.data && typeof error.data === 'object' ? error.data : {};
+  const businessMatch = message.match(/bingx_vst_business_(-?\d+)/);
+  const upstreamHttpMatch = message.match(/bingx_vst_http_(\d{3})/);
+  const brokerHttpMatch = message.match(/bingx_vst_remote_broker_failed_(\d{3})_/);
+  const numberOrNull = value => {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const bingxCode = numberOrNull(error?.businessCode ?? data?.upstream_code ?? data?.code ?? businessMatch?.[1]);
+  const bingxHttpStatus = numberOrNull(error?.upstreamHttpStatus ?? data?.upstream_http_status ?? error?.status ?? upstreamHttpMatch?.[1]);
+  const brokerHttpStatus = numberOrNull(error?.brokerHttpStatus ?? brokerHttpMatch?.[1]);
+  const bingxMessage = String(
+    error?.upstreamMessage ??
+    data?.upstream_message ??
+    data?.msg ??
+    data?.message ??
+    ''
+  ).slice(0, 180) || null;
+
+  return {
+    bingxCode,
+    bingxMessage,
+    bingxHttpStatus,
+    brokerHttpStatus,
+    upstreamError: message.slice(0, 240) || null
+  };
+}
+
 function isTransientUpstreamReadFailure(error) {
+  const details = upstreamErrorDetails(error);
+  if ([100500, 100503, 110500].includes(details.bingxCode)) return true;
+  if ([500, 502, 503, 504].includes(details.bingxHttpStatus)) return true;
   const message = String(error?.message || error);
   return /bingx_vst_(?:business_(?:100500|100503|110500)|http_(?:500|502|503|504))/.test(message);
 }
@@ -429,7 +469,9 @@ export async function runVstSignalCycle() {
       useRemoteBroker ? remoteBrokerCall('positions') : getPositions()
     ]);
   } catch (error) {
-    if (isTransientUpstreamReadFailure(error)) return degradedNoTrade('initial_market_and_positions_read');
+    if (isTransientUpstreamReadFailure(error)) {
+      return degradedNoTrade('initial_market_and_positions_read', 'upstream_busy_fail_closed', upstreamErrorDetails(error));
+    }
     throw error;
   }
 
@@ -519,7 +561,18 @@ export async function runVstSignalCycle() {
   try {
     contractInfo = await getContractInfo({ symbol: candidate.symbol });
   } catch (error) {
-    if (isTransientUpstreamReadFailure(error)) return degradedNoTrade('contract_read');
+    if (isTransientUpstreamReadFailure(error)) {
+      return degradedNoTrade('contract_read', 'upstream_busy_fail_closed', {
+        symbol: candidate.symbol,
+        side: candidate.side,
+        score: candidate.score,
+        confidence: candidate.confidence,
+        universeScanned: universe.scannedSymbols,
+        eligibleUniverse: universe.eligibleSymbols,
+        deepScannedSymbols: analyses.length,
+        ...upstreamErrorDetails(error)
+      });
+    }
     throw error;
   }
   const contract = contractInfo.contract || {};
@@ -550,7 +603,18 @@ export async function runVstSignalCycle() {
       ? await remoteBrokerCall('risk_check', order)
       : await runRiskCheck(order);
   } catch (error) {
-    if (isTransientUpstreamReadFailure(error)) return degradedNoTrade('qa_risk_read');
+    if (isTransientUpstreamReadFailure(error)) {
+      return degradedNoTrade('qa_risk_read', 'upstream_busy_fail_closed', {
+        symbol: candidate.symbol,
+        side: candidate.side,
+        score: candidate.score,
+        confidence: candidate.confidence,
+        universeScanned: universe.scannedSymbols,
+        eligibleUniverse: universe.eligibleSymbols,
+        deepScannedSymbols: analyses.length,
+        ...upstreamErrorDetails(error)
+      });
+    }
     throw error;
   }
   if (!qa.allowed || !qa.approvalToken) {
@@ -582,14 +646,26 @@ export async function runVstSignalCycle() {
   } catch (error) {
     // Never retry or start a second full cycle after an order submission attempt.
     // Even in VST, a transport/upstream failure can make execution state uncertain.
+    const transient = isTransientUpstreamReadFailure(error);
     return degradedNoTrade(
       'order_submit',
-      isTransientUpstreamReadFailure(error)
+      transient
         ? 'order_rejected_upstream_busy'
         : 'order_submit_state_uncertain_fail_closed',
       {
+        universeScanned: universe.scannedSymbols,
+        eligibleUniverse: universe.eligibleSymbols,
+        deepScannedSymbols: analyses.length,
+        symbol: candidate.symbol,
+        side: candidate.side,
+        score: candidate.score,
+        confidence: candidate.confidence,
+        estimatedNotionalUsdt: Number(quantityInfo.notionalUsdt.toFixed(8)),
+        riskPct: protection.riskPct,
+        rewardPct: protection.rewardPct,
         orderAttempted: true,
-        requiresReview: !isTransientUpstreamReadFailure(error)
+        requiresReview: !transient,
+        ...upstreamErrorDetails(error)
       }
     );
   }
