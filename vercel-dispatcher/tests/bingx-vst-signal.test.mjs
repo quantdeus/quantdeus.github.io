@@ -126,7 +126,7 @@ test('scheduled VST autotrade keeps 15-minute cadence and QA precedes execution'
   const fs = await import('node:fs/promises');
   const workflow = await fs.readFile(new URL('../../.github/workflows/bingx-vst-signal.yml', import.meta.url), 'utf8');
   const source = await fs.readFile(new URL('../lib/bingx-vst-signal.js', import.meta.url), 'utf8');
-  assert.match(workflow, /cron:\s*'2,17,32,47 \* \* \* \*'/);
+  assert.match(workflow, /cron:\s*'\*\/15 \* \* \* \*'/);
   assert.match(workflow, /id:\s*github_native/);
   assert.match(workflow, /run-bingx-vst-native\.mjs/);
   assert.match(workflow, /QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL:\s*https:\/\/quantdeus\.vercel\.app\/api\/quantdeus\/bingx-vst-private-broker/);
