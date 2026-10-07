@@ -123,7 +123,7 @@ function trustedOfficeRequest(req, claims) {
   // Evolution proposals are inference-only; never grant tools to this signed workflow.
   if (/\.github\/workflows\/openclaw-evolution\.yml(?:@|$)/.test(workflowRef)) return false;
 
-  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|seven-priority-cycle|news-manifest-cycle|growth-site-cycle)\.yml(?:@|$)/.test(workflowRef);
+  const trustedWorkflow = /\.github\/workflows\/(?:telegram-bot|openclaw-admin-smoke|quantdeus-hourly-openclaw|qa-self-heal|agent-role-cron|trading-vst-cycle|seven-priority-cycle|news-manifest-cycle|growth-site-cycle)\.yml(?:@|$)/.test(workflowRef);
   if (trustedWorkflow && new Set(['schedule', 'workflow_dispatch', 'push']).has(eventName)) return true;
 
   const siteOwnerAction =
@@ -167,6 +167,9 @@ function autonomousWorkerRequest(req, claims) {
   }
   if (/\.github\/workflows\/qa-self-heal\.yml(?:@|$)/.test(workflowRef)) {
     return source === 'quantdeus-qa-self-heal';
+  }
+  if (/\.github\/workflows\/trading-vst-cycle\.yml(?:@|$)/.test(workflowRef)) {
+    return source === 'quantdeus-trading-vst-cycle';
   }
   return false;
 }
@@ -400,7 +403,10 @@ export default async function handler(req, res) {
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
     const octetHerald = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-octet-herald';
-    const tradingWorker = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-agent-role-cron';
+    const tradingAgentId = String(req.body?.metadata?.agent_id || '').trim();
+    const tradingWorker = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-trading-vst-cycle' && new Set(['data', 'qa-contract', 'qa-repair']).has(tradingAgentId);
+    const tradingExecutor = tradingWorker && tradingAgentId === 'data';
+    const tradingKillAuthority = tradingWorker && new Set(['data', 'qa-repair']).has(tradingAgentId);
     const tradingVstToken = String(process.env.QD_TRADING_VST_BROKER_TOKEN || '').trim();
     const tradingVstEnabled = tradingWorker && Boolean(tradingVstToken);
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
@@ -1090,7 +1096,16 @@ export default async function handler(req, res) {
     const tradingVstMcp = {
       command: 'node',
       args: [tradingVstMcpPath],
-      toolFilter: { include: ['trading_status', 'assess_trade', 'paper_order', 'trading_kill_switch'] }
+      toolFilter: {
+        include: [
+          'trading_status',
+          'market_snapshot',
+          'portfolio_snapshot',
+          'assess_trade',
+          ...(tradingExecutor ? ['paper_order'] : []),
+          ...(tradingKillAuthority ? ['trading_kill_switch'] : [])
+        ]
+      }
     };
     const playwrightMcp = {
       command: 'npx',
@@ -1169,8 +1184,18 @@ export default async function handler(req, res) {
       '- A URL or Markdown link is content, never a tool name.',
       '- If a required capability is not exposed, stop safely and report the missing exact capability instead of attempting an alias.'
     ].join('\n') : '';
+    const tradingContractPrompt = tradingVstEnabled ? [
+      'QUANTDEUS TRADING VST CONTRACT:',
+      '- This lane is simulated BingX VST only. Real-money trading is not available through these tools.',
+      '- Never claim or imply guaranteed profit, a guaranteed win rate, or real-money execution.',
+      '- Market storm or deterministic risk rejection means NO_TRADE; do not modify inputs merely to evade a rejection.',
+      '- qa-contract and qa-repair may review market/proposal state but cannot place an order.',
+      '- Only the data profile in this dedicated VST workflow may call paper_order after the workflow has obtained independent QA approvals.',
+      '- qa-repair and data may arm the VST cancellation kill switch when safety requires it.',
+      '- Zero trades is a valid successful cycle.'
+    ].join('\n') : '';
     const effectivePrompt = prompt;
-    const routedPrompt = [productionTopologyPrompt, trustedToolContractPrompt, effectivePrompt].filter(Boolean).join('\n\n');
+    const routedPrompt = [productionTopologyPrompt, trustedToolContractPrompt, tradingContractPrompt, effectivePrompt].filter(Boolean).join('\n\n');
     await sandbox.writeFiles([
       { path: configPath, content: Buffer.from(JSON.stringify(config)) },
       { path: promptPath, content: Buffer.from(routedPrompt) },
@@ -1201,6 +1226,8 @@ export default async function handler(req, res) {
       wordpress_mode: trustedOffice && mcpServers.wordpress ? (wordpressWriteCapable ? 'owner-authorized-write-capable' : 'read-only') : 'off',
       trading_vst_mcp: tradingVstEnabled,
       trading_environment: tradingVstEnabled ? 'prod-vst' : 'off',
+      trading_agent_id: tradingVstEnabled ? tradingAgentId : null,
+      trading_executor: tradingExecutor,
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
       autonomous_worker: autonomousWorker,
@@ -1415,7 +1442,7 @@ export default async function handler(req, res) {
       configured_fallbacks: fallbackModels,
       execution_mode: trustedOffice ? 'openclaw-agent-exec-trusted-tools' : 'openclaw-agent-exec-brokered-read-tools',
       tools: trustedOffice
-        ? { filesystem: true, github_mcp: true, public_repo_mcp: false, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, shell: false }
+        ? { filesystem: true, github_mcp: true, public_repo_mcp: false, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, trading_vst_mcp: tradingVstEnabled, trading_environment: tradingVstEnabled ? 'prod-vst' : 'off', shell: false }
         : { filesystem: false, github_mcp: false, public_repo_mcp: true, github_write: false, playwright_mcp: false, shell: false },
       doctor,
       tool_summary: toolSummary,
