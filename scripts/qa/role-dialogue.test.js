@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'), assert=require('node:assert/strict');
 const {turnBudget,issueContext,digest,isEmhComment,skipDialogue}=require('../dialogue-state');
-const {reasonRole}=require('../openclaw-role-dialogue');
+const {parseJson,reasonRole}=require('../openclaw-role-dialogue');
 const {parseDecision}=require('../seven-reasoning');
 const {privileged,parseIssueCreateCommand,containsSensitiveMaterial}=require('../seven-command-gate');
 const decision={summary:'Observed delay; provider and contract failures are alternatives.',findings:['No completed artifact observed'],next_step:'Verify one bounded run'};
@@ -43,6 +43,18 @@ test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
   const seven=parseDecision('ANALYSIS: Compare "A" and "B" using observed fields.\nDIRECTIVE: Prioritize the bounded blocker.\nACTION: Verify one issue.\nACTION 2: Record the result.');
   assert.equal(seven.actions.length,2);
   assert.match(seven.analysis,/observed fields/);
+});
+test('structured protocol survives a single-line provider flattening',()=>{
+  const parsed=parseJson('SUMMARY: Healthy enough to continue; FINDING: Provider returned evidence; FINDING 2: No mutation was claimed; NEXT_STEP: Retry one bounded turn.');
+  assert.equal(parsed.summary,'Healthy enough to continue');
+  assert.deepEqual(parsed.findings,['Provider returned evidence','No mutation was claimed']);
+  assert.equal(parsed.next_step,'Retry one bounded turn.');
+});
+test('malformed structured protocol keeps a stable error code',()=>{
+  assert.throws(
+    ()=>parseJson('SUMMARY: Missing the required other fields'),
+    error=>error && error.code==='ROLE_DIALOGUE_MALFORMED_OUTPUT'
+  );
 });
 test('role dialogue verifies real assistant turn, model and brokered read-tool runtime',async()=>{
   let calls=0;

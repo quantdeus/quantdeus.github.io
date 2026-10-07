@@ -56,6 +56,12 @@ const openclawRuntime = fs.readFileSync(path.join(root,'vercel-dispatcher','api'
 const cronContext = fs.readFileSync(path.join(root,'coordination','cron-context.md'),'utf8');
 const wordpressReadme = fs.readFileSync(path.join(root,'wordpress','README.md'),'utf8');
 check(cognitiveSitePrompt.includes('registry.collective_cognition?.runtime_directive') && cognitiveSitePrompt.includes('Collective cognition:'), 'scripts/site-agent-reply.js', 'website agent prompt consumes canonical collective cognition directive');
+check(
+  openclawRuntime.includes("'push', 'pull_request'") &&
+  openclawRuntime.includes("new Set(['schedule', 'workflow_dispatch', 'push']).has(eventName)"),
+  'vercel-dispatcher/api/quantdeus/openclaw.js',
+  'pull_request OIDC is accepted for read-only CI probes without granting trusted mutation authority'
+);
 check(cognitiveOpenClawClient.includes('agentRegistry.collective_cognition?.runtime_directive') && cognitiveOpenClawClient.includes('Collective cognition:'), 'scripts/openclaw-office-client.js', 'OpenClaw Office consumes canonical collective cognition directive');
 check(cognitiveTelegram.includes('data.collective_cognition?.runtime_directive') && cognitiveTelegram.includes('Collective cognition:'), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram homunculus prompt consumes canonical collective cognition directive');
 check(
@@ -236,7 +242,7 @@ check(
 check(
   cognitiveTelegram.includes('function canonicalAgentIdentity(agent)') &&
   cognitiveTelegram.includes('agent?.runtime_identity') &&
-  cognitiveTelegram.includes('dataIdentityViolation(agentId, answer)') &&
+  cognitiveTelegram.includes('dataIdentityViolation(agentId, answer,') &&
   cognitiveTelegram.includes('data_identity_smoke') &&
   cognitiveTelegram.includes('андроид типа Сунга') &&
   cognitiveTelegram.includes('Soong-type android created by Dr. Noonien Soong') &&
@@ -820,7 +826,7 @@ check(
     telegramBridge.includes("text: '/data Кто ты? Ответь одной короткой фразой.'") &&
     telegramBridge.includes("const llmProbe = roleProbeHealthy ? 'TELEGRAM_LLM_OK' : ''") &&
     telegramBridge.includes('data_identity_smoke') &&
-    telegramBridge.includes("!dataIdentityViolation('data', roleProbeBody)") &&
+    telegramBridge.includes("!dataIdentityViolation('data', roleProbeBody, '/data Кто ты?')") &&
     !telegramBridge.includes('const llmProbe = await chatCompletion('),
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'Telegram webhook setup uses one Data identity-aware LLM probe to avoid anonymous-provider burst throttling'

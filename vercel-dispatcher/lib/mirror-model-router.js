@@ -72,23 +72,45 @@ async function postJson(route, body, fetchImpl, timeoutMs) {
   }
 }
 
+function parseStrictJsonText(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw);
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  } catch {}
+  const fenced = raw.match(/\`\`\`(?:json)?\s*([\s\S]*?)\`\`\`/i);
+  if (!fenced) return null;
+  try {
+    const value = JSON.parse(fenced[1].trim());
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function probeMirrorProviders(candidates, { fetchImpl = fetch, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const rows = await Promise.all((candidates || []).map(async route => {
     const result = await postJson(route, {
       model: route.model,
-      messages: [{ role: 'user', content: 'Reply with exactly OK.' }],
+      messages: [
+        { role: 'system', content: 'Return only one strict JSON object. No Markdown.' },
+        { role: 'user', content: 'Return exactly {"ok":true}.' }
+      ],
       temperature: 0,
-      max_tokens: 8
+      max_tokens: 24
     }, fetchImpl, timeoutMs);
     const text = typeof result.data?.choices?.[0]?.message?.content === 'string'
       ? result.data.choices[0].message.content.trim()
       : '';
+    const parsed = parseStrictJsonText(text);
+    const ok = result.ok && parsed?.ok === true;
     return {
       ref: route.ref,
       route,
-      ok: result.ok && text === 'OK',
+      ok,
       status: result.status,
-      detail: result.ok ? (text === 'OK' ? 'exact_ok' : 'unexpected_response') : result.raw.slice(0, 240)
+      detail: result.ok ? (ok ? 'strict_json_ok' : 'strict_json_probe_failed') : result.raw.slice(0, 240)
     };
   }));
   return rows;
@@ -128,8 +150,13 @@ export async function callMirrorJsonRole({
     const text = typeof result.data?.choices?.[0]?.message?.content === 'string'
       ? result.data.choices[0].message.content.trim()
       : '';
-    if (result.ok && text) return { text, route };
-    failures.push({ ref: route.ref, status: result.status, detail: result.raw.slice(0, 240) });
+    const parsed = parseStrictJsonText(text);
+    if (result.ok && parsed) return { text: JSON.stringify(parsed), route };
+    failures.push({
+      ref: route.ref,
+      status: result.status,
+      detail: result.ok ? 'role_response_not_strict_json' : result.raw.slice(0, 240)
+    });
   }
 
   const error = new Error('mirror_no_healthy_provider');

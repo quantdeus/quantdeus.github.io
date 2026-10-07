@@ -82,6 +82,40 @@ async function api(path) {
   return JSON.parse(raw);
 }
 
+async function externalBlockerForRun(run) {
+  if (!run?.id || !failureConclusions.has(run.conclusion)) return null;
+  try {
+    const jobs = await api('/repos/' + repo + '/actions/runs/' + run.id + '/jobs?per_page=100');
+    for (const job of jobs.jobs || []) {
+      if (!failureConclusions.has(job.conclusion)) continue;
+      const response = await fetch(
+        'https://api.github.com/repos/' + repo + '/actions/jobs/' + job.id + '/logs',
+        {
+          headers: {
+            authorization: 'Bearer ' + token,
+            accept: 'text/plain',
+            'x-github-api-version': '2022-11-28',
+            'user-agent': 'quantdeus-qa-failure-radar'
+          },
+          redirect: 'follow'
+        }
+      );
+      if (!response.ok) continue;
+      const log = (await response.text()).slice(-120000).toLowerCase();
+      if (
+        log.includes('openclaw_external_capacity_blocked') ||
+        log.includes('hobby plan usage limit exceeded') ||
+        (log.includes('vercel sandbox') && log.includes('usage limit'))
+      ) {
+        return 'vercel_sandbox_capacity';
+      }
+    }
+  } catch (error) {
+    console.warn('External blocker classification unavailable for run ' + run.id + ': ' + String(error?.message || error).slice(0, 300));
+  }
+  return null;
+}
+
 function runCheck(label, command) {
   const started = Date.now();
   const result = spawnSync(command, {
@@ -145,6 +179,11 @@ function runCheck(label, command) {
     Date.parse(b.latest_at || 0) - Date.parse(a.latest_at || 0)
   );
 
+  const runById = new Map(runs.map(run => [String(run.id), run]));
+  for (const row of ranking.filter(item => item.unresolved).slice(0, 12)) {
+    row.external_blocker = await externalBlockerForRun(runById.get(String(row.latest_id)));
+  }
+
   const familyStats = {};
   for (const row of ranking) {
     if (!familyStats[row.family]) familyStats[row.family] = {family: row.family, failures: 0, runs: 0, unresolved: 0};
@@ -173,10 +212,16 @@ function runCheck(label, command) {
 
   const checkResults = queue.map(item => ({...runCheck(item.label, item.command), source: item.source}));
   const failedChecks = checkResults.filter(x => !x.ok);
+  const externalBlocked = ranking
+    .filter(x => x.unresolved && x.external_blocker)
+    .sort((a, b) => Date.parse(b.latest_at || 0) - Date.parse(a.latest_at || 0));
   const unresolved = ranking
-    .filter(x => x.unresolved)
+    .filter(x => x.unresolved && !x.external_blocker)
     .sort((a, b) => Date.parse(b.latest_at || 0) - Date.parse(a.latest_at || 0));
   const triggerFailed = failureConclusions.has(triggerConclusion);
+  const triggerRow = ranking.find(x => String(x.latest_id || '') === triggerRunId);
+  const triggerExternal = Boolean(triggerRow?.external_blocker);
+  const triggerRepairableFailure = triggerFailed && !triggerExternal;
   const reactiveWorkflowRun = eventName === 'workflow_run';
 
   // Reactive workflow_run events may repair only the run that triggered them.
@@ -184,10 +229,10 @@ function runCheck(label, command) {
   // historical/current workflow is unresolved. Scheduled/manual Radar scans may
   // select one current unresolved run for repair.
   const scanUnresolved = !reactiveWorkflowRun;
-  const needsRepair = failedChecks.length > 0 || triggerFailed || (scanUnresolved && unresolved.length > 0);
+  const needsRepair = failedChecks.length > 0 || triggerRepairableFailure || (scanUnresolved && unresolved.length > 0);
 
   let repairTarget = null;
-  if (triggerFailed && triggerRunId) {
+  if (triggerRepairableFailure && triggerRunId) {
     repairTarget = {
       run_id: triggerRunId,
       workflow: triggerWorkflow || null,
@@ -224,6 +269,7 @@ function runCheck(label, command) {
     checks: checkResults,
     failed_checks: failedChecks.map(x => x.label),
     unresolved_workflows: unresolved.map(x => x.workflow),
+    external_blockers: externalBlocked.map(x => ({ workflow:x.workflow, run_id:x.latest_id, blocker:x.external_blocker })),
     needs_repair: needsRepair,
     repair_lane: repairLane
   };
@@ -237,9 +283,9 @@ function runCheck(label, command) {
     '',
     '## Failure frequency',
     '',
-    '| Workflow | Family | Failures | Runs | Latest | Unresolved |',
-    '|---|---|---:|---:|---|---|',
-    ...ranking.slice(0, 20).map(x => '| ' + x.workflow.replace(/\|/g,'\\|') + ' | ' + x.family + ' | ' + x.failures + ' | ' + x.runs + ' | ' + (x.latest_conclusion || '-') + ' | ' + (x.unresolved ? 'yes' : 'no') + ' |'),
+    '| Workflow | Family | Failures | Runs | Latest | Unresolved | External blocker |',
+    '|---|---|---:|---:|---|---|---|',
+    ...ranking.slice(0, 20).map(x => '| ' + x.workflow.replace(/\|/g,'\\|') + ' | ' + x.family + ' | ' + x.failures + ' | ' + x.runs + ' | ' + (x.latest_conclusion || '-') + ' | ' + (x.unresolved ? 'yes' : 'no') + ' | ' + (x.external_blocker || '-') + ' |'),
     '',
     '## Diagnostic order',
     '',
@@ -252,6 +298,7 @@ function runCheck(label, command) {
     '- repair_target: ' + (repairTarget ? JSON.stringify(repairTarget) : 'none'),
     '- failed_checks: ' + (failedChecks.map(x => x.label).join(', ') || 'none'),
     '- unresolved_workflows: ' + (unresolved.map(x => x.workflow).join(', ') || 'none'),
+    '- external_blockers: ' + (externalBlocked.map(x => x.workflow + '=' + x.external_blocker).join(', ') || 'none'),
     '- stale_failed_workflows: ' + (ranking.filter(x => x.stale_failure).map(x => x.workflow).join(', ') || 'none')
   ].join('\n');
 

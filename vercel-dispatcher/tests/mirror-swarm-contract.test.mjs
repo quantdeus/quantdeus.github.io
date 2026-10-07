@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deterministicDiagnosis, deterministicStageDiagnosis, safeRepairPath, fingerprint, providerExhausted } from '../api/quantdeus/mirror.js';
+import { deterministicDiagnosis, deterministicStageDiagnosis, safeRepairPath, fingerprint, providerExhausted, mirrorIncidentKey, publicHeadText } from '../api/quantdeus/mirror.js';
 
 test('deterministic fallback stays healthy on clean evidence', () => {
   const result = deterministicDiagnosis({
@@ -47,4 +47,23 @@ test('role-stage provider exhaustion escalates even after a successful admission
 test('provider exhaustion classifier only matches the bounded mirror exhaustion error', () => {
   assert.equal(providerExhausted(new Error('mirror_no_healthy_provider')), true);
   assert.equal(providerExhausted(new Error('github_token_unavailable')), false);
+});
+
+
+test('model-plane recurrences share one semantic incident key across changing evidence', () => {
+  const a = deterministicStageDiagnosis({
+    validator_state: { syntax_rc:0, contract_rc:1, openclaw_rc:0 },
+    recent_failures: [{ id:1, name:'Hourly', conclusion:'failure' }]
+  }, 'probe');
+  const b = deterministicStageDiagnosis({
+    validator_state: { syntax_rc:0, contract_rc:0, openclaw_rc:0 },
+    recent_failures: []
+  }, 'role');
+  assert.equal(mirrorIncidentKey(a, 'probe'), 'model-plane-unavailable');
+  assert.equal(mirrorIncidentKey(b, 'role'), 'model-plane-unavailable');
+});
+
+test('mirror incident titles keep the beginning of the summary', () => {
+  const title = publicHeadText('Mirror model routes unavailable; deterministic evidence captured a repair-worthy condition.', 20);
+  assert.equal(title, 'Mirror model routes un');
 });

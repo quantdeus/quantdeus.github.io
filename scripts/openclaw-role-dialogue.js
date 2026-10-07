@@ -4,23 +4,52 @@ const office = require('./openclaw-office-client');
 const {turnBudget,turnEvidence} = require('./dialogue-state');
 
 function parseJson(text) {
-  const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  const raw = String(text || '').trim().replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`$/, '');
   try { return JSON.parse(raw); } catch (jsonError) {
-    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    const field = name => {
-      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
-      const line = lines.find(x => re.test(x));
-      return line ? line.match(re)[1].trim() : '';
-    };
-    const findings = lines.map(x => {
-      const m = x.match(/^FINDING(?:\s*\d+)?\s*:\s*(.+)/i);
-      return m ? m[1].trim() : '';
-    }).filter(Boolean);
-    const summary = field('SUMMARY');
-    const nextStep = field('NEXT(?:_|\\s*)STEP');
-    if (summary && findings.length && nextStep) return {summary, findings, next_step: nextStep};
-    jsonError.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
-    throw jsonError;
+    const tokens = [];
+    const re = /(?:^|[;\r\n]\s*|\s{2,})(SUMMARY|FINDING(?:\s*\d+)?|NEXT(?:_|\s*)STEP)\s*:\s*/gi;
+    let match;
+    while ((match = re.exec(raw))) {
+      tokens.push({
+        label: match[1],
+        valueStart: re.lastIndex,
+        matchStart: match.index
+      });
+    }
+
+    // Some providers flatten the requested line protocol into one line with
+    // single spaces between labels. Fall back to a bounded label scan.
+    if (tokens.length < 3) {
+      tokens.length = 0;
+      const flat = /\b(SUMMARY|FINDING(?:\s*\d+)?|NEXT(?:_|\s*)STEP)\s*:\s*/gi;
+      while ((match = flat.exec(raw))) {
+        tokens.push({
+          label: match[1],
+          valueStart: flat.lastIndex,
+          matchStart: match.index
+        });
+      }
+    }
+
+    const parsed = { summary: '', findings: [], next_step: '' };
+    for (let i = 0; i < tokens.length; i += 1) {
+      const current = tokens[i];
+      const next = tokens[i + 1];
+      const value = raw
+        .slice(current.valueStart, next ? next.matchStart : raw.length)
+        .trim()
+        .replace(/^[;\-–—\s]+|[;\s]+$/g, '');
+      const label = current.label.toUpperCase().replace(/\s+/g, '_');
+      if (label === 'SUMMARY' && !parsed.summary) parsed.summary = value;
+      else if (label.startsWith('FINDING') && value) parsed.findings.push(value);
+      else if ((label === 'NEXT_STEP' || label === 'NEXT__STEP') && !parsed.next_step) parsed.next_step = value;
+    }
+
+    if (parsed.summary && parsed.findings.length && parsed.next_step) return parsed;
+    const error = new Error('Role output is neither valid JSON nor the required SUMMARY/FINDING/NEXT_STEP protocol.');
+    error.code = 'ROLE_DIALOGUE_MALFORMED_OUTPUT';
+    error.cause = jsonError;
+    throw error;
   }
 }
 
@@ -82,4 +111,4 @@ function renderRole({ heading, result, marker, metrics = [] }) {
   return lines.join('\n');
 }
 
-module.exports = { reasonRole, renderRole };
+module.exports = { parseJson, reasonRole, renderRole };
