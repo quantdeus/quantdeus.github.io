@@ -8,7 +8,9 @@ const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-openclaw';
 const REPOSITORY = 'quantdeus/quantdeus.github.io';
-const EVENTS = new Set(['issue_comment', 'issues', 'schedule', 'workflow_dispatch', 'push']);
+// pull_request is admitted only so read-only CI stress probes can authenticate.
+// trustedOfficeRequest() still limits mutation-capable trusted lanes to schedule/workflow_dispatch/push.
+const EVENTS = new Set(['issue_comment', 'issues', 'schedule', 'workflow_dispatch', 'push', 'pull_request']);
 const SANDBOX = 'quantdeus-openclaw-office';
 const VERCEL_INTERNAL_AUDIENCE = 'quantdeus-internal-openclaw';
 const VERCEL_INTERNAL_ISSUER = 'https://oidc.vercel.com/energotrons-projects-2705eaed';
