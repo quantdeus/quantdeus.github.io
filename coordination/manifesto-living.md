@@ -1,88 +1,88 @@
-# QuantDeus Living Manifest — Adaptive Horizon
+# Живой манифест QuantDeus — Адаптивный горизонт
 
-Status: **ACTIVE / automatically maintained adaptive layer**  
-Constitutional base: **Neon Horizon v4.0 + «Эпидемия Добра»**  
-Machine source: `coordination/civilization-doctrine.json`  
-Automation: `.github/workflows/news-manifest-cycle.yml`
+Статус: **АКТИВЕН / автоматически поддерживаемый адаптивный слой**  
+Конституционная основа: **Неоновый Горизонт v4.0 + «Эпидемия Добра»**  
+Машинный источник: `coordination/civilization-doctrine.json`  
+Автоматизация: `.github/workflows/news-manifest-cycle.yml`
 
-## Purpose
+## Назначение
 
-This file is the **living, evidence-backed layer** of the QuantDeus manifesto system. It adapts operational priorities to meaningful changes in the world, Russia, science, technology, infrastructure, economics and the QuantDeus community without rewriting the constitutional core because of one headline.
+Этот файл — **живой, основанный на доказательствах слой** системы манифеста QuantDeus. Он адаптирует операционные приоритеты к значимым изменениям в мире, России, науке, технологиях, инфраструктуре, экономике и сообществе QuantDeus, не переписывая конституционное ядро из-за одной новости или отдельного сигнала.
 
-The stable core remains: human dignity and agency, voluntary participation and EXIT, evidence before narrative, transparency, safety, open learning, measurable scarcity reduction, science/engineering progress and a long space horizon.
+Стабильное ядро сохраняется: человеческое достоинство и субъектность, добровольное участие и право выхода (EXIT), доказательства раньше нарратива, прозрачность, безопасность, открытое обучение, измеримое снижение дефицита, научно-инженерный прогресс и длинный космический горизонт.
 
-## Canonical bridge — Neon Horizon v4.0
+## Канонический мост — Неоновый Горизонт v4.0
 
-- **2026–2028 / IGNITION:** build the self-accelerating OS, evidence loops, open artifacts, first autonomous nodes and Federation standards.
-- **2026–2041 / MIDDLE HORIZON:** grow a Proto-Federation of local, science, digital, education/culture and physical pilot nodes; translate post-scarcity ideas into measurable pilots.
-- **2026–2126 / CENTURY COMPASS:** preserve the long civilizational direction while methods remain adaptive.
-- **Federation of Nodes:** compatibility replaces centralization; independent projects keep their owner, identity, roadmap and EXIT rights.
-- **Federation Interface v1:** Identity, Mission, Evidence, Artifacts, Metrics, Replication, Safety, EXIT, Governance and Human override are the minimum interoperability contract.
+- **2026–2028 / ЗАЖИГАНИЕ:** создать саморазгоняющуюся операционную систему, доказательные циклы, открытые артефакты, первые автономные узлы и стандарты Федерации.
+- **2026–2041 / СРЕДНИЙ ГОРИЗОНТ:** вырастить Прото-Федерацию локальных, научных, цифровых, образовательных, культурных и физических пилотных узлов; переводить идеи постдефицита в измеримые пилоты.
+- **2026–2126 / ВЕКОВОЙ КОМПАС:** сохранять длинное цивилизационное направление, пока методы остаются адаптивными.
+- **Федерация узлов:** совместимость важнее централизации; независимые проекты сохраняют владельца, идентичность, дорожную карту и право выхода.
+- **Интерфейс Федерации v1:** Идентичность, Миссия, Доказательства, Артефакты, Метрики, Репликация, Безопасность, EXIT, Управление и ручной контроль человека — минимальный контракт совместимости.
 
-This section is constitutional context, **not** an adaptive news signal. The automated news cycle may reprioritize experiments and opportunity maps, but it must not silently rewrite these v4 constraints.
+Этот раздел является конституционным контекстом, **а не адаптивным новостным сигналом**. Автоматический новостной цикл может менять приоритеты экспериментов и карты возможностей, но не имеет права незаметно переписывать эти ограничения v4.
 
-## Current adaptive horizon
+## Текущий адаптивный горизонт
 
-**2026-10-07 — QuantDeus has crossed from a primarily repository-driven swarm into a human-directed, multi-surface operating environment.** The registered crew is now 27 agents, including Lt. Cmdr. Data; bounded agent evolution and profile-scoped skills are active; governed Telegram coordination, OpenClaw runtime work, measurable growth loops, WordPress platform migration and automated QA/self-heal paths are all represented in current execution.
+**2026-10-07 — QuantDeus перешёл от преимущественно репозиторного роя к человекоцентричной многоконтурной операционной среде.** Зарегистрированный экипаж достиг 27 агентов, включая Lt. Cmdr. Data; действуют ограниченная эволюция агентов и профильные навыки; в текущем исполнении представлены управляемая Telegram-координация, контур OpenClaw, измеримые циклы роста, миграция платформы на WordPress и автоматизированные пути QA/самовосстановления.
 
-This does **not** change the Neon Horizon v4.0 constitutional core. It changes the near-term priority: the next phase is not “more agents” or “more automation” by itself, but **reliable bounded autonomy, interoperability between human/AI/runtime nodes, useful contributor growth, lower operational entropy and reproducible artifacts**.
+Это **не меняет** конституционное ядро Неонового Горизонта v4.0. Меняется ближний приоритет: следующая фаза — не «больше агентов» и не «больше автоматизации» сами по себе, а **надёжная ограниченная автономность, совместимость между людьми, ИИ и исполнительными контурами, полезный рост сообщества, снижение операционной энтропии и воспроизводимые артефакты**.
 
-Working adaptive formula:
+Рабочая адаптивная формула:
 
-> **Humans set direction and authority. AI expands execution capacity. Culture prototypes possibilities. Federation scales what survives evidence. Autonomy must reduce system entropy rather than manufacture activity.**
+> **Люди задают направление и полномочия. ИИ расширяет способность действовать. Культура прототипирует возможное. Федерация масштабирует то, что прошло проверку доказательствами. Автономность обязана уменьшать энтропию системы, а не производить активность ради активности.**
 
-## World signals
+## Сигналы мира
 
-_No material signal recorded yet._
+_Материальный внешний сигнал пока не зафиксирован._
 
-## Russia signals
+## Сигналы России
 
-_No material signal recorded yet._
+_Материальный внешний сигнал пока не зафиксирован._
 
-## Science & technology signals
+## Сигналы науки и технологий
 
-- **AI crew → operating system signal (2026-10-05…07):** the QuantDeus registry reached 27 specialized agents and added a bounded positronic cycle plus profile-scoped skills for Data. This is evidence that role-specialized agents can carry persistent research, engineering and coordination responsibilities inside a governed runtime.
-- **Bounded-autonomy signal:** repeated QA/self-heal and mirror-repair incidents show that autonomous repair is useful only when it converges on a verified state change. Repeated issue creation or retries without convergence are operational entropy, not progress.
-- **Capability ≠ authority:** tool-capable agents may research, inspect, draft, test and propose broadly; privileged publication, spending, secrets, irreversible mutations and sensitive external commitments remain explicitly authority-gated.
-- **Culture as simulation/prototyping:** games, speculative fiction, Y2K/2000s futurism, Star Trek-inspired interfaces and visual worlds may generate hypotheses, product concepts and simulation scenarios. They remain a design and discovery layer, never an evidence upgrade.
-- **First Contact remains a frontier research program:** legal and communication protocol work may be developed as preparedness and scenario research. It must not be presented as proof that a contact event has occurred; evidence grades and falsifiers remain mandatory.
+- **ИИ-экипаж → сигнал операционной системы (2026-10-05…07):** реестр QuantDeus достиг 27 специализированных агентов; для Data добавлены ограниченный позитронный цикл и профильные навыки. Это показывает, что специализированные по ролям агенты способны нести длительные исследовательские, инженерные и координационные функции внутри управляемой среды.
+- **Сигнал ограниченной автономности:** повторяющиеся циклы QA/самовосстановления и ремонта зеркал полезны только тогда, когда сходятся к проверяемому изменению состояния. Повторное создание issues или попыток без сходимости — это операционная энтропия, а не прогресс.
+- **Способность ≠ полномочие:** агенты с инструментами могут широко исследовать, проверять, готовить черновики, тестировать и предлагать изменения; публикация в production, расходы, работа с секретами, необратимые изменения и чувствительные внешние обязательства остаются за явными воротами полномочий.
+- **Культура как слой симуляции и прототипирования:** игры, спекулятивная фантастика, Y2K/футуризм 2000-х, интерфейсы в духе Star Trek и визуальные миры могут порождать гипотезы, продуктовые концепции и сценарии симуляций. Они остаются слоем дизайна и поиска, но не повышают уровень доказательств.
+- **Первый контакт остаётся фронтирной исследовательской программой:** правовые и коммуникационные протоколы могут разрабатываться как подготовка и сценарное исследование. Они не являются доказательством того, что событие контакта произошло; уровни доказательств и критерии опровержения остаются обязательными.
 
-## Economy, infrastructure & resource signals
+## Сигналы экономики, инфраструктуры и ресурсов
 
-- **Protocol/Portal separation:** the active WordPress migration reinforces that QuantDeus must not bind its constitutional identity to one frontend, CMS or hosting stack. The **QuantDeus Protocol** is the portable doctrine, interfaces, evidence rules and governance contract; the **QuantDeus Portal** is a replaceable reference implementation.
-- **Multi-runtime federation:** GitHub, OpenClaw, Telegram, WordPress and mirror/root support paths increasingly behave as distinct nodes. Reliability therefore depends on explicit contracts, health evidence, bounded retries, failover and a shared audit trail rather than hidden coupling.
-- **Repair-loop economy:** compute, Actions minutes, queue capacity and human attention are resources. One root cause should map to one canonical incident with bounded repair attempts and a verified recovery condition instead of an unbounded family of duplicate repair artifacts.
+- **Разделение Протокола и Портала:** активная миграция на WordPress подтверждает, что конституционная идентичность QuantDeus не должна зависеть от одного фронтенда, CMS или хостинга. **Протокол QuantDeus** — переносимая доктрина, интерфейсы, правила доказательности и управления; **Портал QuantDeus** — заменяемая референсная реализация.
+- **Многоконтурная Федерация:** GitHub, OpenClaw, Telegram, WordPress и пути поддержки mirror/root всё сильнее ведут себя как отдельные узлы. Поэтому надёжность зависит от явных контрактов, доказательств состояния, ограниченных повторов, failover и общего аудита, а не от скрытого сцепления.
+- **Экономика циклов ремонта:** вычисления, минуты Actions, ёмкость очередей и человеческое внимание — ресурсы. Одна первопричина должна соответствовать одному каноническому инциденту с ограниченным числом попыток ремонта и проверяемым условием восстановления, а не неограниченному семейству дублирующих repair-артефактов.
 
-## QuantDeus community signals
+## Сигналы сообщества QuantDeus
 
-- **27-agent human-led crew:** the swarm is now better described as a digital crew with persistent roles than as a collection of isolated bots. Human direction and Human Override remain above the crew.
-- **Federation of Nodes is becoming operational:** compatible nodes now include not only external projects but also people, communities, AI crews and computational/runtime nodes, provided they retain clear identity, ownership, evidence, governance and EXIT rights.
-- **Growth is contribution, not reach:** the upgraded growth loop and contributor recruitment work make a real useful contribution, successful onboarding, reusable artifact or independent replication more important than impressions, posts or message count.
-- **Community interfaces matter:** forum, Telegram, GitHub Issues and the Portal should increasingly act as interoperable surfaces into one auditable participation system rather than separate engagement silos.
+- **Человекоцентричный экипаж из 27 агентов:** рой теперь точнее описывать как цифровой экипаж с устойчивыми ролями, а не как набор изолированных ботов. Человеческое направление и ручной контроль остаются выше экипажа.
+- **Федерация узлов становится операционной:** совместимыми узлами считаются не только внешние проекты, но и люди, сообщества, ИИ-экипажи и вычислительные/исполнительные контуры, если они сохраняют ясную идентичность, владельца, доказательную базу, управление и право выхода.
+- **Рост = вклад, а не охват:** обновлённый контур роста и набор участников делают реальный полезный вклад, успешный онбординг, переиспользуемый артефакт или независимую репликацию важнее показов, постов и количества сообщений.
+- **Интерфейсы сообщества должны сходиться:** форум, Telegram, GitHub Issues и Портал должны всё больше работать как совместимые входы в одну проверяемую систему участия, а не как разрозненные каналы вовлечения.
 
-## Operational implications
+## Операционные следствия
 
-1. **Optimize for bounded autonomy.** An autonomous cycle must have an owner, scope, budget/limit, observable state target, stop condition and evidence of success.
-2. **Reduce entropy before increasing agent count.** Reliability, queue health, deduplication, incident convergence and cross-runtime contracts outrank adding more autonomous actors.
-3. **Apply Federation Interface v1 to people, teams, AI crews and runtimes.** Identity, Mission, Evidence, Artifacts, Metrics, Replication, Safety, EXIT, Governance and Human override remain the minimum shared contract.
-4. **Separate QuantDeus Protocol from QuantDeus Portal.** WordPress or any future frontend may be replaced without rewriting the constitutional core.
-5. **Measure growth by useful participation.** Prefer first contribution, verified artifact, retained contributor, independent replication and autonomous node creation over raw reach.
-6. **Promote culture from decoration to a controlled prototyping layer.** Games, media, interfaces and speculative worlds may help formulate testable questions and future-system prototypes; they never substitute for verification.
-7. **Keep First Contact in the frontier portfolio.** Develop legal, communication and scientific preparedness as scenario work with explicit evidence grades; do not convert narrative possibility into factual certainty.
-8. **Collapse duplicate repair loops.** A recurring failure should converge on one canonical incident/root cause with bounded retries and a falsifiable recovery test.
+1. **Оптимизировать ограниченную автономность.** У каждого автономного цикла должны быть владелец, область действия, бюджет/лимит, наблюдаемая цель состояния, условие остановки и доказательство успеха.
+2. **Снижать энтропию до увеличения числа агентов.** Надёжность, здоровье очередей, устранение дублей, сходимость инцидентов и межконтурные контракты важнее добавления новых автономных акторов.
+3. **Применять Интерфейс Федерации v1 к людям, командам, ИИ-экипажам и исполнительным контурам.** Идентичность, Миссия, Доказательства, Артефакты, Метрики, Репликация, Безопасность, EXIT, Управление и ручной контроль человека остаются минимальным общим контрактом.
+4. **Разделять Протокол QuantDeus и Портал QuantDeus.** WordPress или любой будущий фронтенд можно заменить без переписывания конституционного ядра.
+5. **Измерять рост полезным участием.** Первый вклад, проверенный артефакт, удержанный участник, независимая репликация и появление автономного узла важнее сырого охвата.
+6. **Поднять культуру от декорации до контролируемого слоя прототипирования.** Игры, медиа, интерфейсы и спекулятивные миры могут помогать формулировать проверяемые вопросы и прототипы систем будущего, но никогда не заменяют проверку.
+7. **Сохранять Первый контакт во фронтирном портфеле.** Развивать правовую, коммуникационную и научную готовность как сценарную работу с явными уровнями доказательств; не превращать возможность в утверждение о факте.
+8. **Схлопывать дублирующиеся циклы ремонта.** Повторяющийся сбой должен сходиться к одному каноническому инциденту/первопричине с ограниченными повторами и опровержимым тестом восстановления.
 
-## Update contract
+## Контракт обновления
 
-1. Use dated, publicly inspectable sources. For a material change, prefer multiple independent sources or a primary source plus corroboration.
-2. Separate **fact**, **trend**, **inference**, and **QuantDeus implication**.
-3. Record uncertainty and contradictory evidence instead of forcing a narrative.
-4. News may change priorities, experiments, messaging, opportunity maps and roadmap hypotheses. It may **not silently remove** human agency, EXIT, evidence requirements, safety, transparency or voluntary participation.
-5. Political/civic topics are handled neutrally: document positions, laws, decisions, data and concrete effects without party/candidate endorsement, electoral targeting or persuasive campaigning.
-6. Growth content derived from this file must explain QuantDeus truthfully and must not exploit fear, tragedy or polarization.
-7. Each automated change uses an `automation/manifest-update/*` branch and a PR. Automatic merge is allowed only when the PR changes this living layer, independent QA + Static Smoke are green, and the branch remains unchanged during verification.
+1. Использовать датированные и публично проверяемые источники. Для материального изменения предпочитать несколько независимых источников или первичный источник с подтверждением.
+2. Разделять **факт**, **тенденцию**, **вывод** и **следствие для QuantDeus**.
+3. Фиксировать неопределённость и противоречащие данные вместо принудительного сведения к одной истории.
+4. Новости могут менять приоритеты, эксперименты, сообщения, карты возможностей и гипотезы дорожной карты. Они не могут **незаметно отменять** человеческую субъектность, EXIT, требования к доказательствам, безопасность, прозрачность или добровольность участия.
+5. Политические и гражданские темы обрабатываются нейтрально: фиксируются позиции, законы, решения, данные и конкретные эффекты без партийной/кандидатской агитации, электорального таргетинга или убеждающей кампании.
+6. Контент роста, созданный на основе этого файла, должен честно объяснять QuantDeus и не использовать страх, трагедии или поляризацию.
+7. Каждое автоматическое изменение использует ветку `automation/manifest-update/*` и PR. Автоматическое слияние разрешено только когда PR меняет этот живой слой, независимые QA + Static Smoke зелёные, а ветка не менялась во время проверки.
 
-## Change log
+## Журнал изменений
 
-- **2026-10-07** — Promoted the first internal adaptive signal set: 27-agent human-led crew, bounded autonomy, Protocol/Portal separation, operational Federation of Nodes, contribution-based growth, culture as a controlled prototyping layer, First Contact as evidence-gated frontier preparedness, and entropy-reducing repair loops. Constitutional Neon Horizon v4.0 remains unchanged.
-- **2026-10-02** — Constitutional base promoted to Neon Horizon v4.0 after the canonical PDF was archived; added the three nested horizons and Federation of Nodes bridge. No adaptive news signal was promoted by this change.
-- **2026-09-29** — Living adaptive layer created. No current-world claims imported at bootstrap; future cycles must attach dated evidence.
+- **2026-10-07** — Продвинут первый внутренний набор адаптивных сигналов: человекоцентричный экипаж из 27 агентов, ограниченная автономность, разделение Протокола/Портала, операционная Федерация узлов, рост через вклад, культура как контролируемый слой прототипирования, Первый контакт как фронтирная подготовка с доказательными воротами и циклы ремонта, снижающие энтропию. Конституционный Неоновый Горизонт v4.0 не изменён.
+- **2026-10-02** — Конституционная основа повышена до Неонового Горизонта v4.0 после архивации канонического PDF; добавлены три вложенных горизонта и мост Федерации узлов. Это изменение не продвигало адаптивный новостной сигнал.
+- **2026-09-29** — Создан живой адаптивный слой. На старте внешние утверждения о текущем мире не импортировались; будущие циклы должны сопровождаться датированными доказательствами.
