@@ -1112,10 +1112,33 @@ export default async function handler(req, res) {
         ]
       }
     };
+    const bingxVstBrokerToken = String(process.env.QUANTDEUS_BINGX_VST_BROKER_TOKEN || '').trim();
+    const bingxVstMcp = {
+      transport: 'streamable-http',
+      url: 'https://quantdeus.vercel.app/api/quantdeus/bingx-vst-mcp',
+      ...(bingxVstBrokerToken ? { headers: { Authorization: `Bearer ${bingxVstBrokerToken}` } } : {}),
+      connectionTimeoutMs: 10000,
+      requestTimeoutMs: 45000,
+      supportsParallelToolCalls: false,
+      toolFilter: {
+        include: [
+          'bingx_vst_status',
+          'bingx_vst_balance',
+          'bingx_vst_klines',
+          'bingx_vst_risk_check',
+          'bingx_vst_place_market_order'
+        ]
+      }
+    };
     const mcpServers = trustedOffice
       ? (smokePhase === 'github' ? { github: githubMcp }
         : smokePhase === 'playwright' ? { playwright: playwrightMcp }
-        : { github: githubMcp, playwright: playwrightMcp, wordpress: wordpressMcp })
+        : {
+            github: githubMcp,
+            playwright: playwrightMcp,
+            wordpress: wordpressMcp,
+            ...(bingxVstBrokerToken ? { bingxvst: bingxVstMcp } : {})
+          })
       : { publicrepo: publicReadMcp };
     if (trustedOffice && mcpServers.playwright) {
       const browserMarker = `${statePath}/.quantdeus-playwright-mcp-chrome-ready`;
@@ -1147,7 +1170,9 @@ export default async function handler(req, res) {
       '- Native WordPress MCP: https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp (free/self-hosted lane; no WPVibe dependency).',
       '- Hourly/scheduled autonomous lanes are MCP read-only. Do not mutate WordPress from those lanes.',
       '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task and only when QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION is configured.',
-      '- Missing WordPress MCP authentication fails closed for writes; never invent access, secrets or hidden credentials.'
+      '- Missing WordPress MCP authentication fails closed for writes; never invent access, secrets or hidden credentials.',
+      '- BingX integration is VST-only through https://quantdeus.vercel.app/api/quantdeus/bingx-vst-mcp; live BingX API hosts are blocked in the broker.',
+      '- BingX VST orders require bingx_vst_risk_check first and its short-lived order-bound approval token; withdrawals and transfers are not exposed.'
     ].join('\n') : '';
     const trustedToolContractPrompt = trustedOffice && !smokePhase ? [
       'QUANTDEUS TRUSTED TOOL CONTRACT:',
@@ -1180,6 +1205,7 @@ export default async function handler(req, res) {
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       wordpress_mcp_configured: trustedOffice && Boolean(mcpServers.wordpress),
       wordpress_mode: trustedOffice && mcpServers.wordpress ? (wordpressWriteCapable ? 'owner-authorized-write-capable' : 'read-only') : 'off',
+      bingx_vst_mcp: trustedOffice && Boolean(mcpServers.bingxvst) ? 'vst-only' : 'off',
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
       autonomous_worker: autonomousWorker,
