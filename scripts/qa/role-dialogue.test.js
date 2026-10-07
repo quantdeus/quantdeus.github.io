@@ -44,6 +44,12 @@ test('line protocols survive quotes and avoid JSON escaping failures',async()=>{
   assert.equal(seven.actions.length,2);
   assert.match(seven.analysis,/observed fields/);
 });
+test('Seven protocol survives multiline values after labels',()=>{
+  const parsed=parseDecision('ANALYSIS:\nCompare two bottlenecks using observed facts.\nDIRECTIVE:\nPrioritize the bounded blocker.\nACTION:\nVerify one issue.\nACTION 2:\nRecord the result.');
+  assert.match(parsed.analysis,/Compare two bottlenecks/);
+  assert.equal(parsed.directive,'Prioritize the bounded blocker.');
+  assert.deepEqual(parsed.actions,['Verify one issue.','Record the result.']);
+});
 test('structured protocol survives a single-line provider flattening',()=>{
   const parsed=parseJson('SUMMARY: Healthy enough to continue; FINDING: Provider returned evidence; FINDING 2: No mutation was claimed; NEXT_STEP: Retry one bounded turn.');
   assert.equal(parsed.summary,'Healthy enough to continue');
@@ -66,6 +72,13 @@ test('role dialogue verifies real assistant turn, model and brokered read-tool r
   for(const invalid of [{...valid,assistantTurns:0},{...valid,model:null},{...valid,runtime:'openclaw-agent-exec-trusted-tools'}]) {
     await assert.rejects(reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>invalid}}),/UNVERIFIED/);
   }
+});
+test('prompt-shield block degrades role dialogue without weakening evidence checks',async()=>{
+  const shielded={text:'blocked',runtime:'local-shield',provider:'quantdeus-shield',model:null,assistantTurns:0};
+  const result=await reasonRole({...args,client:{configured:()=>true,isTransientError:()=>false,ask:async()=>shielded}});
+  assert.equal(result.status,'DEGRADED');
+  assert.equal(result.error_code,'PROMPT_SHIELD_BLOCKED');
+  assert.equal(result.runtime,'local-shield');
 });
 test('transient outages degrade once, contract errors fail, oversized prose fails',async()=>{
   const client={configured:()=>true,isTransientError:e=>e.transient,ask:async()=>{throw {transient:true,code:'OPENCLAW_TIMEOUT'};}};
