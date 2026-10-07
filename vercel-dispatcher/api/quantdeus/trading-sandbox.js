@@ -281,8 +281,47 @@ export default async function handler(req, res) {
       return json(res, 200, { ok: true, environment: 'prod-vst', kill_switch: 'armed', cancel_after_seconds: 30 });
     }
 
+    if (action === 'portfolio_snapshot') {
+      const account = await accountSnapshot();
+      return json(res, 200, {
+        ok: true,
+        environment: 'prod-vst',
+        live_trading: false,
+        account: {
+          equity: account.equity,
+          dailyPnl: account.dailyPnl,
+          openPositions: account.openPositions,
+          positions: account.positions.map(row => ({
+            symbol: row.symbol,
+            positionSide: row.positionSide,
+            isolated: row.isolated,
+            positionAmt: row.positionAmt,
+            unrealizedProfit: row.unrealizedProfit,
+            leverage: row.leverage
+          }))
+        }
+      });
+    }
+
     if (!safeSymbols().includes(symbol)) {
       return json(res, 400, { ok: false, error: 'symbol_not_allowlisted' });
+    }
+
+    if (action === 'market_snapshot') {
+      const market = await marketSnapshot(symbol);
+      return json(res, 200, {
+        ok: true,
+        environment: 'prod-vst',
+        live_trading: false,
+        market,
+        storm: {
+          spread: market.spreadBps > TRADING_POLICY.maxSpreadBps,
+          funding: Math.abs(market.fundingRate) > TRADING_POLICY.maxAbsFundingRate,
+          fast_move: Math.abs(market.move15mPct) > TRADING_POLICY.maxAbs15mMovePct,
+          volatility: market.range60mPct > TRADING_POLICY.max60mRangePct,
+          stale: market.marketDataAgeMs > TRADING_POLICY.maxMarketDataAgeMs
+        }
+      });
     }
 
     const [market, account] = await Promise.all([marketSnapshot(symbol), accountSnapshot()]);
