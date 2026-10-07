@@ -131,7 +131,7 @@ test('trusted OpenClaw allow-list exposes VST tools', async () => {
 });
 
 
-test('native OpenClaw cron has one guarded full VST cycle tool without granting it to model allow-list', async () => {
+test('OpenClaw VST cron is retired while the guarded full-cycle tool remains unavailable to the model allow-list', async () => {
   const fs = await import('node:fs/promises');
   const handlerSource = await fs.readFile(new URL('../lib/bingx-vst-mcp-handler.js', import.meta.url), 'utf8');
   const openclawSource = await fs.readFile(new URL('../api/quantdeus/openclaw.js', import.meta.url), 'utf8');
@@ -141,17 +141,10 @@ test('native OpenClaw cron has one guarded full VST cycle tool without granting 
   assert.match(handlerSource, /case 'bingx_vst_autotrade_cycle': return runVstSignalCycle\(\)/);
   assert.doesNotMatch(openclawSource, /bingxvst__bingx_vst_autotrade_cycle/);
 
-  assert.match(bootstrapSource, /2,17,32,47 \* \* \* \*/);
-  assert.match(bootstrapSource, /'automations', 'create'/);
-  assert.match(bootstrapSource, /'--exact'/);
-  assert.match(bootstrapSource, /'--no-deliver'/);
-  assert.match(bootstrapSource, /QUANTDEUS_BINGX_VST_BROKER_TOKEN/);
-  assert.match(bootstrapSource, /bingx_vst_autotrade_cycle/);
-});
-
-test('native OpenClaw VST runner never embeds the broker secret into its generated source', async () => {
-  const fs = await import('node:fs/promises');
-  const bootstrapSource = await fs.readFile(new URL('../../scripts/openclaw-vst-cron-bootstrap.js', import.meta.url), 'utf8');
-  assert.match(bootstrapSource, /process\.env\.QUANTDEUS_BINGX_VST_BROKER_TOKEN/);
-  assert.doesNotMatch(bootstrapSource, /test-broker-secret-that-is-long-enough/);
+  assert.match(bootstrapSource, /scheduler: 'github-actions-primary'/);
+  assert.match(bootstrapSource, /openclaw_scheduler: 'retired'/);
+  assert.match(bootstrapSource, /'automations', 'remove'/);
+  assert.doesNotMatch(bootstrapSource, /'automations', 'create'/);
+  assert.doesNotMatch(bootstrapSource, /2,17,32,47 \* \* \* \*/);
+  assert.doesNotMatch(bootstrapSource, /QUANTDEUS_BINGX_VST_BROKER_TOKEN/);
 });

@@ -552,7 +552,11 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   if (name === 'bingx-vst-signal.yml') {
     const signalSource = fs.readFileSync(path.join(root,'vercel-dispatcher','lib','bingx-vst-signal.js'),'utf8');
     check(
-      text.includes('/api/quantdeus/bingx-vst-signal') &&
+      text.includes('/api/quantdeus/bingx-vst-private-broker') &&
+      text.includes('run-bingx-vst-native.mjs') &&
+      text.includes("if: steps.github_native.outcome == 'failure'") &&
+      text.includes('run-bingx-vst-vercel-fallback.mjs') &&
+      !text.includes('secrets.') &&
       signalSource.includes('listContracts()') &&
       signalSource.includes('getTickers()') &&
       !signalSource.includes('allowedSymbols().slice(0, 5)'),
@@ -562,8 +566,11 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
     check(
       signalSource.includes("status.environment !== 'prod-vst'") &&
       signalSource.includes('status.liveApiAllowed !== false') &&
-      signalSource.includes('const qa = await runRiskCheck(order);') &&
-      signalSource.indexOf('const qa = await runRiskCheck(order);') < signalSource.indexOf('const execution = await placeMarketOrder({'),
+      signalSource.includes("remoteBrokerCall('risk_check', order)") &&
+      signalSource.includes("remoteBrokerCall('place_order', executionInput)") &&
+      signalSource.indexOf("remoteBrokerCall('risk_check', order)") < signalSource.indexOf("remoteBrokerCall('place_order', executionInput)") &&
+      signalSource.includes('runRiskCheck(order)') &&
+      signalSource.includes('placeMarketOrder(executionInput)'),
       name,
       'BingX VST execution remains VST-only and requires the deterministic QA/risk gate before every order'
     );
