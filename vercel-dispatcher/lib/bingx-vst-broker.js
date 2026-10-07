@@ -89,7 +89,36 @@ function normalizeOrder(input = {}) {
   return { symbol, side, positionSide, quantity, quantityNumber };
 }
 
-function approvalBody(order, expiresAt, metrics) {
+function normalizeAttachedProtection(value, expectedType) {
+  if (value === undefined || value === null) return null;
+  const source = typeof value === 'string' ? JSON.parse(value) : value;
+  if (!source || typeof source !== 'object' || Array.isArray(source)) throw new Error('bingx_vst_invalid_protection');
+  const type = String(source.type || '').trim().toUpperCase();
+  if (type !== expectedType) throw new Error('bingx_vst_invalid_protection_type');
+  const stopPrice = Number(source.stopPrice);
+  if (!Number.isFinite(stopPrice) || stopPrice <= 0) throw new Error('bingx_vst_invalid_protection_stop_price');
+  const workingType = String(source.workingType || 'MARK_PRICE').trim().toUpperCase();
+  if (!new Set(['MARK_PRICE', 'CONTRACT_PRICE']).has(workingType)) throw new Error('bingx_vst_invalid_protection_working_type');
+  return { type, stopPrice, workingType, stopGuaranteed: false };
+}
+
+function normalizeClientOrderId(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const id = String(value).trim();
+  if (!/^[A-Za-z0-9]{1,40}$/.test(id)) throw new Error('bingx_vst_invalid_client_order_id');
+  return id;
+}
+
+function protectionFingerprint(input = {}) {
+  const payload = {
+    stopLoss: normalizeAttachedProtection(input.stopLoss, 'STOP_MARKET'),
+    takeProfit: normalizeAttachedProtection(input.takeProfit, 'TAKE_PROFIT_MARKET'),
+    clientOrderId: normalizeClientOrderId(input.clientOrderId)
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+}
+
+function approvalBody(order, expiresAt, metrics, protectionHash) {
   return {
     v: 1,
     env: 'prod-vst',
@@ -97,6 +126,7 @@ function approvalBody(order, expiresAt, metrics) {
     side: order.side,
     positionSide: order.positionSide,
     quantity: order.quantity,
+    protectionHash,
     expiresAt,
     maxReturnPct: metrics.maxReturnPct,
     notionalUsdt: metrics.notionalUsdt
@@ -106,7 +136,8 @@ function approvalBody(order, expiresAt, metrics) {
 export function signRiskApproval(orderInput, metrics, now = Date.now(), secret = brokerSecret()) {
   const order = normalizeOrder(orderInput);
   const expiresAt = now + APPROVAL_TTL_MS;
-  const payload = Buffer.from(JSON.stringify(approvalBody(order, expiresAt, metrics))).toString('base64url');
+  const protectionHash = protectionFingerprint(orderInput);
+  const payload = Buffer.from(JSON.stringify(approvalBody(order, expiresAt, metrics, protectionHash))).toString('base64url');
   const signature = hmacHex(secret, payload);
   return `${payload}.${signature}`;
 }
@@ -130,6 +161,9 @@ export function verifyRiskApproval(token, orderInput, now = Date.now(), secret =
   if (!Number.isFinite(Number(claims.expiresAt)) || Number(claims.expiresAt) < now) throw new Error('bingx_vst_approval_expired');
   for (const key of ['symbol', 'side', 'positionSide', 'quantity']) {
     if (String(claims[key]) !== String(order[key])) throw new Error(`bingx_vst_approval_mismatch_${key}`);
+  }
+  if (String(claims.protectionHash || '') !== protectionFingerprint(orderInput)) {
+    throw new Error('bingx_vst_approval_mismatch_protection');
   }
   return claims;
 }
@@ -311,6 +345,46 @@ export async function getBalance() {
   return { environment: 'prod-vst', upstreamBase: response.base, response: response.data };
 }
 
+export async function getPositions(input = {}) {
+  const symbol = input.symbol ? String(input.symbol).trim().toUpperCase() : '';
+  if (symbol && !allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  const response = await privateRequest('GET', '/openApi/swap/v2/user/positions', symbol ? { symbol } : {});
+  return { environment: 'prod-vst', upstreamBase: response.base, symbol: symbol || null, response: response.data };
+}
+
+export async function getPositionMode() {
+  const response = await privateRequest('GET', '/openApi/swap/v1/positionSide/dual');
+  const data = response.data?.data ?? response.data;
+  return {
+    environment: 'prod-vst',
+    upstreamBase: response.base,
+    dualSidePosition: data?.dualSidePosition === true || String(data?.dualSidePosition).toLowerCase() === 'true'
+  };
+}
+
+export async function getContractInfo(input = {}) {
+  const symbol = String(input.symbol || '').trim().toUpperCase();
+  if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  const response = await publicGet('/openApi/swap/v2/quote/contracts', { symbol });
+  const rows = response.data?.data;
+  const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+  const contract = contracts.find(item => String(item?.symbol || '').toUpperCase() === symbol);
+  if (!contract) throw new Error('bingx_vst_contract_not_found');
+  return { environment: 'prod-vst', upstreamBase: response.base, symbol, contract };
+}
+
+export async function setLeverage(input = {}) {
+  if (!tradingEnabled()) throw new Error('bingx_vst_kill_switch_off');
+  const symbol = String(input.symbol || '').trim().toUpperCase();
+  if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  const side = String(input.side || '').trim().toUpperCase();
+  if (!new Set(['LONG', 'SHORT', 'BOTH']).has(side)) throw new Error('bingx_vst_invalid_leverage_side');
+  const leverage = Math.trunc(Number(input.leverage));
+  if (!Number.isInteger(leverage) || leverage < 1 || leverage > 3) throw new Error('bingx_vst_invalid_leverage');
+  const response = await privateRequest('POST', '/openApi/swap/v2/trade/leverage', { symbol, side, leverage });
+  return { environment: 'prod-vst', upstreamBase: response.base, symbol, side, leverage, response: response.data };
+}
+
 export async function getKlines(input = {}) {
   const symbol = String(input.symbol || '').trim().toUpperCase();
   if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
@@ -330,21 +404,28 @@ export async function runRiskCheck(input = {}) {
   const metrics = candleMetrics(rows);
   const risk = evaluateRisk(order, metrics);
   if (!risk.allowed) return { ...risk, approvalToken: null, upstreamBase: response.base };
-  const approvalToken = signRiskApproval(order, risk);
+  const approvalToken = signRiskApproval(input, risk);
   return { ...risk, approvalToken, upstreamBase: response.base };
 }
 
 export async function placeMarketOrder(input = {}) {
   if (!tradingEnabled()) throw new Error('bingx_vst_kill_switch_off');
   const order = normalizeOrder(input);
-  const claims = verifyRiskApproval(input.approval_token, order);
-  const response = await privateRequest('POST', '/openApi/swap/v2/trade/order', {
+  const claims = verifyRiskApproval(input.approval_token, input);
+  const stopLoss = normalizeAttachedProtection(input.stopLoss, 'STOP_MARKET');
+  const takeProfit = normalizeAttachedProtection(input.takeProfit, 'TAKE_PROFIT_MARKET');
+  const clientOrderId = normalizeClientOrderId(input.clientOrderId);
+  const params = {
     symbol: order.symbol,
     side: order.side,
     positionSide: order.positionSide,
     type: 'MARKET',
-    quantity: order.quantity
-  });
+    quantity: order.quantity,
+    ...(stopLoss ? { stopLoss: JSON.stringify(stopLoss) } : {}),
+    ...(takeProfit ? { takeProfit: JSON.stringify(takeProfit) } : {}),
+    ...(clientOrderId ? { clientOrderId } : {})
+  };
+  const response = await privateRequest('POST', '/openApi/swap/v2/trade/order', params);
   return {
     environment: 'prod-vst',
     liveApiAllowed: false,
