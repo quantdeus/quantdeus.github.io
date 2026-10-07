@@ -20,6 +20,23 @@ Before acting, read the fresh `main` state, especially:
 
 GitHub stores state. External integrations transport messages.
 
+## GitLab hot-standby continuity
+
+GitHub remains the **canonical primary control plane**. GitLab is a **hot-standby mirror/fallback**, not a parallel autonomous authority.
+
+Continuity rules:
+- `.github/workflows/gitlab-fallback-mirror.yml` mirrors all Git branches and tags after `main` changes and on a low-frequency repair schedule.
+- The mirror includes the complete tracked QuantDeus repository, including `coordination/agents.json`, `coordination/homunculi.json`, `coordination/agent-cron-map.json`, skills, scripts, public surfaces and runtime definitions.
+- GitLab CI uses `.gitlab-ci.yml` for a credentialless continuity smoke check so the mirrored swarm can prove that its registries and critical scripts are intact.
+- GitHub Actions secrets, GitHub Issues/PR state, Actions history, external runtime state and private connected-source data are **not** copied by git mirroring. GitLab credentials/CI variables must be configured independently.
+- Normal operation is one-way: **GitHub primary → GitLab standby**. GitLab must not automatically write back to GitHub.
+- If GitLab is promoted during a GitHub outage, promotion requires an explicit CEO/admin directive. The GitHub mirror job must remain disabled until divergent emergency work is reconciled, so recovery cannot overwrite fallback work.
+- Missing GitLab credentials are a narrow continuity blocker only; they must not block normal GitHub execution or make unrelated QA red.
+
+Canonical topology:
+
+`GitHub primary → guarded mirror → GitLab hot standby → continuity QA`
+
 All agents and Vercel runtimes inherit the active manifesto reference from the doctrine/registries. The v3 manifesto is the active constitutional document; `coordination/manifesto-living.md` is its automatically maintained evidence-backed adaptive layer. Current news/trends may change operational priorities through that layer but may not silently rewrite the constitutional core. v2 remains a historical archive and must not be treated as the current charter.
 
 ## Telegram growth mandate
