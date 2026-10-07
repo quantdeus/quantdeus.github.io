@@ -311,6 +311,24 @@ export async function getBalance() {
   return { environment: 'prod-vst', upstreamBase: response.base, response: response.data };
 }
 
+export async function getPositions(input = {}) {
+  const symbol = input.symbol ? String(input.symbol).trim().toUpperCase() : '';
+  if (symbol && !allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  const response = await privateRequest('GET', '/openApi/swap/v2/user/positions', symbol ? { symbol } : {});
+  return { environment: 'prod-vst', upstreamBase: response.base, symbol: symbol || null, response: response.data };
+}
+
+export async function getContractInfo(input = {}) {
+  const symbol = String(input.symbol || '').trim().toUpperCase();
+  if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  const response = await publicGet('/openApi/swap/v2/quote/contracts', { symbol });
+  const rows = response.data?.data;
+  const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+  const contract = contracts.find(item => String(item?.symbol || '').toUpperCase() === symbol);
+  if (!contract) throw new Error('bingx_vst_contract_not_found');
+  return { environment: 'prod-vst', upstreamBase: response.base, symbol, contract };
+}
+
 export async function getKlines(input = {}) {
   const symbol = String(input.symbol || '').trim().toUpperCase();
   if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
