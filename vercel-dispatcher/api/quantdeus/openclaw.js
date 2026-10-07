@@ -3,6 +3,7 @@ import { Sandbox } from '@vercel/sandbox';
 import { getVercelOidcToken } from '@vercel/oidc';
 import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
+import bingxVstMcpHandler from '../../lib/bingx-vst-mcp-handler.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -372,6 +373,9 @@ async function cachedProbeChatCandidate(candidate, requireTools = false) {
 }
 
 export default async function handler(req, res) {
+  if (String(req.query?.qd_route || '') === 'bingx-vst-mcp') {
+    return bingxVstMcpHandler(req, res);
+  }
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
   let sandbox;
   let ephemeralFiles = [];

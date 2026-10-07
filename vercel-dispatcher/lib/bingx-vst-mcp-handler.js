@@ -4,7 +4,7 @@ import {
   placeMarketOrder,
   publicStatus,
   runRiskCheck
-} from '../../lib/bingx-vst-broker.js';
+} from './bingx-vst-broker.js';
 
 const PROTOCOL_VERSION = '2025-03-26';
 
