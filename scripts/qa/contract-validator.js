@@ -573,7 +573,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
       'BingX VST cycle scans the full contract/ticker universe before deep analysis'
     );
     check(
-      signalSource.includes("status.environment !== 'prod-vst'") &&
+      signalSource.includes("status.environment !== 'demo-vst'") &&
       signalSource.includes('status.liveApiAllowed !== false') &&
       signalSource.includes("remoteBrokerCall('risk_check', order)") &&
       signalSource.includes("remoteBrokerCall('place_order', executionInput)") &&
