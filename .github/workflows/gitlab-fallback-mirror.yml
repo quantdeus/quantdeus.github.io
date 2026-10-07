@@ -1,0 +1,104 @@
+name: GitLab Hot-Standby Mirror
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */6 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitlab-hot-standby-mirror
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    if: ${{ github.repository == 'quantdeus/quantdeus.github.io' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITLAB_MIRROR_TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+      GITLAB_MIRROR_REPOSITORY: ${{ vars.GITLAB_MIRROR_REPOSITORY }}
+      GITLAB_MIRROR_HOST: ${{ vars.GITLAB_MIRROR_HOST }}
+    steps:
+      - name: Checkout full QuantDeus history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify swarm continuity payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const required=[
+            'AGENTS.md',
+            'coordination/agents.json',
+            'coordination/homunculi.json',
+            'coordination/agent-cron-map.json',
+            'coordination/civilization-doctrine.json',
+            'scripts/mission-alignment.js'
+          ];
+          for (const file of required) {
+            if (!fs.existsSync(file)) throw new Error('missing continuity file: '+file);
+          }
+          const agents=JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));
+          const hom=JSON.parse(fs.readFileSync('coordination/homunculi.json','utf8'));
+          if (!Array.isArray(agents.agents) || agents.agents.length < 26) throw new Error('canonical agent registry incomplete');
+          if (!Array.isArray(hom.agents) || hom.agents.length < 11) throw new Error('homunculi registry incomplete');
+          const ids=agents.agents.map(x=>x.id);
+          if (new Set(ids).size !== ids.length) throw new Error('duplicate canonical agent ids');
+          console.log('continuity payload OK; canonical agents='+ids.length+' homunculi='+hom.agents.length);
+          NODE
+
+      - name: Check whether GitLab standby is armed
+        id: standby
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${GITLAB_MIRROR_TOKEN:-}" ] || [ -z "${GITLAB_MIRROR_REPOSITORY:-}" ]; then
+            echo "armed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitLab hot standby is coded but not armed. Configure GITLAB_MIRROR_TOKEN secret and GITLAB_MIRROR_REPOSITORY repository variable."
+            exit 0
+          fi
+          echo "armed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Mirror branches and tags to GitLab
+        if: steps.standby.outputs.armed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          host="${GITLAB_MIRROR_HOST:-gitlab.com}"
+          repo="${GITLAB_MIRROR_REPOSITORY%.git}"
+
+          case "$host" in
+            ''|*[!A-Za-z0-9.-]*) echo "invalid GitLab host"; exit 2 ;;
+          esac
+          case "$repo" in
+            ''|/*|*://*|*@*|*'..'*) echo "invalid GitLab repository path"; exit 2 ;;
+          esac
+
+          cred="$RUNNER_TEMP/gitlab-credentials"
+          cleanup() {
+            rm -f "$cred"
+            git remote remove gitlab-fallback >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          umask 077
+          printf 'https://oauth2:%s@%s\n' "$GITLAB_MIRROR_TOKEN" "$host" > "$cred"
+          git config --global credential.helper "store --file=$cred"
+
+          git remote add gitlab-fallback "https://$host/$repo.git"
+
+          # Fast-forward-only by design: if GitLab was promoted and diverged during
+          # an outage, fail closed instead of overwriting emergency fallback work.
+          git push gitlab-fallback 'refs/heads/*:refs/heads/*'
+          git push gitlab-fallback 'refs/tags/*:refs/tags/*'
+
+          echo "GitLab hot-standby mirror updated: $host/$repo"
