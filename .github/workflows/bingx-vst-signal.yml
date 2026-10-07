@@ -1,8 +1,9 @@
 name: QuantDeus BingX VST Autotrade
 
 on:
-  schedule:
-    - cron: '2,17,32,47 * * * *' # every 15 minutes, staggered off peak times
+  # Canonical scheduler is native OpenClaw (scripts/openclaw-vst-cron-bootstrap.js).
+  # Keep this workflow as an explicit human-operated fallback only; two schedulers
+  # could race the same guarded VST cycle.
   workflow_dispatch:
 
 permissions:
