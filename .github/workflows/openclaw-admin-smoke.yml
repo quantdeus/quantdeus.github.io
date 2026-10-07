@@ -39,6 +39,43 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Verify BingX VST signed authentication
+        run: |
+          node <<'NODE'
+          (async () => {
+            const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+            if (!requestUrl || !requestToken) throw new Error('GitHub OIDC request context missing');
+
+            const oidcUrl = new URL(requestUrl);
+            oidcUrl.searchParams.set('audience', 'quantdeus-vercel-openclaw');
+            const tokenResponse = await fetch(oidcUrl, {
+              headers: { authorization: 'Bearer ' + requestToken, accept: 'application/json' }
+            });
+            if (!tokenResponse.ok) throw new Error('OIDC token request failed: ' + tokenResponse.status);
+            const tokenJson = await tokenResponse.json();
+            const oidc = String(tokenJson.value || '');
+            if (!oidc) throw new Error('OIDC token missing from response');
+
+            const response = await fetch('https://quantdeus.vercel.app/api/quantdeus/bingx-vst-auth-smoke', {
+              method: 'GET',
+              headers: { authorization: 'Bearer ' + oidc, accept: 'application/json' }
+            });
+            const raw = await response.text();
+            let data = null;
+            try { data = raw ? JSON.parse(raw) : null; } catch {}
+            if (!response.ok || data?.signed_vst_auth !== true) {
+              throw new Error('BingX VST signed-auth smoke failed: HTTP ' + response.status + ' ' + String(data?.error || '').slice(0, 160));
+            }
+            console.log(JSON.stringify({
+              ok: true,
+              signed_vst_auth: true,
+              environment: data.environment,
+              upstream_base: data.upstream_base
+            }));
+          })().catch(error => { console.error(error.message || error); process.exit(1); });
+          NODE
+
       - name: Verify trusted OpenClaw GitHub MCP lane
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,35 +114,6 @@ jobs:
             });
             if (!branch.ok) throw new Error('Direct GitHub branch verification failed: ' + branch.status + ' ' + (await branch.text()).slice(0, 500));
             console.log(JSON.stringify({ ok: true, consecutive_github_mcp_passes: passes.length, passes }));
-          })().catch(error => { console.error(error.message || error); process.exit(1); });
-          NODE
-
-      - name: Verify BingX VST signed authentication
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          node <<'NODE'
-          const office = require('./scripts/openclaw-office-client');
-          (async () => {
-            const result = await office.ask({
-              profile: 'seven-of-nine',
-              trusted: true,
-              retryTransient: true,
-              messages: [{
-                role: 'user',
-                content: 'Read-only BingX VST authentication smoke. Use only bingxvst__bingx_vst_balance, exactly once. Do not place orders. Do not call any other tool. Do not print or reveal balance amounts, equity, margin, PnL, user IDs, API keys, secrets, or raw tool output. If the tool succeeds, reply exactly BINGX_VST_SIGNED_AUTH_OK.'
-              }],
-              metadata: { source: 'openclaw-admin-smoke', phase: 'bingx-vst-auth', repository: process.env.GITHUB_REPOSITORY }
-            });
-            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
-            const summary = result.raw?.tool_summary;
-            if (!summary || !Array.isArray(summary.tools) || summary.tools.length !== 1 || summary.tools[0] !== 'bingxvst__bingx_vst_balance' || Number(summary.failures || 0) !== 0) {
-              throw new Error('BingX VST signed-auth tool trace missing/failed: ' + JSON.stringify(summary));
-            }
-            if (String(result.text || '').trim() !== 'BINGX_VST_SIGNED_AUTH_OK') {
-              throw new Error('BingX VST signed-auth final response mismatch: ' + String(result.text || '').slice(0, 300));
-            }
-            console.log(JSON.stringify({ ok: true, signed_vst_auth: true, tool_summary: summary, smoke: result.text }));
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
