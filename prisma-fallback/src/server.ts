@@ -49,7 +49,7 @@ function page() {
   <main>
     <h1>QuantDeus — Prisma fallback</h1>
     <p>Standby control plane is online.</p>
-    <p>Canonical agents loaded: <strong>${agents.length}/${expected}</strong>.</p>
+    <p>Canonical Vercel agents loaded: <strong>${agents.length}/${expected}</strong>.</p>
     <p>Execution remains gated until an independent model/provider credential is configured and failover is explicitly activated.</p>
     <nav><a href="/health">health</a> · <a href="/agents">agents</a></nav>
   </main>
@@ -73,6 +73,21 @@ Bun.serve({
 
     if (req.method === 'GET' && url.pathname === '/') return page();
 
+    if (req.method === 'GET' && url.pathname === '/source') {
+      return json({
+        source: 'vercel-production-snapshot',
+        vercel_project: 'quantdeus',
+        vercel_deployment: 'dpl_FtCn5PDWsaLJRUbZ8aYDYQZsq3X4',
+        repository: 'quantdeus/quantdeus',
+        commit: 'ab3e70c93486b58e2b543574ce1955b8aeea3205',
+        portability: {
+          copied: ['agent registry', 'model-router source', 'prompt-shield source', 'vercel config'],
+          platform_specific: ['@vercel/sandbox', 'Vercel internal OIDC'],
+          execution: 'standby-fail-closed'
+        }
+      });
+    }
+
     if (req.method === 'GET' && url.pathname === '/health') {
       const expected = Number((registry as any)?.organization?.employees ?? 27);
       return json({
@@ -83,7 +98,7 @@ Bun.serve({
         active_active: false,
         agents_loaded: agents.length,
         agents_expected: expected,
-        canonical_registry: 'coordination/agents.json',
+        canonical_registry: 'quantdeus/quantdeus@ab3e70c93486b58e2b543574ce1955b8aeea3205:coordination/agents.json',
       }, agents.length === expected ? 200 : 503);
     }
 
