@@ -3,6 +3,7 @@ import { Sandbox } from '@vercel/sandbox';
 import { getVercelOidcToken } from '@vercel/oidc';
 import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
+import { tradingVstMcpSource } from '../../lib/trading-vst-mcp-source.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -399,6 +400,9 @@ export default async function handler(req, res) {
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
     const octetHerald = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-octet-herald';
+    const tradingWorker = !vercelInternal && autonomousWorker && req.body?.metadata?.source === 'quantdeus-agent-role-cron';
+    const tradingVstToken = String(process.env.QD_TRADING_VST_BROKER_TOKEN || '').trim();
+    const tradingVstEnabled = tradingWorker && Boolean(tradingVstToken);
     const smokePhaseRaw = String(req.body?.metadata?.phase || '');
     const smokePhase = trustedOffice && req.body?.metadata?.source === 'openclaw-admin-smoke' && new Set(['github', 'playwright']).has(smokePhaseRaw) ? smokePhaseRaw : null;
     const requestedTimeoutMs = Number(req.body?.request_timeout_ms);
@@ -1003,7 +1007,8 @@ export default async function handler(req, res) {
     const configPath = `${requestsDir}/quantdeus-config-${requestId}.json`;
     const promptPath = `${requestsDir}/quantdeus-prompt-${requestId}.txt`;
     const publicReadMcpPath = `${requestsDir}/quantdeus-public-read-mcp-${requestId}.js`;
-    ephemeralFiles = [configPath, promptPath, publicReadMcpPath];
+    const tradingVstMcpPath = `${requestsDir}/quantdeus-trading-vst-mcp-${requestId}.js`;
+    ephemeralFiles = [configPath, promptPath, publicReadMcpPath, ...(tradingVstEnabled ? [tradingVstMcpPath] : [])];
     // Separate inference-only and tool-enabled OpenClaw state so a long MCP turn
     // cannot block or corrupt lightweight Sherlock/Tuvok/Seven dialogue cycles.
     const statePath = `${home}/.openclaw/quantdeus-state-${trustedOffice ? 'trusted-tools' : 'brokered-read-tools'}`;
@@ -1049,7 +1054,8 @@ export default async function handler(req, res) {
         'playwright__browser_navigate',
         'playwright__browser_snapshot',
         'playwright__browser_find',
-        'playwright__browser_close'
+        'playwright__browser_close',
+        ...(tradingVstEnabled ? ['tradingvst__*'] : [])
       ],
       deny: trustedDeny
     };
@@ -1080,6 +1086,11 @@ export default async function handler(req, res) {
       toolFilter: {
         include: ['repository_status', 'get_issue', 'get_file']
       }
+    };
+    const tradingVstMcp = {
+      command: 'node',
+      args: [tradingVstMcpPath],
+      toolFilter: { include: ['trading_status', 'assess_trade', 'paper_order', 'trading_kill_switch'] }
     };
     const playwrightMcp = {
       command: 'npx',
@@ -1115,7 +1126,7 @@ export default async function handler(req, res) {
     const mcpServers = trustedOffice
       ? (smokePhase === 'github' ? { github: githubMcp }
         : smokePhase === 'playwright' ? { playwright: playwrightMcp }
-        : { github: githubMcp, playwright: playwrightMcp, wordpress: wordpressMcp })
+        : { github: githubMcp, playwright: playwrightMcp, wordpress: wordpressMcp, ...(tradingVstEnabled ? { tradingvst: tradingVstMcp } : {}) })
       : { publicrepo: publicReadMcp };
     if (trustedOffice && mcpServers.playwright) {
       const browserMarker = `${statePath}/.quantdeus-playwright-mcp-chrome-ready`;
@@ -1163,11 +1174,19 @@ export default async function handler(req, res) {
     await sandbox.writeFiles([
       { path: configPath, content: Buffer.from(JSON.stringify(config)) },
       { path: promptPath, content: Buffer.from(routedPrompt) },
-      { path: publicReadMcpPath, content: Buffer.from(publicReadMcpSource()) }
+      { path: publicReadMcpPath, content: Buffer.from(publicReadMcpSource()) },
+      ...(tradingVstEnabled ? [{ path: tradingVstMcpPath, content: Buffer.from(tradingVstMcpSource()) }] : [])
     ]);
+    const tradingBrokerUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}/api/quantdeus/trading-sandbox`
+      : 'https://quantdeus.vercel.app/api/quantdeus/trading-sandbox';
     const runtimeEnv = {
       ...providerRuntimeEnv,
-      OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5'
+      OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS: '5',
+      ...(tradingVstEnabled ? {
+        QD_TRADING_VST_BROKER_URL: tradingBrokerUrl,
+        QD_TRADING_VST_BROKER_TOKEN: tradingVstToken
+      } : {})
     };
     console.log('[openclaw-routing] ' + JSON.stringify({
       candidates: modelCandidates,
@@ -1180,6 +1199,8 @@ export default async function handler(req, res) {
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       wordpress_mcp_configured: trustedOffice && Boolean(mcpServers.wordpress),
       wordpress_mode: trustedOffice && mcpServers.wordpress ? (wordpressWriteCapable ? 'owner-authorized-write-capable' : 'read-only') : 'off',
+      trading_vst_mcp: tradingVstEnabled,
+      trading_environment: tradingVstEnabled ? 'prod-vst' : 'off',
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
       autonomous_worker: autonomousWorker,
