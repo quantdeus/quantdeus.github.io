@@ -13,12 +13,24 @@ const DEFAULT_STORM_PCT = 2.5;
 const DEFAULT_MAX_NOTIONAL_USDT = 100;
 const APPROVAL_TTL_MS = 60_000;
 
+const FORBIDDEN_PARAM_CHARS = /[&=?#\\r\\n]/;
+
+export function validateParams(params = {}) {
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') continue;
+    const text = String(value);
+    if (FORBIDDEN_PARAM_CHARS.test(text)) {
+      throw new Error(`bingx_vst_forbidden_param_${key}`);
+    }
+  }
+}
+
 export function canonicalParams(params = {}) {
-  return Object.entries(params)
-    .filter(([, value]) => value !== undefined && value !== null && value !== '')
-    .map(([key, value]) => [String(key), String(value)])
-    .sort(([a], [b]) => a.localeCompare(b, 'en'))
-    .map(([key, value]) => `${key}=${value}`)
+  validateParams(params);
+  return Object.keys(params)
+    .filter(key => params[key] !== undefined && params[key] !== null && params[key] !== '')
+    .sort()
+    .map(key => `${key}=${String(params[key])}`)
     .join('&');
 }
 
@@ -135,13 +147,22 @@ async function vstFetch(path, init = {}) {
       const response = await fetch(`${base}${path}`, {
         ...init,
         signal: AbortSignal.timeout(10_000),
-        headers: { accept: 'application/json', ...(init.headers || {}) }
+        headers: {
+          accept: 'application/json',
+          'X-SOURCE-KEY': 'BX-AI-SKILL',
+          ...(init.headers || {})
+        }
       });
       const raw = await response.text();
       const data = parseJson(raw);
       if (!response.ok) {
         const error = new Error(`bingx_vst_http_${response.status}`);
         error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      if (data && typeof data === 'object' && Object.hasOwn(data, 'code') && Number(data.code) !== 0) {
+        const error = new Error(`bingx_vst_business_${String(data.code)}`);
         error.data = data;
         throw error;
       }
@@ -159,6 +180,7 @@ async function vstFetch(path, init = {}) {
 }
 
 async function publicGet(path, params = {}) {
+  validateParams(params);
   const query = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])).toString();
   return vstFetch(`${path}${query ? `?${query}` : ''}`);
 }
