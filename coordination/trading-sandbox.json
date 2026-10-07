@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "name": "QuantDeus Trading Sandbox",
+  "status": "VST_ONLY",
+  "exchange": "BingX",
+  "environment": "prod-vst",
+  "live_trading": false,
+  "purpose": "Проверять торговые гипотезы роя на симулированном BingX VST без риска для реальных средств.",
+  "authority": {
+    "human_owner": "final authority",
+    "agents": "research/propose/execute VST only",
+    "qa": ["qa-syntax", "qa-contract", "qa-repair"],
+    "qa_quorum": 2
+  },
+  "risk": {
+    "max_leverage": 3,
+    "max_risk_per_trade_pct_equity": 0.25,
+    "max_daily_drawdown_pct_equity": 1.0,
+    "max_open_positions": 2,
+    "stop_loss_required": true,
+    "take_profit_required": true,
+    "min_reward_risk": 1.2
+  },
+  "storm_gate": {
+    "max_spread_bps": 12,
+    "max_abs_funding_rate": 0.0015,
+    "max_abs_15m_move_pct": 2.0,
+    "max_60m_range_pct": 5.0,
+    "max_market_data_age_ms": 15000,
+    "action": "NO_TRADE"
+  },
+  "forbidden": [
+    "prod-live",
+    "withdrawals",
+    "transfers",
+    "cross-margin",
+    "martingale",
+    "loss-chasing",
+    "averaging-down-without-new-risk-budget",
+    "bypassing-qa",
+    "claiming-guaranteed-profit"
+  ]
+}
