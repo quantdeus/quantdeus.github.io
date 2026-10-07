@@ -19,82 +19,23 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
+
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
-      - name: Run guarded BingX VST autotrade cycle
+
+      - name: Run GitHub-native guarded BingX VST autotrade cycle
+        id: github_native
+        continue-on-error: true
+        working-directory: vercel-dispatcher
+        env:
+          QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL: https://quantdeus.vercel.app/api/quantdeus/bingx-vst-private-broker
+          QUANTDEUS_BINGX_VST_TRADING_ENABLED: 'true'
+          BINGX_VST_SYMBOL_MODE: all
         run: |
-          node <<'NODE'
-          (async () => {
-            const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-            if (!requestUrl || !requestToken) throw new Error('GitHub OIDC request context missing');
+          npm install --omit=dev --no-audit --no-fund
+          node scripts/run-bingx-vst-native.mjs
 
-            const oidcUrl = new URL(requestUrl);
-            oidcUrl.searchParams.set('audience', 'quantdeus-vercel-openclaw');
-            const tokenResponse = await fetch(oidcUrl, {
-              headers: {
-                authorization: 'Bearer ' + requestToken,
-                accept: 'application/json'
-              }
-            });
-            if (!tokenResponse.ok) throw new Error('OIDC token request failed: ' + tokenResponse.status);
-            const tokenJson = await tokenResponse.json();
-            const oidc = String(tokenJson.value || '');
-            if (!oidc) throw new Error('OIDC token missing from response');
-
-            const response = await fetch('https://quantdeus.vercel.app/api/quantdeus/bingx-vst-signal', {
-              method: 'POST',
-              headers: {
-                authorization: 'Bearer ' + oidc,
-                accept: 'application/json',
-                'content-type': 'application/json'
-              },
-              body: '{}'
-            });
-
-            const raw = await response.text();
-            let data = null;
-            try { data = raw ? JSON.parse(raw) : null; } catch {}
-
-            if (!response.ok || data?.ok !== true) {
-              throw new Error('VST autotrade cycle failed: HTTP ' + response.status + ' ' + String(data?.error || '').slice(0, 180));
-            }
-
-            const safe = {
-              ok: true,
-              environment: data.environment,
-              action: data.action,
-              reason: data.reason || null,
-              symbol: data.symbol || data.strongestSymbol || null,
-              side: data.side || null,
-              score: data.score ?? data.strongestScore ?? null,
-              confidence: data.confidence ?? null,
-              estimated_notional_usdt: data.estimatedNotionalUsdt ?? null,
-              risk_pct: data.riskPct ?? null,
-              reward_pct: data.rewardPct ?? null,
-              universe_scanned: data.universeScanned ?? null,
-              eligible_universe: data.eligibleUniverse ?? null,
-              deep_scanned_symbols: data.deepScannedSymbols ?? null,
-              order_id: data.orderId ?? null
-            };
-            console.log(JSON.stringify(safe));
-            const fs = await import('node:fs/promises');
-            await fs.appendFile(
-              process.env.GITHUB_STEP_SUMMARY,
-              '### BingX VST guarded autotrade\n\n' +
-              '- environment: ' + safe.environment + '\n' +
-              '- action: ' + safe.action + '\n' +
-              '- reason: ' + (safe.reason || 'n/a') + '\n' +
-              '- symbol: ' + (safe.symbol || 'n/a') + '\n' +
-              '- side: ' + (safe.side || 'n/a') + '\n' +
-              '- score: ' + (safe.score ?? 'n/a') + '\n' +
-              '- universe scanned: ' + (safe.universe_scanned ?? 'n/a') + '\n' +
-              '- eligible universe: ' + (safe.eligible_universe ?? 'n/a') + '\n' +
-              '- deep scanned: ' + (safe.deep_scanned_symbols ?? 'n/a') + '\n' +
-              '- order id: ' + (safe.order_id ?? 'n/a') + '\n'
-            );
-          })().catch(error => {
-            console.error(error.message || error);
-            process.exit(1);
-          });
-          NODE
+      - name: Run Vercel VST fallback
+        if: steps.github_native.outcome == 'failure'
+        working-directory: vercel-dispatcher
+        run: node scripts/run-bingx-vst-vercel-fallback.mjs
