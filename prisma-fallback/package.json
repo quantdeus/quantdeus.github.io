@@ -1,0 +1,21 @@
+{
+  "name": "quantdeus-prisma-fallback",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "sync-agents": "cp ../coordination/agents.json src/agents.snapshot.json",
+    "build": "bun run sync-agents && bun build src/server.ts --target=bun --outfile dist/server.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/composer": "latest",
+    "@prisma/composer-prisma-cloud": "latest",
+    "arktype": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prisma": "latest",
+    "typescript": "latest"
+  }
+}
