@@ -392,6 +392,22 @@ function targetNotional() {
   );
 }
 
+function isTransientUpstreamReadFailure(error) {
+  const message = String(error?.message || error);
+  return /bingx_vst_(?:business_(?:100500|100503|110500)|http_(?:500|502|503|504))/.test(message);
+}
+
+function degradedNoTrade(stage) {
+  return {
+    ok: true,
+    environment: 'prod-vst',
+    action: 'none',
+    reason: 'upstream_busy_fail_closed',
+    degraded: true,
+    upstreamStage: stage
+  };
+}
+
 export async function runVstSignalCycle() {
   const status = publicStatus();
   if (status.environment !== 'prod-vst' || status.liveApiAllowed !== false) {
@@ -402,11 +418,19 @@ export async function runVstSignalCycle() {
     throw new Error('bingx_vst_signal_credentials_missing');
   }
 
-  const [contractsResult, tickersResult, positions] = await Promise.all([
-    listContracts(),
-    getTickers(),
-    useRemoteBroker ? remoteBrokerCall('positions') : getPositions()
-  ]);
+  let contractsResult;
+  let tickersResult;
+  let positions;
+  try {
+    [contractsResult, tickersResult, positions] = await Promise.all([
+      listContracts(),
+      getTickers(),
+      useRemoteBroker ? remoteBrokerCall('positions') : getPositions()
+    ]);
+  } catch (error) {
+    if (isTransientUpstreamReadFailure(error)) return degradedNoTrade('initial_market_and_positions_read');
+    throw error;
+  }
 
   const universe = buildUniverse(contractsResult.contracts, tickersResult.tickers);
   const openPositions = openPositionsFrom(positions);
@@ -490,7 +514,13 @@ export async function runVstSignalCycle() {
     };
   }
 
-  const contractInfo = await getContractInfo({ symbol: candidate.symbol });
+  let contractInfo;
+  try {
+    contractInfo = await getContractInfo({ symbol: candidate.symbol });
+  } catch (error) {
+    if (isTransientUpstreamReadFailure(error)) return degradedNoTrade('contract_read');
+    throw error;
+  }
   const contract = contractInfo.contract || {};
   const quantityInfo = computeQuantity({
     price: candidate.lastPrice,
@@ -513,9 +543,15 @@ export async function runVstSignalCycle() {
     quantity: quantityInfo.quantity
   };
 
-  const qa = useRemoteBroker
-    ? await remoteBrokerCall('risk_check', order)
-    : await runRiskCheck(order);
+  let qa;
+  try {
+    qa = useRemoteBroker
+      ? await remoteBrokerCall('risk_check', order)
+      : await runRiskCheck(order);
+  } catch (error) {
+    if (isTransientUpstreamReadFailure(error)) return degradedNoTrade('qa_risk_read');
+    throw error;
+  }
   if (!qa.allowed || !qa.approvalToken) {
     return {
       ok: true,
