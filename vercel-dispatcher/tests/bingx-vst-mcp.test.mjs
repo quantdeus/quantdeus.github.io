@@ -147,4 +147,15 @@ test('OpenClaw VST cron is retired while the guarded full-cycle tool remains una
   assert.doesNotMatch(bootstrapSource, /'automations', 'create'/);
   assert.doesNotMatch(bootstrapSource, /2,17,32,47 \* \* \* \*/);
   assert.doesNotMatch(bootstrapSource, /QUANTDEUS_BINGX_VST_BROKER_TOKEN/);
+
+  assert.match(openclawSource, /async function retireLegacyVstScheduler/);
+  assert.match(openclawSource, /args: \['automations', 'list', '--all', '--json'\]/);
+  assert.match(openclawSource, /args: \['automations', 'remove', id, '--json'\]/);
+  assert.match(openclawSource, /quantdeus-vst-cycle\.cjs/);
+  assert.match(openclawSource, /runtime_maintenance: \{ vst_scheduler_retirement: vstSchedulerRetirement \}/);
+  assert.ok(
+    openclawSource.indexOf('const vstSchedulerRetirement = await retireLegacyVstScheduler') <
+      openclawSource.indexOf('run = await runOfficeAgent'),
+    'legacy VST retirement must complete before agent execution'
+  );
 });
