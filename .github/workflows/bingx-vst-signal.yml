@@ -1,0 +1,89 @@
+name: QuantDeus BingX VST Signal
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: quantdeus-bingx-vst-signal
+  cancel-in-progress: true
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Run read-only BingX VST signal cycle
+        run: |
+          node <<'NODE'
+          (async () => {
+            const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+            const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+            if (!requestUrl || !requestToken) throw new Error('GitHub OIDC request context missing');
+
+            const oidcUrl = new URL(requestUrl);
+            oidcUrl.searchParams.set('audience', 'quantdeus-vercel-openclaw');
+            const tokenResponse = await fetch(oidcUrl, {
+              headers: {
+                authorization: 'Bearer ' + requestToken,
+                accept: 'application/json'
+              }
+            });
+            if (!tokenResponse.ok) throw new Error('OIDC token request failed: ' + tokenResponse.status);
+            const tokenJson = await tokenResponse.json();
+            const oidc = String(tokenJson.value || '');
+            if (!oidc) throw new Error('OIDC token missing from response');
+
+            const response = await fetch('https://quantdeus.vercel.app/api/quantdeus/bingx-vst-signal', {
+              method: 'POST',
+              headers: {
+                authorization: 'Bearer ' + oidc,
+                accept: 'application/json',
+                'content-type': 'application/json'
+              },
+              body: '{}'
+            });
+
+            const raw = await response.text();
+            let data = null;
+            try { data = raw ? JSON.parse(raw) : null; } catch {}
+
+            if (!response.ok || data?.ok !== true) {
+              throw new Error('VST signal cycle failed: HTTP ' + response.status + ' ' + String(data?.error || '').slice(0, 180));
+            }
+
+            const safe = {
+              ok: true,
+              environment: data.environment,
+              action: data.action,
+              reason: data.reason || null,
+              symbol: data.symbol || data.strongestSymbol || null,
+              side: data.side || null,
+              score: data.score ?? data.strongestScore ?? null,
+              confidence: data.confidence ?? null,
+              estimated_notional_usdt: data.estimatedNotionalUsdt ?? null,
+              risk_pct: data.riskPct ?? null,
+              reward_pct: data.rewardPct ?? null
+            };
+            console.log(JSON.stringify(safe));
+            const fs = await import('node:fs/promises');
+            await fs.appendFile(
+              process.env.GITHUB_STEP_SUMMARY,
+              '### BingX VST signal\n\n' +
+              '- environment: ' + safe.environment + '\n' +
+              '- action: ' + safe.action + '\n' +
+              '- reason: ' + (safe.reason || 'n/a') + '\n' +
+              '- symbol: ' + (safe.symbol || 'n/a') + '\n' +
+              '- side: ' + (safe.side || 'n/a') + '\n' +
+              '- score: ' + (safe.score ?? 'n/a') + '\n'
+            );
+          })().catch(error => {
+            console.error(error.message || error);
+            process.exit(1);
+          });
+          NODE
