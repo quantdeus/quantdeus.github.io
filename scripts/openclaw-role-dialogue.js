@@ -79,6 +79,9 @@ async function reasonRole({ profile, role, context, protocol, repository, truste
       }],
       metadata: { source: 'quantdeus-role-dialogue', role: profile, repository }
     });
+    if (result.runtime === 'local-shield' && result.provider === 'quantdeus-shield') {
+      return { status: 'DEGRADED', runtime: result.runtime, model: null, error_code: 'PROMPT_SHIELD_BLOCKED' };
+    }
     const evidence = turnEvidence(result, trusted);
     const d = parseJson(result.text);
     if (typeof d.summary !== 'string' || !d.summary.trim() || d.summary.length > 4000) throw new Error('ROLE_DIALOGUE_INVALID_SUMMARY');
