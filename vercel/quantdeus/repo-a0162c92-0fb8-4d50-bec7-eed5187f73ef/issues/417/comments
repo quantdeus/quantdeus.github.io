@@ -1,0 +1,39 @@
+# Root Support Packet for .root Branch
+
+### Source: control-tower
+
+### Observed:
+
+- The `.root` branch is 17 commits ahead and 85 commits behind the canonical `main` branch.
+- Identify which commits in `.root` are still useful and which are stale.
+- Check for any new dependencies or assumptions that differ from the canonical state.
+
+### Proposed Slice:
+
+1. **Audit the drift**: Run `git diff main .root --stat` to identify the most recent relevant commits.
+2. **Implement a bounded testable change**: Select the top 5 commits that are still relevant and implement a minimal feature or bug fix within `.root`.
+3. **Ensure isolation**: The change must not introduce any production dependencies or secrets.
+
+### Checks:
+
+- Validate the bounded slice with a manual review of the commit history and changes.
+- Confirm that the slice does not require external dependencies or production access.
+- Ensure no production/main permissions are added to `.root`.
+
+### Boundaries:
+
+- No production/main permissions added to `.root`.
+- No secrets or credentials exposed.
+- No irreversible changes to the canonical state.
+
+### Next Step:
+
+- Propose the next bounded improvement slice for `.root` based on the verified drift and changes.
+
+### Evidence:
+
+- Attach a `git diff` output or commit hash list for further review.
+
+---
+
+**This packet is intended to be a bounded, safe, and executable slice for `.root`.**
