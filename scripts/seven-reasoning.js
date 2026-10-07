@@ -14,19 +14,37 @@ function parseDecision(text) {
   const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
   let d;
   try { d = JSON.parse(raw); } catch (jsonError) {
-    const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    const field = name => {
-      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'i');
-      const line = lines.find(x => re.test(x));
-      return line ? line.match(re)[1].trim() : '';
+    const tokens = [];
+    const collect = re => {
+      let match;
+      while ((match = re.exec(raw))) {
+        tokens.push({
+          label: match[1],
+          valueStart: re.lastIndex,
+          matchStart: match.index
+        });
+      }
     };
-    const actions = lines.map(x => {
-      const m = x.match(/^ACTION(?:\s*\d+)?\s*:\s*(.+)/i);
-      return m ? m[1].trim() : '';
-    }).filter(Boolean);
-    const analysis = field('ANALYSIS');
-    const directive = field('DIRECTIVE');
-    if (analysis && directive && actions.length) d = {analysis,directive,actions};
+    collect(/(?:^|[;\r\n]\s*|\s{2,})(ANALYSIS|DIRECTIVE|ACTION(?:\s*\d+)?)\s*:\s*/gi);
+    if (tokens.length < 3) {
+      tokens.length = 0;
+      collect(/\b(ANALYSIS|DIRECTIVE|ACTION(?:\s*\d+)?)\s*:\s*/gi);
+    }
+
+    const parsed = {analysis:'',directive:'',actions:[]};
+    for (let i = 0; i < tokens.length; i += 1) {
+      const current = tokens[i];
+      const next = tokens[i + 1];
+      const value = raw
+        .slice(current.valueStart, next ? next.matchStart : raw.length)
+        .trim()
+        .replace(/^[;\-–—\s]+|[;\s]+$/g,'');
+      const label = current.label.toUpperCase().replace(/\s+/g,' ');
+      if (label === 'ANALYSIS' && !parsed.analysis) parsed.analysis = value;
+      else if (label === 'DIRECTIVE' && !parsed.directive) parsed.directive = value;
+      else if (label.startsWith('ACTION') && value) parsed.actions.push(value);
+    }
+    if (parsed.analysis && parsed.directive && parsed.actions.length) d = parsed;
     else {
       jsonError.code = 'SEVEN_MALFORMED_DECISION';
       throw jsonError;
