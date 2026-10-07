@@ -83,22 +83,28 @@ jobs:
             ''|/*|*://*|*@*|*'..'*) echo "invalid GitLab repository path"; exit 2 ;;
           esac
 
-          cred="$RUNNER_TEMP/gitlab-credentials"
+          askpass="$RUNNER_TEMP/gitlab-askpass.sh"
           cleanup() {
-            rm -f "$cred"
+            rm -f "$askpass"
             git remote remove gitlab-fallback >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
 
           umask 077
-          printf 'https://oauth2:%s@%s\n' "$GITLAB_MIRROR_TOKEN" "$host" > "$cred"
-          git config --global credential.helper "store --file=$cred"
+          cat > "$askpass" <<'SH'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' oauth2 ;;
+            *Password*) printf '%s\n' "$GITLAB_MIRROR_TOKEN" ;;
+          esac
+          SH
+          chmod 700 "$askpass"
 
           git remote add gitlab-fallback "https://$host/$repo.git"
 
           # Fast-forward-only by design: if GitLab was promoted and diverged during
           # an outage, fail closed instead of overwriting emergency fallback work.
-          git push gitlab-fallback 'refs/heads/*:refs/heads/*'
-          git push gitlab-fallback 'refs/tags/*:refs/tags/*'
+          GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$askpass" git push gitlab-fallback 'refs/heads/*:refs/heads/*'
+          GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$askpass" git push gitlab-fallback 'refs/tags/*:refs/tags/*'
 
           echo "GitLab hot-standby mirror updated: $host/$repo"
