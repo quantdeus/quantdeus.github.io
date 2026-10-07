@@ -440,7 +440,7 @@ function isTransientUpstreamReadFailure(error) {
 function degradedNoTrade(stage, reason = 'upstream_busy_fail_closed', extra = {}) {
   return {
     ok: true,
-    environment: 'prod-vst',
+    environment: 'demo-vst',
     action: 'none',
     reason,
     degraded: true,
@@ -451,7 +451,7 @@ function degradedNoTrade(stage, reason = 'upstream_busy_fail_closed', extra = {}
 
 export async function runVstSignalCycle() {
   const status = publicStatus();
-  if (status.environment !== 'prod-vst' || status.liveApiAllowed !== false) {
+  if (status.environment !== 'demo-vst' || status.liveApiAllowed !== false) {
     throw new Error('bingx_vst_signal_environment_guard_failed');
   }
   const useRemoteBroker = remoteBrokerEnabled();
@@ -480,7 +480,7 @@ export async function runVstSignalCycle() {
   if (openPositions.length) {
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: 'demo-vst',
       action: 'none',
       reason: 'open_position_exists',
       universeScanned: universe.scannedSymbols,
@@ -492,7 +492,7 @@ export async function runVstSignalCycle() {
   if (!universe.eligible.length) {
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: 'demo-vst',
       action: 'none',
       reason: 'no_stable_liquid_assets',
       universeScanned: universe.scannedSymbols,
@@ -546,7 +546,7 @@ export async function runVstSignalCycle() {
     )[0];
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: 'demo-vst',
       action: 'none',
       reason: 'no_confirmed_signal',
       universeScanned: universe.scannedSymbols,
@@ -620,7 +620,7 @@ export async function runVstSignalCycle() {
   if (!qa.allowed || !qa.approvalToken) {
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: 'demo-vst',
       action: 'none',
       reason: 'qa_risk_gate_blocked',
       universeScanned: universe.scannedSymbols,
@@ -674,7 +674,7 @@ export async function runVstSignalCycle() {
 
   return {
     ok: true,
-    environment: 'prod-vst',
+    environment: 'demo-vst',
     action: 'vst_order_placed',
     reason: 'signal_and_qa_confirmed',
     universeScanned: universe.scannedSymbols,
