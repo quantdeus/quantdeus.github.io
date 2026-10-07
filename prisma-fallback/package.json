@@ -1,10 +1,10 @@
 {
   "name": "quantdeus-prisma-fallback",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "sync-agents": "cp ../coordination/agents.json src/agents.snapshot.json",
+    "sync-agents": "cp vercel-production/agents.json src/agents.snapshot.json",
     "build": "bun run sync-agents && bun build src/server.ts --target=bun --outfile dist/server.mjs",
     "typecheck": "bun run sync-agents && tsc --noEmit"
   },
