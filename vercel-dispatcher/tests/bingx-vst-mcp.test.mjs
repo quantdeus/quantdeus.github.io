@@ -107,6 +107,7 @@ test('public status never advertises live API, withdrawals, or transfers', () =>
   assert.equal(status.liveApiAllowed, false);
   assert.equal(status.withdrawalsExposed, false);
   assert.equal(status.transfersExposed, false);
+  assert.equal(status.universe, 'all-vst-usdt');
   assert.equal(status.indicatorGate.indicatorCount, 14);
   assert.deepEqual(status.indicatorGate.timeframes, ['5m', '15m']);
   assert.ok(status.indicatorGate.minIndicators >= 10);
@@ -119,6 +120,8 @@ test('trusted OpenClaw allow-list exposes VST tools', async () => {
   for (const tool of [
     'bingxvst__bingx_vst_status',
     'bingxvst__bingx_vst_balance',
+    'bingxvst__bingx_vst_contracts',
+    'bingxvst__bingx_vst_tickers',
     'bingxvst__bingx_vst_klines',
     'bingxvst__bingx_vst_risk_check',
     'bingxvst__bingx_vst_place_market_order'
