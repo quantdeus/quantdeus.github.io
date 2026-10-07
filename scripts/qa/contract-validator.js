@@ -236,7 +236,7 @@ check(
 check(
   cognitiveTelegram.includes('function canonicalAgentIdentity(agent)') &&
   cognitiveTelegram.includes('agent?.runtime_identity') &&
-  cognitiveTelegram.includes('dataIdentityViolation(agentId, answer)') &&
+  cognitiveTelegram.includes('dataIdentityViolation(agentId, answer,') &&
   cognitiveTelegram.includes('data_identity_smoke') &&
   cognitiveTelegram.includes('андроид типа Сунга') &&
   cognitiveTelegram.includes('Soong-type android created by Dr. Noonien Soong') &&
@@ -820,7 +820,7 @@ check(
     telegramBridge.includes("text: '/data Кто ты? Ответь одной короткой фразой.'") &&
     telegramBridge.includes("const llmProbe = roleProbeHealthy ? 'TELEGRAM_LLM_OK' : ''") &&
     telegramBridge.includes('data_identity_smoke') &&
-    telegramBridge.includes("!dataIdentityViolation('data', roleProbeBody)") &&
+    telegramBridge.includes("!dataIdentityViolation('data', roleProbeBody, '/data Кто ты?')") &&
     !telegramBridge.includes('const llmProbe = await chatCompletion('),
     'vercel-dispatcher/api/quantdeus/telegram.js',
     'Telegram webhook setup uses one Data identity-aware LLM probe to avoid anonymous-provider burst throttling'
