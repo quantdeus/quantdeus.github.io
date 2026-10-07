@@ -100,6 +100,89 @@ async function checked(sandbox, args, label) {
   return r;
 }
 
+
+function openClawAutomationRows(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.jobs)) return value.jobs;
+  if (Array.isArray(value?.result)) return value.result;
+  if (Array.isArray(value?.result?.jobs)) return value.result.jobs;
+  return [];
+}
+
+function openClawAutomationId(job) {
+  return String(job?.id || job?.jobId || job?.job_id || '').trim();
+}
+
+async function retireLegacyVstScheduler(sandbox, { home, workdir }) {
+  const jobName = 'quantdeus-bingx-vst';
+  const legacyRunnerPath = `${home}/.openclaw/quantdeus-vst-cycle.cjs`;
+
+  const failRetirement = (message) => {
+    throw Object.assign(new Error(message), {
+      status: 503,
+      retrySafe: true,
+      code: 'OPENCLAW_VST_RETIREMENT_FAILED'
+    });
+  };
+
+  const listJobs = async () => {
+    const result = await sandbox.runCommand({
+      cmd: 'openclaw',
+      args: ['automations', 'list', '--all', '--json'],
+      cwd: workdir
+    });
+    const stdout = (await result.stdout()).trim();
+    const stderr = (await result.stderr()).trim();
+    if (result.exitCode !== 0) {
+      failRetirement('openclaw_vst_retirement_list_failed: ' + (stderr || stdout).slice(-1200));
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(stdout || '{"jobs":[]}');
+    } catch {
+      failRetirement('openclaw_vst_retirement_list_invalid_json');
+    }
+    return openClawAutomationRows(parsed);
+  };
+
+  const existing = (await listJobs()).filter(job => String(job?.name || '').trim().toLowerCase() === jobName);
+  let removedJobs = 0;
+  for (const job of existing) {
+    const id = openClawAutomationId(job);
+    if (!id) failRetirement('openclaw_vst_retirement_job_missing_id');
+    const remove = await sandbox.runCommand({
+      cmd: 'openclaw',
+      args: ['automations', 'remove', id, '--json'],
+      cwd: workdir
+    });
+    if (remove.exitCode !== 0) {
+      failRetirement('openclaw_vst_retirement_remove_failed: ' + ((await remove.stderr()) || (await remove.stdout())).slice(-1200));
+    }
+    removedJobs += 1;
+  }
+
+  const remaining = (await listJobs()).filter(job => String(job?.name || '').trim().toLowerCase() === jobName);
+  if (remaining.length !== 0) failRetirement('openclaw_vst_scheduler_retirement_failed');
+
+  const removeRunner = await sandbox.runCommand({ cmd: 'rm', args: ['-f', legacyRunnerPath] });
+  if (removeRunner.exitCode !== 0) {
+    failRetirement('openclaw_vst_legacy_runner_remove_failed: ' + ((await removeRunner.stderr()) || '').slice(-1200));
+  }
+  const runnerCheck = await sandbox.runCommand({ cmd: 'test', args: ['-e', legacyRunnerPath] });
+  if (runnerCheck.exitCode === 0) failRetirement('openclaw_vst_legacy_runner_still_present');
+
+  const result = {
+    status: 'retired',
+    scheduler: 'github-actions-primary',
+    job: jobName,
+    removed_jobs: removedJobs,
+    remaining_jobs: 0,
+    legacy_runner_removed: true
+  };
+  console.log('[openclaw-vst-retirement] ' + JSON.stringify(result));
+  return result;
+}
+
 async function githubRepoJson(token, path, options = {}) {
   const response = await fetch('https://api.github.com/repos/' + REPOSITORY + path, {
     ...options,
@@ -1086,6 +1169,10 @@ export default async function handler(req, res) {
     if (install.exitCode !== 0) throw new Error(`openclaw_install_failed: ${(await install.stderr()).slice(0, 1000)}`);
     await sandbox.runCommand({ cmd: 'mkdir', args: ['-p', workdir] });
 
+    // Canonical runtime retirement hook: GitHub Actions is the only VST scheduler.
+    // Remove any legacy OpenClaw automation/runner from the persistent Sandbox before agent execution.
+    const vstSchedulerRetirement = await retireLegacyVstScheduler(sandbox, { home, workdir });
+
     const cloneRequestRepo = async (force = false) => {
       if (!trustedOffice || smokePhase) return;
       if (!force) {
@@ -1555,6 +1642,7 @@ export default async function handler(req, res) {
         ? { filesystem: true, github_mcp: true, public_repo_mcp: false, github_write: !hourlyOffice && !smokePhase, playwright_mcp: true, shell: false }
         : { filesystem: false, github_mcp: false, public_repo_mcp: true, github_write: false, playwright_mcp: false, shell: false },
       doctor,
+      runtime_maintenance: { vst_scheduler_retirement: vstSchedulerRetirement },
       tool_summary: toolSummary,
       assistant_turns: result.assistantTurns ?? null,
       request_budget_ms: requestBudgetMs,
