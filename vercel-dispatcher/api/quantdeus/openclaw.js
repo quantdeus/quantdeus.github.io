@@ -751,10 +751,12 @@ export default async function handler(req, res) {
     const prompt = messages.map(m => `${String(m.role || 'user').toUpperCase()}: ${String(m.content || '')}`).join('\n\n').slice(0, 60000);
     if (!prompt) return res.status(400).json({ ok: false, error: 'messages_required' });
 
-    // Vercel-internal Telegram/site lanes are tool-capable by default, but only
-    // through a narrow server-side read broker. Mutation authority never comes from
-    // model text or tool output; owner/admin writes use the authenticated trusted-office path.
-    if (vercelInternal) {
+    // Read-only lanes do not need an OS sandbox: execute them through the narrow
+    // server-side GitHub read broker. This also provides a capacity-independent fallback
+    // when Vercel Sandbox is exhausted. Mutation-capable trusted-office requests still
+    // require the isolated Sandbox and continue to fail closed if it is unavailable.
+    // Mutation authority never comes from model text or tool output.
+    if (vercelInternal || !trustedOffice) {
       const FAST_CHAT_TOTAL_BUDGET_MS = 26000;
       const FAST_CHAT_ATTEMPT_MS = 12000;
       const fastRoutes = healthyRefs
