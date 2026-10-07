@@ -16,6 +16,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/openclaw-admin-smoke.yml'
+      - 'vercel-dispatcher/api/quantdeus/openclaw.js'
+      - 'scripts/openclaw-vst-cron-bootstrap.js'
 
 permissions:
   contents: write
@@ -103,7 +105,16 @@ jobs:
               if (String(result.text || '').trim() !== 'OPENCLAW_GITHUB_MCP_OK') {
                 throw new Error('GitHub MCP regression final response mismatch on pass ' + attempt + ': ' + String(result.text || '').slice(0, 300));
               }
-              passes.push({ attempt, model: result.model, tool_summary: summary });
+              const retirement = result.raw?.runtime_maintenance?.vst_scheduler_retirement;
+              if (
+                retirement?.status !== 'retired' ||
+                retirement?.scheduler !== 'github-actions-primary' ||
+                Number(retirement?.remaining_jobs) !== 0 ||
+                retirement?.legacy_runner_removed !== true
+              ) {
+                throw new Error('VST runtime retirement evidence missing/invalid on pass ' + attempt + ': ' + JSON.stringify(retirement));
+              }
+              passes.push({ attempt, model: result.model, tool_summary: summary, vst_scheduler_retirement: retirement });
             }
             const branch = await fetch('https://api.github.com/repos/' + process.env.GITHUB_REPOSITORY + '/branches/main', {
               headers: {
@@ -197,6 +208,7 @@ jobs:
           - brokered-read publicrepo MCP: OPENCLAW_BROKERED_READ_MCP_OK (credentialless get_file pass)
           - Playwright MCP: OPENCLAW_PLAYWRIGHT_MCP_OK
           - BingX VST signed auth: BINGX_VST_SIGNED_AUTH_OK
+          - VST legacy OpenClaw scheduler: retired (runtime_maintenance verified)
           - production endpoint: https://quantdeus.vercel.app/api/quantdeus/openclaw
           EOF
           git config user.name "quantdeus-smoke[bot]"
