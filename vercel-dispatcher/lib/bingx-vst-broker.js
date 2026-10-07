@@ -55,10 +55,23 @@ function tradingEnabled() {
   return /^(?:1|true|yes|on)$/i.test(String(process.env.QUANTDEUS_BINGX_VST_TRADING_ENABLED || ''));
 }
 
+function symbolMode() {
+  const mode = String(process.env.BINGX_VST_SYMBOL_MODE || 'all').trim().toLowerCase();
+  return mode === 'allowlist' ? 'allowlist' : 'all';
+}
+
 export function allowedSymbols() {
+  if (symbolMode() === 'all') return ['*'];
   const raw = String(process.env.BINGX_VST_SYMBOL_ALLOWLIST || '').trim();
   const source = raw ? raw.split(',') : DEFAULT_SYMBOLS;
   return [...new Set(source.map(value => value.trim().toUpperCase()).filter(Boolean))];
+}
+
+export function symbolAllowed(input) {
+  const symbol = String(input || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{1,40}-USDT$/.test(symbol)) return false;
+  const configured = allowedSymbols();
+  return configured.includes('*') || configured.includes(symbol);
 }
 
 function credentials() {
@@ -85,7 +98,7 @@ function normalizeOrder(input = {}) {
   const quantity = String(input.quantity || '').trim();
   const quantityNumber = Number(quantity);
 
-  if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  if (!symbolAllowed(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
   if (!new Set(['BUY', 'SELL']).has(side)) throw new Error('bingx_vst_invalid_side');
   if (!new Set(['LONG', 'SHORT', 'BOTH']).has(positionSide)) throw new Error('bingx_vst_invalid_position_side');
   if (!Number.isFinite(quantityNumber) || quantityNumber <= 0) throw new Error('bingx_vst_invalid_quantity');
@@ -564,6 +577,8 @@ export function publicStatus() {
     transfersExposed: false,
     tradingEnabled: tradingEnabled(),
     credentialsConfigured: Boolean(apiKey && secretKey),
+    symbolMode: symbolMode(),
+    universe: symbolMode() === 'all' ? 'all-vst-usdt' : 'configured-allowlist',
     allowedSymbols: allowedSymbols(),
     stormPct: envNumber('BINGX_VST_STORM_PCT', DEFAULT_STORM_PCT),
     maxOrderNotionalUsdt: envNumber('BINGX_VST_MAX_ORDER_NOTIONAL_USDT', DEFAULT_MAX_NOTIONAL_USDT),
@@ -591,9 +606,23 @@ export async function getPositions(input = {}) {
   return { environment: 'prod-vst', upstreamBase: response.base, symbol: symbol || null, response: response.data };
 }
 
+export async function listContracts() {
+  const response = await publicGet('/openApi/swap/v2/quote/contracts');
+  const rows = response.data?.data;
+  const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+  return { environment: 'prod-vst', upstreamBase: response.base, contracts };
+}
+
+export async function getTickers() {
+  const response = await publicGet('/openApi/swap/v2/quote/ticker');
+  const rows = response.data?.data;
+  const tickers = Array.isArray(rows) ? rows : (rows ? [rows] : []);
+  return { environment: 'prod-vst', upstreamBase: response.base, tickers };
+}
+
 export async function getContractInfo(input = {}) {
   const symbol = String(input.symbol || '').trim().toUpperCase();
-  if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  if (!symbolAllowed(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
   const response = await publicGet('/openApi/swap/v2/quote/contracts', { symbol });
   const rows = response.data?.data;
   const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
@@ -604,7 +633,7 @@ export async function getContractInfo(input = {}) {
 
 export async function getKlines(input = {}) {
   const symbol = String(input.symbol || '').trim().toUpperCase();
-  if (!allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  if (!symbolAllowed(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
   const interval = String(input.interval || '5m').trim();
   if (!new Set(['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '12h', '1d']).has(interval)) {
     throw new Error('bingx_vst_invalid_interval');
