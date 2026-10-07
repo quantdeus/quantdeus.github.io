@@ -28,7 +28,7 @@ test('billing-gated provider is rejected while healthy provider survives', async
   ];
   const fetchImpl = async url => {
     if (String(url).includes('billing')) return response(402, { error:'billing required' });
-    return response(200, { choices:[{ message:{ content:'OK' } }] });
+    return response(200, { choices:[{ message:{ content:'{"ok":true}' } }] });
   };
   const rows = await probeMirrorProviders(candidates, { fetchImpl, timeoutMs:100 });
   assert.equal(rows[0].ok, false);
@@ -36,6 +36,27 @@ test('billing-gated provider is rejected while healthy provider survives', async
   assert.equal(rows[1].ok, true);
 });
 
+test('JSON admission rejects a provider that only answers plain text', async () => {
+  const candidates = [
+    { ref:'plain/model', endpoint:'https://plain.test/chat', key:'x', model:'m', priority:1 }
+  ];
+  const fetchImpl = async () => response(200, { choices:[{ message:{ content:'OK' } }] });
+  const rows = await probeMirrorProviders(candidates, { fetchImpl, timeoutMs:100 });
+  assert.equal(rows[0].ok, false);
+  assert.equal(rows[0].detail, 'strict_json_probe_failed');
+});
+
+test('role skips malformed JSON and tries the next provider', async () => {
+  const routes = [
+    { ref:'bad/model', endpoint:'https://bad.test/chat', key:'x', model:'m' },
+    { ref:'good/model', endpoint:'https://good.test/chat', key:'y', model:'m' }
+  ];
+  const fetchImpl = async url => String(url).includes('bad')
+    ? response(200, { choices:[{ message:{ content:'SUMMARY: not JSON' } }] })
+    : response(200, { choices:[{ message:{ content:'{"status":"healthy"}' } }] });
+  const result = await callMirrorJsonRole({ routes, name:'Mirror Test', system:'', prompt:'{}', fetchImpl, timeoutMs:100 });
+  assert.equal(result.route.ref, 'good/model');
+});
 test('JSON role falls through to the next working provider', async () => {
   const routes = [
     { ref:'down/model', endpoint:'https://down.test/chat', key:'x', model:'m' },
