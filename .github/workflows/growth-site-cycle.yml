@@ -17,6 +17,7 @@ permissions:
   actions: read
   checks: read
   id-token: write
+  copilot-requests: write
 
 concurrency:
   group: quantdeus-growth-site-cycle-${{ inputs.agent_id || github.event.schedule || 'manual' }}
@@ -35,8 +36,21 @@ jobs:
           node-version: '24'
       - name: Validate shared QuantDeus mission
         run: node scripts/mission-alignment.js
-      - name: Run rotating growth/site specialist
-        id: cycle
+      - name: Install GitHub Copilot CLI
+        run: npm install -g @github/copilot@latest --no-audit --no-fund
+
+      - name: Run GitHub-native rotating growth/site specialist
+        id: github_native
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          INPUT_AGENT_ID: ${{ inputs.agent_id }}
+          COPILOT_AUTO_UPDATE: 'false'
+        run: node scripts/github-growth-cycle.js
+      - name: Run OpenClaw growth/site fallback
+        id: openclaw_fallback
+        if: steps.github_native.outcome == 'failure'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_AGENT_ID: ${{ inputs.agent_id }}
@@ -102,7 +116,7 @@ jobs:
                 'or {"action":"issue","issue_number":123,"summary":"..."}',
                 'or {"action":"pr","pr_number":123,"branch":"automation/site-refresh/...","autopublish":true,"summary":"..."}'
               ].join('\n')}],
-              metadata:{source:'quantdeus-growth-site-cycle',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,requested_agent_id:requestedAgentId,delegated_from:delegatedFrom||'',hour_utc:hour,scheduled_hour_utc:scheduledHour}
+              metadata:{source:'quantdeus-growth-site-cycle-openclaw-fallback',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,requested_agent_id:requestedAgentId,delegated_from:delegatedFrom||'',hour_utc:hour,scheduled_hour_utc:scheduledHour}
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Growth/site cycle lacks trusted tools');
             const d=parse(result.text);
@@ -113,6 +127,7 @@ jobs:
               fs.appendFileSync(process.env.GITHUB_OUTPUT,'branch='+String(d.branch)+'\n');
               fs.appendFileSync(process.env.GITHUB_OUTPUT,'autopublish='+(d.autopublish===true?'true':'false')+'\n');
             }
+            if(d.action==='issue') fs.appendFileSync(process.env.GITHUB_OUTPUT,'issue_number='+Number(d.issue_number)+'\n');
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
             console.log(JSON.stringify({requested_agent:requestedAgentId,active_agent:agentId,delegated_from:delegatedFrom,model:result.model,decision:d},null,2));
           })().catch(e=>{
@@ -128,6 +143,36 @@ jobs:
             console.error(e.stack||e);
             process.exit(1);
           });
+          NODE
+      - name: Select effective growth/site result
+        id: cycle
+        if: always()
+        env:
+          PRIMARY_OUTCOME: ${{ steps.github_native.outcome }}
+          PRIMARY_ACTION: ${{ steps.github_native.outputs.action }}
+          PRIMARY_ISSUE: ${{ steps.github_native.outputs.issue_number }}
+          FALLBACK_ACTION: ${{ steps.openclaw_fallback.outputs.action }}
+          FALLBACK_ISSUE: ${{ steps.openclaw_fallback.outputs.issue_number }}
+          FALLBACK_PR: ${{ steps.openclaw_fallback.outputs.pr_number }}
+          FALLBACK_BRANCH: ${{ steps.openclaw_fallback.outputs.branch }}
+          FALLBACK_AUTOPUBLISH: ${{ steps.openclaw_fallback.outputs.autopublish }}
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const primaryOk=process.env.PRIMARY_OUTCOME==='success';
+          const out=primaryOk ? {
+            action:process.env.PRIMARY_ACTION||'none',
+            issue_number:process.env.PRIMARY_ISSUE||'',
+            autopublish:'false'
+          } : {
+            action:process.env.FALLBACK_ACTION||'none',
+            issue_number:process.env.FALLBACK_ISSUE||'',
+            pr_number:process.env.FALLBACK_PR||'',
+            branch:process.env.FALLBACK_BRANCH||'',
+            autopublish:process.env.FALLBACK_AUTOPUBLISH||'false'
+          };
+          for(const [k,v] of Object.entries(out)) fs.appendFileSync(process.env.GITHUB_OUTPUT,k+'='+String(v)+'\n');
+          console.log(JSON.stringify({selected:primaryOk?'github-native-copilot':'openclaw-fallback',...out},null,2));
           NODE
       - name: Guarded auto-publish safe site/content PR
         if: steps.cycle.outputs.action == 'pr' && steps.cycle.outputs.autopublish == 'true'
