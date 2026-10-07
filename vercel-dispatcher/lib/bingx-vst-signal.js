@@ -397,14 +397,15 @@ function isTransientUpstreamReadFailure(error) {
   return /bingx_vst_(?:business_(?:100500|100503|110500)|http_(?:500|502|503|504))/.test(message);
 }
 
-function degradedNoTrade(stage) {
+function degradedNoTrade(stage, reason = 'upstream_busy_fail_closed', extra = {}) {
   return {
     ok: true,
     environment: 'prod-vst',
     action: 'none',
-    reason: 'upstream_busy_fail_closed',
+    reason,
     degraded: true,
-    upstreamStage: stage
+    upstreamStage: stage,
+    ...extra
   };
 }
 
@@ -573,9 +574,25 @@ export async function runVstSignalCycle() {
     ...order,
     approval_token: qa.approvalToken
   };
-  const execution = useRemoteBroker
-    ? await remoteBrokerCall('place_order', executionInput)
-    : await placeMarketOrder(executionInput);
+  let execution;
+  try {
+    execution = useRemoteBroker
+      ? await remoteBrokerCall('place_order', executionInput)
+      : await placeMarketOrder(executionInput);
+  } catch (error) {
+    // Never retry or start a second full cycle after an order submission attempt.
+    // Even in VST, a transport/upstream failure can make execution state uncertain.
+    return degradedNoTrade(
+      'order_submit',
+      isTransientUpstreamReadFailure(error)
+        ? 'order_rejected_upstream_busy'
+        : 'order_submit_state_uncertain_fail_closed',
+      {
+        orderAttempted: true,
+        requiresReview: !isTransientUpstreamReadFailure(error)
+      }
+    );
+  }
   const upstream = execution?.response?.data ?? execution?.response ?? {};
   const orderId = upstream?.order?.orderId ?? upstream?.orderId ?? null;
 
