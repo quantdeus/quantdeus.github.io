@@ -122,10 +122,25 @@ test('universe prefilter scans all permitted contracts before deep analysis', ()
   assert.equal(universe.eligibleSymbols, 3);
 });
 
+test('upstream telemetry preserves exact BingX failure identity', () => {
+  const error = new Error('bingx_vst_remote_broker_failed_502_bingx_vst_business_110500');
+  error.brokerHttpStatus = 502;
+  error.businessCode = 110500;
+  error.upstreamMessage = 'Order system busy. Please retry later';
+  const details = signal.upstreamErrorDetails(error);
+  assert.equal(details.bingxCode, 110500);
+  assert.equal(details.bingxMessage, 'Order system busy. Please retry later');
+  assert.equal(details.brokerHttpStatus, 502);
+  assert.equal(details.bingxHttpStatus, null);
+  assert.match(details.upstreamError, /110500/);
+});
+
 test('scheduled VST autotrade keeps 15-minute cadence and QA precedes execution', async () => {
   const fs = await import('node:fs/promises');
   const workflow = await fs.readFile(new URL('../../.github/workflows/bingx-vst-signal.yml', import.meta.url), 'utf8');
   const source = await fs.readFile(new URL('../lib/bingx-vst-signal.js', import.meta.url), 'utf8');
+  const runner = await fs.readFile(new URL('../scripts/run-bingx-vst-native.mjs', import.meta.url), 'utf8');
+  const brokerRoute = await fs.readFile(new URL('../api/quantdeus/openclaw.js', import.meta.url), 'utf8');
   const missionGuard = await fs.readFile(new URL('../../scripts/mission-alignment.js', import.meta.url), 'utf8');
   assert.match(workflow, /cron:\s*'\*\/15 \* \* \* \*'/);
   assert.match(workflow, /node scripts\/mission-alignment\.js/);
@@ -143,6 +158,14 @@ test('scheduled VST autotrade keeps 15-minute cadence and QA precedes execution'
   assert.match(source, /remoteBrokerCall\('positions'\)/);
   assert.match(source, /remoteBrokerCall\('risk_check', order\)/);
   assert.match(source, /remoteBrokerCall\('place_order', executionInput\)/);
+  assert.match(source, /upstreamErrorDetails\(error\)/);
+  assert.match(runner, /bingx_code:/);
+  assert.match(runner, /bingx_message:/);
+  assert.match(runner, /bingx_http_status:/);
+  assert.match(runner, /broker_http_status:/);
+  assert.match(brokerRoute, /upstream_code:/);
+  assert.match(brokerRoute, /upstream_http_status:/);
+  assert.match(brokerRoute, /upstream_message:/);
   assert.doesNotMatch(source, /allowedSymbols\(\)\.slice\(0,\s*5\)/);
   assert.ok(source.indexOf("remoteBrokerCall('risk_check', order)") < source.indexOf("remoteBrokerCall('place_order', executionInput)"));
 });
