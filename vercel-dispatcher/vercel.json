@@ -16,6 +16,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/quantdeus/bingx-vst-mcp",
+      "destination": "/api/quantdeus/openclaw?qd_route=bingx-vst-mcp"
+    },
+    {
       "source": "/:path((?!api/).*)",
       "destination": "https://quantdeus.whf.bz/:path*"
     }
