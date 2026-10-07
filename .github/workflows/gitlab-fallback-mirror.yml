@@ -102,8 +102,34 @@ jobs:
 
           git remote add gitlab-fallback "https://$host/$repo.git"
 
-          # Fast-forward-only by design: if GitLab was promoted and diverged during
-          # an outage, fail closed instead of overwriting emergency fallback work.
+          # Bootstrap guard: a newly-created GitLab project may contain one generated
+          # scaffold commit. Replace only that narrow case, and only with force-with-lease.
+          remote_main=""
+          if GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$askpass" git fetch --no-tags gitlab-fallback refs/heads/main:refs/remotes/gitlab-fallback/main 2>/dev/null; then
+            remote_main="$(git rev-parse refs/remotes/gitlab-fallback/main)"
+          fi
+
+          if [ -n "$remote_main" ] && ! git merge-base --is-ancestor "$remote_main" refs/heads/main; then
+            remote_count="$(git rev-list --count "$remote_main")"
+            unexpected="$(git ls-tree -r --name-only "$remote_main" | grep -Ev '^(README(\.[Mm][Dd])?|LICENSE(\..*)?|\.gitignore) || true)"
+            if [ "$remote_count" = "1" ] && [ -z "$unexpected" ]; then
+              echo "::notice::Replacing one-commit GitLab scaffold with canonical QuantDeus main using force-with-lease."
+              GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$askpass" git push \
+                --force-with-lease="refs/heads/main:$remote_main" \
+                gitlab-fallback refs/heads/main:refs/heads/main
+            else
+              echo "::error::GitLab main diverged with non-scaffold content; refusing to overwrite fallback work."
+              echo "remote_main=$remote_main remote_commit_count=$remote_count"
+              if [ -n "$unexpected" ]; then
+                echo "unexpected_remote_paths:"
+                printf '%s\n' "$unexpected"
+              fi
+              exit 3
+            fi
+          fi
+
+          # Fast-forward-only by design after bootstrap: if GitLab was promoted and
+          # diverged during an outage, fail closed instead of overwriting fallback work.
           GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$askpass" git push gitlab-fallback 'refs/heads/*:refs/heads/*'
           GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="$askpass" git push gitlab-fallback 'refs/tags/*:refs/tags/*'
 
