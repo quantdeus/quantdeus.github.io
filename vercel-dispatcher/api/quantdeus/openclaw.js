@@ -1406,16 +1406,24 @@ export default async function handler(req, res) {
   } catch (error) {
     const message = String(error?.message || error);
     console.error('QuantDeus OpenClaw error:', message);
+    const sandboxCapacityBlocked =
+      /hobby plan usage limit exceeded/i.test(message) ||
+      /vercel sandbox[^\n]*usage limit/i.test(message) ||
+      /status code 402[^\n]*sandbox/i.test(message);
     const explicitStatus = Number(error?.status || 0);
-    const status = [400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
-      ? explicitStatus
-      : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502);
+    const status = sandboxCapacityBlocked
+      ? 503
+      : ([400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
+        ? explicitStatus
+        : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502));
     const retrySafe = Boolean(error?.retrySafe) ||
+      sandboxCapacityBlocked ||
       /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted)/i.test(message);
     return res.status(status).json({
       ok: false,
-      error: 'openclaw_office_failed',
+      error: sandboxCapacityBlocked ? 'openclaw_external_capacity_blocked' : 'openclaw_office_failed',
       retry_safe: retrySafe,
+      external_blocker: sandboxCapacityBlocked ? 'vercel_sandbox_capacity' : null,
       detail: message.slice(0, 2000)
     });
   } finally {
