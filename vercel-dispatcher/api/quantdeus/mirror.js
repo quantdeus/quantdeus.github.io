@@ -128,6 +128,10 @@ function publicText(value, max = 18000) {
   return boundedText(redactSensitive(value), max);
 }
 
+function publicHeadText(value, max = 18000) {
+  return redactSensitive(value).slice(0, max);
+}
+
 function safeRepairPath(path) {
   const p = String(path || '').trim();
   if (!p || p.includes('..') || p.startsWith('/')) return false;
@@ -224,7 +228,30 @@ function providerExhausted(error) {
   return String(error?.message || error) === 'mirror_no_healthy_provider';
 }
 
-export { safeRepairPath, deterministicDiagnosis, deterministicStageDiagnosis, fingerprint, providerExhausted };
+function mirrorIncidentKey(diagnosis, stage = '') {
+  const text = [
+    diagnosis?.summary || '',
+    diagnosis?.root_cause || '',
+    stage || ''
+  ].join(' ').toLowerCase();
+  if (
+    text.includes('no healthy non-gateway model route') ||
+    text.includes('no provider completed the required mirror swarm role') ||
+    text.includes('mirror model routes unavailable') ||
+    text.includes('provider_stage:')
+  ) return 'model-plane-unavailable';
+  return '';
+}
+
+export {
+  safeRepairPath,
+  deterministicDiagnosis,
+  deterministicStageDiagnosis,
+  fingerprint,
+  providerExhausted,
+  mirrorIncidentKey,
+  publicHeadText
+};
 
 async function existingArtifact(token, fp) {
   const query = encodeURIComponent('repo:' + REPOSITORY + ' is:open "' + 'mirror-fingerprint:' + fp + '"');
@@ -241,10 +268,56 @@ async function existingArtifact(token, fp) {
   return item ? { number: item.number, url: item.html_url, is_pr: Boolean(item.pull_request) } : null;
 }
 
-async function createEscalationIssue(token, diagnosis, critique, fp) {
+async function existingIncident(token, key) {
+  if (!key) return null;
+  const marker = 'mirror-incident-key:' + key;
+  const query = encodeURIComponent('repo:' + REPOSITORY + ' is:open "' + marker + '"');
+  const response = await fetch('https://api.github.com/search/issues?q=' + query + '&per_page=10', {
+    headers: {
+      authorization: 'Bearer ' + token,
+      accept: 'application/vnd.github+json',
+      'x-github-api-version': '2022-11-28'
+    }
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  const item = Array.isArray(data.items) ? data.items.find(x => !x.pull_request) : null;
+  return item ? { number: item.number, url: item.html_url, body: String(item.body || '') } : null;
+}
+
+async function createEscalationIssue(token, diagnosis, critique, fp, incidentKey = '') {
+  if (incidentKey) {
+    const incident = await existingIncident(token, incidentKey);
+    if (incident) {
+      const latest = [
+        '<!-- mirror-latest:start -->',
+        '### Latest recurrence',
+        '',
+        '- observed_at: ' + new Date().toISOString(),
+        '- fingerprint: `' + fp + '`',
+        '',
+        '#### Diagnosis',
+        publicText(diagnosis.root_cause || diagnosis.summary || 'No concise root cause returned.', 3000),
+        '',
+        '#### Evidence',
+        publicText(JSON.stringify(diagnosis.evidence || [], null, 2), 4000),
+        '<!-- mirror-latest:end -->'
+      ].join('\n');
+      const markerRe = /<!-- mirror-latest:start -->[\s\S]*?<!-- mirror-latest:end -->/;
+      const nextBody = markerRe.test(incident.body)
+        ? incident.body.replace(markerRe, latest)
+        : incident.body + '\n\n' + latest;
+      await github(token, '/issues/' + incident.number, {
+        method: 'PATCH',
+        body: JSON.stringify({ body: nextBody })
+      });
+      return { action: 'updated', number: incident.number, url: incident.url };
+    }
+  }
+
   const duplicate = await existingArtifact(token, fp);
   if (duplicate) return { action: 'existing', ...duplicate };
-  const title = '[MIRROR][REPAIR] ' + publicText(diagnosis.summary || diagnosis.root_cause || 'Swarm repair finding', 90);
+  const title = '[MIRROR][REPAIR] ' + publicHeadText(diagnosis.summary || diagnosis.root_cause || 'Swarm repair finding', 90);
   const body = [
     'Independent Mirror Swarm detected a repair-worthy condition.',
     '',
@@ -260,8 +333,19 @@ async function createEscalationIssue(token, diagnosis, critique, fp) {
     '### Guardrail',
     'The mirror could not safely produce a bounded draft PR. Human/primary-swarm review is required. No production mutation or secret change was performed.',
     '',
-    '<!-- mirror-fingerprint:' + fp + ' -->'
-  ].join('\n');
+    incidentKey ? '<!-- mirror-incident-key:' + incidentKey + ' -->' : '',
+    '<!-- mirror-fingerprint:' + fp + ' -->',
+    '',
+    '<!-- mirror-latest:start -->',
+    '### Latest recurrence',
+    '',
+    '- observed_at: ' + new Date().toISOString(),
+    '- fingerprint: `' + fp + '`',
+    '',
+    '#### Evidence',
+    publicText(JSON.stringify(diagnosis.evidence || [], null, 2), 4000),
+    '<!-- mirror-latest:end -->'
+  ].filter(Boolean).join('\n');
   const issue = await github(token, '/issues', {
     method: 'POST',
     body: JSON.stringify({ title, body })
@@ -383,7 +467,7 @@ export default async function handler(req, res) {
 
       const critique = deterministicCritique();
       if (mode === 'repair') {
-        const artifact = await createEscalationIssue(githubToken, diagnosis, critique, fp);
+        const artifact = await createEscalationIssue(githubToken, diagnosis, critique, fp, mirrorIncidentKey(diagnosis, stage));
         return res.status(200).json({
           ok: true,
           mode,
