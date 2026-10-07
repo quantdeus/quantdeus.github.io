@@ -526,10 +526,17 @@ export default async function handler(req, res) {
     } catch (error) {
       const message = String(error?.message || error).slice(0, 180);
       const forbidden = /oidc|identity|repository|audience|issuer|workflow/i.test(message);
+      const upstreamData = error?.data && typeof error.data === 'object' ? error.data : {};
+      const upstreamCode = Number(error?.businessCode ?? upstreamData?.code);
+      const upstreamHttpStatus = Number(error?.status);
+      const upstreamMessage = String(upstreamData?.msg ?? upstreamData?.message ?? '').slice(0, 180) || null;
       return res.status(forbidden ? 403 : 502).json({
         ok: false,
         environment: 'prod-vst',
-        error: message
+        error: message,
+        upstream_code: Number.isFinite(upstreamCode) ? upstreamCode : null,
+        upstream_http_status: Number.isFinite(upstreamHttpStatus) ? upstreamHttpStatus : null,
+        upstream_message: upstreamMessage
       });
     }
   }
