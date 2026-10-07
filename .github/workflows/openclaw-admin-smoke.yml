@@ -80,6 +80,35 @@ jobs:
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
+      - name: Verify BingX VST signed authentication
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const office = require('./scripts/openclaw-office-client');
+          (async () => {
+            const result = await office.ask({
+              profile: 'seven-of-nine',
+              trusted: true,
+              retryTransient: true,
+              messages: [{
+                role: 'user',
+                content: 'Read-only BingX VST authentication smoke. Use only bingxvst__bingx_vst_balance, exactly once. Do not place orders. Do not call any other tool. Do not print or reveal balance amounts, equity, margin, PnL, user IDs, API keys, secrets, or raw tool output. If the tool succeeds, reply exactly BINGX_VST_SIGNED_AUTH_OK.'
+              }],
+              metadata: { source: 'openclaw-admin-smoke', phase: 'bingx-vst-auth', repository: process.env.GITHUB_REPOSITORY }
+            });
+            if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
+            const summary = result.raw?.tool_summary;
+            if (!summary || !Array.isArray(summary.tools) || summary.tools.length !== 1 || summary.tools[0] !== 'bingxvst__bingx_vst_balance' || Number(summary.failures || 0) !== 0) {
+              throw new Error('BingX VST signed-auth tool trace missing/failed: ' + JSON.stringify(summary));
+            }
+            if (String(result.text || '').trim() !== 'BINGX_VST_SIGNED_AUTH_OK') {
+              throw new Error('BingX VST signed-auth final response mismatch: ' + String(result.text || '').slice(0, 300));
+            }
+            console.log(JSON.stringify({ ok: true, signed_vst_auth: true, tool_summary: summary, smoke: result.text }));
+          })().catch(error => { console.error(error.message || error); process.exit(1); });
+          NODE
+
       - name: Verify brokered-read OpenClaw publicrepo MCP lane
         run: |
           node <<'NODE'
@@ -159,6 +188,7 @@ jobs:
           - GitHub MCP: OPENCLAW_GITHUB_MCP_OK (2 consecutive get_file_contents passes)
           - brokered-read publicrepo MCP: OPENCLAW_BROKERED_READ_MCP_OK (credentialless get_file pass)
           - Playwright MCP: OPENCLAW_PLAYWRIGHT_MCP_OK
+          - BingX VST signed auth: BINGX_VST_SIGNED_AUTH_OK
           - production endpoint: https://quantdeus.vercel.app/api/quantdeus/openclaw
           EOF
           git config user.name "quantdeus-smoke[bot]"
