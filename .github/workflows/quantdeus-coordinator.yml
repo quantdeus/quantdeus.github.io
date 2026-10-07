@@ -54,6 +54,29 @@ jobs:
       - name: Validate post-scarcity civilization doctrine
         run: node -e "const d=require('./scripts/doctrine').loadDoctrine(); console.log('Doctrine', d.version)"
 
+      - name: Dispatch owner-requested VST test immediately
+        if: github.event_name == 'issue_comment' && github.actor == github.repository_owner && github.event.comment.body == '/coord vst-test'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+          receipt="<!-- qd-vst-test-dispatch:${COMMENT_ID} -->"
+          if gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json comments --jq '.comments[].body' | grep -Fq "$receipt"; then
+            echo "VST test dispatch already receipted for comment $COMMENT_ID"
+            exit 0
+          fi
+          gh workflow run bingx-vst-signal.yml --repo "$GITHUB_REPOSITORY" --ref main
+          cat > /tmp/vst-dispatch-comment.md <<EOF
+          🚀 **BingX VST test dispatch queued**
+
+          Workflow: `bingx-vst-signal.yml`
+          Ref: `main`
+          $receipt
+          EOF
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file /tmp/vst-dispatch-comment.md
+
       - name: Coordinate contributors and refresh hubs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
