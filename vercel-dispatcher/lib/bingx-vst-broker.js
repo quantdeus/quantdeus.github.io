@@ -11,6 +11,10 @@ export const BINGX_VST_BASES = Object.freeze([
 const DEFAULT_SYMBOLS = ['BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT'];
 const DEFAULT_STORM_PCT = 2.5;
 const DEFAULT_MAX_NOTIONAL_USDT = 100;
+const DEFAULT_MIN_INDICATORS = 10;
+const DEFAULT_MIN_DIRECTIONAL = 8;
+const DEFAULT_MIN_CONSENSUS = 0.65;
+const DEFAULT_MIN_GROUPS = 3;
 const APPROVAL_TTL_MS = 60_000;
 
 const FORBIDDEN_PARAM_CHARS = /[&=?#\\r\\n]/;
@@ -99,7 +103,11 @@ function approvalBody(order, expiresAt, metrics) {
     quantity: order.quantity,
     expiresAt,
     maxReturnPct: metrics.maxReturnPct,
-    notionalUsdt: metrics.notionalUsdt
+    notionalUsdt: metrics.notionalUsdt,
+    indicatorDirection5m: metrics.indicators?.['5m']?.direction ?? null,
+    indicatorConsensus5m: metrics.indicators?.['5m']?.matchingConsensus ?? null,
+    indicatorDirection15m: metrics.indicators?.['15m']?.direction ?? null,
+    indicatorConsensus15m: metrics.indicators?.['15m']?.matchingConsensus ?? null
   };
 }
 
@@ -210,28 +218,287 @@ async function privateRequest(method, path, params = {}) {
   throw new Error('bingx_vst_method_not_allowed');
 }
 
-function candleMetrics(rows) {
-  const candles = (Array.isArray(rows) ? rows : [])
+
+function normalizeCandles(rows) {
+  return (Array.isArray(rows) ? rows : [])
     .map(row => {
       if (Array.isArray(row)) {
-        const time = Number(row[0]);
-        const open = Number(row[1]);
-        const high = Number(row[2]);
-        const low = Number(row[3]);
         const close = Number(row[4]);
-        return { time, open, high, low, close };
+        return {
+          time: Number(row[0]),
+          open: Number(row[1]),
+          high: Number(row[2]),
+          low: Number(row[3]),
+          close,
+          volume: Number(row[5] ?? 0)
+        };
       }
+      const close = Number(row?.close ?? row?.c);
       return {
         time: Number(row?.time ?? row?.timestamp ?? row?.T ?? 0),
         open: Number(row?.open ?? row?.o),
         high: Number(row?.high ?? row?.h),
         low: Number(row?.low ?? row?.l),
-        close: Number(row?.close ?? row?.c)
+        close,
+        volume: Number(row?.volume ?? row?.vol ?? row?.v ?? row?.V ?? 0)
       };
     })
     .filter(candle => Number.isFinite(candle.close) && candle.close > 0)
+    .map(candle => ({
+      ...candle,
+      open: Number.isFinite(candle.open) && candle.open > 0 ? candle.open : candle.close,
+      high: Number.isFinite(candle.high) && candle.high > 0 ? candle.high : candle.close,
+      low: Number.isFinite(candle.low) && candle.low > 0 ? candle.low : candle.close,
+      volume: Number.isFinite(candle.volume) && candle.volume >= 0 ? candle.volume : 0
+    }))
     .sort((a, b) => a.time - b.time);
+}
 
+function mean(values) {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function sma(values, period) {
+  if (values.length < period) return null;
+  return mean(values.slice(-period));
+}
+
+function emaSeries(values, period) {
+  if (!values.length) return [];
+  const alpha = 2 / (period + 1);
+  const out = [values[0]];
+  for (let index = 1; index < values.length; index += 1) {
+    out.push(values[index] * alpha + out[index - 1] * (1 - alpha));
+  }
+  return out;
+}
+
+function stddev(values, period) {
+  if (values.length < period) return null;
+  const sample = values.slice(-period);
+  const center = mean(sample);
+  return Math.sqrt(mean(sample.map(value => (value - center) ** 2)));
+}
+
+function rsi(values, period = 14) {
+  if (values.length <= period) return null;
+  let gains = 0;
+  let losses = 0;
+  for (let index = values.length - period; index < values.length; index += 1) {
+    const delta = values[index] - values[index - 1];
+    if (delta > 0) gains += delta;
+    if (delta < 0) losses -= delta;
+  }
+  if (gains === 0 && losses === 0) return 50;
+  if (losses === 0) return 100;
+  if (gains === 0) return 0;
+  const rs = (gains / period) / (losses / period);
+  return 100 - 100 / (1 + rs);
+}
+
+function atr(candles, period = 14) {
+  if (candles.length <= period) return null;
+  const ranges = [];
+  for (let index = candles.length - period; index < candles.length; index += 1) {
+    const candle = candles[index];
+    const previousClose = candles[index - 1].close;
+    ranges.push(Math.max(
+      candle.high - candle.low,
+      Math.abs(candle.high - previousClose),
+      Math.abs(candle.low - previousClose)
+    ));
+  }
+  return mean(ranges);
+}
+
+function macdHistogram(values) {
+  if (values.length < 35) return null;
+  const fast = emaSeries(values, 12);
+  const slow = emaSeries(values, 26);
+  const macd = values.map((_, index) => fast[index] - slow[index]);
+  const signal = emaSeries(macd, 9);
+  return macd.at(-1) - signal.at(-1);
+}
+
+function stochasticK(candles, period = 14) {
+  if (candles.length < period) return null;
+  const sample = candles.slice(-period);
+  const high = Math.max(...sample.map(candle => candle.high));
+  const low = Math.min(...sample.map(candle => candle.low));
+  if (high === low) return 50;
+  return ((candles.at(-1).close - low) / (high - low)) * 100;
+}
+
+function aroon(candles, period = 25) {
+  if (candles.length < period) return null;
+  const sample = candles.slice(-period);
+  let highIndex = 0;
+  let lowIndex = 0;
+  for (let index = 1; index < sample.length; index += 1) {
+    if (sample[index].high >= sample[highIndex].high) highIndex = index;
+    if (sample[index].low <= sample[lowIndex].low) lowIndex = index;
+  }
+  const up = (highIndex / (period - 1)) * 100;
+  const down = (lowIndex / (period - 1)) * 100;
+  return { up, down };
+}
+
+function vwap(candles, period = 20) {
+  if (candles.length < period) return null;
+  const sample = candles.slice(-period);
+  const volume = sample.reduce((sum, candle) => sum + candle.volume, 0);
+  if (volume <= 0) return null;
+  const weighted = sample.reduce(
+    (sum, candle) => sum + ((candle.high + candle.low + candle.close) / 3) * candle.volume,
+    0
+  );
+  return weighted / volume;
+}
+
+function obvDelta(candles, period = 10) {
+  if (candles.length <= period) return null;
+  const sample = candles.slice(-(period + 1));
+  if (!sample.some(candle => candle.volume > 0)) return null;
+  let obv = 0;
+  let first = null;
+  for (let index = 1; index < sample.length; index += 1) {
+    const delta = sample[index].close - sample[index - 1].close;
+    if (delta > 0) obv += sample[index].volume;
+    if (delta < 0) obv -= sample[index].volume;
+    if (index === 1) first = obv;
+  }
+  return obv - (first ?? 0);
+}
+
+function moneyFlowIndex(candles, period = 14) {
+  if (candles.length <= period) return null;
+  const sample = candles.slice(-(period + 1));
+  if (!sample.some(candle => candle.volume > 0)) return null;
+  let positive = 0;
+  let negative = 0;
+  for (let index = 1; index < sample.length; index += 1) {
+    const currentTypical = (sample[index].high + sample[index].low + sample[index].close) / 3;
+    const previousTypical = (sample[index - 1].high + sample[index - 1].low + sample[index - 1].close) / 3;
+    const flow = currentTypical * sample[index].volume;
+    if (currentTypical > previousTypical) positive += flow;
+    if (currentTypical < previousTypical) negative += flow;
+  }
+  if (positive === 0 && negative === 0) return 50;
+  if (negative === 0) return 100;
+  if (positive === 0) return 0;
+  const ratio = positive / negative;
+  return 100 - 100 / (1 + ratio);
+}
+
+function vote(name, group, signal, value) {
+  return {
+    name,
+    group,
+    signal: signal > 0 ? 1 : signal < 0 ? -1 : 0,
+    value: Number.isFinite(Number(value)) ? Number(Number(value).toFixed(6)) : null
+  };
+}
+
+export function indicatorConsensus(rows) {
+  const candles = normalizeCandles(rows);
+  if (candles.length < 60) throw new Error('bingx_vst_insufficient_indicator_data');
+
+  const closes = candles.map(candle => candle.close);
+  const last = closes.at(-1);
+  const ema9 = emaSeries(closes, 9).at(-1);
+  const ema20 = emaSeries(closes, 20).at(-1);
+  const ema21 = emaSeries(closes, 21).at(-1);
+  const ema50 = emaSeries(closes, 50).at(-1);
+  const sma20 = sma(closes, 20);
+  const sma50 = sma(closes, 50);
+  const rsi14 = rsi(closes, 14);
+  const macd = macdHistogram(closes);
+  const roc10 = closes.length > 10 ? (last / closes.at(-11) - 1) * 100 : null;
+  const stoch14 = stochasticK(candles, 14);
+  const sd20 = stddev(closes, 20);
+  const donchian = candles.slice(-20);
+  const donchianMid = (Math.max(...donchian.map(candle => candle.high)) + Math.min(...donchian.map(candle => candle.low))) / 2;
+  const atr14 = atr(candles, 14);
+  const aroon25 = aroon(candles, 25);
+  const vwap20 = vwap(candles, 20);
+  const obv10 = obvDelta(candles, 10);
+  const mfi14 = moneyFlowIndex(candles, 14);
+
+  const signals = [
+    vote('ema_9_21', 'trend', ema9 > ema21 ? 1 : ema9 < ema21 ? -1 : 0, ema9 - ema21),
+    vote('sma_20_50', 'trend', sma20 > sma50 ? 1 : sma20 < sma50 ? -1 : 0, sma20 - sma50),
+    vote('price_vs_ema50', 'trend', last > ema50 ? 1 : last < ema50 ? -1 : 0, last - ema50),
+    vote('aroon_25', 'trend', aroon25.up - aroon25.down > 15 ? 1 : aroon25.down - aroon25.up > 15 ? -1 : 0, aroon25.up - aroon25.down),
+
+    vote('rsi_14', 'momentum', rsi14 >= 55 ? 1 : rsi14 <= 45 ? -1 : 0, rsi14),
+    vote('macd_histogram', 'momentum', macd > 0 ? 1 : macd < 0 ? -1 : 0, macd),
+    vote('roc_10', 'momentum', roc10 > 0.05 ? 1 : roc10 < -0.05 ? -1 : 0, roc10),
+    vote('stochastic_14', 'momentum', stoch14 >= 55 ? 1 : stoch14 <= 45 ? -1 : 0, stoch14),
+
+    vote('bollinger_mid', 'volatility', last > sma20 + sd20 * 0.05 ? 1 : last < sma20 - sd20 * 0.05 ? -1 : 0, (last - sma20) / Math.max(sd20 || 1, Number.EPSILON)),
+    vote('donchian_mid', 'volatility', last > donchianMid ? 1 : last < donchianMid ? -1 : 0, last - donchianMid),
+    vote('atr_trend', 'volatility', last > ema20 + atr14 * 0.15 ? 1 : last < ema20 - atr14 * 0.15 ? -1 : 0, (last - ema20) / Math.max(atr14 || 1, Number.EPSILON)),
+
+    vote('vwap_20', 'flow', vwap20 == null ? 0 : last > vwap20 ? 1 : last < vwap20 ? -1 : 0, vwap20 == null ? null : last - vwap20),
+    vote('obv_10', 'flow', obv10 == null ? 0 : obv10 > 0 ? 1 : obv10 < 0 ? -1 : 0, obv10),
+    vote('mfi_14', 'flow', mfi14 == null ? 0 : mfi14 >= 55 ? 1 : mfi14 <= 45 ? -1 : 0, mfi14)
+  ];
+
+  const bullish = signals.filter(signal => signal.signal > 0).length;
+  const bearish = signals.filter(signal => signal.signal < 0).length;
+  const directional = bullish + bearish;
+  const neutral = signals.length - directional;
+  const direction = bullish > bearish ? 'bullish' : bearish > bullish ? 'bearish' : 'neutral';
+  const consensus = directional ? Math.max(bullish, bearish) / directional : 0;
+  const activeGroups = new Set(signals.filter(signal => signal.signal !== 0).map(signal => signal.group)).size;
+
+  return {
+    direction,
+    consensus: Number(consensus.toFixed(4)),
+    bullish,
+    bearish,
+    neutral,
+    directional,
+    indicatorCount: signals.length,
+    activeGroups,
+    signals
+  };
+}
+
+export function evaluateIndicatorGate(orderInput, analysis, options = {}) {
+  const order = normalizeOrder(orderInput);
+  const minIndicators = Number(options.minIndicators ?? envNumber('BINGX_VST_MIN_INDICATORS', DEFAULT_MIN_INDICATORS));
+  const minDirectional = Number(options.minDirectional ?? envNumber('BINGX_VST_MIN_DIRECTIONAL', DEFAULT_MIN_DIRECTIONAL));
+  const minConsensus = Number(options.minConsensus ?? envNumber('BINGX_VST_MIN_CONSENSUS', DEFAULT_MIN_CONSENSUS));
+  const minGroups = Number(options.minGroups ?? envNumber('BINGX_VST_MIN_GROUPS', DEFAULT_MIN_GROUPS));
+  const expectedSignal = order.side === 'BUY' ? 1 : -1;
+  const matching = expectedSignal > 0 ? Number(analysis?.bullish || 0) : Number(analysis?.bearish || 0);
+  const directional = Number(analysis?.directional || 0);
+  const matchingConsensus = directional > 0 ? matching / directional : 0;
+  const expectedDirection = expectedSignal > 0 ? 'bullish' : 'bearish';
+
+  const reasons = [];
+  if (Number(analysis?.indicatorCount || 0) < minIndicators) reasons.push('indicator_count_low');
+  if (directional < minDirectional) reasons.push('directional_votes_low');
+  if (Number(analysis?.activeGroups || 0) < minGroups) reasons.push('indicator_group_coverage_low');
+  if (analysis?.direction !== expectedDirection) reasons.push('indicator_direction_mismatch');
+  if (matchingConsensus < minConsensus) reasons.push('indicator_consensus_weak');
+
+  return {
+    allowed: reasons.length === 0,
+    reasons,
+    expectedDirection,
+    matchingConsensus: Number(matchingConsensus.toFixed(4)),
+    minIndicators,
+    minDirectional,
+    minConsensus,
+    minGroups,
+    ...analysis
+  };
+}
+
+function candleMetrics(rows) {
+  const candles = normalizeCandles(rows);
   if (candles.length < 3) throw new Error('bingx_vst_insufficient_kline_data');
   let maxReturnPct = 0;
   let maxRangePct = 0;
@@ -241,9 +508,7 @@ function candleMetrics(rows) {
     maxReturnPct = Math.max(maxReturnPct, Math.abs((current / previous - 1) * 100));
   }
   for (const candle of candles) {
-    if (Number.isFinite(candle.open) && candle.open > 0 && Number.isFinite(candle.high) && Number.isFinite(candle.low)) {
-      maxRangePct = Math.max(maxRangePct, Math.abs((candle.high - candle.low) / candle.open * 100));
-    }
+    maxRangePct = Math.max(maxRangePct, Math.abs((candle.high - candle.low) / candle.open * 100));
   }
   return {
     lastPrice: candles.at(-1).close,
@@ -302,6 +567,14 @@ export function publicStatus() {
     allowedSymbols: allowedSymbols(),
     stormPct: envNumber('BINGX_VST_STORM_PCT', DEFAULT_STORM_PCT),
     maxOrderNotionalUsdt: envNumber('BINGX_VST_MAX_ORDER_NOTIONAL_USDT', DEFAULT_MAX_NOTIONAL_USDT),
+    indicatorGate: {
+      indicatorCount: 14,
+      timeframes: ['5m', '15m'],
+      minIndicators: envNumber('BINGX_VST_MIN_INDICATORS', DEFAULT_MIN_INDICATORS),
+      minDirectional: envNumber('BINGX_VST_MIN_DIRECTIONAL', DEFAULT_MIN_DIRECTIONAL),
+      minConsensus: envNumber('BINGX_VST_MIN_CONSENSUS', DEFAULT_MIN_CONSENSUS),
+      minGroups: envNumber('BINGX_VST_MIN_GROUPS', DEFAULT_MIN_GROUPS)
+    },
     approvalTtlMs: APPROVAL_TTL_MS
   };
 }
@@ -325,13 +598,38 @@ export async function getKlines(input = {}) {
 
 export async function runRiskCheck(input = {}) {
   const order = normalizeOrder(input);
-  const response = await publicGet('/openApi/swap/v3/quote/klines', { symbol: order.symbol, interval: '5m', limit: 13 });
-  const rows = response.data?.data ?? response.data;
-  const metrics = candleMetrics(rows);
+  const [fastResponse, slowResponse] = await Promise.all([
+    publicGet('/openApi/swap/v3/quote/klines', { symbol: order.symbol, interval: '5m', limit: 100 }),
+    publicGet('/openApi/swap/v3/quote/klines', { symbol: order.symbol, interval: '15m', limit: 100 })
+  ]);
+
+  const fastRows = fastResponse.data?.data ?? fastResponse.data;
+  const slowRows = slowResponse.data?.data ?? slowResponse.data;
+  const metrics = candleMetrics(fastRows);
   const risk = evaluateRisk(order, metrics);
-  if (!risk.allowed) return { ...risk, approvalToken: null, upstreamBase: response.base };
-  const approvalToken = signRiskApproval(order, risk);
-  return { ...risk, approvalToken, upstreamBase: response.base };
+  const fastGate = evaluateIndicatorGate(order, indicatorConsensus(fastRows));
+  const slowGate = evaluateIndicatorGate(order, indicatorConsensus(slowRows));
+  const allowed = risk.allowed && fastGate.allowed && slowGate.allowed;
+  const reasons = [
+    ...risk.reasons,
+    ...fastGate.reasons.map(reason => `5m_${reason}`),
+    ...slowGate.reasons.map(reason => `15m_${reason}`)
+  ];
+  const combined = {
+    ...risk,
+    allowed,
+    reasons: [...new Set(reasons)],
+    indicators: {
+      '5m': fastGate,
+      '15m': slowGate
+    },
+    upstreamBase: fastResponse.base,
+    secondaryUpstreamBase: slowResponse.base
+  };
+
+  if (!allowed) return { ...combined, approvalToken: null };
+  const approvalToken = signRiskApproval(order, combined);
+  return { ...combined, approvalToken };
 }
 
 export async function placeMarketOrder(input = {}) {
@@ -352,7 +650,11 @@ export async function placeMarketOrder(input = {}) {
     riskApproval: {
       expiresAt: claims.expiresAt,
       maxReturnPct: claims.maxReturnPct,
-      notionalUsdt: claims.notionalUsdt
+      notionalUsdt: claims.notionalUsdt,
+      indicatorDirection5m: claims.indicatorDirection5m,
+      indicatorConsensus5m: claims.indicatorConsensus5m,
+      indicatorDirection15m: claims.indicatorDirection15m,
+      indicatorConsensus15m: claims.indicatorConsensus15m
     },
     response: response.data
   };
