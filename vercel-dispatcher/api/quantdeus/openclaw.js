@@ -5,6 +5,7 @@ import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
 import bingxVstMcpHandler from '../../lib/bingx-vst-mcp-handler.js';
 import { getBalance as getBingxVstBalance } from '../../lib/bingx-vst-broker.js';
+import { runVstTradingCycle } from '../../lib/bingx-vst-cycle.js';
 
 const ISSUER = 'https://token.actions.githubusercontent.com';
 const JWKS_URL = `${ISSUER}/.well-known/jwks`;
@@ -375,6 +376,32 @@ async function cachedProbeChatCandidate(candidate, requireTools = false) {
 
 export default async function handler(req, res) {
   const qdRoute = String(req.query?.qd_route || '');
+
+  if (qdRoute === 'bingx-vst-cycle') {
+    if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+    try {
+      const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+      const claims = await verify(bearer);
+      const workflowRef = String(claims.workflow_ref || claims.job_workflow_ref || claims.workflow || '');
+      const eventName = String(claims.event_name || '');
+      const ref = String(claims.ref || '');
+      const trusted =
+        /\.github\/workflows\/bingx-vst-trading\.yml(?:@|$)/.test(workflowRef) &&
+        new Set(['schedule', 'workflow_dispatch']).has(eventName) &&
+        ref === 'refs/heads/main';
+      if (!trusted) return res.status(403).json({ ok: false, error: 'forbidden_trading_identity' });
+
+      const dryRun = req.body?.dry_run === true || String(req.body?.dry_run || '').toLowerCase() === 'true';
+      const result = await runVstTradingCycle({ dryRun });
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(502).json({
+        ok: false,
+        environment: 'prod-vst',
+        error: String(error?.message || error).slice(0, 180)
+      });
+    }
+  }
 
   if (qdRoute === 'bingx-vst-auth-smoke') {
     if (req.method !== 'GET') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
