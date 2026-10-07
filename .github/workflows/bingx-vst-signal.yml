@@ -2,7 +2,7 @@ name: QuantDeus BingX VST Autotrade
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '2,17,32,47 * * * *' # every 15 minutes, staggered off peak times
   workflow_dispatch:
 
 permissions:
