@@ -500,7 +500,7 @@ check(
   'legacy PicoClaw cron set is mapped with positronic migration and local anti-noise exclusion'
 );
 
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml','data-positronic-cycle.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml','data-positronic-cycle.yml','bingx-vst-signal.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -521,6 +521,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
         check(parts[0] === '7' && parts[1] === '*/2', name, 'QA failure radar uses the approved two-hour cadence: '+cron);
       } else if (name === 'data-positronic-cycle.yml') {
         check(parts[0] === '37' && parts[1] === '*/6', name, 'Data positronic cycle uses the approved six-hour cadence: '+cron);
+      } else if (name === 'bingx-vst-signal.yml') {
+        check(parts[0] === '*/15' && parts[1] === '*', name, 'BingX VST signal scan uses the approved read-only 15-minute cadence: '+cron);
       } else if (name === 'agent-role-cron.yml') {
         check(parts[0] === '23' && parts[1] === '0-15', name, 'role cron uses the approved daily hourly window: '+cron);
       } else if (name === 'seven-priority-cycle.yml') {
@@ -543,6 +545,14 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   }
   if (scheduledMissionWorkflows.has(name)) {
     check(text.includes('node scripts/mission-alignment.js'), name, 'scheduled workflow enforces shared mission alignment');
+  }
+  if (name === 'bingx-vst-signal.yml') {
+    check(
+      text.includes('/api/quantdeus/bingx-vst-signal') &&
+      !/place[_-]?market[_-]?order|bingx_vst_place_market_order|\/trade\/order/i.test(text),
+      name,
+      'BingX VST 15-minute cron remains read-only and cannot place orders'
+    );
   }
 }
 
