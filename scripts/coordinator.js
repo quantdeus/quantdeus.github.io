@@ -311,6 +311,40 @@ function handleIssueEvent(event) {
   return true;
 }
 
+function handleAdminCoordinatorCommand(event) {
+  if (!event.issue || event.issue.pull_request || !event.comment) return false;
+  const raw = String(event.comment.body || '').trim();
+  if (!/^\/coord\s+vst-test\s*$/i.test(raw)) return false;
+
+  const actor = String(event.comment.user?.login || '').trim();
+  const number = event.issue.number;
+  if (!isPrivileged(actor)) {
+    comment(number, '🛡️ `/coord vst-test` is owner-only.');
+    return true;
+  }
+
+  const commentId = String(event.comment.id || '').trim();
+  const receipt = commentId ? `<!-- qd-vst-test-dispatch:${commentId} -->` : '';
+  if (receipt) {
+    const current = ghJson(['issue', 'view', String(number), '--json', 'comments']) || {};
+    if ((current.comments || []).some(item => String(item.body || '').includes(receipt))) {
+      console.log(`VST test dispatch already receipted for comment ${commentId}.`);
+      return true;
+    }
+  }
+
+  gh(['workflow', 'run', 'bingx-vst-signal.yml', '--ref', 'main']);
+  comment(number, [
+    '🚀 **BingX VST test dispatch queued**',
+    '',
+    'Workflow: `bingx-vst-signal.yml`',
+    'Ref: `main`',
+    receipt
+  ].filter(Boolean).join('\n'));
+  console.log(JSON.stringify({vst_test_dispatched:true,issue:number,actor,comment_id:commentId || null}));
+  return true;
+}
+
 function handleCommentEvent(event) {
   if (!event.issue || event.issue.pull_request || !event.comment) return false;
   const cmd = (event.comment.body || '').trim();
@@ -505,6 +539,8 @@ async function main() {
       await maybeReplyToHumanIssue(event);
       handleIssueEvent(event);
       maybeDispatchIssueAgent(event);
+    } else if (process.env.GITHUB_EVENT_NAME === 'issue_comment') {
+      handleAdminCoordinatorCommand(event);
     }
   }
 
