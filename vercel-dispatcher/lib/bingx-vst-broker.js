@@ -159,8 +159,40 @@ function parseJson(raw) {
   return raw ? JSONbig.parse(raw) : null;
 }
 
-async function vstFetch(path, init = {}) {
-  let networkError = null;
+const TRANSIENT_READ_BUSINESS_CODES = new Set([100500, 100503, 110500]);
+const TRANSIENT_READ_HTTP_STATUSES = new Set([500, 502, 503, 504]);
+const READ_RETRY_DELAYS_MS = Object.freeze([350, 900]);
+
+function isTransientReadError(error) {
+  return (
+    error?.name === 'TimeoutError' ||
+    error?.name === 'AbortError' ||
+    error instanceof TypeError ||
+    TRANSIENT_READ_HTTP_STATUSES.has(Number(error?.status)) ||
+    TRANSIENT_READ_BUSINESS_CODES.has(Number(error?.businessCode))
+  );
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function withReadRetry(run) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= READ_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      return await run();
+    } catch (error) {
+      lastError = error;
+      if (!isTransientReadError(error) || attempt >= READ_RETRY_DELAYS_MS.length) throw error;
+      await sleep(READ_RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastError || new Error('bingx_vst_unreachable');
+}
+
+async function vstFetch(path, init = {}, options = {}) {
+  let lastError = null;
   for (let index = 0; index < BINGX_VST_BASES.length; index += 1) {
     const base = BINGX_VST_BASES[index];
     assertVstOnlyBase(base);
@@ -184,44 +216,57 @@ async function vstFetch(path, init = {}) {
       }
       if (data && typeof data === 'object' && Object.hasOwn(data, 'code') && Number(data.code) !== 0) {
         const error = new Error(`bingx_vst_business_${String(data.code)}`);
+        error.businessCode = Number(data.code);
         error.data = data;
         throw error;
       }
       return { data, base };
     } catch (error) {
-      const isNetwork = error?.name === 'TimeoutError' || error?.name === 'AbortError' || error instanceof TypeError;
-      if (isNetwork && index === 0) {
-        networkError = error;
-        continue;
-      }
+      lastError = error;
+      const canFailOver =
+        options.retryTransient === true &&
+        isTransientReadError(error) &&
+        index < BINGX_VST_BASES.length - 1;
+      if (canFailOver) continue;
       throw error;
     }
   }
-  throw networkError || new Error('bingx_vst_unreachable');
+  throw lastError || new Error('bingx_vst_unreachable');
 }
 
 async function publicGet(path, params = {}) {
   validateParams(params);
   const query = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])).toString();
-  return vstFetch(`${path}${query ? `?${query}` : ''}`);
+  return withReadRetry(() =>
+    vstFetch(`${path}${query ? `?${query}` : ''}`, {}, { retryTransient: true })
+  );
 }
 
 async function privateRequest(method, path, params = {}) {
   const { apiKey, secretKey } = credentials();
   if (!apiKey || !secretKey) throw new Error('bingx_vst_credentials_missing');
 
-  const signedParams = { ...params, recvWindow: 5000, timestamp: Date.now() };
-  const canonical = canonicalParams(signedParams);
-  const signature = hmacHex(secretKey, canonical);
   const headers = {
     'X-BX-APIKEY': apiKey,
     'X-SOURCE-KEY': 'BX-AI-SKILL'
   };
 
   if (method === 'GET') {
-    return vstFetch(`${path}?${canonical}&signature=${signature}`, { method, headers });
+    return withReadRetry(() => {
+      const signedParams = { ...params, recvWindow: 5000, timestamp: Date.now() };
+      const canonical = canonicalParams(signedParams);
+      const signature = hmacHex(secretKey, canonical);
+      return vstFetch(
+        `${path}?${canonical}&signature=${signature}`,
+        { method, headers },
+        { retryTransient: true }
+      );
+    });
   }
   if (method === 'POST') {
+    const signedParams = { ...params, recvWindow: 5000, timestamp: Date.now() };
+    const canonical = canonicalParams(signedParams);
+    const signature = hmacHex(secretKey, canonical);
     return vstFetch(path, {
       method,
       headers: { ...headers, 'content-type': 'application/x-www-form-urlencoded' },
