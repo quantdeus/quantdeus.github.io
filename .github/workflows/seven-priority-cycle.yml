@@ -75,8 +75,12 @@ jobs:
             const raw=String(text||'').trim();
             try{return JSON.parse(raw)}catch{}
             const m=raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-            if(m)return JSON.parse(m[1].trim());
-            throw new Error('Seven decision must be strict JSON');
+            if(m){
+              try{return JSON.parse(m[1].trim())}catch{}
+            }
+            const error=new Error('Seven decision must be strict JSON');
+            error.code='SEVEN_MALFORMED_DECISION';
+            throw error;
           }
           (async()=>{
             const result=await office.ask({
@@ -159,7 +163,7 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'action='+d.action+'\n');
             console.log(JSON.stringify({model:result.model,decision:d},null,2));
           })().catch(e=>{
-            if(office.isTransientError(e)){
+            if(office.isTransientError(e) || e?.code==='SEVEN_MALFORMED_DECISION'){
               console.warn('Seven OpenClaw decision degraded; selecting one deterministic safe role dispatch.');
               // The prompt snapshot is intentionally truncated, but deterministic
               // recovery must use the complete machine-generated JSON.
