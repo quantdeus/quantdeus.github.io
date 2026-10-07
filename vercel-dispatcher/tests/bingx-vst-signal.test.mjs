@@ -55,9 +55,80 @@ test('protection suggestion has stop and take-profit on the correct sides', () =
   assert.ok(short.takeProfitPrice < 100);
 });
 
-test('scheduled signal workflow is read-only and has a 15-minute cadence', async () => {
+test('ticker prefilter keeps liquid calm markets and rejects storms', () => {
+  const calm = signal.assessTicker({
+    symbol: 'BTC-USDT',
+    lastPrice: '100',
+    openPrice: '99',
+    highPrice: '102',
+    lowPrice: '98',
+    quoteVolume: '50000000',
+    bidPrice: '99.99',
+    askPrice: '100.01',
+    priceChangePercent: '1.01'
+  }, {
+    minQuoteVolumeUsdt: 1_000_000,
+    maxRangePct: 10,
+    maxChangePct: 8,
+    maxSpreadBps: 20
+  });
+  assert.equal(calm.allowed, true);
+
+  const storm = signal.assessTicker({
+    symbol: 'MEME-USDT',
+    lastPrice: '100',
+    openPrice: '80',
+    highPrice: '125',
+    lowPrice: '75',
+    quoteVolume: '50000000',
+    bidPrice: '99',
+    askPrice: '101',
+    priceChangePercent: '25'
+  }, {
+    minQuoteVolumeUsdt: 1_000_000,
+    maxRangePct: 10,
+    maxChangePct: 8,
+    maxSpreadBps: 20
+  });
+  assert.equal(storm.allowed, false);
+  assert.ok(storm.reasons.includes('range_storm'));
+  assert.ok(storm.reasons.includes('price_change_storm'));
+});
+
+test('universe prefilter scans all permitted contracts before deep analysis', () => {
+  const contracts = [
+    { symbol: 'BTC-USDT', status: 'TRADING' },
+    { symbol: 'ETH-USDT', status: 'TRADING' },
+    { symbol: 'DOGE-USDT', status: 'TRADING' }
+  ];
+  const tickers = contracts.map((contract, index) => ({
+    symbol: contract.symbol,
+    lastPrice: String(100 + index),
+    openPrice: '100',
+    highPrice: '103',
+    lowPrice: '98',
+    quoteVolume: String(50_000_000 - index * 5_000_000),
+    bidPrice: String(99.99 + index),
+    askPrice: String(100.01 + index),
+    priceChangePercent: String(index)
+  }));
+  const universe = signal.buildUniverse(contracts, tickers, {
+    minQuoteVolumeUsdt: 1_000_000,
+    maxRangePct: 10,
+    maxChangePct: 8,
+    maxSpreadBps: 20
+  });
+  assert.equal(universe.scannedSymbols, 3);
+  assert.equal(universe.eligibleSymbols, 3);
+});
+
+test('scheduled VST autotrade keeps 15-minute cadence and QA precedes execution', async () => {
   const fs = await import('node:fs/promises');
   const workflow = await fs.readFile(new URL('../../.github/workflows/bingx-vst-signal.yml', import.meta.url), 'utf8');
+  const source = await fs.readFile(new URL('../lib/bingx-vst-signal.js', import.meta.url), 'utf8');
   assert.match(workflow, /cron:\s*'\*\/15 \* \* \* \*'/);
-  assert.doesNotMatch(workflow, /place_market_order|bingx_vst_place_market_order|tradingEnabled\s*=\s*false/);
+  assert.match(source, /listContracts\(\)/);
+  assert.match(source, /getTickers\(\)/);
+  assert.doesNotMatch(source, /allowedSymbols\(\)\.slice\(0,\s*5\)/);
+  assert.ok(source.indexOf('const qa = await runRiskCheck(order);') < source.indexOf('const execution = await placeMarketOrder({'));
 });
