@@ -465,24 +465,38 @@ export async function runVstSignalCycle() {
     throw new Error('bingx_vst_signal_environment_guard_failed');
   }
   const useRemoteBroker = remoteBrokerEnabled();
-  if (status.environment === 'prod-live' && !status.liveApiAllowed) {
-    // The owner's existing key belongs to a real perpetual-futures account.
-    // With the live order gate locked, confirm private API auth and positions
-    // through the same trusted broker without submitting any order.
-    const balance = useRemoteBroker ? await remoteBrokerCall('balance') : await getBalance();
-    assertBrokerEnvironment(balance, 'prod-live', 'balance');
-    const positions = useRemoteBroker ? await remoteBrokerCall('positions') : await getPositions();
-    assertBrokerEnvironment(positions, 'prod-live', 'positions');
-    return {
-      ok: true,
-      environment: 'prod-live',
-      action: 'none',
-      reason: 'live_execution_locked',
-      orderAttempted: false,
-      privateAccountAuthenticated: true,
-      positionsRead: true
-    };
+  // Live funds are never involved in a signal-only cycle. The scanner can
+  // analyse PUBLIC perpetual prices with the trading kill-switch disabled.
+  const signalOnly = status.environment === 'prod-live' && !status.liveApiAllowed;
+  let preflightPositions = null;
+  let privateAccountAuthenticated = false;
+  let positionsRead = false;
+  if (signalOnly) {
+    // Private account access is diagnostic, not a prerequisite to PUBLIC
+    // market analysis. Never log balances, positions, keys or signatures.
+    try {
+      const balance = useRemoteBroker ? await remoteBrokerCall('balance') : await getBalance();
+      assertBrokerEnvironment(balance, 'prod-live', 'balance');
+      privateAccountAuthenticated = true;
+      preflightPositions = useRemoteBroker ? await remoteBrokerCall('positions') : await getPositions();
+      assertBrokerEnvironment(preflightPositions, 'prod-live', 'positions');
+      positionsRead = true;
+    } catch {
+      // Private account permissions or upstream rate limits may be broken.
+      // Continue with public market signals only; execution stays disabled.
+      preflightPositions = {
+        environment: 'prod-live',
+        response: { data: [] }
+      };
+    }
   }
+  const readonlyEvidence = signalOnly ? {
+    signalOnly: true,
+    orderAttempted: false,
+    privateAccountAuthenticated,
+    positionsRead,
+    tradingEnabled: false
+  } : {};
   if (!status.credentialsConfigured && !useRemoteBroker) {
     throw new Error('bingx_vst_signal_credentials_missing');
   }
@@ -494,7 +508,7 @@ export async function runVstSignalCycle() {
     [contractsResult, tickersResult, positions] = await Promise.all([
       listContracts(),
       getTickers(),
-      useRemoteBroker ? remoteBrokerCall('positions') : getPositions()
+      preflightPositions ?? (useRemoteBroker ? remoteBrokerCall('positions') : getPositions())
     ]);
   } catch (error) {
     if (isTransientUpstreamReadFailure(error)) {
@@ -508,7 +522,7 @@ export async function runVstSignalCycle() {
   }
   const universe = buildUniverse(contractsResult.contracts, tickersResult.tickers);
   const openPositions = openPositionsFrom(positions);
-  if (openPositions.length) {
+  if (openPositions.length && !signalOnly) {
     return {
       ok: true,
       environment: status.environment,
@@ -526,6 +540,7 @@ export async function runVstSignalCycle() {
       environment: status.environment,
       action: 'none',
       reason: 'no_stable_liquid_assets',
+      ...readonlyEvidence,
       universeScanned: universe.scannedSymbols,
       eligibleUniverse: 0
     };
@@ -580,6 +595,7 @@ export async function runVstSignalCycle() {
       environment: status.environment,
       action: 'none',
       reason: 'no_confirmed_signal',
+      ...readonlyEvidence,
       universeScanned: universe.scannedSymbols,
       eligibleUniverse: universe.eligibleSymbols,
       deepScannedSymbols: analyses.length,
@@ -661,6 +677,7 @@ export async function runVstSignalCycle() {
       environment: status.environment,
       action: 'none',
       reason: 'qa_risk_gate_blocked',
+      ...readonlyEvidence,
       universeScanned: universe.scannedSymbols,
       eligibleUniverse: universe.eligibleSymbols,
       deepScannedSymbols: analyses.length,
@@ -669,6 +686,41 @@ export async function runVstSignalCycle() {
       score: candidate.score,
       confidence: candidate.confidence,
       qaReasons: qa.reasons || []
+    };
+  }
+
+  // The scan/risk gates are advisory only when live orders are locked.
+  // This branch must remain BEFORE any place_order or placeMarketOrder call.
+  if (signalOnly) {
+    return {
+      ok: true,
+      environment: 'prod-live',
+      action: 'signal_only',
+      reason: 'signal_qa_confirmed_execution_disabled',
+      ...readonlyEvidence,
+      generatedAt: new Date().toISOString(),
+      symbol: candidate.symbol,
+      side: candidate.side,
+      positionSide: order.positionSide,
+      entryPriceSuggestion: candidate.lastPrice,
+      stopPriceSuggestion: protection.stopPrice,
+      takeProfitPriceSuggestion: protection.takeProfitPrice,
+      riskPct: protection.riskPct,
+      rewardPct: protection.rewardPct,
+      score: candidate.score,
+      confidence: candidate.confidence,
+      universeScanned: universe.scannedSymbols,
+      eligibleUniverse: universe.eligibleSymbols,
+      deepScannedSymbols: analyses.length,
+      openPositionCount: positionsRead ? openPositions.length : null,
+      qa: {
+        maxReturnPct: qa.maxReturnPct,
+        maxRangePct: qa.maxRangePct,
+        indicatorDirection5m: qa.indicators?.['5m']?.direction ?? null,
+        indicatorConsensus5m: qa.indicators?.['5m']?.matchingConsensus ?? null,
+        indicatorDirection15m: qa.indicators?.['15m']?.direction ?? null,
+        indicatorConsensus15m: qa.indicators?.['15m']?.matchingConsensus ?? null
+      }
     };
   }
 
