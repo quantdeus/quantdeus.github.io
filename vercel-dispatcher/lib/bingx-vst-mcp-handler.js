@@ -14,27 +14,27 @@ const PROTOCOL_VERSION = '2025-03-26';
 const TOOLS = [
   {
     name: 'bingx_vst_status',
-    description: 'Inspect the QuantDeus BingX VST-only broker. Never exposes API secrets and never enables live trading.',
+    description: 'Inspect the QuantDeus BingX USDT perpetual broker; VST is default, funded live requires independent explicit opt-in. Never exposes API secrets.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }
   },
   {
     name: 'bingx_vst_balance',
-    description: 'Read the BingX perpetual-swap balance through the VST-only API.',
+    description: 'Read the selected BingX VST or real-account perpetual-swap balance.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }
   },
   {
     name: 'bingx_vst_contracts',
-    description: 'Read the complete BingX VST perpetual contract universe for market-wide scanning.',
+    description: 'Read the complete selected BingX USDT perpetual contract universe for market-wide scanning.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }
   },
   {
     name: 'bingx_vst_tickers',
-    description: 'Read 24h VST ticker statistics for all contracts, including volume, high/low and bid/ask spread inputs.',
+    description: 'Read 24h ticker statistics for the selected environment, including volume, high/low and spread inputs.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }
   },
   {
     name: 'bingx_vst_klines',
-    description: 'Read VST market candles for a permitted USDT perpetual symbol.',
+    description: 'Read selected-environment market candles for a permitted USDT perpetual symbol.',
     inputSchema: {
       type: 'object',
       required: ['symbol'],
@@ -56,19 +56,21 @@ const TOOLS = [
         symbol: { type: 'string' },
         side: { type: 'string', enum: ['BUY', 'SELL'] },
         positionSide: { type: 'string', enum: ['LONG', 'SHORT', 'BOTH'] },
-        quantity: { type: ['string', 'number'] }
+        quantity: { type: ['string', 'number'] },
+        stopPrice: { type: ['string', 'number'] },
+        takeProfitPrice: { type: ['string', 'number'] }
       },
       additionalProperties: false
     }
   },
   {
     name: 'bingx_vst_autotrade_cycle',
-    description: 'Run one complete QuantDeus VST-only autotrade cycle: scan the stable/liquid universe, deep-analyze candidates, require the deterministic QA/risk gate, and place at most one VST MARKET order. Intended for an operator-admin OpenClaw command automation; live API, withdrawals and transfers remain unavailable.',
+    description: 'Run one guarded USDT perpetual signal cycle in the explicitly configured environment. VST is default; real trading needs separate live credentials, dual kill-switches, exchange-attached protection, and QA. No withdrawals or transfers.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }
   },
   {
     name: 'bingx_vst_place_market_order',
-    description: 'Place a MARKET order on BingX VST. Requires an unexpired approval token from bingx_vst_risk_check bound to the exact order. Live API, withdrawals and transfers are not implemented.',
+    description: 'Place one guarded perpetual MARKET order in the configured environment using a signed order-bound approval. Funded live mode additionally requires valid stopPrice and takeProfitPrice. No withdrawals or transfers.',
     inputSchema: {
       type: 'object',
       required: ['symbol', 'side', 'positionSide', 'quantity', 'approval_token'],
@@ -77,6 +79,8 @@ const TOOLS = [
         side: { type: 'string', enum: ['BUY', 'SELL'] },
         positionSide: { type: 'string', enum: ['LONG', 'SHORT', 'BOTH'] },
         quantity: { type: ['string', 'number'] },
+        stopPrice: { type: ['string', 'number'] },
+        takeProfitPrice: { type: ['string', 'number'] },
         approval_token: { type: 'string', minLength: 20 }
       },
       additionalProperties: false
