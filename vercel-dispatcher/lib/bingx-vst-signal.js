@@ -60,6 +60,15 @@ function remoteBrokerEnabled() {
   return Boolean(remoteBrokerUrl());
 }
 
+// Prevent GitHub market scans and the Vercel private broker from silently
+// crossing simulated/live environments during configuration changes.
+function assertBrokerEnvironment(result, expected, stage) {
+  if (!result || result.environment !== expected) {
+    throw new Error('bingx_broker_environment_mismatch_' + stage);
+  }
+  return result;
+}
+
 async function githubOidcToken() {
   const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
   const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
@@ -440,7 +449,7 @@ function isTransientUpstreamReadFailure(error) {
 function degradedNoTrade(stage, reason = 'upstream_busy_fail_closed', extra = {}) {
   return {
     ok: true,
-    environment: 'prod-vst',
+    environment: publicStatus().environment,
     action: 'none',
     reason,
     degraded: true,
@@ -451,8 +460,17 @@ function degradedNoTrade(stage, reason = 'upstream_busy_fail_closed', extra = {}
 
 export async function runVstSignalCycle() {
   const status = publicStatus();
-  if (status.environment !== 'prod-vst' || status.liveApiAllowed !== false) {
+  if (!['prod-vst', 'prod-live'].includes(status.environment)) {
     throw new Error('bingx_vst_signal_environment_guard_failed');
+  }
+  if (status.environment === 'prod-live' && !status.liveApiAllowed) {
+    return {
+      ok: true,
+      environment: 'prod-live',
+      action: 'none',
+      reason: 'live_execution_locked',
+      orderAttempted: false
+    };
   }
   const useRemoteBroker = remoteBrokerEnabled();
   if (!status.credentialsConfigured && !useRemoteBroker) {
@@ -475,12 +493,15 @@ export async function runVstSignalCycle() {
     throw error;
   }
 
+  if (useRemoteBroker) {
+    assertBrokerEnvironment(positions, status.environment, 'positions');
+  }
   const universe = buildUniverse(contractsResult.contracts, tickersResult.tickers);
   const openPositions = openPositionsFrom(positions);
   if (openPositions.length) {
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: status.environment,
       action: 'none',
       reason: 'open_position_exists',
       universeScanned: universe.scannedSymbols,
@@ -492,7 +513,7 @@ export async function runVstSignalCycle() {
   if (!universe.eligible.length) {
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: status.environment,
       action: 'none',
       reason: 'no_stable_liquid_assets',
       universeScanned: universe.scannedSymbols,
@@ -546,7 +567,7 @@ export async function runVstSignalCycle() {
     )[0];
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: status.environment,
       action: 'none',
       reason: 'no_confirmed_signal',
       universeScanned: universe.scannedSymbols,
@@ -594,7 +615,11 @@ export async function runVstSignalCycle() {
     symbol: candidate.symbol,
     side: candidate.side,
     positionSide: positionSideFor(candidate.side),
-    quantity: quantityInfo.quantity
+    quantity: quantityInfo.quantity,
+    ...(status.environment === 'prod-live' ? {
+      stopPrice: protection.stopPrice,
+      takeProfitPrice: protection.takeProfitPrice
+    } : {})
   };
 
   let qa;
@@ -617,10 +642,13 @@ export async function runVstSignalCycle() {
     }
     throw error;
   }
+  if (useRemoteBroker) {
+    assertBrokerEnvironment(qa, status.environment, 'risk_check');
+  }
   if (!qa.allowed || !qa.approvalToken) {
     return {
       ok: true,
-      environment: 'prod-vst',
+      environment: status.environment,
       action: 'none',
       reason: 'qa_risk_gate_blocked',
       universeScanned: universe.scannedSymbols,
@@ -669,13 +697,16 @@ export async function runVstSignalCycle() {
       }
     );
   }
+  if (useRemoteBroker) {
+    assertBrokerEnvironment(execution, status.environment, 'place_order');
+  }
   const upstream = execution?.response?.data ?? execution?.response ?? {};
   const orderId = upstream?.order?.orderId ?? upstream?.orderId ?? null;
 
   return {
     ok: true,
-    environment: 'prod-vst',
-    action: 'vst_order_placed',
+    environment: status.environment,
+    action: status.environment === 'prod-live' ? 'live_perpetual_order_placed' : 'vst_order_placed',
     reason: 'signal_and_qa_confirmed',
     universeScanned: universe.scannedSymbols,
     eligibleUniverse: universe.eligibleSymbols,
