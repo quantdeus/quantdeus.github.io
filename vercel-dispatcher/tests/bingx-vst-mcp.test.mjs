@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+process.env.BINGX_TRADING_ENV = 'prod-vst';
 process.env.BINGX_VST_SYMBOL_ALLOWLIST = 'BTC-USDT,ETH-USDT';
 process.env.QUANTDEUS_BINGX_VST_TRADING_ENABLED = 'true';
 process.env.QUANTDEUS_BINGX_VST_BROKER_TOKEN = 'test-broker-secret-that-is-long-enough';
@@ -205,6 +206,135 @@ test('public status never advertises live API, withdrawals, or transfers', () =>
   assert.ok(status.indicatorGate.minIndicators >= 10);
 });
 
+
+
+test('real-funded perpetual trading remains locked until independent live opt-in', () => {
+  const previous = {
+    env: process.env.BINGX_TRADING_ENV,
+    enabled: process.env.QUANTDEUS_BINGX_LIVE_TRADING_ENABLED,
+    key: process.env.BINGX_LIVE_API_KEY,
+    secret: process.env.BINGX_LIVE_SECRET_KEY
+  };
+  try {
+    process.env.BINGX_TRADING_ENV = 'prod-live';
+    delete process.env.QUANTDEUS_BINGX_LIVE_TRADING_ENABLED;
+    delete process.env.BINGX_LIVE_API_KEY;
+    delete process.env.BINGX_LIVE_SECRET_KEY;
+    const locked = broker.publicStatus();
+    assert.equal(locked.environment, 'prod-live');
+    assert.equal(locked.tradingEnabled, false);
+    assert.equal(locked.liveApiAllowed, false);
+    assert.equal(locked.credentialsConfigured, false);
+    assert.equal(locked.primaryBase, 'https://open-api.bingx.com');
+    assert.equal(locked.universe, 'all-live-usdt');
+    assert.equal(broker.assertTrustedBingxBase('https://open-api.bingx.com'), true);
+    assert.throws(() => broker.assertTrustedBingxBase('https://open-api-vst.bingx.com'), /blocked/);
+    process.env.QUANTDEUS_BINGX_LIVE_TRADING_ENABLED = 'true';
+    assert.equal(broker.publicStatus().liveApiAllowed, true);
+  } finally {
+    for (const [key, name] of Object.entries({
+      env: 'BINGX_TRADING_ENV',
+      enabled: 'QUANTDEUS_BINGX_LIVE_TRADING_ENABLED',
+      key: 'BINGX_LIVE_API_KEY',
+      secret: 'BINGX_LIVE_SECRET_KEY'
+    })) {
+      if (previous[key] === undefined) delete process.env[name];
+      else process.env[name] = previous[key];
+    }
+  }
+});
+
+test('live orders require and sign exchange-attached stop-loss and take-profit', async () => {
+  const keys = [
+    'BINGX_TRADING_ENV', 'QUANTDEUS_BINGX_LIVE_TRADING_ENABLED',
+    'BINGX_LIVE_API_KEY', 'BINGX_LIVE_SECRET_KEY'
+  ];
+  const before = new Map(keys.map(key => [key, process.env[key]]));
+  const previousFetch = global.fetch;
+  try {
+    process.env.BINGX_TRADING_ENV = 'prod-live';
+    process.env.QUANTDEUS_BINGX_LIVE_TRADING_ENABLED = 'true';
+    process.env.BINGX_LIVE_API_KEY = 'live-test-key';
+    process.env.BINGX_LIVE_SECRET_KEY = 'live-test-secret';
+    const order = {
+      symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG',
+      quantity: '0.001', stopPrice: 62000, takeProfitPrice: 64000
+    };
+    const metrics = {
+      lastPrice: 63000, maxReturnPct: 0.2, maxRangePct: 0.3
+    };
+    assert.equal(broker.evaluateRisk(order, metrics, { enabled: true }).allowed, true);
+    assert.ok(broker.evaluateRisk({ ...order, stopPrice: null }, metrics, { enabled: true }).reasons.includes('live_protection_required'));
+    const wrongDirection = broker.evaluateRisk({ ...order, stopPrice: 64000 }, metrics, { enabled: true });
+    assert.ok(wrongDirection.reasons.includes('live_protection_invalid'));
+    const token = broker.signRiskApproval(order, {
+      maxReturnPct: 0.2, notionalUsdt: 63,
+      indicators: { '5m': { direction: 'bullish', matchingConsensus: 0.9 }, '15m': { direction: 'bullish', matchingConsensus: 0.9 } }
+    });
+    assert.throws(() => broker.verifyRiskApproval(token, { ...order, stopPrice: 61000 }), /mismatch/);
+    process.env.BINGX_TRADING_ENV = 'prod-vst';
+    assert.throws(() => broker.verifyRiskApproval(token, order), /environment/);
+    process.env.BINGX_TRADING_ENV = 'prod-live';
+    let submitted = 0;
+    global.fetch = async (url, init = {}) => {
+      submitted += 1;
+      assert.ok(String(url).startsWith('https://open-api.bingx.com/openApi/swap/v2/trade/order'));
+      assert.equal(init.headers['X-BX-APIKEY'], 'live-test-key');
+      const params = new URLSearchParams(String(init.body));
+      assert.equal(params.get('symbol'), 'BTC-USDT');
+      assert.equal(JSON.parse(params.get('stopLoss')).stopPrice, 62000);
+      assert.equal(JSON.parse(params.get('takeProfit')).stopPrice, 64000);
+      return new Response(JSON.stringify({ code: 0, msg: '', data: { orderId: 'mock-only' } }), { status: 200 });
+    };
+    const result = await broker.placeMarketOrder({ ...order, approval_token: token });
+    assert.equal(result.environment, 'prod-live');
+    assert.equal(result.response.data.orderId, 'mock-only');
+    assert.equal(submitted, 1);
+  } finally {
+    global.fetch = previousFetch;
+    for (const [key, value] of before) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('production live unknown-order busy response fails closed without duplicate POST', async () => {
+  const keys = ['BINGX_TRADING_ENV', 'QUANTDEUS_BINGX_LIVE_TRADING_ENABLED', 'BINGX_LIVE_API_KEY', 'BINGX_LIVE_SECRET_KEY', 'BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS'];
+  const previous = new Map(keys.map(key => [key, process.env[key]]));
+  const oldFetch = global.fetch;
+  let postCount = 0;
+  try {
+    process.env.BINGX_TRADING_ENV = 'prod-live';
+    process.env.QUANTDEUS_BINGX_LIVE_TRADING_ENABLED = 'true';
+    process.env.BINGX_LIVE_API_KEY = 'live-test-key';
+    process.env.BINGX_LIVE_SECRET_KEY = 'live-test-secret';
+    process.env.BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS = '1';
+    const order = {
+      symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG',
+      quantity: '0.001', stopPrice: 62000, takeProfitPrice: 64000
+    };
+    const token = broker.signRiskApproval(order, { notionalUsdt: 63, maxReturnPct: 0.2 });
+    global.fetch = async (_url, init = {}) => {
+      if (init.method === 'POST') {
+        postCount += 1;
+        return new Response(JSON.stringify({ code: 100500, msg: 'System busy' }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ code: 109421, msg: 'Order not found' }), { status: 200 });
+    };
+    await assert.rejects(
+      broker.placeMarketOrder({ ...order, approval_token: token }),
+      /bingx_live_order_state_uncertain_no_retry/
+    );
+    assert.equal(postCount, 1);
+  } finally {
+    global.fetch = oldFetch;
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
 
 test('trusted OpenClaw allow-list exposes VST tools', async () => {
   const fs = await import('node:fs/promises');
