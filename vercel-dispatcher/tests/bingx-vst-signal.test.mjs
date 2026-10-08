@@ -135,7 +135,7 @@ test('upstream telemetry preserves exact BingX failure identity', () => {
   assert.match(details.upstreamError, /110500/);
 });
 
-test('locked live perpetual cycle authenticates private read-only endpoints without placing orders', async () => {
+test('locked live perpetual cycle still scans public markets with private read-only checks and never places orders', async () => {
   const keys = ['BINGX_TRADING_ENV', 'QUANTDEUS_BINGX_LIVE_TRADING_ENABLED',
     'BINGX_VST_API_KEY', 'BINGX_VST_SECRET_KEY', 'BINGX_LIVE_API_KEY', 'BINGX_LIVE_SECRET_KEY',
     'QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL'];
@@ -158,13 +158,17 @@ test('locked live perpetual cycle authenticates private read-only endpoints with
     };
     const result = await signal.runVstSignalCycle();
     assert.equal(result.environment, 'prod-live');
-    assert.equal(result.reason, 'live_execution_locked');
+    assert.equal(result.reason, 'no_stable_liquid_assets');
+    assert.equal(result.signalOnly, true);
     assert.equal(result.orderAttempted, false);
     assert.equal(result.privateAccountAuthenticated, true);
     assert.equal(result.positionsRead, true);
-    assert.equal(urls.length, 2);
-    assert.ok(urls[0].url.includes('/user/balance'));
-    assert.ok(urls[1].url.includes('/user/positions'));
+    assert.equal(urls.length, 4);
+    assert.ok(urls.some(req => req.url.includes('/user/balance')));
+    assert.ok(urls.some(req => req.url.includes('/user/positions')));
+    assert.ok(urls.some(req => req.url.includes('/quote/contracts')));
+    assert.ok(urls.some(req => req.url.includes('/quote/ticker')));
+    assert.ok(urls.every(req => req.method === 'GET'));
   } finally {
     global.fetch = oldFetch;
     for (const [key, value] of old) {
@@ -197,6 +201,10 @@ test('scheduled VST autotrade keeps 15-minute cadence and QA precedes execution'
   assert.match(source, /remoteBrokerCall\('positions'\)/);
   assert.match(source, /remoteBrokerCall\('risk_check', order\)/);
   assert.match(source, /remoteBrokerCall\('place_order', executionInput\)/);
+  // The signal-only return must precede any submission, irrespective of QA.
+  assert.match(source, /if \(signalOnly\) \{[\s\S]*action: 'signal_only'/);
+  assert.ok(source.indexOf("action: 'signal_only'") < source.indexOf("remoteBrokerCall('place_order', executionInput)"));
+  assert.match(workflow, /QUANTDEUS_BINGX_LIVE_TRADING_ENABLED:\s*'false'/);
   assert.match(source, /upstreamErrorDetails\(error\)/);
   assert.match(runner, /bingx_code:/);
   assert.match(runner, /bingx_message:/);
