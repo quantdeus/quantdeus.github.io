@@ -101,12 +101,22 @@ export function symbolAllowed(input) {
 }
 
 function credentials() {
-  // Never reuse simulated VST credentials for a real-funded account.
-  const prefix = tradingEnvironment() === 'prod-live' ? 'BINGX_LIVE' : 'BINGX_VST';
-  return {
-    apiKey: String(process.env[prefix + '_API_KEY'] || '').trim(),
-    secretKey: String(process.env[prefix + '_SECRET_KEY'] || '').trim()
-  };
+  const live = tradingEnvironment() === 'prod-live';
+  const liveKey = String(process.env.BINGX_LIVE_API_KEY || '').trim();
+  const liveSecret = String(process.env.BINGX_LIVE_SECRET_KEY || '').trim();
+  const previousKey = String(process.env.BINGX_VST_API_KEY || '').trim();
+  const previousSecret = String(process.env.BINGX_VST_SECRET_KEY || '').trim();
+  // Vercel's Sensitive variables cannot be renamed in-place. This account's
+  // existing live-futures keys were accidentally named BINGX_VST_*.
+  // The explicit prod-live environment selects real swap hosts; it may reuse
+  // that legacy *storage name* without exposing or copying secret values.
+  // Never fall back to VST hosts when using the legacy key aliases.
+  const apiKey = live ? (liveKey || previousKey) : previousKey;
+  const secretKey = live ? (liveSecret || previousSecret) : previousSecret;
+  const source = live
+    ? ((liveKey && liveSecret) ? 'live-env' : 'legacy-storage-alias')
+    : 'vst-env';
+  return { apiKey, secretKey, source };
 }
 
 function brokerSecret() {
@@ -780,6 +790,7 @@ export function publicStatus() {
     transfersExposed: false,
     tradingEnabled: tradingEnabled(),
     credentialsConfigured: Boolean(apiKey && secretKey),
+    credentialSource: credentials().source,
     symbolMode: symbolMode(),
     universe: symbolMode() === 'all' ? (environment === 'prod-live' ? 'all-live-usdt' : 'all-vst-usdt') : 'configured-allowlist',
     allowedSymbols: allowedSymbols(),
