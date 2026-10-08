@@ -12,8 +12,10 @@ permissions:
 # Both flags must be deliberately configured before LIVE order submission.
 # Default remains simulated VST, never auto-migrate real funds.
 env:
-  BINGX_TRADING_ENV: ${{ vars.BINGX_TRADING_ENV || 'prod-vst' }}
-  QUANTDEUS_BINGX_LIVE_TRADING_ENABLED: ${{ vars.QUANTDEUS_BINGX_LIVE_TRADING_ENABLED || 'false' }}
+  # The installed API keys belong to a real perpetual futures account.
+  # Keep live MARKET execution disabled until account-mode and protection QA.
+  BINGX_TRADING_ENV: prod-live
+  QUANTDEUS_BINGX_LIVE_TRADING_ENABLED: 'false'
 
 concurrency:
   group: quantdeus-bingx-vst-signal
