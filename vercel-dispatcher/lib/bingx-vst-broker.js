@@ -111,11 +111,14 @@ function credentials() {
   // The explicit prod-live environment selects real swap hosts; it may reuse
   // that legacy *storage name* without exposing or copying secret values.
   // Never fall back to VST hosts when using the legacy key aliases.
-  const apiKey = live ? (liveKey || previousKey) : previousKey;
-  const secretKey = live ? (liveSecret || previousSecret) : previousSecret;
+  // Treat a key pair atomically; never combine a new API key with a legacy
+  // secret (or vice versa). A partially provisioned new pair fails closed.
+  const incompleteExplicitPair = live && Boolean(liveKey) !== Boolean(liveSecret);
   const source = live
-    ? ((liveKey && liveSecret) ? 'live-env' : 'legacy-storage-alias')
+    ? (incompleteExplicitPair ? 'live-env-incomplete' : (liveKey && liveSecret) ? 'live-env' : 'legacy-storage-alias')
     : 'vst-env';
+  const apiKey = incompleteExplicitPair ? '' : (live && liveKey ? liveKey : previousKey);
+  const secretKey = incompleteExplicitPair ? '' : (live && liveSecret ? liveSecret : previousSecret);
   return { apiKey, secretKey, source };
 }
 
