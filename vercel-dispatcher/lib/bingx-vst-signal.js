@@ -1,4 +1,5 @@
 import {
+  getBalance,
   getContractInfo,
   getKlines,
   getPositions,
@@ -463,16 +464,25 @@ export async function runVstSignalCycle() {
   if (!['prod-vst', 'prod-live'].includes(status.environment)) {
     throw new Error('bingx_vst_signal_environment_guard_failed');
   }
+  const useRemoteBroker = remoteBrokerEnabled();
   if (status.environment === 'prod-live' && !status.liveApiAllowed) {
+    // The owner's existing key belongs to a real perpetual-futures account.
+    // With the live order gate locked, confirm private API auth and positions
+    // through the same trusted broker without submitting any order.
+    const balance = useRemoteBroker ? await remoteBrokerCall('balance') : await getBalance();
+    assertBrokerEnvironment(balance, 'prod-live', 'balance');
+    const positions = useRemoteBroker ? await remoteBrokerCall('positions') : await getPositions();
+    assertBrokerEnvironment(positions, 'prod-live', 'positions');
     return {
       ok: true,
       environment: 'prod-live',
       action: 'none',
       reason: 'live_execution_locked',
-      orderAttempted: false
+      orderAttempted: false,
+      privateAccountAuthenticated: true,
+      positionsRead: true
     };
   }
-  const useRemoteBroker = remoteBrokerEnabled();
   if (!status.credentialsConfigured && !useRemoteBroker) {
     throw new Error('bingx_vst_signal_credentials_missing');
   }
@@ -701,7 +711,7 @@ export async function runVstSignalCycle() {
     assertBrokerEnvironment(execution, status.environment, 'place_order');
   }
   const upstream = execution?.response?.data ?? execution?.response ?? {};
-  const orderId = upstream?.order?.orderId ?? upstream?.orderId ?? null;
+  const orderId = upstream?.order?.orderID ?? upstream?.order?.orderId ?? upstream?.orderID ?? upstream?.orderId ?? null;
 
   return {
     ok: true,
