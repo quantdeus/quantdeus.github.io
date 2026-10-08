@@ -573,15 +573,18 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
       'BingX VST cycle scans the full contract/ticker universe before deep analysis'
     );
     check(
-      signalSource.includes("status.environment !== 'prod-vst'") &&
-      signalSource.includes('status.liveApiAllowed !== false') &&
+      signalSource.includes("status.environment === 'prod-live' && !status.liveApiAllowed") &&
+      signalSource.includes("assertBrokerEnvironment(positions, status.environment, 'positions')") &&
+      signalSource.includes("assertBrokerEnvironment(qa, status.environment, 'risk_check')") &&
+      text.includes("env.BINGX_TRADING_ENV != 'prod-live'") &&
+      text.includes('QUANTDEUS_BINGX_LIVE_TRADING_ENABLED') &&
       signalSource.includes("remoteBrokerCall('risk_check', order)") &&
       signalSource.includes("remoteBrokerCall('place_order', executionInput)") &&
       signalSource.indexOf("remoteBrokerCall('risk_check', order)") < signalSource.indexOf("remoteBrokerCall('place_order', executionInput)") &&
       signalSource.includes('runRiskCheck(order)') &&
       signalSource.includes('placeMarketOrder(executionInput)'),
       name,
-      'BingX VST execution remains VST-only and requires the deterministic QA/risk gate before every order'
+      'BingX VST defaults to simulated trading; live mode needs explicit opt-in, matching broker environment, and QA before an order'
     );
   }
 }
