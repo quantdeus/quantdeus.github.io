@@ -510,6 +510,15 @@ export default async function handler(req, res) {
         ? req.body.input
         : {};
 
+      if (operation === 'balance') {
+        const result = await getBingxVstBalance();
+        // Proof of signed private-account access only. No monetary balances
+        // or API credentials are sent back into GitHub Actions logs.
+        return res.status(200).json({
+          ok: true, operation,
+          result: { environment: result.environment, authenticated: true }
+        });
+      }
       if (operation === 'positions') {
         const result = await getBingxVstPositions(input);
         return res.status(200).json({ ok: true, operation, result });
