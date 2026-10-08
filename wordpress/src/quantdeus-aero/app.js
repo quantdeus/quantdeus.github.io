@@ -1,8 +1,9 @@
 (()=> {
   const cfg = window.QuantDeus || {};
   let nonce = cfg.nonce || '';
+  let currentPlan = cfg.userPlan === 'pro' ? 'pro' : 'free';
   let currentUser = cfg.loggedIn
-    ? {name: cfg.userName || 'Пользователь', role: cfg.userRole || 'qd_member', provider: cfg.authProvider || 'wordpress'}
+    ? {name: cfg.userName || 'Пользователь', role: cfg.userRole || 'qd_member', provider: cfg.authProvider || 'wordpress', plan: currentPlan}
     : null;
 
   const qs = (s, root=document) => root.querySelector(s);
@@ -14,6 +15,8 @@
   const githubStartUrl = cfg.githubStartUrl || '';
   const githubConfigUrl = cfg.githubConfigUrl || '';
   const logoutEndpoint = cfg.logoutEndpoint || '';
+  const issueMirrorUrl = cfg.issueMirrorUrl || '';
+  const proUrl = cfg.proUrl || '/ai-fleet/pro/';
 
   function roleLabel(role) {
     return ({
@@ -26,6 +29,8 @@
 
   function setAuth(user) {
     currentUser = user || null;
+    currentPlan = currentUser?.plan === 'pro' ? 'pro' : (currentUser ? currentPlan : 'free');
+    qsa('[data-plan-badge]').forEach(el => { el.textContent = currentPlan.toUpperCase(); });
     qsa('[data-auth-state]').forEach(el => {
       const provider = currentUser?.provider === 'github' ? 'GitHub' : (currentUser ? 'Telegram' : '');
       const role = currentUser?.role ? (' · ' + roleLabel(currentUser.role)) : '';
@@ -417,6 +422,195 @@
     });
   }
 
+  function issueDate(value) {
+    if (!value) return '';
+    try { return new Intl.DateTimeFormat('ru-RU',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value)); }
+    catch { return String(value); }
+  }
+
+  function issueNode(tag, className='', text='') {
+    const node=document.createElement(tag);
+    if(className) node.className=className;
+    if(text) node.textContent=text;
+    return node;
+  }
+
+  function issueSummary(issue) {
+    const parts=['#'+issue.number, String(issue.state || 'open').toUpperCase()];
+    if (Array.isArray(issue.labels) && issue.labels.length) parts.push(issue.labels.slice(0,5).join(' · '));
+    if (issue.comments) parts.push(issue.comments+' comments');
+    return parts.join(' · ');
+  }
+
+  async function renderIssueDetail(issueId, host) {
+    host.hidden=false;
+    host.replaceChildren(issueNode('div','qd-notice','Загружаю ветку Issue #'+issueId+'…'));
+    try {
+      const data=await json(issueMirrorUrl+'/'+encodeURIComponent(issueId));
+      const issue=data.issue || {};
+      host.replaceChildren();
+
+      const head=issueNode('div','qd-issue-detail-head');
+      const title=issueNode('h3','',('#'+issue.number+' · '+(issue.title || 'Issue')));
+      head.append(title);
+      if(issue.url){
+        const link=issueNode('a','qd-text-link','Открыть на GitHub ↗');
+        link.href=issue.url; link.target='_blank'; link.rel='noopener noreferrer';
+        head.append(link);
+      }
+      host.append(head);
+      if(issue.body) host.append(issueNode('p','qd-issue-body',issue.body));
+
+      const comments=issueNode('div','qd-issue-comments');
+      (data.comments || []).forEach(comment=>{
+        const item=issueNode('article','qd-issue-comment'+(comment.agent_reply?' is-agent':''));
+        item.append(issueNode('div','qd-thread-meta',(comment.agent_reply?'🤖 ':'')+(comment.author || 'github')+' · '+issueDate(comment.created_at)));
+        item.append(issueNode('p','',comment.body || ''));
+        comments.append(item);
+      });
+      if(!(data.comments || []).length) comments.append(issueNode('div','qd-notice','Комментариев пока нет.'));
+      host.append(comments);
+
+      if(!currentUser || issue.state!=='open'){
+        const msg=!currentUser ? 'Войди через Telegram, чтобы отвечать в Issue и общаться с AI Fleet.' : 'Issue закрыт: новые ответы через форум отключены.';
+        host.append(issueNode('div','qd-notice',msg));
+        return;
+      }
+
+      const form=issueNode('form','qd-form qd-issue-reply');
+      const textarea=document.createElement('textarea');
+      textarea.name='content'; textarea.required=true; textarea.minLength=2; textarea.maxLength=8000;
+      textarea.placeholder='Ответить в Issue #'+issue.number+'…';
+      form.append(textarea);
+
+      const aiRow=issueNode('label','qd-agent-toggle');
+      const checkbox=document.createElement('input');
+      checkbox.type='checkbox'; checkbox.name='ask_agents'; checkbox.value='1';
+      aiRow.append(checkbox, document.createTextNode(' Позвать AI Fleet в эту ветку'));
+      form.append(aiRow);
+
+      const entitlement=issueNode('div','qd-notice');
+      if(currentPlan==='pro'){
+        entitlement.textContent='⭐ Pro: можно указать до 3 агентов через запятую. Например: seven-of-nine, data, sherlock.';
+        const agents=document.createElement('input');
+        agents.name='agents'; agents.placeholder='seven-of-nine, data, sherlock'; agents.maxLength=160;
+        agents.dataset.proAgents='1'; agents.hidden=true;
+        form.append(agents);
+        checkbox.addEventListener('change',()=>{agents.hidden=!checkbox.checked;});
+      } else {
+        entitlement.textContent='🆓 Free: AI Fleet отвечает через Seven of Nine. Pro открывает multi-agent до 3 ролей.';
+        const upgrade=issueNode('a','qd-text-link','Открыть QuantDeus Pro →');
+        upgrade.href=proUrl;
+        entitlement.append(document.createElement('br'),upgrade);
+      }
+      form.append(entitlement);
+
+      const submit=issueNode('button','qd-btn','Отправить в Issue');
+      submit.type='submit';
+      const status=issueNode('div','qd-notice','');
+      form.append(submit,status);
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();
+        submit.disabled=true;
+        status.textContent='Публикую комментарий…';
+        const payload={
+          content: textarea.value,
+          ask_agents: checkbox.checked,
+          agents: currentPlan==='pro' ? (qs('[data-pro-agents]',form)?.value || '') : ''
+        };
+        try{
+          const result=await json(issueMirrorUrl+'/'+encodeURIComponent(issue.number)+'/reply',{
+            method:'POST', body:JSON.stringify(payload)
+          });
+          textarea.value='';
+          checkbox.checked=false;
+          const agentsInput=qs('[data-pro-agents]',form); if(agentsInput){agentsInput.value='';agentsInput.hidden=true;}
+          status.textContent=result.agent_request
+            ? ('✅ Комментарий в GitHub. AI Fleet: '+(result.agents || []).join(', ')+' · '+String(result.plan || 'free').toUpperCase())
+            : '✅ Комментарий опубликован в GitHub Issue.';
+          await renderIssueDetail(issue.number,host);
+        } catch(err){
+          status.textContent='Ошибка: '+err.message;
+        } finally {
+          submit.disabled=false;
+        }
+      });
+      host.append(form);
+
+      const refresh=issueNode('button','qd-btn alt qd-issue-refresh','Обновить ответы');
+      refresh.type='button';
+      refresh.addEventListener('click',()=>renderIssueDetail(issue.number,host));
+      host.append(refresh);
+    } catch(err) {
+      host.replaceChildren(issueNode('div','qd-notice','Issue mirror: '+err.message));
+    }
+  }
+
+  function renderIssueList(issues, limit=60) {
+    const list=qs('[data-issue-list]');
+    const count=qs('[data-issue-count]');
+    const more=qs('[data-issue-more]');
+    const search=String(qs('[data-issue-search]')?.value || '').trim().toLowerCase();
+    if(!list) return 0;
+    const filtered=(issues || []).filter(issue=>{
+      if(!search) return true;
+      const hay=[issue.number,issue.title,issue.body,...(issue.labels || [])].join(' ').toLowerCase();
+      return hay.includes(search);
+    });
+    list.replaceChildren();
+    filtered.slice(0,limit).forEach(issue=>{
+      const card=issueNode('article','qd-thread qd-issue-card');
+      card.append(issueNode('div','qd-thread-meta',issueSummary(issue)));
+      card.append(issueNode('h2','',issue.title || ('Issue #'+issue.number)));
+      if(issue.body) card.append(issueNode('p','',issue.body));
+      const actions=issueNode('div','qd-community-actions');
+      const open=issueNode('button','qd-btn alt','Открыть ветку');
+      open.type='button';
+      const detail=issueNode('div','qd-issue-detail');
+      detail.hidden=true;
+      open.addEventListener('click',()=>{
+        if(!detail.hidden){ detail.hidden=true; open.textContent='Открыть ветку'; return; }
+        open.textContent='Скрыть ветку';
+        renderIssueDetail(issue.number,detail);
+      });
+      actions.append(open);
+      if(issue.url){
+        const gh=issueNode('a','qd-text-link','GitHub ↗'); gh.href=issue.url; gh.target='_blank'; gh.rel='noopener noreferrer'; actions.append(gh);
+      }
+      card.append(actions,detail);
+      list.append(card);
+    });
+    if(count) count.textContent=filtered.length+' Issues';
+    if(more){
+      more.hidden=filtered.length<=limit;
+      more.dataset.nextLimit=String(Math.min(filtered.length,limit+60));
+    }
+    return filtered.length;
+  }
+
+  async function bindIssueMirror() {
+    const root=qs('[data-issue-mirror]');
+    if(!root || !issueMirrorUrl) return;
+    const status=qs('[data-issue-mirror-status]',root);
+    const search=qs('[data-issue-search]',root);
+    const more=qs('[data-issue-more]',root);
+    let issues=[], limit=60;
+    try{
+      const data=await json(issueMirrorUrl+'?state=open');
+      issues=Array.isArray(data.issues)?data.issues:[];
+      if(status) status.textContent='LIVE · '+issues.length+' открытых Issues · источник '+(data.repository || 'GitHub');
+      renderIssueList(issues,limit);
+    }catch(err){
+      if(status) status.textContent='Issue mirror: '+err.message;
+      return;
+    }
+    search?.addEventListener('input',()=>{limit=60;renderIssueList(issues,limit);});
+    more?.addEventListener('click',()=>{
+      limit=Number(more.dataset.nextLimit || (limit+60));
+      renderIssueList(issues,limit);
+    });
+  }
+
   function bindForum() {
     const create = qs('#qdForumCreate');
     create?.addEventListener('submit', async event => {
@@ -477,6 +671,7 @@
     bindTelegramLogin();
     bindInquiry();
     bindForum();
+    await bindIssueMirror();
     let restored=await syncTelegramBotSession();
     if(!restored) restored=await syncGithubSession();
     await bindGithubAdmin();

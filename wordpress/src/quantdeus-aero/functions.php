@@ -24,7 +24,9 @@ add_action('wp_enqueue_scripts', function(){
     wp_enqueue_script('quantdeus-aero-app',get_template_directory_uri().'/app.js',['telegram-web-app'],$v,true);
     wp_localize_script('quantdeus-aero-app','QuantDeus',[
         'inquiryUrl'=>rest_url('quantdeus/v1/inquiries'),'dashboardUrl'=>rest_url('quantdeus/v1/dashboard'),
-        'forumUrl'=>rest_url('quantdeus/v1/forum'),'telegramMiniappUrl'=>rest_url('quantdeus/v1/telegram/miniapp'),
+        'forumUrl'=>rest_url('quantdeus/v1/forum'),'issueMirrorUrl'=>rest_url('quantdeus/v1/forum/issues'),
+        'proUrl'=>home_url('/ai-fleet/pro/'),
+        'telegramMiniappUrl'=>rest_url('quantdeus/v1/telegram/miniapp'),
         'telegramLoginUrl'=>rest_url('quantdeus/v1/telegram/login'),'telegramBrokerUrl'=>rest_url('quantdeus/v1/telegram/broker'),
         'telegramStartUrl'=>'https://quantdeus.vercel.app/api/quantdeus/bot-auth',
         'telegramClientId'=>defined('QD_TELEGRAM_CLIENT_ID')?(string)QD_TELEGRAM_CLIENT_ID:'8122160274',
@@ -37,6 +39,7 @@ add_action('wp_enqueue_scripts', function(){
         'telegramBotUsername'=>defined('QD_TELEGRAM_BOT_USERNAME')?(string)QD_TELEGRAM_BOT_USERNAME:'QuantDeus_bot',
         'loggedIn'=>is_user_logged_in(),'userName'=>is_user_logged_in()?wp_get_current_user()->display_name:'',
         'userRole'=>is_user_logged_in()?(wp_get_current_user()->roles[0]??'qd_member'):'',
+        'userPlan'=>is_user_logged_in()&&class_exists('QD_Core')&&method_exists('QD_Core','current_plan')?QD_Core::current_plan():'free',
         'authProvider'=>is_user_logged_in()&&get_user_meta(get_current_user_id(),'qd_github_login',true)?'github':(is_user_logged_in()?'telegram':''),
         'nonce'=>is_user_logged_in()?wp_create_nonce('wp_rest'):'',
     ]);
