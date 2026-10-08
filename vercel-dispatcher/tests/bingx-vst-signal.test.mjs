@@ -152,7 +152,7 @@ test('locked live perpetual cycle still scans public markets with private read-o
     delete process.env.QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL;
     global.fetch = async (url, init = {}) => {
       urls.push({ url: String(url), method: init.method || 'GET' });
-      assert.equal(init.method, 'GET');
+      assert.equal(init.method || 'GET', 'GET');
       assert.ok(String(url).startsWith('https://open-api.bingx.com/openApi/swap/'));
       return new Response(JSON.stringify({ code: 0, data: [] }), { status: 200 });
     };
