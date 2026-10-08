@@ -393,6 +393,11 @@ async function submitMarketOrderWithBusyRecovery(order, clientOrderId) {
       };
     }
 
+    // Never re-submit real-funded orders after a 100500 response.
+    // An immediate order lookup can lag a successful fill.
+    if (tradingEnvironment() === 'prod-live') {
+      throw new Error('bingx_live_order_state_uncertain_no_retry');
+    }
     await sleep(retryDelayMs);
     try {
       return {
