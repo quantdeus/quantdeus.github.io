@@ -8,7 +8,8 @@ import {
   getBalance as getBingxVstBalance,
   getPositions as getBingxVstPositions,
   placeMarketOrder as placeBingxVstMarketOrder,
-  runRiskCheck as runBingxVstRiskCheck
+  runRiskCheck as runBingxVstRiskCheck,
+  publicStatus as bingxPerpetualStatus
 } from '../../lib/bingx-vst-broker.js';
 import { runVstSignalCycle } from '../../lib/bingx-vst-signal.js';
 
@@ -509,6 +510,15 @@ export default async function handler(req, res) {
         ? req.body.input
         : {};
 
+      if (operation === 'balance') {
+        const result = await getBingxVstBalance();
+        // Proof of signed private-account access only. No monetary balances
+        // or API credentials are sent back into GitHub Actions logs.
+        return res.status(200).json({
+          ok: true, operation,
+          result: { environment: result.environment, authenticated: true }
+        });
+      }
       if (operation === 'positions') {
         const result = await getBingxVstPositions(input);
         return res.status(200).json({ ok: true, operation, result });
@@ -532,7 +542,7 @@ export default async function handler(req, res) {
       const upstreamMessage = String(upstreamData?.msg ?? upstreamData?.message ?? '').slice(0, 180) || null;
       return res.status(forbidden ? 403 : 502).json({
         ok: false,
-        environment: 'prod-vst',
+        environment: bingxPerpetualStatus().environment,
         error: message,
         upstream_code: Number.isFinite(upstreamCode) ? upstreamCode : null,
         upstream_http_status: Number.isFinite(upstreamHttpStatus) ? upstreamHttpStatus : null,
@@ -1397,8 +1407,8 @@ export default async function handler(req, res) {
       '- Hourly/scheduled autonomous lanes are MCP read-only. Do not mutate WordPress from those lanes.',
       '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task and only when QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION is configured.',
       '- Missing WordPress MCP authentication fails closed for writes; never invent access, secrets or hidden credentials.',
-      '- BingX integration is VST-only through https://quantdeus.vercel.app/api/quantdeus/bingx-vst-mcp; live BingX API hosts are blocked in the broker.',
-      '- BingX VST orders require bingx_vst_risk_check first and its short-lived order-bound approval token; withdrawals and transfers are not exposed.'
+      '- BingX MCP uses simulated VST by default; funded USDT perpetual live mode requires separate prod-live credentials and explicit dual kill-switch configuration. Never silently enable real funds.',
+      '- BingX perpetual orders require the 14-indicator bingx_vst_risk_check and a short-lived environment-bound approval token; live orders require exchange-attached stop-loss and take-profit. Withdrawals and transfers are not exposed.'
     ].join('\n') : '';
     const trustedToolContractPrompt = trustedOffice && !smokePhase ? [
       'QUANTDEUS TRUSTED TOOL CONTRACT:',
@@ -1431,7 +1441,7 @@ export default async function handler(req, res) {
       playwright_mcp: trustedOffice && Boolean(mcpServers.playwright),
       wordpress_mcp_configured: trustedOffice && Boolean(mcpServers.wordpress),
       wordpress_mode: trustedOffice && mcpServers.wordpress ? (wordpressWriteCapable ? 'owner-authorized-write-capable' : 'read-only') : 'off',
-      bingx_vst_mcp: trustedOffice && Boolean(mcpServers.bingxvst) ? 'vst-only' : 'off',
+      bingx_vst_mcp: trustedOffice && Boolean(mcpServers.bingxvst) ? bingxPerpetualStatus().environment : 'off',
       smoke_phase: smokePhase,
       hourly_read_only: hourlyOffice,
       autonomous_worker: autonomousWorker,

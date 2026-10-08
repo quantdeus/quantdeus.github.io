@@ -9,6 +9,14 @@ permissions:
   contents: read
   id-token: write
 
+# Both flags must be deliberately configured before LIVE order submission.
+# Default remains simulated VST, never auto-migrate real funds.
+env:
+  # The installed API keys belong to a real perpetual futures account.
+  # Keep live MARKET execution disabled until account-mode and protection QA.
+  BINGX_TRADING_ENV: prod-live
+  QUANTDEUS_BINGX_LIVE_TRADING_ENABLED: 'false'
+
 concurrency:
   group: quantdeus-bingx-vst-signal
   cancel-in-progress: true
@@ -36,6 +44,8 @@ jobs:
           node scripts/run-bingx-vst-native.mjs
 
       - name: Run Vercel VST fallback
-        if: steps.github_native.outcome == 'failure'
+        # A crashed live run may have submitted an order; never retry via a
+        # second provider before human reconciliation of live positions.
+        if: steps.github_native.outcome == 'failure' && env.BINGX_TRADING_ENV != 'prod-live'
         working-directory: vercel-dispatcher
         run: node scripts/run-bingx-vst-vercel-fallback.mjs

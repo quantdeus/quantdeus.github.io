@@ -21,6 +21,8 @@ function safeResult(data) {
     order_id: data?.orderId ?? null,
     degraded: data?.degraded === true,
     order_attempted: data?.orderAttempted === true,
+    private_account_authenticated: data?.privateAccountAuthenticated === true,
+    positions_read: data?.positionsRead === true,
     requires_review: data?.requiresReview === true,
     upstream_stage: data?.upstreamStage ?? null,
     bingx_code: data?.bingxCode ?? null,
@@ -42,6 +44,8 @@ async function writeSummary(safe) {
     '- reason: ' + (safe.reason || 'n/a') + '\n' +
     '- degraded: ' + (safe.degraded ? 'yes' : 'no') + '\n' +
     '- order attempted: ' + (safe.order_attempted ? 'yes' : 'no') + '\n' +
+    '- private account authenticated (read-only): ' + (safe.private_account_authenticated ? 'yes' : 'no') + '\n' +
+    '- live positions read (read-only): ' + (safe.positions_read ? 'yes' : 'no') + '\n' +
     '- requires review: ' + (safe.requires_review ? 'yes' : 'no') + '\n' +
     '- symbol: ' + (safe.symbol || 'n/a') + '\n' +
     '- side: ' + (safe.side || 'n/a') + '\n' +

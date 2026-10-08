@@ -7,6 +7,27 @@ export const BINGX_VST_BASES = Object.freeze([
   'https://open-api-vst.bingx.com',
   'https://open-api-vst.bingx.pro'
 ]);
+export const BINGX_LIVE_BASES = Object.freeze([
+  'https://open-api.bingx.com',
+  'https://open-api.bingx.pro'
+]);
+
+// Safe default: existing VST installation is not silently switched to real funds.
+export function tradingEnvironment() {
+  const value = String(process.env.BINGX_TRADING_ENV || 'prod-vst').trim();
+  if (!['prod-vst', 'prod-live'].includes(value)) throw new Error('bingx_unknown_trading_environment');
+  return value;
+}
+
+function selectedBases() {
+  return tradingEnvironment() === 'prod-live' ? BINGX_LIVE_BASES : BINGX_VST_BASES;
+}
+
+export function assertTrustedBingxBase(url, env = tradingEnvironment()) {
+  const bases = env === 'prod-vst' ? BINGX_VST_BASES : env === 'prod-live' ? BINGX_LIVE_BASES : [];
+  if (!bases.includes(url)) throw new Error('bingx_live_or_unknown_base_blocked');
+  return true;
+}
 
 const DEFAULT_SYMBOLS = ['BTC-USDT', 'ETH-USDT', 'BNB-USDT', 'SOL-USDT', 'XRP-USDT'];
 const DEFAULT_STORM_PCT = 2.5;
@@ -17,7 +38,7 @@ const DEFAULT_MIN_CONSENSUS = 0.65;
 const DEFAULT_MIN_GROUPS = 3;
 const APPROVAL_TTL_MS = 60_000;
 
-const FORBIDDEN_PARAM_CHARS = /[&=?#\\r\\n]/;
+const FORBIDDEN_PARAM_CHARS = /[&=?#\r\n]/;
 
 export function validateParams(params = {}) {
   for (const [key, value] of Object.entries(params)) {
@@ -51,8 +72,13 @@ function envNumber(name, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function envEnabled(name) {
+  return /^(?:1|true|yes|on)$/i.test(String(process.env[name] || ''));
+}
+
 function tradingEnabled() {
-  return /^(?:1|true|yes|on)$/i.test(String(process.env.QUANTDEUS_BINGX_VST_TRADING_ENABLED || ''));
+  if (!envEnabled('QUANTDEUS_BINGX_VST_TRADING_ENABLED')) return false;
+  return tradingEnvironment() !== 'prod-live' || envEnabled('QUANTDEUS_BINGX_LIVE_TRADING_ENABLED');
 }
 
 function symbolMode() {
@@ -75,10 +101,25 @@ export function symbolAllowed(input) {
 }
 
 function credentials() {
-  return {
-    apiKey: String(process.env.BINGX_VST_API_KEY || '').trim(),
-    secretKey: String(process.env.BINGX_VST_SECRET_KEY || '').trim()
-  };
+  const live = tradingEnvironment() === 'prod-live';
+  const liveKey = String(process.env.BINGX_LIVE_API_KEY || '').trim();
+  const liveSecret = String(process.env.BINGX_LIVE_SECRET_KEY || '').trim();
+  const previousKey = String(process.env.BINGX_VST_API_KEY || '').trim();
+  const previousSecret = String(process.env.BINGX_VST_SECRET_KEY || '').trim();
+  // Vercel's Sensitive variables cannot be renamed in-place. This account's
+  // existing live-futures keys were accidentally named BINGX_VST_*.
+  // The explicit prod-live environment selects real swap hosts; it may reuse
+  // that legacy *storage name* without exposing or copying secret values.
+  // Never fall back to VST hosts when using the legacy key aliases.
+  // Treat a key pair atomically; never combine a new API key with a legacy
+  // secret (or vice versa). A partially provisioned new pair fails closed.
+  const incompleteExplicitPair = live && Boolean(liveKey) !== Boolean(liveSecret);
+  const source = live
+    ? (incompleteExplicitPair ? 'live-env-incomplete' : (liveKey && liveSecret) ? 'live-env' : 'legacy-storage-alias')
+    : 'vst-env';
+  const apiKey = incompleteExplicitPair ? '' : (live && liveKey ? liveKey : previousKey);
+  const secretKey = incompleteExplicitPair ? '' : (live && liveSecret ? liveSecret : previousSecret);
+  return { apiKey, secretKey, source };
 }
 
 function brokerSecret() {
@@ -103,14 +144,23 @@ function normalizeOrder(input = {}) {
   if (!new Set(['LONG', 'SHORT', 'BOTH']).has(positionSide)) throw new Error('bingx_vst_invalid_position_side');
   if (!Number.isFinite(quantityNumber) || quantityNumber <= 0) throw new Error('bingx_vst_invalid_quantity');
 
-  return { symbol, side, positionSide, quantity, quantityNumber };
+  const stopPrice = input.stopPrice == null ? null : String(input.stopPrice).trim();
+  const takeProfitPrice = input.takeProfitPrice == null ? null : String(input.takeProfitPrice).trim();
+  for (const [name, value] of [['stopPrice', stopPrice], ['takeProfitPrice', takeProfitPrice]]) {
+    if (value !== null && (!Number.isFinite(Number(value)) || Number(value) <= 0)) {
+      throw new Error('bingx_invalid_' + name);
+    }
+  }
+  return { symbol, side, positionSide, quantity, quantityNumber, stopPrice, takeProfitPrice };
 }
 
 function approvalBody(order, expiresAt, metrics) {
   return {
     v: 1,
-    env: 'prod-vst',
+    env: tradingEnvironment(),
     symbol: order.symbol,
+    stopPrice: order.stopPrice,
+    takeProfitPrice: order.takeProfitPrice,
     side: order.side,
     positionSide: order.positionSide,
     quantity: order.quantity,
@@ -147,9 +197,9 @@ export function verifyRiskApproval(token, orderInput, now = Date.now(), secret =
   } catch {
     throw new Error('bingx_vst_bad_approval_payload');
   }
-  if (claims?.v !== 1 || claims?.env !== 'prod-vst') throw new Error('bingx_vst_wrong_approval_environment');
+  if (claims?.v !== 1 || claims?.env !== tradingEnvironment()) throw new Error('bingx_vst_wrong_approval_environment');
   if (!Number.isFinite(Number(claims.expiresAt)) || Number(claims.expiresAt) < now) throw new Error('bingx_vst_approval_expired');
-  for (const key of ['symbol', 'side', 'positionSide', 'quantity']) {
+  for (const key of ['symbol', 'side', 'positionSide', 'quantity', 'stopPrice', 'takeProfitPrice']) {
     if (String(claims[key]) !== String(order[key])) throw new Error(`bingx_vst_approval_mismatch_${key}`);
   }
   return claims;
@@ -199,9 +249,10 @@ async function withReadRetry(run) {
 
 async function vstFetch(path, init = {}, options = {}) {
   let lastError = null;
-  for (let index = 0; index < BINGX_VST_BASES.length; index += 1) {
-    const base = BINGX_VST_BASES[index];
-    assertVstOnlyBase(base);
+  const bases = selectedBases();
+  for (let index = 0; index < bases.length; index += 1) {
+    const base = bases[index];
+    assertTrustedBingxBase(base);
     try {
       const response = await fetch(`${base}${path}`, {
         ...init,
@@ -232,7 +283,7 @@ async function vstFetch(path, init = {}, options = {}) {
       const canFailOver =
         options.allowNetworkFailover === true &&
         isNetworkOrTimeout(error) &&
-        index < BINGX_VST_BASES.length - 1;
+        index < bases.length - 1;
       if (canFailOver) continue;
       throw error;
     }
@@ -305,13 +356,28 @@ async function queryOrderByClientOrderId(order, clientOrderId) {
 }
 
 async function submitMarketOrder(order, clientOrderId) {
+  const protection = tradingEnvironment() === 'prod-live'
+    ? {
+        stopLoss: JSON.stringify({
+          type: 'STOP_MARKET',
+          stopPrice: Number(order.stopPrice),
+          workingType: 'MARK_PRICE'
+        }),
+        takeProfit: JSON.stringify({
+          type: 'TAKE_PROFIT_MARKET',
+          stopPrice: Number(order.takeProfitPrice),
+          workingType: 'MARK_PRICE'
+        })
+      }
+    : {};
   return privateRequest('POST', '/openApi/swap/v2/trade/order', {
     symbol: order.symbol,
     side: order.side,
     positionSide: order.positionSide,
     type: 'MARKET',
     quantity: order.quantity,
-    clientOrderId
+    clientOrderId,
+    ...protection
   });
 }
 
@@ -340,6 +406,11 @@ async function submitMarketOrderWithBusyRecovery(order, clientOrderId) {
       };
     }
 
+    // Never re-submit real-funded orders after a 100500 response.
+    // An immediate order lookup can lag a successful fill.
+    if (tradingEnvironment() === 'prod-live') {
+      throw new Error('bingx_live_order_state_uncertain_no_retry');
+    }
     await sleep(retryDelayMs);
     try {
       return {
@@ -664,23 +735,36 @@ function candleMetrics(rows) {
 export function evaluateRisk(orderInput, marketMetrics, options = {}) {
   const order = normalizeOrder(orderInput);
   const stormPct = Number(options.stormPct ?? envNumber('BINGX_VST_STORM_PCT', DEFAULT_STORM_PCT));
-  const maxNotionalUsdt = Number(options.maxNotionalUsdt ?? envNumber('BINGX_VST_MAX_ORDER_NOTIONAL_USDT', DEFAULT_MAX_NOTIONAL_USDT));
+  const maxNotionalUsdt = Number(options.maxNotionalUsdt ?? (tradingEnvironment() === 'prod-live' ? envNumber('BINGX_LIVE_MAX_ORDER_NOTIONAL_USDT', 25) : envNumber('BINGX_VST_MAX_ORDER_NOTIONAL_USDT', DEFAULT_MAX_NOTIONAL_USDT)));
   const notionalUsdt = order.quantityNumber * Number(marketMetrics.lastPrice);
   if (!Number.isFinite(notionalUsdt) || notionalUsdt <= 0) throw new Error('bingx_vst_invalid_notional');
 
   const storm = Number(marketMetrics.maxReturnPct) >= stormPct || Number(marketMetrics.maxRangePct) >= stormPct * 1.5;
   const overNotional = notionalUsdt > maxNotionalUsdt;
+  const live = tradingEnvironment() === 'prod-live';
   const enabled = options.enabled ?? tradingEnabled();
-  const allowed = Boolean(enabled) && !storm && !overNotional;
+  const protectionPresent = Boolean(order.stopPrice && order.takeProfitPrice);
+  const stop = Number(order.stopPrice);
+  const take = Number(order.takeProfitPrice);
+  const price = Number(marketMetrics.lastPrice);
+  const protectionDirectionValid = order.side === 'BUY'
+    ? stop < price && take > price
+    : stop > price && take < price;
+  const stopDistancePct = protectionPresent ? Math.abs(stop / price - 1) * 100 : null;
+  const stopDistanceValid = stopDistancePct !== null && stopDistancePct >= 0.1 && stopDistancePct <= 3;
+  const liveProtectionValid = !live || (protectionPresent && protectionDirectionValid && stopDistanceValid);
+  const allowed = Boolean(enabled) && !storm && !overNotional && liveProtectionValid;
   const reasons = [];
   if (!enabled) reasons.push('kill_switch_off');
   if (storm) reasons.push('market_storm');
   if (overNotional) reasons.push('max_notional_exceeded');
+  if (live && !protectionPresent) reasons.push('live_protection_required');
+  else if (live && (!protectionDirectionValid || !stopDistanceValid)) reasons.push('live_protection_invalid');
 
   return {
     allowed,
     reasons,
-    environment: 'prod-vst',
+    environment: tradingEnvironment(),
     symbol: order.symbol,
     side: order.side,
     positionSide: order.positionSide,
@@ -696,22 +780,25 @@ export function evaluateRisk(orderInput, marketMetrics, options = {}) {
 
 export function publicStatus() {
   const { apiKey, secretKey } = credentials();
+  const environment = tradingEnvironment();
+  const bases = selectedBases();
   return {
     ok: true,
-    service: 'quantdeus-bingx-vst-mcp',
-    environment: 'prod-vst',
-    primaryBase: BINGX_VST_BASES[0],
-    fallbackBase: BINGX_VST_BASES[1],
-    liveApiAllowed: false,
+    service: 'quantdeus-bingx-perpetual-mcp',
+    environment,
+    primaryBase: bases[0],
+    fallbackBase: bases[1],
+    liveApiAllowed: environment === 'prod-live' && tradingEnabled(),
     withdrawalsExposed: false,
     transfersExposed: false,
     tradingEnabled: tradingEnabled(),
     credentialsConfigured: Boolean(apiKey && secretKey),
+    credentialSource: credentials().source,
     symbolMode: symbolMode(),
-    universe: symbolMode() === 'all' ? 'all-vst-usdt' : 'configured-allowlist',
+    universe: symbolMode() === 'all' ? (environment === 'prod-live' ? 'all-live-usdt' : 'all-vst-usdt') : 'configured-allowlist',
     allowedSymbols: allowedSymbols(),
     stormPct: envNumber('BINGX_VST_STORM_PCT', DEFAULT_STORM_PCT),
-    maxOrderNotionalUsdt: envNumber('BINGX_VST_MAX_ORDER_NOTIONAL_USDT', DEFAULT_MAX_NOTIONAL_USDT),
+    maxOrderNotionalUsdt: environment === 'prod-live' ? envNumber('BINGX_LIVE_MAX_ORDER_NOTIONAL_USDT', 25) : envNumber('BINGX_VST_MAX_ORDER_NOTIONAL_USDT', DEFAULT_MAX_NOTIONAL_USDT),
     indicatorGate: {
       indicatorCount: 14,
       timeframes: ['5m', '15m'],
@@ -726,28 +813,28 @@ export function publicStatus() {
 
 export async function getBalance() {
   const response = await privateRequest('GET', '/openApi/swap/v3/user/balance');
-  return { environment: 'prod-vst', upstreamBase: response.base, response: response.data };
+  return { environment: tradingEnvironment(), upstreamBase: response.base, response: response.data };
 }
 
 export async function getPositions(input = {}) {
   const symbol = input.symbol ? String(input.symbol).trim().toUpperCase() : '';
-  if (symbol && !allowedSymbols().includes(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
+  if (symbol && !symbolAllowed(symbol)) throw new Error('bingx_vst_symbol_not_allowed');
   const response = await privateRequest('GET', '/openApi/swap/v2/user/positions', symbol ? { symbol } : {});
-  return { environment: 'prod-vst', upstreamBase: response.base, symbol: symbol || null, response: response.data };
+  return { environment: tradingEnvironment(), upstreamBase: response.base, symbol: symbol || null, response: response.data };
 }
 
 export async function listContracts() {
   const response = await publicGet('/openApi/swap/v2/quote/contracts');
   const rows = response.data?.data;
   const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
-  return { environment: 'prod-vst', upstreamBase: response.base, contracts };
+  return { environment: tradingEnvironment(), upstreamBase: response.base, contracts };
 }
 
 export async function getTickers() {
   const response = await publicGet('/openApi/swap/v2/quote/ticker');
   const rows = response.data?.data;
   const tickers = Array.isArray(rows) ? rows : (rows ? [rows] : []);
-  return { environment: 'prod-vst', upstreamBase: response.base, tickers };
+  return { environment: tradingEnvironment(), upstreamBase: response.base, tickers };
 }
 
 export async function getContractInfo(input = {}) {
@@ -758,7 +845,7 @@ export async function getContractInfo(input = {}) {
   const contracts = Array.isArray(rows) ? rows : (rows ? [rows] : []);
   const contract = contracts.find(item => String(item?.symbol || '').toUpperCase() === symbol);
   if (!contract) throw new Error('bingx_vst_contract_not_found');
-  return { environment: 'prod-vst', upstreamBase: response.base, symbol, contract };
+  return { environment: tradingEnvironment(), upstreamBase: response.base, symbol, contract };
 }
 
 export async function getKlines(input = {}) {
@@ -770,7 +857,7 @@ export async function getKlines(input = {}) {
   }
   const limit = Math.max(3, Math.min(100, Math.trunc(Number(input.limit || 20))));
   const response = await publicGet('/openApi/swap/v3/quote/klines', { symbol, interval, limit });
-  return { environment: 'prod-vst', upstreamBase: response.base, symbol, interval, response: response.data };
+  return { environment: tradingEnvironment(), upstreamBase: response.base, symbol, interval, response: response.data };
 }
 
 export async function runRiskCheck(input = {}) {
@@ -813,11 +900,18 @@ export async function placeMarketOrder(input = {}) {
   if (!tradingEnabled()) throw new Error('bingx_vst_kill_switch_off');
   const order = normalizeOrder(input);
   const claims = verifyRiskApproval(input.approval_token, order);
+  if (tradingEnvironment() === 'prod-live') {
+    if (!order.stopPrice || !order.takeProfitPrice) throw new Error('bingx_live_protection_required');
+    if (!Number.isFinite(Number(claims.notionalUsdt)) || Number(claims.notionalUsdt) <= 0 ||
+        Number(claims.notionalUsdt) > envNumber('BINGX_LIVE_MAX_ORDER_NOTIONAL_USDT', 25)) {
+      throw new Error('bingx_live_notional_limit_exceeded');
+    }
+  }
   const clientOrderId = clientOrderIdFromApproval(input.approval_token);
   const response = await submitMarketOrderWithBusyRecovery(order, clientOrderId);
   return {
-    environment: 'prod-vst',
-    liveApiAllowed: false,
+    environment: tradingEnvironment(),
+    liveApiAllowed: tradingEnvironment() === 'prod-live',
     upstreamBase: response.base,
     clientOrderId,
     busyRecovery: response.busyRecovery || 'not-needed',
