@@ -12,6 +12,15 @@ function safeResult(data) {
     side: data?.side || null,
     score: data?.score ?? data?.strongestScore ?? null,
     confidence: data?.confidence ?? null,
+    generated_at: data?.generatedAt ?? null,
+    signal_only: data?.signalOnly === true,
+    entry_price_suggestion: data?.entryPriceSuggestion ?? null,
+    stop_price_suggestion: data?.stopPriceSuggestion ?? null,
+    take_profit_price_suggestion: data?.takeProfitPriceSuggestion ?? null,
+    qa_direction_5m: data?.qa?.indicatorDirection5m ?? null,
+    qa_consensus_5m: data?.qa?.indicatorConsensus5m ?? null,
+    qa_direction_15m: data?.qa?.indicatorDirection15m ?? null,
+    qa_consensus_15m: data?.qa?.indicatorConsensus15m ?? null,
     estimated_notional_usdt: data?.estimatedNotionalUsdt ?? null,
     risk_pct: data?.riskPct ?? null,
     reward_pct: data?.rewardPct ?? null,
@@ -37,7 +46,7 @@ async function writeSummary(safe) {
   if (!process.env.GITHUB_STEP_SUMMARY) return;
   await appendFile(
     process.env.GITHUB_STEP_SUMMARY,
-    '### BingX VST guarded autotrade\n\n' +
+    '### BingX perpetual market cycle (signal-only while live trading locked)\n\n' +
     '- execution path: GitHub-native primary\n' +
     '- environment: ' + (safe.environment || 'n/a') + '\n' +
     '- action: ' + (safe.action || 'n/a') + '\n' +
@@ -51,6 +60,13 @@ async function writeSummary(safe) {
     '- side: ' + (safe.side || 'n/a') + '\n' +
     '- score: ' + (safe.score ?? 'n/a') + '\n' +
     '- confidence: ' + (safe.confidence ?? 'n/a') + '\n' +
+    '- signal-only: ' + (safe.signal_only ? 'yes' : 'no') + '\n' +
+    '- generated at UTC: ' + (safe.generated_at ?? 'n/a') + '\n' +
+    '- indicative entry: ' + (safe.entry_price_suggestion ?? 'n/a') + '\n' +
+    '- suggested stop: ' + (safe.stop_price_suggestion ?? 'n/a') + '\n' +
+    '- suggested take-profit: ' + (safe.take_profit_price_suggestion ?? 'n/a') + '\n' +
+    '- QA 5m: ' + (safe.qa_direction_5m ?? 'n/a') + ', consensus=' + (safe.qa_consensus_5m ?? 'n/a') + '\n' +
+    '- QA 15m: ' + (safe.qa_direction_15m ?? 'n/a') + ', consensus=' + (safe.qa_consensus_15m ?? 'n/a') + '\n' +
     '- upstream stage: ' + (safe.upstream_stage ?? 'n/a') + '\n' +
     '- BingX code: ' + (safe.bingx_code ?? 'n/a') + '\n' +
     '- BingX message: ' + (safe.bingx_message ?? 'n/a') + '\n' +
