@@ -258,7 +258,7 @@ test('live orders require and sign exchange-attached stop-loss and take-profit',
     process.env.BINGX_LIVE_SECRET_KEY = 'live-test-secret';
     const order = {
       symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG',
-      quantity: '0.001', stopPrice: 62000, takeProfitPrice: 64000
+      quantity: '0.0002', stopPrice: 62000, takeProfitPrice: 64000
     };
     const metrics = {
       lastPrice: 63000, maxReturnPct: 0.2, maxRangePct: 0.3
@@ -268,7 +268,7 @@ test('live orders require and sign exchange-attached stop-loss and take-profit',
     const wrongDirection = broker.evaluateRisk({ ...order, stopPrice: 64000 }, metrics, { enabled: true });
     assert.ok(wrongDirection.reasons.includes('live_protection_invalid'));
     const token = broker.signRiskApproval(order, {
-      maxReturnPct: 0.2, notionalUsdt: 63,
+      maxReturnPct: 0.2, notionalUsdt: 12.6,
       indicators: { '5m': { direction: 'bullish', matchingConsensus: 0.9 }, '15m': { direction: 'bullish', matchingConsensus: 0.9 } }
     });
     assert.throws(() => broker.verifyRiskApproval(token, { ...order, stopPrice: 61000 }), /mismatch/);
@@ -312,9 +312,9 @@ test('production live unknown-order busy response fails closed without duplicate
     process.env.BINGX_VST_ORDER_BUSY_RETRY_DELAY_MS = '1';
     const order = {
       symbol: 'BTC-USDT', side: 'BUY', positionSide: 'LONG',
-      quantity: '0.001', stopPrice: 62000, takeProfitPrice: 64000
+      quantity: '0.0002', stopPrice: 62000, takeProfitPrice: 64000
     };
-    const token = broker.signRiskApproval(order, { notionalUsdt: 63, maxReturnPct: 0.2 });
+    const token = broker.signRiskApproval(order, { notionalUsdt: 12.6, maxReturnPct: 0.2 });
     global.fetch = async (_url, init = {}) => {
       if (init.method === 'POST') {
         postCount += 1;
