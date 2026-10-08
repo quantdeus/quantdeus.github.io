@@ -244,6 +244,45 @@ test('real-funded perpetual trading remains locked until independent live opt-in
   }
 });
 
+test('existing live API secrets stored under legacy VST names authenticate on live host only', async () => {
+  const keys = [
+    'BINGX_TRADING_ENV', 'BINGX_VST_API_KEY', 'BINGX_VST_SECRET_KEY',
+    'BINGX_LIVE_API_KEY', 'BINGX_LIVE_SECRET_KEY'
+  ];
+  const previous = new Map(keys.map(key => [key, process.env[key]]));
+  const previousFetch = global.fetch;
+  try {
+    process.env.BINGX_TRADING_ENV = 'prod-live';
+    process.env.BINGX_VST_API_KEY = 'existing-real-futures-key';
+    process.env.BINGX_VST_SECRET_KEY = 'existing-real-futures-secret';
+    delete process.env.BINGX_LIVE_API_KEY;
+    delete process.env.BINGX_LIVE_SECRET_KEY;
+    assert.equal(broker.publicStatus().credentialsConfigured, true);
+    assert.equal(broker.publicStatus().credentialSource, 'legacy-storage-alias');
+    let requested = 0;
+    global.fetch = async (url, init = {}) => {
+      requested++;
+      assert.ok(String(url).startsWith('https://open-api.bingx.com/openApi/swap/v3/user/balance'));
+      assert.ok(['existing-real-futures-key', 'explicit-live-key'].includes(init.headers['X-BX-APIKEY']));
+      return new Response(JSON.stringify({ code: 0, data: { balance: { asset: 'USDT', balance: '0' } } }), { status: 200 });
+    };
+    const result = await broker.getBalance();
+    assert.equal(result.environment, 'prod-live');
+    assert.equal(requested, 1);
+    process.env.BINGX_LIVE_API_KEY = 'explicit-live-key';
+    process.env.BINGX_LIVE_SECRET_KEY = 'explicit-live-secret';
+    assert.equal(broker.publicStatus().credentialSource, 'live-env');
+    const second = await broker.getBalance();
+    assert.equal(second.environment, 'prod-live');
+  } finally {
+    global.fetch = previousFetch;
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test('live orders require and sign exchange-attached stop-loss and take-profit', async () => {
   const keys = [
     'BINGX_TRADING_ENV', 'QUANTDEUS_BINGX_LIVE_TRADING_ENABLED',
