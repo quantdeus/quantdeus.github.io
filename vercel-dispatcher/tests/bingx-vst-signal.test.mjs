@@ -135,6 +135,45 @@ test('upstream telemetry preserves exact BingX failure identity', () => {
   assert.match(details.upstreamError, /110500/);
 });
 
+test('locked live perpetual cycle authenticates private read-only endpoints without placing orders', async () => {
+  const keys = ['BINGX_TRADING_ENV', 'QUANTDEUS_BINGX_LIVE_TRADING_ENABLED',
+    'BINGX_VST_API_KEY', 'BINGX_VST_SECRET_KEY', 'BINGX_LIVE_API_KEY', 'BINGX_LIVE_SECRET_KEY',
+    'QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL'];
+  const old = new Map(keys.map(key => [key, process.env[key]]));
+  const oldFetch = global.fetch;
+  const urls = [];
+  try {
+    process.env.BINGX_TRADING_ENV = 'prod-live';
+    process.env.QUANTDEUS_BINGX_LIVE_TRADING_ENABLED = 'false';
+    process.env.BINGX_VST_API_KEY = 'mock-real-account-key';
+    process.env.BINGX_VST_SECRET_KEY = 'mock-real-account-secret';
+    delete process.env.BINGX_LIVE_API_KEY;
+    delete process.env.BINGX_LIVE_SECRET_KEY;
+    delete process.env.QUANTDEUS_BINGX_VST_REMOTE_BROKER_URL;
+    global.fetch = async (url, init = {}) => {
+      urls.push({ url: String(url), method: init.method || 'GET' });
+      assert.equal(init.method, 'GET');
+      assert.ok(String(url).startsWith('https://open-api.bingx.com/openApi/swap/'));
+      return new Response(JSON.stringify({ code: 0, data: [] }), { status: 200 });
+    };
+    const result = await signal.runVstSignalCycle();
+    assert.equal(result.environment, 'prod-live');
+    assert.equal(result.reason, 'live_execution_locked');
+    assert.equal(result.orderAttempted, false);
+    assert.equal(result.privateAccountAuthenticated, true);
+    assert.equal(result.positionsRead, true);
+    assert.equal(urls.length, 2);
+    assert.ok(urls[0].url.includes('/user/balance'));
+    assert.ok(urls[1].url.includes('/user/positions'));
+  } finally {
+    global.fetch = oldFetch;
+    for (const [key, value] of old) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test('scheduled VST autotrade keeps 15-minute cadence and QA precedes execution', async () => {
   const fs = await import('node:fs/promises');
   const workflow = await fs.readFile(new URL('../../.github/workflows/bingx-vst-signal.yml', import.meta.url), 'utf8');
