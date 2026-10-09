@@ -65,5 +65,5 @@ test('model-plane recurrences share one semantic incident key across changing ev
 
 test('mirror incident titles keep the beginning of the summary', () => {
   const title = publicHeadText('Mirror model routes unavailable; deterministic evidence captured a repair-worthy condition.', 20);
-  assert.equal(title, 'Mirror model routes un');
+  assert.equal(title, 'Mirror model routes ');
 });
