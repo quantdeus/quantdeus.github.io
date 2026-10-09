@@ -20,22 +20,22 @@ Before acting, read the fresh `main` state, especially:
 
 GitHub stores state. External integrations transport messages.
 
-## GitLab hot-standby continuity
+## GitLab passive repository mirror
 
-GitHub remains the **canonical primary control plane**. GitLab is a **hot-standby mirror/fallback**, not a parallel autonomous authority.
+GitHub remains the **canonical primary control plane**. GitLab stores a one-way copy of tracked Git branches and tags for repository continuity; it does not run QuantDeus CI or operate as an autonomous control plane.
 
 Continuity rules:
-- `.github/workflows/gitlab-fallback-mirror.yml` mirrors all Git branches and tags after `main` changes and on a low-frequency repair schedule.
+- `.github/workflows/gitlab-fallback-mirror.yml` mirrors all Git branches and tags after `main` changes and on a low-frequency repair schedule, using GitHub Actions.
 - The mirror includes the complete tracked QuantDeus repository, including `coordination/agents.json`, `coordination/homunculi.json`, `coordination/agent-cron-map.json`, skills, scripts, public surfaces and runtime definitions.
-- GitLab CI uses `.gitlab-ci.yml` for a credentialless continuity smoke check so the mirrored swarm can prove that its registries and critical scripts are intact.
-- GitHub Actions secrets, GitHub Issues/PR state, Actions history, external runtime state and private connected-source data are **not** copied by git mirroring. GitLab credentials/CI variables must be configured independently.
-- Normal operation is one-way: **GitHub primary → GitLab standby**. GitLab must not automatically write back to GitHub.
-- If GitLab is promoted during a GitHub outage, promotion requires an explicit CEO/admin directive. The GitHub mirror job must remain disabled until divergent emergency work is reconciled, so recovery cannot overwrite fallback work.
-- Missing GitLab credentials are a narrow continuity blocker only; they must not block normal GitHub execution or make unrelated QA red.
+- GitLab CI is intentionally disabled: do not add `.gitlab-ci.yml` or rely on GitLab shared-runner minutes for continuity checks.
+- GitHub Actions secrets, GitHub Issues/PR state, Actions history, external runtime state and private connected-source data are **not** copied by git mirroring.
+- Normal operation is one-way: **GitHub primary → GitLab mirror**. GitLab must not automatically write back to GitHub.
+- Promotion requires an explicit CEO/admin directive. Before accepting emergency writes on GitLab, disable the GitHub mirror; reconcile divergent commits before re-enabling it.
+- Mirror pushes are fast-forward-only. If GitLab diverges, the workflow fails closed; it must never force-push.
 
 Canonical topology:
 
-`GitHub primary → guarded mirror → GitLab hot standby → continuity QA`
+`GitHub primary → guarded GitHub Actions mirror → GitLab repository copy`
 
 All agents and Vercel runtimes inherit the active manifesto reference from the doctrine/registries. The v3 manifesto is the active constitutional document; `coordination/manifesto-living.md` is its automatically maintained evidence-backed adaptive layer. Current news/trends may change operational priorities through that layer but may not silently rewrite the constitutional core. v2 remains a historical archive and must not be treated as the current charter.
 

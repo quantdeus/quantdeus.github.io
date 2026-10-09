@@ -1,66 +1,49 @@
-# GitLab hot-standby fallback
+# GitLab passive repository mirror
 
 ## Purpose
 
-GitHub remains the canonical QuantDeus control plane. GitLab is a hot-standby continuity target so a GitHub outage does not remove the tracked project, swarm registries, scripts, skills, public surfaces, or branch/tag history.
+GitHub remains the canonical QuantDeus control plane. GitLab keeps a one-way copy of repository branches and tags so the tracked source remains available if GitHub has an outage.
 
-The mirror is intentionally one-way during normal operation:
+The GitLab project is a **passive repository copy**. QuantDeus CI and continuity checks run on GitHub Actions; GitLab CI is intentionally disabled to avoid consuming GitLab shared-runner minutes.
 
-`GitHub primary → GitLab hot standby`
+Normal direction:
 
-It does **not** create a second autonomous coordinator.
+`GitHub primary → GitLab repository copy`
+
+GitLab does not create a second autonomous coordinator and does not write back to GitHub.
 
 ## What is mirrored
 
-The mirror pushes all Git branches and tags. That includes the tracked QuantDeus control-plane content such as:
+The GitHub Actions mirror pushes Git branches and tags, including the tracked QuantDeus control-plane content:
 
 - `AGENTS.md`
 - `coordination/agents.json`
 - `coordination/homunculi.json`
 - `coordination/agent-cron-map.json`
-- doctrine, skills, OpenClaw/Hermes scripts, QA code
+- doctrine, skills, scripts and QA source
 - website/public surfaces and Vercel dispatcher source
 - GitHub workflow source files as ordinary tracked files
 
-Because the full repository is mirrored, every canonical agent definition travels with the fallback snapshot.
+Git transport does not copy platform state outside the repository, including GitHub Actions secrets, Issues, pull requests, run history, artifacts, environments, repository settings, or external Vercel/OpenClaw/Telegram/WordPress state.
 
-## What is not mirrored
+## Credentials and synchronization
 
-Git transport does not copy platform state outside the repository. In particular it does not copy:
+The GitHub repository uses:
 
-- GitHub Actions secrets
-- GitHub Issues, pull requests, comments, checks, run history, artifacts, environments or repository settings
-- external runtime state in Vercel/OpenClaw/Telegram/WordPress
-- private connected-source data
-
-Those credentials and integrations must be provisioned independently on GitLab before an emergency promotion can execute external actions.
-
-## Arming the mirror
-
-Create the destination project in GitLab, then configure the GitHub repository:
-
-- repository variable `GITLAB_MIRROR_REPOSITORY`: GitLab namespace/project path, for example `quantdeus/quantdeus`
-- repository secret `GITLAB_MIRROR_TOKEN`: dedicated GitLab token with permission to push to that project
+- repository variable `GITLAB_MIRROR_REPOSITORY`: GitLab namespace/project path
+- repository secret `GITLAB_MIRROR_TOKEN`: dedicated GitLab credential with permission to push to the destination project
 - optional repository variable `GITLAB_MIRROR_HOST`: defaults to `gitlab.com`
 
-The workflow never prints the token and uses an ephemeral credential file that is removed after the push.
+The workflow never prints the token and uses an ephemeral credential file. Missing credentials leave the mirror unarmed without blocking unrelated GitHub QA.
 
-If the variables are missing, the workflow reports that standby is not armed and exits successfully so normal QuantDeus QA is not blocked.
-
-## Continuity verification
-
-The GitLab mirror contains `.gitlab-ci.yml`. Its credentialless smoke job checks the canonical agent/homunculi registries and syntax-checks critical coordinator/runtime scripts.
-
-This verifies that the fallback snapshot contains the swarm. It does not grant mutation authority or reproduce private integrations.
+The mirror is fast-forward-only. If GitLab has commits that are not ancestors of GitHub `main`, the job stops and requires reconciliation; it never force-pushes.
 
 ## Promotion and recovery
 
-Promotion is manual and requires an explicit CEO/admin directive.
+The GitLab copy is a source recovery option, not a pre-provisioned execution environment. Promotion requires an explicit CEO/admin directive.
 
-1. Freeze/disable the GitHub→GitLab mirror before accepting emergency writes on GitLab.
-2. Confirm GitLab continuity CI is green.
-3. Configure only the minimum GitLab CI variables/integrations required for the emergency lane.
-4. Record emergency changes in GitLab commits/MRs.
-5. When GitHub returns, reconcile divergent commits before re-enabling mirroring.
+1. Disable the GitHub-to-GitLab mirror before accepting emergency writes on GitLab.
+2. Reconcile emergency GitLab commits with GitHub before re-enabling the mirror.
+3. Run required QA on GitHub Actions after recovery.
 
-The GitHub mirror is fast-forward-only. If GitLab diverges after emergency promotion, the mirror fails instead of force-overwriting fallback work.
+GitLab CI is not configured for this project. GitLab shared-runner compute minutes are not used by the passive mirror.
