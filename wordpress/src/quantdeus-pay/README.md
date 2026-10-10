@@ -1,7 +1,19 @@
 # QuantDeus Pay — NPD/self-employed manual Sberbank invoices (draft)
 
-**State:** implementation in draft PR only. Nothing in production is modified. This plugin is intended for the canonical WordPress site at https://quantdeus.whf.bz, not the legacy Vercel Store.
+**State:** Production is LIVE using a theme-local module on https://quantdeus.whf.bz. This PR contains the matching standalone plugin source and remains draft pending safe migration away from theme-local code. See PRODUCTION_DEPLOYMENT_2026-10-10.md.
 
+## Live fixed-price services and real manual invoices (2026-10-10)
+
+- **Business automation: 25 000 ₽**, own QuantDeus service, eligible NPD flow. Public service page: https://quantdeus.whf.bz/services/business-automation/.
+- The shortcode [quantdeus_pay_automation] now renders a **live self-service invoice form for individuals**. Server sets exactly 2,500,000 kopecks, generates a new private 192-bit invoice token and redirects by HTTP 303 to /pay/?qd_invoice=...; the buyer pays independently in their bank app by Sberbank phone number. **This is a real bill and transfer instruction, not online acquiring or a bank-initiated debit.**
+- The public form requires the buyer to acknowledge service terms and individual buyer type; verifies the WordPress nonce, rejects bots by honeypot and limits issuance to 3 attempts per 30 minutes per IP pseudonym. No client name or card details stored. Individuals only; businesses (ИП/ООО) request a manually prepared invoice after obtaining buyer INN/details securely.
+- The admin invoice editor now requires a checkbox confirming **the invoice covers the owner's own NPD-eligible service** when issuing manual invoices. Customer clicking «Я перевёл» can only mark claimed; admin confirms paid after a **bank statement check**, then issues a real FNS «Мой налог» receipt.
+- **Ksenia Cherednikova performance: 50 000 ₽**, published at https://quantdeus.whf.bz/services/ksenia-concert/. The site accepts **booking requests**, not money for the artist via Anton's NPD account. Seller/payee and payment instructions must be agreed with Ksenia before direct settlement. No concert checkout through the automation-only form.
+- Services overview: https://quantdeus.whf.bz/services/ shows both prices and links.
+- PHP release checks in GitHub Actions include deterministic real-invoice-object creation with a mocked bank (no real payments), invalid nonce, wrong payer class, missing terms, bot honeypot and rate-limit rejection.
+- The active WordPress Twenty Twenty-Five theme keeps a separate PHP module. Theme publishes create rollback snapshots; **20261010-172952-4c9q7u** is the snapshot for the v0.3 rollout.
+
+**Operational limits:** No bank statement API, no automatic settlement verification, no card acquisition and no real tax receipt issuance through the plugin. Invoice generation is active, transfer completion is manually checked by owner. Card-transfer NPD receipts must be created promptly at settlement via «Мой налог». Seller identification, consumer-facing terms, return rules and buyer support information should be completed before high-volume sales.
 ## Features
 
 - WordPress administrator creates an invoice under QuantDeus Pay · Счета, with a fixed amount in RUB and the service name in the post title.
