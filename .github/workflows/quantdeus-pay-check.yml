@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'wordpress/src/quantdeus-pay/**'
+      - 'tests/quantdeus-pay/**'
       - '.github/workflows/quantdeus-pay-check.yml'
   workflow_dispatch:
 
@@ -26,6 +27,9 @@ jobs:
         run: |
           php --version
           php -l wordpress/src/quantdeus-pay/quantdeus-pay.php
+          php -l tests/quantdeus-pay/npd-unit.php
+      - name: NPD invoice unit tests
+        run: php tests/quantdeus-pay/npd-unit.php
       - name: Guardrail smoke checks
         run: |
           python3 - <<'PY'
