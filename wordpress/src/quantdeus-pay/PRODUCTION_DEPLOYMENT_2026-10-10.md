@@ -8,7 +8,8 @@
 - Created theme file: `wp-content/themes/twentytwentyfive/inc/quantdeus-pay.php` — copied from this branch's `wordpress/src/quantdeus-pay/quantdeus-pay.php`, omitting its WordPress plugin activation hook.
 - Added include to the active theme `functions.php`, guarded by `!class_exists('QD_Pay', false)` to allow eventual replacement with the standalone plugin.
 - Theme publish completed successfully. Pre- and post-release checks returned HTTP 200 for WP admin, homepage, newest post and newest page, including visitor checks.
-- Theme-file rollback snapshot ID: **`20261010-170137-xxnay3`**.
+- Initial theme-file rollback snapshot ID: **`20261010-170137-xxnay3`**.
+- Second UI refinement: on `/pay/` without invoice token, render a branded landing screen with `/services/` link instead of a misleading invalid-invoice error. This code also passed theme-draft-check and was published with backup **`20261010-170614-7knl9e`**.
 - Published `/pay/` page ID **396** with shortcode `[quantdeus_pay]`: https://quantdeus.whf.bz/pay/
 - Added link and description on existing public `/services/` page ID **16**.
 - Set Rank Math robots on page 396: `noindex, nofollow, noarchive`.
@@ -29,7 +30,7 @@
 
 1. Unpublish WordPress page **396** using `mosmcp__page-unpublish` to immediately hide checkout.
 2. Remove the Services card if rollback needs full navigation cleanup.
-3. Restore theme snapshot **`20261010-170137-xxnay3`** via `mosmcp__theme-restore-backup` (`confirm=true`) if the deployed module causes a theme error; inspect live theme drift first.
+3. For undoing only the landing-screen refinement, restore snapshot **`20261010-170614-7knl9e`**; for a full rollback of QuantDeus Pay theme integration, restore the earlier snapshot **`20261010-170137-xxnay3`** via `mosmcp__theme-restore-backup` (`confirm=true`) if the deployed module causes a theme error; inspect live theme drift first.
 4. Confirm the site loads and `qd_pay_invoice` is no longer active.
 5. Do not delete historical payment records/legitimate receipt evidence if live transactions are later accepted.
 
