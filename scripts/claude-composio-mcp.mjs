@@ -5,7 +5,7 @@
  * CLI: COMPOSIO_API_KEY=... COMPOSIO_USER_ID=... node scripts/claude-composio-mcp.mjs
  * Caller installs @composio/core >= 0.19.1 before invoking.
  */
-import { writeFile, chmod } from 'node:fs/promises';
+import { writeFile, chmod, appendFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -35,6 +35,7 @@ export function generateConfig(mcp) {
   if (!mcp?.url || !mcp?.headers || Object.keys(mcp.headers).length === 0) {
     throw new Error('Composio did not return an authenticated MCP endpoint.');
   }
+  if (/[\r\n]/.test(mcp.url)) throw new Error('Unexpected newline in MCP URL.');
   const url = new URL(mcp.url);
   // Never forward Composio credentials to an arbitrary host.
   if (
@@ -55,14 +56,16 @@ export function generateConfig(mcp) {
     mcpServers: {
       [SERVER_NAME]: {
         type: 'http',
-        url: mcp.url,
-        headers: mcp.headers,
+        url: '${COMPOSIO_MCP_SESSION_URL}',
+        headers: Object.fromEntries(Object.entries(mcp.headers).map(([key, value]) => [
+          key, key.toLowerCase() === 'x-api-key' ? '${COMPOSIO_API_KEY}' : value,
+        ])),
       },
     },
   };
 }
 
-export async function createMcpConfig({ key, userId, connectedAccountId, filePath, makeClient }) {
+export async function createMcpConfig({ key, userId, connectedAccountId, filePath, envFile, makeClient }) {
   if (!key || !userId) throw new Error('COMPOSIO_API_KEY and COMPOSIO_USER_ID are required.');
   if (userId.length > 128 || !/^[a-zA-Z0-9_.:@-]+$/.test(userId)) {
     throw new Error('Invalid Composio user ID.');
@@ -71,8 +74,11 @@ export async function createMcpConfig({ key, userId, connectedAccountId, filePat
   const policy = sessionPolicy(connectedAccountId, preset);
   const session = await client.create(userId, policy);
   const config = generateConfig(session.mcp);
+  if (!envFile) throw new Error('A GitHub Actions environment file is required.');
+  // The workspace MCP file only contains environment placeholders, not secrets.
   await writeFile(filePath, JSON.stringify(config), { mode: 0o600, flag: 'wx' });
   await chmod(filePath, 0o600);
+  await appendFile(envFile, `COMPOSIO_MCP_SESSION_URL=${session.mcp.url}\n`);
   // Do not print URL, token, session ID, or headers: these are sensitive.
   process.stdout.write('Composio GitHub read-only MCP session created; config prepared.\n');
 }
@@ -84,6 +90,7 @@ async function main() {
   const filePath = resolve(process.env.GITHUB_WORKSPACE || process.cwd(), '.mcp.json');
   await createMcpConfig({
     key, userId, connectedAccountId, filePath,
+    envFile: process.env.GITHUB_ENV,
     makeClient: async (apiKey) => {
       const { Composio, SessionPreset } = await import('@composio/core');
       return {
