@@ -28,6 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+      - name: Validate MCP client JavaScript syntax
+        run: node --check scripts/galactic-mcp-live.mjs
       - name: Read a real GitHub Issue using official read-only MCP server
         env:
           GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
