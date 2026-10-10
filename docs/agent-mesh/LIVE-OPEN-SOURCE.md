@@ -4,9 +4,9 @@ Parent: [Issue #554](https://github.com/quantdeus/quantdeus.github.io/issues/554
 Related: #552 (agent-network discovery), #421 (broker/security), #547 (hourly support).
 
 ## What is implemented here (not a simulation)
-A manual GitHub Actions job starts **GitHub's real official MCP server**, performs an MCP JSON-RPC initialization, lists its live tools and invokes the real **issue_read** tool against an existing QuantDeus GitHub Issue. The result validates Issue identity and prints a verifiable Actions run report.
+A manual GitHub Actions job starts **GitHub's real official MCP server**, performs an MCP JSON-RPC initialization, lists its live tools, invokes the real **issue_read** tool against an existing QuantDeus GitHub Issue, and uses **search_repositories** to discover actual GitHub MCP/multi-agent projects. The result validates Issue identity and prints a verifiable Actions run report.
 
-This is a live external GitHub read. It does **not** imply that 10,000 model instances or agents have been launched. The current 27-agent canonical registry remains the single source of truth: \`coordination/agents.json\`. Actual delegated reasoning remains the existing trusted OpenClaw/agent-role workflow. The MCP probe only verifies the GitHub tool transport needed for expansion.
+This is a live external GitHub read. It does **not** imply that 10,000 model instances or agents have been launched. The current 27-agent canonical registry remains the single source of truth: \`coordination/agents.json\`. Actual delegated reasoning remains the existing trusted OpenClaw/agent-role workflow. The MCP probe verifies real GitHub tool transport and returns actual current repository search candidates. It does not execute external code from discovered projects.
 
 ## Run (only after QA and human-reviewed merge)
 GitHub → Actions → **QuantDeus Galactic Mesh — live MCP read** → Run workflow → Issue \`554\`.
@@ -14,7 +14,7 @@ GitHub → Actions → **QuantDeus Galactic Mesh — live MCP read** → Run wor
 - Uses GitHub Actions' ephemeral \`GITHUB_TOKEN\` and **issues:read** only.
 - Docker image: \`ghcr.io/github/github-mcp-server:v2.0.2\`. Before production rollout, pin an inspected digest to reduce upstream-change risk.
 - Runs the official MCP server in read-only mode, with only the issues toolset and Docker process/resource restrictions.
-- Calls a single read-only tool; no comments, outreach, registrations, secrets changes or WordPress changes.
+- Calls two bounded read-only tools (issue_read and search_repositories); no comments, outreach, registrations, secrets changes or WordPress changes.
 - Errors fail the run; no fabricated success.
 - The workflow is **manual**, not scheduled and not triggered by Issues to avoid loops.
 - Does not require a paid LLM API. Public repository standard GitHub Actions runner usage is included by GitHub, subject to abuse policy and quota / cost changes.
