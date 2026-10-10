@@ -180,7 +180,14 @@ final class QD_Pay {
         $token = isset($_GET['qd_invoice']) && is_string($_GET['qd_invoice'])
             ? sanitize_text_field(wp_unslash($_GET['qd_invoice'])) : '';
         $post = self::invoice($token);
-        if (!$post) return '<section class="qd-pay">Этот счёт не найден или неактивен. Запросите ссылку у QuantDeus.</section>';
+        if ($token === '') {
+            return '<section style="max-width:720px;margin:28px auto;padding:30px;border:1px solid #a9dcec;border-radius:22px;background:linear-gradient(135deg,#e8fbff,#f5fbff,#e6f9ec);color:#133d55">'
+                .'<h2>QuantDeus Pay · Оплата по счёту</h2>'
+                .'<p>Для оплаты потребуется персональная ссылка на счёт с точной суммой и назначением. Её выдаёт администратор QuantDeus после согласования услуги.</p>'
+                .'<p><a href="'.esc_url(home_url('/services/')).'">Выбрать услугу и запросить счёт →</a></p>'
+                .'<p style="font-size:.9rem">Перевод в Сбербанк подтверждается вручную. Чек самозанятого оформляется через ФНС «Мой налог».</p></section>';
+        }
+        if (!$post) return '<section class="qd-pay">Эта ссылка на счёт недействительна или счёт закрыт. Запросите новую ссылку у QuantDeus.</section>';
         $state = (string)get_post_meta($post->ID,'_qd_pay_state',true);
         $sum = (int)get_post_meta($post->ID,'_qd_pay_kopecks',true);
         $receipt = (string)get_post_meta($post->ID,'_qd_pay_receipt_url',true);
