@@ -2,6 +2,7 @@
 // Deterministic no-network test of self-service invoice creation: NO actual bank call or sale.
 declare(strict_types=1);
 define('ABSPATH', __DIR__.'/');
+define('MINUTE_IN_SECONDS', 60); // Defined by WordPress at runtime.
 $GLOBALS['meta'] = [];
 $GLOBALS['transients'] = [];
 $GLOBALS['inserted'] = null;
