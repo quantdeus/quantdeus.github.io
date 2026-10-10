@@ -1,0 +1,35 @@
+name: QuantDeus Galactic Mesh — live MCP read
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Existing QuantDeus Issue number to read via GitHub MCP"
+        required: true
+        default: "554"
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: quantdeus-galactic-mcp-read
+  cancel-in-progress: false
+
+jobs:
+  real-mcp-read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Read a real GitHub Issue using official read-only MCP server
+        env:
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: node scripts/galactic-mcp-live.mjs
