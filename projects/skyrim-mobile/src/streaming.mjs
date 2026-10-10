@@ -42,9 +42,9 @@ export class CellStreamer {
     .catch(err=>{if(!controller.signal.aborted&&this.records.get(job.id)===record){record.state="error";record.error=String(err);}})
     .finally(()=>{this.running--;this.pump();this.flush();});
   }
-  flush(){if(this.running===0&&this.queue.length===0)for(const cb of this.waiters.splice(0))cb();}
   this.flush();
  }
+ flush(){if(this.running===0&&this.queue.length===0)for(const cb of this.waiters.splice(0))cb();}
  waitIdle(){if(!this.running&&!this.queue.length)return Promise.resolve();return new Promise(resolve=>this.waiters.push(resolve));}
  snapshot(){return [...this.records].map(([id,r])=>({id,state:r.state})).sort((a,b)=>a.id.localeCompare(b.id));}
  dispose(){
