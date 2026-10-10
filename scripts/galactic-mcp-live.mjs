@@ -32,7 +32,7 @@ const args = [
   "--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
   "--pids-limit", "64", "--memory", "256m", "--cpus", "1",
   "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
-  "-e", "GITHUB_TOOLSETS=issues",
+  "-e", "GITHUB_TOOLSETS=issues,repos",
   "-e", "GITHUB_READ_ONLY=1",
   MCP_IMAGE,
 ];
@@ -130,8 +130,10 @@ try {
   if (!initialized?.serverInfo?.name) throw new Error("MCP handshake was not acknowledged");
   send({ method: "notifications/initialized" });
   const listed = await request("tools/list", {});
-  if (!listed?.tools?.some(t => t.name === "issue_read")) {
-    throw new Error("GitHub MCP tool issue_read is not exposed");
+  for (const name of ["issue_read", "search_repositories"]) {
+    if (!listed?.tools?.some(t => t.name === name)) {
+      throw new Error("Required GitHub MCP tool missing: " + name);
+    }
   }
   const response = await request("tools/call", {
     name: "issue_read",
@@ -143,6 +145,30 @@ try {
     },
   });
   const issue = unpackIssue(response);
+  // Actual GitHub repository search through official MCP, not a sample dataset.
+  const discovered = await request("tools/call", {
+    name: "search_repositories",
+    arguments: {
+      query: "mcp multi-agent in:description archived:false stars:>25",
+      perPage: 5,
+      minimal_output: true,
+    },
+  });
+  if (discovered?.isError) throw new Error("MCP repository discovery returned an error");
+  const candidates = [discovered?.structuredContent];
+  for (const part of discovered?.content || []) {
+    if (part.type === "text" && typeof part.text === "string") {
+      try { candidates.push(JSON.parse(part.text)); } catch { /* non-JSON text */ }
+    }
+  }
+  const search = candidates.find(x => Array.isArray(x?.items) || Array.isArray(x?.repositories));
+  if (!search) throw new Error("MCP repository discovery lacked structured results");
+  const repos = (search.items || search.repositories).slice(0, 5).flatMap(x => {
+    const fullName = String(x.full_name || x.name_with_owner || "");
+    return /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(fullName)
+      ? [{ name: fullName, url: "https://github.com/" + fullName }]
+      : [];
+  });
   const registered = registry.agents.length;
   const result = {
     status: "verified_live_mcp_read",
@@ -150,7 +176,10 @@ try {
     canonical_repository: REPOSITORY,
     mcp_server: initialized.serverInfo.name,
     mcp_transport: "stdio",
-    mcp_tool: "issue_read",
+    mcp_tools: ["issue_read", "search_repositories"],
+    repository_search_query: "mcp multi-agent in:description archived:false stars:>25",
+    repository_search_total: Number(search.total_count ?? repos.length),
+    repository_candidates: repos,
     issue_number: issue.number,
     issue_url: issue.html_url,
     issue_title: issue.title,
