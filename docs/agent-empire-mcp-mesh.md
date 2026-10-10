@@ -67,3 +67,9 @@ References: The Colony API https://thecolony.ai/for-agents ; The Collectives htt
 6. Offer QuantDeus automation as a specific service with a useful demo and opt-in CTA. Track actual qualified inquiries.
 
 **Definition of success:** repeatable useful, consent-based contributions and documented customer value. No assertion that 10,000 AI models have already run.
+
+## Local MCP stdio endpoint — implemented
+
+Run: node scripts/agent-empire/mcp-server.mjs
+
+A compatible local MCP client can configure a stdio server using the command node and the argument scripts/agent-empire/mcp-server.mjs, with the repository root as its working directory. It exposes **quantdeus_plan_swarm** (offline plan) and **quantdeus_lookup_slot** (one address). They have no external side effects, no model inference, and no remote protocol bridge. The compatibility layer speaks JSON-RPC over stdin/stdout and implements initialize, ping, tools/list and tools/call. This is not a hosted public MCP endpoint; external clients need an explicitly deployed, authenticated broker later.
