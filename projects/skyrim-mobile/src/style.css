@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
+:root{font-family:Manrope,system-ui,sans-serif;color:#edf6fa;background:#0d1823;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+#game{position:fixed;inset:0;width:100vw;height:100dvh;display:block;outline:0}
+.topbar{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 18px 12px;background:linear-gradient(#0a1722b8,transparent);pointer-events:none}
+.brand{display:flex;flex-direction:column;text-shadow:0 2px 5px #000}
+.brand strong{font-weight:800;letter-spacing:.19em;font-size:clamp(12px,2.5vw,18px)}
+.brand small,.quest small{letter-spacing:.12em;font-size:10px;color:#9ddbd6}
+.metric{margin-left:auto;background:#082a3d88;border:1px solid #7edbcb66;border-radius:20px;padding:8px 13px;font-size:12px}
+button,select{font:inherit}button{cursor:pointer;color:white;border:1px solid #8bd1df66;border-radius:14px;background:linear-gradient(140deg,#1a5d70cc,#092437cc);box-shadow:0 4px 20px #01091166;touch-action:manipulation}
+button:active{transform:scale(.95)}.topbar button{pointer-events:auto;font-size:21px;padding:5px 12px}
+.quest{position:fixed;top:calc(86px + env(safe-area-inset-top));left:16px;max-width:min(360px,65vw);background:#081b27b9;border:1px solid #82c4cf52;border-radius:12px;padding:12px 16px;backdrop-filter:blur(9px)}
+.quest strong{display:block;margin:5px 0 0;font-size:clamp(12px,2vw,15px)}
+.quest p{margin:9px 0 0;font-size:12px;line-height:1.5;color:#cfdee5}
+.stats{position:fixed;right:16px;top:calc(87px + env(safe-area-inset-top));width:clamp(130px,18vw,190px);display:grid;gap:7px;text-shadow:0 1px 4px black}
+.stats label{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.07em}.stats meter{width:100%;height:13px}.wallet{font-size:12px;color:#f0d898}.wallet span:last-child{margin-left:8px;color:#e2f4f0}
+.controls{position:fixed;inset:auto 0 max(15px,env(safe-area-inset-bottom)) 0;height:170px;pointer-events:none}
+.pad{pointer-events:auto;position:absolute;bottom:10px;height:135px;width:135px;border:2px solid #b4dcd75a;border-radius:50%;background:#07273963;display:flex;align-items:center;justify-content:center;color:#cfe3de8c;font-size:11px;letter-spacing:.1em;touch-action:none}
+.pad.move{left:clamp(14px,5vw,80px)}.pad.look{right:clamp(150px,23vw,330px);width:115px;height:115px;opacity:.52}
+.pad i{display:block;position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:#b5e3db8c;transform:translate(-50%,-50%);pointer-events:none}
+.actions{position:absolute;right:clamp(12px,4vw,65px);bottom:9px;display:grid;grid-template-columns:repeat(2,65px);gap:8px;pointer-events:auto}
+.actions button{height:60px;font-size:23px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.actions button:first-child{grid-row:span 2;height:128px}
+.actions small{font-size:9px;letter-spacing:.04em}
+.modal{position:fixed;inset:0;display:grid;place-items:center;background:#031018cc;z-index:10;padding:18px;touch-action:auto}
+.modal[hidden],[hidden]{display:none!important}
+.modal-body{width:min(420px,96vw);padding:24px;background:#102c3b;border:1px solid #75ccc09a;border-radius:19px;display:grid;gap:15px}
+.modal h2{margin:0}.modal label,.modal small{font-size:12px}.modal select{padding:12px;background:#0c2533;border:1px solid #3e8893;border-radius:10px;color:#fff}
+.modal button{padding:11px}
+#fallback{position:fixed;z-index:20;inset:0;background:#091f2b;padding:15vh 8vw;text-align:center;line-height:1.8}
+@media(max-width:680px){.quest{max-width:61vw;top:calc(75px + env(safe-area-inset-top));padding:10px}.stats{top:calc(77px + env(safe-area-inset-top));right:10px;width:115px}.pad{height:105px;width:105px}.pad.look{width:85px;height:85px;right:150px}.actions{grid-template-columns:repeat(2,54px)}.actions button{height:52px}.actions button:first-child{height:112px}.controls{height:140px}.brand small{font-size:9px}}
+@media(max-height:450px){.quest{top:58px}.stats{top:58px}.controls{height:118px}.pad{height:95px;width:95px}.pad.look{width:80px;height:80px}}

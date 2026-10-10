@@ -1,0 +1,33 @@
+name: Skyrim Mobile WebGL QA
+on:
+  push:
+    branches: [feat/skyrim-mobile-webgl-500mb]
+    paths: ["projects/skyrim-mobile/**", ".github/workflows/skyrim-mobile-ci.yml"]
+  pull_request:
+    paths: ["projects/skyrim-mobile/**", ".github/workflows/skyrim-mobile-ci.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  webgl-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/skyrim-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - name: RPG core unit tests
+        run: npm test
+      - name: Pack inventory and 500 MB budget
+        run: npm run content:check
+      - name: TypeScript and production build
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: northwind-webgl-prototype
+          path: projects/skyrim-mobile/dist/
+          if-no-files-found: error
