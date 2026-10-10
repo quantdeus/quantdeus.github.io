@@ -39,12 +39,13 @@ jobs:
         with:
           node-version: '24'
       - name: Run offline zero-spend safety tests
-        run: node --test scripts/agent-empire/core.test.mjs
+        run: node --test scripts/agent-empire/core.test.mjs scripts/agent-empire/mcp-server.test.mjs
       - name: Validate JS modules
         run: |
           node --check scripts/agent-empire/core.mjs
           node --check scripts/agent-empire/probe.mjs
           node --check scripts/agent-empire/cli.mjs
+          node --check scripts/agent-empire/mcp-server.mjs
       - name: Plan virtual swarm (never dispatches 10,000 model calls)
         env:
           MODE: ${{ github.event.inputs.mode || 'simulate' }}
