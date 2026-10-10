@@ -1,0 +1,21 @@
+{
+  "name": "quantdeus-skyrim-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.mjs",
+    "content:check": "node scripts/content-check.mjs",
+    "qa": "npm test && npm run content:check && npm run build"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^7.54.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vite": "^6.0.5"
+  }
+}

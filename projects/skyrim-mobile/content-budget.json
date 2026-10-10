@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "limitBytes": 500000000,
+  "note": "Hard maximum for independently delivered runtime + asset packs; not a promise of actual current size. Use decimal MB.",
+  "allocations": {
+    "runtime": 25000000,
+    "terrain_forest": 140000000,
+    "village": 100000000,
+    "dungeon": 70000000,
+    "characters_items": 60000000,
+    "audio": 65000000,
+    "ui": 10000000,
+    "reserve": 30000000
+  }
+}
