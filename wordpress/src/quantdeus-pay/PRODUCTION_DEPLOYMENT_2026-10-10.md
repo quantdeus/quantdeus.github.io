@@ -26,6 +26,22 @@
 - External public HTTP fetch from this agent environment could not resolve the host; MCP reported saved published page and live checks; do not claim browser/device acceptance testing until completed.
 - **Important:** Twenty Twenty-Five receives theme updates. Such an update may overwrite theme-local `functions.php` and `inc/quantdeus-pay.php`. Migrate to a standalone plugin or a persistent child theme before next theme update and rehearse a rollback.
 
+## Live v0.3 prices and real invoice issuance (follow-up)
+
+- **Price: business automation 25,000 RUB** shown on `/services/` and `/services/business-automation/`; added shortcode `[quantdeus_pay_automation]` to the automation page.
+- **Price: Ksenia Cherednikova performance 50,000 RUB** shown on `/services/` and `/services/ksenia-concert/`; payment is *not* collected into the QuantDeus seller's NPD/Sberbank account for a third-party performance. Existing guest booking form remains the interaction.
+- Extended active theme module to `QD_Pay v0.3`: nonce-bound user-requested invoices for private individuals only, exact fixed amount 2,500,000 kopecks server side, 192-bit token, HTTP 303 private invoice redirect, transient rate limiting (3 per 30 min per IP pseudonym), honeypot and individual declaration.
+- In the admin screen, owner-initiated manual issuance requires attesting that the invoice is for the owner's own permitted NPD service.
+- WordPress theme change **staged → PHP syntax verified → theme draft check passed → published**, with saved rollback snapshot **`20261010-172952-4c9q7u`**. Live admin/home/newest post/newest page were checked after publishing. No real-money transfer or end-to-end consumer POST has been verified.
+- Public user sees the form on `/pay/` and on the dedicated business automation page. Buyer manually sends actual funds via bank app to phone +79209869904; owner alone confirms paid and generates corresponding tax receipt in «Мой налог». No payment processor or bank settlement webhook is configured.
+- Source synced into standalone plugin in this PR and regression checks added for invoice issuance, malformed nonce, missing payer declaration/terms, bot honeypot and rate limiting. PR stays draft because the active theme still hosts the module.
+
+### Acceptance / operational follow-ups
+
+- Run an external browser guest POST against a *controlled, nonpaying test order* and check true invoice page HTML, 303 redirect, no caching, and mobile layout. The MCP theme smoke validates site load, but cannot independently prove the live customer POST or bank transfer.
+- Add seller-identification and NPD refund/service terms, contact, support, delivery timetable, and a safe record of receipt delivery before widening sales.
+- Obtain the artist's preferred lawful settlement workflow before enabling a concert invoice or payment button.
+- Existing theme update risk remains: migrate to child theme or standalone plugin in a separate approved deployment.
 ## Reversal
 
 1. Unpublish WordPress page **396** using `mosmcp__page-unpublish` to immediately hide checkout.
