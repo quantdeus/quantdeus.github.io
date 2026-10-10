@@ -12,7 +12,7 @@ This is a live external GitHub read. It does **not** imply that 10,000 model ins
 GitHub → Actions → **QuantDeus Galactic Mesh — live MCP read** → Run workflow → Issue \`554\`.
 
 - Uses GitHub Actions' ephemeral \`GITHUB_TOKEN\` and **issues:read** only.
-- Docker image: \`ghcr.io/github/github-mcp-server:latest\`. Before production rollout, pin an inspected digest to reduce upstream-change risk.
+- Docker image: \`ghcr.io/github/github-mcp-server:v2.0.2\`. Before production rollout, pin an inspected digest to reduce upstream-change risk.
 - Runs the official MCP server in read-only mode, with only the issues toolset and Docker process/resource restrictions.
 - Calls a single read-only tool; no comments, outreach, registrations, secrets changes or WordPress changes.
 - Errors fail the run; no fabricated success.
