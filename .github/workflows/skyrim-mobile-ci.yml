@@ -26,6 +26,8 @@ jobs:
         run: npm run content:check
       - name: TypeScript and production build
         run: npm run build
+      - name: Verify release budget including bundled runtime
+        run: npm run content:check -- --release
       - uses: actions/upload-artifact@v4
         with:
           name: northwind-webgl-prototype

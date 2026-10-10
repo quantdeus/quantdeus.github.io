@@ -12,12 +12,14 @@ if (budget.limitBytes !== 500000000) throw new Error("Release must remain within
 if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.packs)) throw new Error("Invalid manifest");
 let bytes = 0;
 const claimed = new Set();
+const actualByCategory = Object.fromEntries(Object.keys(budget.allocations).map(k => [k, 0]));
 for (const item of manifest.packs) {
   if (!/^[a-z0-9_-]+$/.test(item.id) ||
       !/^[a-z0-9_/-]+\.(glb|ktx2|ogg|bin|zip)$/.test(item.path) ||
       item.path.includes("..") || claimed.has(item.path))
     throw new Error("Invalid or duplicate content pack path");
   claimed.add(item.path);
+  if (!(item.category in actualByCategory) || ["runtime", "reserve"].includes(item.category)) throw new Error("Invalid pack category");
   if (!/^[0-9a-f]{64}$/.test(item.sha256)) throw new Error("Missing SHA256 for " + item.id);
   const pathname = new URL("packs/" + item.path, root);
   const data = await readFile(pathname);
@@ -25,6 +27,8 @@ for (const item of manifest.packs) {
   if (data.length !== item.sizeBytes || actualHash !== item.sha256)
     throw new Error("Content corruption: " + item.path);
   bytes += data.length;
+  actualByCategory[item.category] += data.length;
+  if (actualByCategory[item.category] > budget.allocations[item.category]) throw new Error("Pack category over budget: " + item.category);
 }
 async function visit(folder, prefix="") {
   for (const ent of await readdir(folder, { withFileTypes:true })) {
@@ -36,5 +40,19 @@ async function visit(folder, prefix="") {
   }
 }
 await visit(new URL("packs/", root).pathname);
-if (bytes > budget.limitBytes) throw new Error("Game packs exceed 500 MB");
-console.log("PACK QA OK: " + manifest.packs.length + " actual packs; " + bytes + "/500000000 bytes installed in source. Reserve is a budget, not content.");
+let runtimeBytes = 0;
+if (process.argv.includes("--release")) {
+  async function sumRuntime(dir) {
+    for (const ent of await readdir(dir, {withFileTypes:true})) {
+      const pathToFile = path.join(dir, ent.name);
+      if (ent.isDirectory()) await sumRuntime(pathToFile);
+      else if (ent.isFile()) runtimeBytes += (await stat(pathToFile)).size;
+    }
+  }
+  await sumRuntime(new URL("dist/", root).pathname);
+  if (runtimeBytes < 1 || runtimeBytes > budget.allocations.runtime)
+    throw new Error("Runtime build empty or exceeds 25MB");
+}
+if (bytes + runtimeBytes > budget.limitBytes - budget.allocations.reserve)
+  throw new Error("Content + runtime exceed the 500MB limit after reserve");
+console.log("PACK QA OK: packs=" + bytes + " bytes; runtime=" + runtimeBytes + " bytes; max=500000000 with 30000000-byte reserve.");
