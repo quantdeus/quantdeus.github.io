@@ -10,7 +10,7 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const REPOSITORY = "quantdeus/quantdeus.github.io";
-const MCP_IMAGE = "ghcr.io/github/github-mcp-server:latest";
+const MCP_IMAGE = "ghcr.io/github/github-mcp-server:v2.0.2";
 const repository = process.env.GITHUB_REPOSITORY || REPOSITORY;
 const issueNumber = Number(process.env.ISSUE_NUMBER || "554");
 const token = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
