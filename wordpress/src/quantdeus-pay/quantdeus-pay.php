@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Pay — Manual Sberbank Transfers
  * Description: Administrator-issued private invoices; client payment claims are never proof of payment.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Requires PHP: 8.1
  */
 if (!defined('ABSPATH')) exit;
@@ -81,14 +81,27 @@ final class QD_Pay {
             $status = (string)get_post_meta($p->ID, '_qd_pay_state', true) ?: 'draft';
             $locked = $value > 0 && $status !== 'draft';
             $receipt = (string)get_post_meta($p->ID, '_qd_pay_receipt_url', true);
+            $buyer = (string)get_post_meta($p->ID, '_qd_pay_buyer_kind', true) ?: 'individual';
+            $receipt_delivered = (string)get_post_meta($p->ID, '_qd_pay_receipt_delivered_at', true);
+            echo '<p><strong>Режим продавца: НПД (самозанятый).</strong> Только свои разрешённые товары/услуги, не агентские продажи. Фискализация — вручную в «Мой налог».</p>';
             echo '<p>Название услуги задаётся заголовком записи. Не вводите данные клиента.</p>';
             echo '<p><label for="qd_pay_amount">Сумма, ₽</label><br><input required id="qd_pay_amount" name="qd_pay_amount" type="text" inputmode="decimal" value="'.esc_attr($value ? number_format($value/100,2,'.','') : '').'" '.($locked?'readonly ':'').'></p>';
             echo '<p>После выставления сумма блокируется. Для изменения создайте новый счёт.</p>';
+            echo '<p><label for="qd_pay_buyer_kind">Тип плательщика для чека НПД</label><br><select id="qd_pay_buyer_kind" name="qd_pay_buyer_kind" '.($locked ? 'disabled ' : '').'>';
+            foreach (['individual'=>'Физическое лицо (НПД 4%)','business'=>'ИП или организация (НПД 6%)'] as $k=>$label) {
+                echo '<option value="'.esc_attr($k).'"'.selected($buyer,$k,false).'>'.esc_html($label).'</option>';
+            }
+            echo '</select></p>';
+            if ($locked) echo '<p>Тип плательщика зафиксирован. Для исправления создайте новый счёт.</p>';
+            if ($buyer === 'business') echo '<p>Для чека в «Мой налог» дополнительно получите реквизиты и ИНН заказчика по защищённому каналу; не сохраняйте ИНН в публичном GitHub.</p>';
             echo '<p><label for="qd_pay_state">Статус</label><br><select id="qd_pay_state" name="qd_pay_state">';
             foreach (self::STATES as $k=>$label) echo '<option value="'.esc_attr($k).'"'.selected($status,$k,false).'>'.esc_html($label).'</option>';
             echo '</select></p>';
-            echo '<p><label for="qd_pay_receipt_url">Ссылка на действительный фискальный чек, если применимо</label><br><input class="widefat" type="url" id="qd_pay_receipt_url" name="qd_pay_receipt_url" value="'.esc_attr($receipt).'" placeholder="https://..."></p>';
-            echo '<p>Чек оформляется отдельно по налоговому статусу продавца. Плагин не фискализирует оплату.</p>';
+            echo '<p><label for="qd_pay_receipt_url">Ссылка на действительный чек ФНС из «Мой налог»</label><br><input class="widefat" type="url" id="qd_pay_receipt_url" name="qd_pay_receipt_url" value="'.esc_attr($receipt).'" placeholder="https://..."></p>';
+            echo '<p><label><input type="checkbox" name="qd_pay_receipt_delivered" value="1" '.($receipt_delivered ? 'checked disabled ' : '').'> Я сформировал чек в «Мой налог» и передал его заказчику</label></p>';
+            if ($receipt_delivered) echo '<p><strong>Отправка чека отмечена:</strong> '.esc_html($receipt_delivered).' UTC (внутреннее подтверждение, не интеграция с ФНС)</p>';
+            elseif ($status === 'paid') echo '<p><strong>ВНИМАНИЕ:</strong> оплата отмечена, но выдача чека НПД не подтверждена. При переводе на карту чек оформляется в момент расчёта. Выдайте его клиенту без задержки.</p>';
+            echo '<p><a href="https://lknpd.nalog.ru/" target="_blank" rel="noopener noreferrer">Открыть «Мой налог»</a>. Плагин не выдаёт чек сам и не сообщает о платеже в ФНС.</p>';
             if ($value && in_array($status, ['issued','claimed','paid','refunded'], true)) {
                 echo '<p><strong>Секретная ссылка на счёт:</strong><br><input class="widefat" readonly value="'.esc_attr(self::url($p->ID)).'"></p>';
                 echo '<p>Эту ссылку можно отправлять покупателю напрямую. Не публикуйте публично.</p>';
@@ -120,9 +133,23 @@ final class QD_Pay {
         if (!$sum && !in_array($state, ['draft','cancelled'], true)) $state = 'draft';
         update_post_meta($id, '_qd_pay_kopecks', $sum);
         update_post_meta($id, '_qd_pay_state', $state);
-        $receipt = isset($_POST['qd_pay_receipt_url']) && is_string($_POST['qd_pay_receipt_url'])
+        // Once issued, buyer category is locked to avoid incorrect NPD tax-rate classification.
+        if ($prior === 'draft') {
+            $buyer = isset($_POST['qd_pay_buyer_kind']) && is_string($_POST['qd_pay_buyer_kind'])
+                ? sanitize_key(wp_unslash($_POST['qd_pay_buyer_kind'])) : 'individual';
+            update_post_meta($id, '_qd_pay_buyer_kind', in_array($buyer,['individual','business'],true) ? $buyer : 'individual');
+        }
+        $already_delivered = (string)get_post_meta($id, '_qd_pay_receipt_delivered_at', true);
+        $old_receipt = (string)get_post_meta($id, '_qd_pay_receipt_url', true);
+        $receipt_input = isset($_POST['qd_pay_receipt_url']) && is_string($_POST['qd_pay_receipt_url'])
             ? wp_unslash($_POST['qd_pay_receipt_url']) : '';
-        update_post_meta($id, '_qd_pay_receipt_url', esc_url_raw($receipt, ['http','https']));
+        $receipt = $already_delivered ? $old_receipt : esc_url_raw($receipt_input, ['http','https']);
+        update_post_meta($id, '_qd_pay_receipt_url', $receipt);
+        $confirmed = isset($_POST['qd_pay_receipt_delivered']) && $_POST['qd_pay_receipt_delivered'] === '1';
+        // Admin's attestation is recorded only with an HTTPS FNS receipt link and confirmed bank payment.
+        if ($state === 'paid' && $confirmed && !$already_delivered && str_starts_with($receipt,'https://')) {
+            update_post_meta($id, '_qd_pay_receipt_delivered_at', gmdate('Y-m-d H:i:s'));
+        }
         if ($sum && $state !== 'draft') self::token($id);
     }
 
@@ -157,6 +184,7 @@ final class QD_Pay {
         $state = (string)get_post_meta($post->ID,'_qd_pay_state',true);
         $sum = (int)get_post_meta($post->ID,'_qd_pay_kopecks',true);
         $receipt = (string)get_post_meta($post->ID,'_qd_pay_receipt_url',true);
+        $receipt_delivered = (string)get_post_meta($post->ID,'_qd_pay_receipt_delivered_at',true);
         $style = '<style>.qd-pay{max-width:700px;margin:32px auto;padding:28px;border-radius:24px;background:linear-gradient(130deg,#e4faff,#f5fbff 55%,#e3f9eb);border:1px solid #a9dcec;color:#143149;box-shadow:0 18px 38px #08668c25}.qd-pay h2{color:#0d507c;margin:0 0 8px}.qd-pay .qd-sum{font-size:clamp(2rem,6vw,3.3rem);font-weight:800;color:#1375aa;margin:15px 0}.qd-pay .qd-details{border-radius:15px;background:#ffffffdb;padding:15px 20px;margin:15px 0}.qd-pay p{line-height:1.55}.qd-pay .qd-button{border:0;border-radius:12px;background:#158bd3;color:#fff;padding:14px 20px;font-weight:700;cursor:pointer}.qd-pay .qd-button:focus-visible{outline:3px solid #122f50;outline-offset:3px}.qd-pay small{color:#526776}</style>';
         $html = $style.'<section class="qd-pay" aria-labelledby="qd-pay-title"><h2 id="qd-pay-title">QuantDeus Pay</h2>';
         $html .= '<p>Счёт №'.esc_html((string)$post->ID).' · '.esc_html(get_the_title($post)).'</p>';
@@ -174,10 +202,12 @@ final class QD_Pay {
         } elseif ($state === 'paid') $html .= '<p>Администратор подтвердил поступление средств.</p>';
         elseif ($state === 'refunded') $html .= '<p>Возврат отмечен администратором.</p>';
         else $html .= '<p>Счёт закрыт для оплаты.</p>';
-        if ($receipt && in_array($state, ['paid','refunded'], true)) {
-            $html .= '<p><a href="'.esc_url($receipt).'" target="_blank" rel="noopener noreferrer">Открыть выданный чек</a></p>';
+        if ($receipt && $receipt_delivered && in_array($state, ['paid','refunded'], true)) {
+            $html .= '<p><a href="'.esc_url($receipt).'" target="_blank" rel="noopener noreferrer">Открыть чек ФНС из «Мой налог»</a></p>';
+        } elseif ($state === 'paid') {
+            $html .= '<p><strong>Чек ФНС:</strong> ссылка пока не добавлена продавцом. Чек должен быть сформирован и передан по правилам НПД.</p>';
         }
-        $html .= '<p><small>Кнопка «Я перевёл» не подтверждает оплату. Этот экран не является платёжным шлюзом или фискальным чеком.</small></p></section>';
+        $html .= '<p><small>Продавец применяет налог на профессиональный доход (НПД). Кнопка «Я перевёл» не подтверждает оплату. Чек формируется отдельно продавцом через ФНС «Мой налог». Этот экран не является платёжным шлюзом или фискальным чеком.</small></p></section>';
         return $html;
     }
 
