@@ -42,7 +42,7 @@ export class CellStreamer {
     .catch(err=>{if(!controller.signal.aborted&&this.records.get(job.id)===record){record.state="error";record.error=String(err);}})
     .finally(()=>{this.running--;this.pump();this.flush();});
   }
-  this.flush(){if(this.running===0&&this.queue.length===0)for(const cb of this.waiters.splice(0))cb();}
+  flush(){if(this.running===0&&this.queue.length===0)for(const cb of this.waiters.splice(0))cb();}
   this.flush();
  }
  waitIdle(){if(!this.running&&!this.queue.length)return Promise.resolve();return new Promise(resolve=>this.waiters.push(resolve));}
