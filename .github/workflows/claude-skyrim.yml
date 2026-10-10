@@ -1,7 +1,6 @@
-# Claude Code reviewer for Skyrim Mobile. This lives on main after config-only PR approval.
-# On main: an OWNER-written "@claude ..." comment on PR #549 is the sole inference trigger.
-# Push/PR events below validate configuration only (no model calls, no surprise spend).
-name: Claude Code — Skyrim gated reviewer
+# Owner-triggered Claude Code review with read-only Composio GitHub MCP.
+# This workflow is configuration-only. No model calls from PR checks or branch pushes.
+name: Claude Code — Skyrim + Composio MCP
 
 on:
   issue_comment:
@@ -9,9 +8,11 @@ on:
   pull_request_review_comment:
     types: [created]
   push:
-    branches: [feat/claude-code-action-skyrim]
+    branches: [feat/claude-composio-mcp-bridge]
     paths:
       - .github/workflows/claude-skyrim.yml
+      - scripts/claude-composio-mcp.mjs
+      - scripts/claude-composio-mcp.test.mjs
       - docs/claude-skyrim-action.md
   pull_request:
     types: [opened, synchronize, reopened]
@@ -20,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: claude-skyrim-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  group: claude-composio-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -28,49 +29,63 @@ jobs:
     if: >-
       github.actor == 'quantdeus' &&
       (
-        (github.event_name == 'push' && github.ref == 'refs/heads/feat/claude-code-action-skyrim') ||
-        (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/claude-code-action-skyrim') ||
+        (github.event_name == 'push' && github.ref == 'refs/heads/feat/claude-composio-mcp-bridge') ||
+        (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/claude-composio-mcp-bridge') ||
         (github.event_name == 'issue_comment' && github.event.issue.number == 549 && startsWith(github.event.comment.body, '@claude')) ||
         (github.event_name == 'pull_request_review_comment' && github.event.pull_request.number == 549 && startsWith(github.event.comment.body, '@claude'))
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     outputs:
-      has_api: ${{ steps.auth.outputs.has_api }}
+      has_claude: ${{ steps.auth.outputs.has_claude }}
       has_oauth: ${{ steps.auth.outputs.has_oauth }}
+      has_composio: ${{ steps.auth.outputs.has_composio }}
+      has_identity: ${{ steps.auth.outputs.has_identity }}
     steps:
-      - name: Detect configured authentication without printing credentials
+      - name: Checkout workflow configuration for unit tests
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test static Composio MCP gate without network or inference
+        run: node --test scripts/claude-composio-mcp.test.mjs
+      - name: Verify authorization presence (never expose values)
         id: auth
         env:
           API_SET: ${{ secrets.ANTHROPIC_API_KEY != '' }}
           OAUTH_SET: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+          COMPOSIO_SET: ${{ secrets.COMPOSIO_API_KEY != '' }}
+          USER_SET: ${{ secrets.COMPOSIO_USER_ID != '' }}
         run: |
-          echo "has_api=$API_SET" >> "$GITHUB_OUTPUT"
-          echo "has_oauth=$OAUTH_SET" >> "$GITHUB_OUTPUT"
-          if [[ "$OAUTH_SET" == "true" ]]; then
-            echo "Claude OAuth secret detected; OAuth is preferred."
-          elif [[ "$API_SET" == "true" ]]; then
-            echo "Anthropic API secret detected."
+          if [[ "$API_SET" == "true" || "$OAUTH_SET" == "true" ]]; then
+            echo "has_claude=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning title=Claude authentication missing::Install official Claude GitHub App and configure CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY as a repository Actions secret."
+            echo "has_claude=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "Gate verified: owner-only, PR #549, explicit @claude, no bot triggers."
+          echo "has_oauth=$OAUTH_SET" >> "$GITHUB_OUTPUT"
+          echo "has_composio=$COMPOSIO_SET" >> "$GITHUB_OUTPUT"
+          echo "has_identity=$USER_SET" >> "$GITHUB_OUTPUT"
+          if [[ "$COMPOSIO_SET" != "true" || "$USER_SET" != "true" ]]; then
+            echo "::warning title=Composio MCP not configured::Add COMPOSIO_API_KEY and COMPOSIO_USER_ID repository Actions secrets to reuse the connected GitHub account."
+          fi
+          if [[ "$API_SET" != "true" && "$OAUTH_SET" != "true" ]]; then
+            echo "::warning title=Claude authentication missing::Add CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY. Composio is the tool bridge, not the model-inference credential."
+          fi
+          echo "Owner-only trigger gate passed for Skyrim PR #549."
 
   missing-auth:
     needs: preflight
     if: >-
       needs.preflight.result == 'success' &&
       (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
-      needs.preflight.outputs.has_oauth != 'true' &&
-      needs.preflight.outputs.has_api != 'true'
+      (needs.preflight.outputs.has_claude != 'true' ||
+       needs.preflight.outputs.has_composio != 'true' ||
+       needs.preflight.outputs.has_identity != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    permissions:
-      contents: read
     steps:
-      - name: Explain missing Claude credential
+      - name: Fail closed before any Claude or Composio invocation
         run: |
-          echo "::error title=Claude is not yet authorized::Add CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY under Settings → Secrets and variables → Actions, and install https://github.com/apps/claude for this repository."
+          echo "::error title=Claude + Composio MCP auth incomplete::Requires COMPOSIO_API_KEY, COMPOSIO_USER_ID and either CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY. Confirm existing GitHub OAuth connection in the matching Composio account."
           exit 1
 
   claude-review:
@@ -78,41 +93,68 @@ jobs:
     if: >-
       needs.preflight.result == 'success' &&
       (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
-      (needs.preflight.outputs.has_oauth == 'true' || needs.preflight.outputs.has_api == 'true')
+      needs.preflight.outputs.has_claude == 'true' &&
+      needs.preflight.outputs.has_composio == 'true' &&
+      needs.preflight.outputs.has_identity == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 18
     permissions:
       contents: read
       issues: write
       pull-requests: write
-      id-token: write
       actions: read
+      id-token: write
     steps:
-      - name: Check out target Skyrim feature branch
+      - name: Checkout secure MCP bridge configuration from main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Checkout Skyrim game branch separately for review
         uses: actions/checkout@v4
         with:
           ref: feat/skyrim-mobile-webgl-500mb
+          path: review-target
           persist-credentials: false
           fetch-depth: 1
+      - name: Install Composio session SDK
+        run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund '@composio/core@^0.19.1'
+      - name: Create restricted Composio GitHub MCP session
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_USER_ID: ${{ secrets.COMPOSIO_USER_ID }}
+          COMPOSIO_GITHUB_ACCOUNT_ID: ${{ secrets.COMPOSIO_GITHUB_ACCOUNT_ID }}
+        run: node scripts/claude-composio-mcp.mjs
 
-      - name: Review via Claude Code (OAuth, preferred)
+      - name: Claude review using Composio MCP (OAuth)
         if: needs.preflight.outputs.has_oauth == 'true'
         uses: anthropics/claude-code-action@v1
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           trigger_phrase: '@claude'
-          base_branch: feat/skyrim-mobile-webgl-500mb
           claude_args: |
             --max-turns 6
+            --allowedTools "mcp__composio-github__GITHUB_GET_ISSUE"
             --disallowedTools "Edit,Write,MultiEdit,Bash"
+            --append-system-prompt "Review ONLY the Skyrim files under review-target/projects/skyrim-mobile/. Call Composio GitHub MCP GITHUB_GET_ISSUE to read issue 548 for requirements. Report specific findings on PR 549. Never edit, merge, deploy, or reveal session info."
 
-      - name: Review via Claude Code (Anthropic API fallback)
-        if: needs.preflight.outputs.has_oauth != 'true' && needs.preflight.outputs.has_api == 'true'
+      - name: Claude review using Composio MCP (API fallback)
+        if: needs.preflight.outputs.has_oauth != 'true'
         uses: anthropics/claude-code-action@v1
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: '@claude'
-          base_branch: feat/skyrim-mobile-webgl-500mb
           claude_args: |
             --max-turns 6
+            --allowedTools "mcp__composio-github__GITHUB_GET_ISSUE"
             --disallowedTools "Edit,Write,MultiEdit,Bash"
+            --append-system-prompt "Review ONLY the Skyrim files under review-target/projects/skyrim-mobile/. Call Composio GitHub MCP GITHUB_GET_ISSUE to read issue 548 for requirements. Report specific findings on PR 549. Never edit, merge, deploy, or reveal session info."
+
+      - name: Remove temporary MCP descriptor from runner workspace
+        if: always()
+        run: rm -f .mcp.json
