@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Pay — Manual Sberbank Transfers
  * Description: Administrator-issued private invoices; client payment claims are never proof of payment.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Requires PHP: 8.1
  */
 if (!defined('ABSPATH')) exit;
@@ -11,6 +11,7 @@ final class QD_Pay {
     private const TYPE = 'qd_pay_invoice';
     private const PHONE = '+79209869904';
     private const BANK = 'Сбербанк';
+    private const AUTOMATION_PRICE_KOPECKS = 2500000; // 25 000 RUB, fixed server side
     private const STATES = [
         'draft'=>'Черновик', 'issued'=>'Ожидает перевода',
         'claimed'=>'Покупатель сообщил о переводе',
@@ -24,6 +25,8 @@ final class QD_Pay {
         add_action('save_post_'.self::TYPE, [self::class, 'save']);
         add_action('admin_post_qd_pay_claim', [self::class, 'claim']);
         add_action('admin_post_nopriv_qd_pay_claim', [self::class, 'claim']);
+        add_action('admin_post_qd_pay_auto_invoice', [self::class, 'auto_invoice']);
+        add_action('admin_post_nopriv_qd_pay_auto_invoice', [self::class, 'auto_invoice']);
         add_action('template_redirect', [self::class, 'privacy'], 0);
     }
 
@@ -53,6 +56,7 @@ final class QD_Pay {
             'capabilities'=>$caps, 'map_meta_cap'=>false
         ]);
         add_shortcode('quantdeus_pay', [self::class, 'render']);
+        add_shortcode('quantdeus_pay_automation', [self::class, 'buy_form']);
     }
 
     private static function token(int $id): string {
@@ -87,6 +91,9 @@ final class QD_Pay {
             echo '<p>Название услуги задаётся заголовком записи. Не вводите данные клиента.</p>';
             echo '<p><label for="qd_pay_amount">Сумма, ₽</label><br><input required id="qd_pay_amount" name="qd_pay_amount" type="text" inputmode="decimal" value="'.esc_attr($value ? number_format($value/100,2,'.','') : '').'" '.($locked?'readonly ':'').'></p>';
             echo '<p>После выставления сумма блокируется. Для изменения создайте новый счёт.</p>';
+            if ($status === 'draft') {
+                echo '<p><label><input type="checkbox" name="qd_pay_own_service" value="1"> Подтверждаю: этот счёт выставляется за мою собственную услугу, допустимую на НПД, а не за концерт/услугу третьего лица.</label></p>';
+            }
             echo '<p><label for="qd_pay_buyer_kind">Тип плательщика для чека НПД</label><br><select id="qd_pay_buyer_kind" name="qd_pay_buyer_kind" '.($locked ? 'disabled ' : '').'>';
             foreach (['individual'=>'Физическое лицо (НПД 4%)','business'=>'ИП или организация (НПД 6%)'] as $k=>$label) {
                 echo '<option value="'.esc_attr($k).'"'.selected($buyer,$k,false).'>'.esc_html($label).'</option>';
@@ -131,6 +138,10 @@ final class QD_Pay {
         ];
         $state = in_array($requested, $transitions[$prior] ?? [], true) ? $requested : $prior;
         if (!$sum && !in_array($state, ['draft','cancelled'], true)) $state = 'draft';
+        // Never issue manual NPD invoices without explicit seller acknowledgement.
+        if ($prior === 'draft' && $state === 'issued' && (!isset($_POST['qd_pay_own_service']) || $_POST['qd_pay_own_service'] !== '1')) {
+            $state = 'draft';
+        }
         update_post_meta($id, '_qd_pay_kopecks', $sum);
         update_post_meta($id, '_qd_pay_state', $state);
         // Once issued, buyer category is locked to avoid incorrect NPD tax-rate classification.
@@ -176,6 +187,57 @@ final class QD_Pay {
         }
     }
 
+    public static function buy_form(): string {
+        // This self-service flow is only for QuantDeus' own automation service.
+        // It does not initiate a bank debit, issue a fiscal receipt or accept Ksenia booking payments.
+        $nonce = wp_nonce_field('qd_pay_auto_invoice', 'qd_pay_auto_nonce', true, false);
+        return '<section class="qd-pay-offer" style="padding:20px;margin:18px 0;border-radius:18px;background:linear-gradient(125deg,#e3faff,#eafef3);border:1px solid #a9dcec;color:#16394d">'
+            .'<h3>QuantDeus Pay · Автоматизация бизнеса</h3>'
+            .'<p style="font-size:clamp(1.5rem,4vw,2rem);font-weight:800;margin:10px 0">25 000 ₽</p>'
+            .'<p>Персональный счёт выставляется на фиксированную сумму 25 000 ₽. После согласования объёма услуги оплату можно отправить по номеру Сбербанка; получение денег проверяется вручную, чек формирует самозанятый через «Мой налог».</p>'
+            .'<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">'
+            .'<input type="hidden" name="action" value="qd_pay_auto_invoice">'.$nonce
+            .'<label style="display:block;margin-bottom:10px"><input type="checkbox" name="qd_pay_terms" value="1" required> Понимаю, что счёт не списывает деньги автоматически; объём и сроки работ согласовываются перед переводом.</label>'
+            .'<label style="display:block;margin-bottom:10px"><input type="checkbox" name="qd_pay_individual" value="1" required> Оплачиваю как физическое лицо. Для ИП и организаций счёт оформляется через заявку с ИНН и реквизитами заказчика.</label>'
+            .'<label style="position:absolute;left:-9999px">Сайт<input type="text" name="qd_pay_website" autocomplete="off" tabindex="-1"></label>'
+            .'<button type="submit" style="padding:14px 22px;border:0;border-radius:12px;background:#137dbd;color:#fff;font-weight:750;cursor:pointer">Получить счёт на 25 000 ₽</button>'
+            .'</form></section>';
+    }
+
+    public static function auto_invoice(): void {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            wp_die('Method not allowed', '', ['response'=>405]);
+        }
+        $nonce = isset($_POST['qd_pay_auto_nonce']) && is_string($_POST['qd_pay_auto_nonce'])
+            ? sanitize_text_field(wp_unslash($_POST['qd_pay_auto_nonce'])) : '';
+        if (!wp_verify_nonce($nonce, 'qd_pay_auto_invoice')) wp_die('Invalid request', '', ['response'=>403]);
+        if (!isset($_POST['qd_pay_terms']) || $_POST['qd_pay_terms'] !== '1') wp_die('Confirm invoice terms', '', ['response'=>400]);
+        if (!isset($_POST['qd_pay_individual']) || $_POST['qd_pay_individual'] !== '1') wp_die('Self-service invoicing is available only to individuals; businesses must submit an inquiry.', '', ['response'=>400]);
+        if (!empty($_POST['qd_pay_website'])) wp_die('Request rejected', '', ['response'=>400]);
+        $ip = isset($_SERVER['REMOTE_ADDR']) && is_string($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+        $key = 'qd_pay_public_issue_'.substr(hash_hmac('sha256', $ip, wp_salt('auth')),0,32);
+        $count = (int)get_transient($key);
+        if ($count >= 3) wp_die('Слишком много счетов. Напишите администрации QuantDeus.', '', ['response'=>429]);
+        set_transient($key, $count + 1, 30*MINUTE_IN_SECONDS);
+        // Prices and seller status are server-controlled. No public form accepts an arbitrary amount,
+        // service id, private payer identity or payment status.
+        $id = wp_insert_post([
+            'post_type'=>self::TYPE, 'post_status'=>'publish',
+            'post_author'=>0, 'post_title'=>'Автоматизация бизнеса · базовая услуга',
+            'post_content'=>'',
+        ], true);
+        if (is_wp_error($id) || (int)$id < 1) wp_die('Invoice creation failed', '', ['response'=>503]);
+        $id = (int)$id;
+        update_post_meta($id, '_qd_pay_kopecks', self::AUTOMATION_PRICE_KOPECKS);
+        update_post_meta($id, '_qd_pay_state', 'issued');
+        update_post_meta($id, '_qd_pay_buyer_kind', 'individual');
+        update_post_meta($id, '_qd_pay_origin', 'public_automation_checkout');
+        $token = self::token($id);
+        nocache_headers();
+        wp_safe_redirect(add_query_arg('qd_invoice', $token, home_url('/pay/')), 303);
+        exit;
+    }
+
     public static function render(): string {
         $token = isset($_GET['qd_invoice']) && is_string($_GET['qd_invoice'])
             ? sanitize_text_field(wp_unslash($_GET['qd_invoice'])) : '';
@@ -184,7 +246,9 @@ final class QD_Pay {
             return '<section style="max-width:720px;margin:28px auto;padding:30px;border:1px solid #a9dcec;border-radius:22px;background:linear-gradient(135deg,#e8fbff,#f5fbff,#e6f9ec);color:#133d55">'
                 .'<h2>QuantDeus Pay · Оплата по счёту</h2>'
                 .'<p>Для оплаты потребуется персональная ссылка на счёт с точной суммой и назначением. Её выдаёт администратор QuantDeus после согласования услуги.</p>'
-                .'<p><a href="'.esc_url(home_url('/services/')).'">Выбрать услугу и запросить счёт →</a></p>'
+                .'<p><a href="'.esc_url(home_url('/services/')).'">Посмотреть услуги QuantDeus →</a></p>'
+                .self::buy_form()
+                .'<p>Выступление Ксении Чередниковой: 50 000 ₽, оплата оформляется отдельно с исполнительницей после подтверждения условий. <a href="'.esc_url(home_url('/services/ksenia-concert/')).'">Отправить заявку на выступление →</a></p>'
                 .'<p style="font-size:.9rem">Перевод в Сбербанк подтверждается вручную. Чек самозанятого оформляется через ФНС «Мой налог».</p></section>';
         }
         if (!$post) return '<section class="qd-pay">Эта ссылка на счёт недействительна или счёт закрыт. Запросите новую ссылку у QuantDeus.</section>';
