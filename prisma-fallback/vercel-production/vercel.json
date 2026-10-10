@@ -1,0 +1,39 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/quantdeus/hermes.js": {
+      "maxDuration": 300
+    },
+    "api/quantdeus/openclaw.js": {
+      "maxDuration": 300
+    },
+    "api/quantdeus/mirror.js": {
+      "maxDuration": 300
+    },
+    "api/**/*.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/quantdeus/bingx-vst-signal",
+      "destination": "/api/quantdeus/openclaw?qd_route=bingx-vst-signal"
+    },
+    {
+      "source": "/api/quantdeus/bingx-vst-private-broker",
+      "destination": "/api/quantdeus/openclaw?qd_route=bingx-vst-private-broker"
+    },
+    {
+      "source": "/api/quantdeus/bingx-vst-auth-smoke",
+      "destination": "/api/quantdeus/openclaw?qd_route=bingx-vst-auth-smoke"
+    },
+    {
+      "source": "/api/quantdeus/bingx-vst-mcp",
+      "destination": "/api/quantdeus/openclaw?qd_route=bingx-vst-mcp"
+    },
+    {
+      "source": "/:path((?!api/).*)",
+      "destination": "https://quantdeus.whf.bz/:path*"
+    }
+  ]
+}
