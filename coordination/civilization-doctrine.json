@@ -135,7 +135,7 @@
     "privileged-human-approval-checked"
   ],
   "cron_policy": {
-    "applies_to": "all scheduled QuantDeus workflows and all 26 registered agents",
+    "applies_to": "all scheduled QuantDeus workflows and all 27 registered agents",
     "required_check": "node scripts/mission-alignment.js",
     "objective": "За каждый цикл находить главное ограничение, выбирать действия с максимальным отношением ожидаемый эффект / стоимость / время / риск и оставлять проверяемый полезный артефакт.",
     "minimum_cycle": [
@@ -285,7 +285,7 @@
       "bio": "качество и продолжительность человеческой жизни: open research mapping, профилактические/реабилитационные исследования и bounties без неподтверждённых медицинских обещаний",
       "eco": "восстановление среды и локальная устойчивость: data maps, малые измеримые пилоты и восстановительные проекты"
     },
-    "note": "Шесть execution lenses — действующая архитектура 26 агентов; пять manifest programs — долгосрочные программные контуры. Они дополняют, а не заменяют друг друга."
+    "note": "Шесть execution lenses — действующая архитектура 27 агентов; пять manifest programs — долгосрочные программные контуры. Они дополняют, а не заменяют друг друга."
   },
   "action_economy": {
     "principle": "меньше обещаний, больше проверяемых модулей",
