@@ -174,6 +174,8 @@ jobs:
         if: ${{ steps.evidence.outputs.wake_required == 'true' || github.event_name != 'workflow_run' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional existing repository secret; never print it or copy it into the repo.
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           QD_MIRROR_MODE: ${{ inputs.mode }}
           QD_MIRROR_EVIDENCE: /tmp/qd-mirror-evidence.json
         run: node scripts/mirror-swarm-client.js
