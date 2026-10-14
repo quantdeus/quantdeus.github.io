@@ -2,7 +2,7 @@ name: QuantDeus Agent Role Cron 🧬
 
 on:
   schedule:
-    - cron: '23 0-17 * * *'
+    - cron: '23 0-15 * * *'
   workflow_dispatch:
     inputs:
       agent_id:
@@ -61,6 +61,7 @@ jobs:
           const registry = JSON.parse(fs.readFileSync('coordination/agents.json','utf8'));
           const byId = new Map(registry.agents.map(a => [a.id,a]));
           const manual = String(process.env.INPUT_AGENT_ID || '').trim();
+          if (manual === 'q' || manual === 'kryon') throw new Error('Q/Kryon run via q-kryon-github-native.yml (Vercel disabled for these agents)');
           const explicitIssue = String(process.env.INPUT_ISSUE_NUMBER || '').trim();
           const hour = new Date().getUTCHours();
           const due = manual
