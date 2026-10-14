@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
-// Kryon's execution profile is dispatched through agent-role-cron.yml and the
-// canonical OpenClaw/Hermes agent registry. This CLI exposes its bounded brief.
+// Kryon's execution profile is scouted through q-kryon-github-native.yml and the
+// canonical GitHub agent registry. This CLI exposes its bounded brief.
 const fs = require('fs');
 const path = require('path');
 
@@ -15,7 +15,7 @@ function brief(task = '') {
     mission: 'Turn shared human-centered vision into a voluntary measurable collaboration.',
     output: ['shared_purpose', 'stakeholder_positions', 'two_noncoercive_options', 'consent_and_exit', 'one_measured_next_step'],
     rules: ['symbolic ideas are not evidence', 'no mind-reading', 'one task owner', 'human override', 'QA review'],
-    dispatcher: '.github/workflows/agent-role-cron.yml'
+    dispatcher: '.github/workflows/q-kryon-github-native.yml'
   };
 }
 if (require.main === module) console.log(JSON.stringify(brief(process.argv.slice(2).join(' ')), null, 2));

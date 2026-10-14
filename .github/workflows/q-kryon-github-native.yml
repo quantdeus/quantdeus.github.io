@@ -1,0 +1,58 @@
+name: QuantDeus Q + Kryon Native Recon 🃏✨
+
+on:
+  schedule:
+    - cron: '23 16 * * *'
+    - cron: '23 17 * * *'
+  workflow_dispatch:
+    inputs:
+      agent_id:
+        description: 'Run one scout or both'
+        type: choice
+        required: true
+        default: both
+        options:
+          - both
+          - q
+          - kryon
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/q-kryon-github-native.yml'
+      - 'scripts/q-kryon-github-native.js'
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: quantdeus-q-kryon-native-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-recon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate QuantDeus shared mission
+        run: node scripts/mission-alignment.js
+      - name: Read real GitHub Issues and PRs without Vercel
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_ID: ${{ inputs.agent_id || 'both' }}
+          GITHUB_SCHEDULE: ${{ github.event.schedule }}
+        run: node scripts/q-kryon-github-native.js
+      - name: Preserve read-only evidence artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: q-kryon-native-recon-${{ github.run_id }}
+          path: artifacts/native-agent-evidence/*.md
+          if-no-files-found: error
+          retention-days: 14

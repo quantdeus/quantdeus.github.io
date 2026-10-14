@@ -500,7 +500,7 @@ check(
   'legacy PicoClaw cron set is mapped with positronic migration and local anti-noise exclusion'
 );
 
-const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml','data-positronic-cycle.yml','bingx-vst-signal.yml']);
+const scheduledMissionWorkflows = new Set(['agent-health-daily.yml','quantdeus-coordinator.yml','quantdeus-pulse.yml','contributor-growth.yml','qa-triad.yml','telegram-bot.yml','quantdeus-hourly-openclaw.yml','qa-self-heal.yml','agent-role-cron.yml','q-kryon-github-native.yml','seven-priority-cycle.yml','news-manifest-cycle.yml','growth-site-cycle.yml','openclaw-evolution.yml','qa-failure-radar.yml','data-positronic-cycle.yml','bingx-vst-signal.yml']);
 for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
   const text = fs.readFileSync(path.join(workflowDir,name),'utf8');
   const crons = [...text.matchAll(/cron:\s*['"]([^'"]+)['"]/g)].map(m=>m[1]);
@@ -527,7 +527,9 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
           (parts[0] === '*/15' || parts[0] === '2,17,32,47');
         check(approvedVstCadence, name, 'BingX VST guarded autotrade uses an approved 15-minute cadence: '+cron);
       } else if (name === 'agent-role-cron.yml') {
-        check(parts[0] === '23' && parts[1] === '0-17', name, 'role cron uses the expanded daily hourly window: '+cron);
+        check(parts[0] === '23' && parts[1] === '0-15', name, 'role cron uses the daily 00-15 UTC window: '+cron);
+      } else if (name === 'q-kryon-github-native.yml') {
+        check(parts[0] === '23' && ['16','17'].includes(parts[1]), name, 'native agents use 16:23/17:23 UTC with GitHub-only credentials: '+cron);
       } else if (name === 'seven-priority-cycle.yml') {
         check(parts[0] === '11' && parts[1] === '*/2', name, 'Seven priority cycle uses the approved two-hour cadence: '+cron);
       } else if (name === 'news-manifest-cycle.yml') {

@@ -355,7 +355,7 @@
       "id": "q",
       "department": "Science & R&D",
       "title": "Q / Anomaly & Possibility Officer",
-      "workflow": "agent-role-cron.yml",
+      "workflow": "q-kryon-github-native.yml",
       "cadence": "daily",
       "utc_hours": [
         16
@@ -367,7 +367,7 @@
       "id": "kryon",
       "department": "Executive & Strategy",
       "title": "Kryon / Harmony & Long-Horizon Officer",
-      "workflow": "agent-role-cron.yml",
+      "workflow": "q-kryon-github-native.yml",
       "cadence": "daily",
       "utc_hours": [
         17
