@@ -112,4 +112,28 @@ test('Q and Kryon create traceable issue-based analyses without model or server 
  }
 });
 
-console.log('Q_KRYON_SMOKE_PASS: native GitHub evidence logic tested; no LLM execution asserted.');
+test('OpenClaw GitHub Actions boots canonical Q/Kryon profiles, never Vercel',()=>{
+ const wf=read('.github/workflows/q-kryon-github-native.yml');
+ const runner=read('scripts/q-kryon-openclaw.js');
+ assert.ok(wf.includes('npm i -g openclaw@latest'));
+ assert.ok(wf.includes('openclaw agents add "$id"'));
+ assert.ok(wf.includes('openclaw agent --local --agent "$id"'));
+ assert.ok(wf.includes('node scripts/q-kryon-openclaw.js verify "$id"'));
+ assert.ok(wf.includes('OPENROUTER_API_KEY'));
+ assert.ok(!wf.includes('OPENCLAW_VERCEL_URL'));
+ assert.ok(!wf.includes('vercel-dispatcher'));
+ assert.ok(!wf.includes('id-token: write'));
+ assert.ok(runner.includes('SOUL.md'));
+ assert.ok(runner.includes('raw-result.json'));
+ assert.ok(runner.includes('openclaw_executed:true'));
+});
+
+test('OpenClaw real-output verifier refuses blank, failed and fake envelopes',()=>{
+ const {payloadText}=require('../q-kryon-openclaw.js');
+ assert.equal(payloadText({}), '');
+ assert.equal(payloadText({result:{payloads:[]}}), '');
+ assert.equal(payloadText({result:{payloads:[{text:'verified real text'}]}}),'verified real text');
+ assert.equal(payloadText({final:'last reply'}),'last reply');
+});
+
+console.log('Q_KRYON_SMOKE_PASS: native GitHub + real OpenClaw integration contracts tested; LLM verified separately.');
