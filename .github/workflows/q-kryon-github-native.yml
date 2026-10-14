@@ -20,6 +20,9 @@ on:
     paths:
       - '.github/workflows/q-kryon-github-native.yml'
       - 'scripts/q-kryon-github-native.js'
+      - 'scripts/q-kryon-openclaw.js'
+      - 'coordination/q-persona.md'
+      - 'coordination/kryon-persona.md'
 
 permissions:
   contents: read
@@ -33,7 +36,7 @@ concurrency:
 jobs:
   native-recon:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 19
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,10 +52,95 @@ jobs:
           AGENT_ID: ${{ inputs.agent_id || 'both' }}
           GITHUB_SCHEDULE: ${{ github.event.schedule }}
         run: node scripts/q-kryon-github-native.js
+      - name: Install actual OpenClaw CLI on GitHub runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm i -g openclaw@latest --allow-scripts=openclaw
+          openclaw --version
+
+      - name: Register Q + Kryon as isolated OpenClaw agent profiles
+        shell: bash
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AGENT_ID: ${{ inputs.agent_id || 'both' }}
+          GITHUB_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          set -euo pipefail
+          export OPENCLAW_HOME="$RUNNER_TEMP/quantdeus-openclaw"
+          export OPENCLAW_STATE_DIR="$OPENCLAW_HOME/state"
+          if [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
+            openclaw onboard --non-interactive --accept-risk --skip-health --skip-daemon --skip-skills --skip-channels --skip-hooks --auth-choice openrouter-api-key --secret-input-mode ref
+          else
+            openclaw setup --baseline
+          fi
+          case "${GITHUB_EVENT_NAME:-}" in
+            schedule)
+              case "$GITHUB_SCHEDULE" in
+                '23 16 * * *') ids=(q) ;;
+                '23 17 * * *') ids=(kryon) ;;
+                *) echo "::error::Unknown native OpenClaw schedule"; exit 1 ;;
+              esac ;;
+            *)
+              case "$AGENT_ID" in
+                q) ids=(q) ;;
+                kryon) ids=(kryon) ;;
+                both) ids=(q kryon) ;;
+                *) echo "::error::Unknown native OpenClaw agent request"; exit 1 ;;
+              esac ;;
+          esac
+          for id in "${ids[@]}"; do
+            node scripts/q-kryon-openclaw.js prepare "$id"
+            openclaw agents add "$id" --workspace "$PWD/artifacts/openclaw-native/$id" --model openrouter/openrouter/free --non-interactive --json
+          done
+          openclaw agents list --json > artifacts/openclaw-native/registered-agents.json
+          node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync("artifacts/openclaw-native/registered-agents.json"));const t=JSON.stringify(d);for(const id of process.argv.slice(1)){if(!new RegExp("\\b"+id+"\\b").test(t))throw Error("OpenClaw agent absent: "+id)}console.log("REAL_OPENCLAW_PROFILES_REGISTERED",process.argv.slice(1).join(","))' "${ids[@]}"
+
+      - name: Execute real OpenClaw model turns (no Vercel)
+        shell: bash
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AGENT_ID: ${{ inputs.agent_id || 'both' }}
+          GITHUB_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          set -euo pipefail
+          export OPENCLAW_HOME="$RUNNER_TEMP/quantdeus-openclaw"
+          export OPENCLAW_STATE_DIR="$OPENCLAW_HOME/state"
+          case "${GITHUB_EVENT_NAME:-}" in
+            schedule)
+              case "$GITHUB_SCHEDULE" in
+                '23 16 * * *') ids=(q) ;;
+                '23 17 * * *') ids=(kryon) ;;
+                *) exit 1 ;;
+              esac ;;
+            *)
+              case "$AGENT_ID" in
+                q) ids=(q) ;;
+                kryon) ids=(kryon) ;;
+                both) ids=(q kryon) ;;
+                *) exit 1 ;;
+              esac ;;
+          esac
+          if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+            echo "::warning::OPENROUTER_API_KEY secret missing; OpenClaw profiles installed but NO model turns executed"
+            for id in "${ids[@]}"; do
+              printf '{"ok":false,"openclaw_executed":false,"agent_id":"%s","reason":"missing_OPENROUTER_API_KEY"}\n' "$id" > "artifacts/openclaw-native/$id/status.json"
+            done
+            echo "### OpenClaw native profiles registered; model turn BLOCKED (missing secret)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          for id in "${ids[@]}"; do
+            openclaw agent --local --agent "$id" --model openrouter/openrouter/free --message-file "$PWD/artifacts/openclaw-native/$id/TASK.md" --json > "artifacts/openclaw-native/$id/raw-result.json"
+            node scripts/q-kryon-openclaw.js verify "$id"
+          done
+
       - name: Preserve read-only evidence artifacts
         uses: actions/upload-artifact@v4
         with:
           name: q-kryon-native-recon-${{ github.run_id }}
-          path: artifacts/native-agent-evidence/*.md
+          path: |
+            artifacts/native-agent-evidence/*.md
+            artifacts/openclaw-native/**
           if-no-files-found: error
           retention-days: 14
+        if: always()
