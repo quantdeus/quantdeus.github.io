@@ -135,7 +135,7 @@
     "privileged-human-approval-checked"
   ],
   "cron_policy": {
-    "applies_to": "all scheduled QuantDeus workflows and all 26 registered agents",
+    "applies_to": "all scheduled QuantDeus workflows and all 29 registered agents",
     "required_check": "node scripts/mission-alignment.js",
     "objective": "За каждый цикл находить главное ограничение, выбирать действия с максимальным отношением ожидаемый эффект / стоимость / время / риск и оставлять проверяемый полезный артефакт.",
     "minimum_cycle": [
@@ -462,7 +462,7 @@
   },
   "agent_cron": {
     "registry": "coordination/agent-cron-map.json",
-    "policy": "Every one of the 27 registered agents has an explicit role-driven cron owner; specialized cycles may run more frequently than daily.",
+    "policy": "Every one of the 29 registered agents has an explicit role-driven cron owner; specialized cycles may run more frequently than daily.",
     "orchestration": "Seven of Nine selects at most one bounded priority action every two hours from Actions, PRs, Issues, public community evidence and manifesto commitments."
   },
   "horizon_architecture": {
