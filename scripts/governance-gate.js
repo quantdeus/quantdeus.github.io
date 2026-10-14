@@ -89,6 +89,8 @@ function ensureLabels() {
     ['agent:qa-syntax','0e8a16','Target: QA Syntax Validator'],
     ['agent:qa-contract','0e8a16','Target: QA Contract Validator'],
     ['agent:qa-repair','d93f0b','Target: QA Repair Coordinator'],
+    ['agent:q','55d8ff','Target: Q / Anomaly & Possibility Officer'],
+    ['agent:kryon','55d8ff','Target: Kryon / Harmony & Long-Horizon Officer'],
     ['qa:repair','d93f0b','QA detected a repair requirement'],
     ['squad-b:ready','2da44e','Ready for Octet Squad B execution'],
     ['squad-b:active','bf8700','Octet Squad B is executing'],
