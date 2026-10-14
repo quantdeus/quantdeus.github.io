@@ -41,7 +41,7 @@ for (const role of roles) {
   assert.equal(a.persona,role.persona);
   assert.equal(h.command,'/agent '+role.id);
   assert.equal(h.proposal_command,'/propose '+role.id);
-  assert.equal(c.workflow,'agent-role-cron.yml');
+  assert.equal(c.workflow,'q-kryon-github-native.yml');
   assert.deepEqual(c.utc_hours,[role.hour]);
   assert.equal(c.operational_status,'active');
   assert.equal(agents.filter(a=>a.id===role.id).length,1);
@@ -58,21 +58,31 @@ for (const role of roles) {
   assert.equal(response.agent_id,role.id);
   assert.equal(response.profile,role.id);
   assert.equal(response.task.length,4000);
-  assert.equal(response.dispatcher,'.github/workflows/agent-role-cron.yml');
+  assert.equal(response.dispatcher,'.github/workflows/q-kryon-github-native.yml');
   assert.deepEqual(response.output,role.output);
   assert.ok(response.rules.includes('human override'));
   assert.ok(response.rules.includes('QA review'));
  });
 }
 
-test('role workflow reserves independent 16/17 UTC slots and strict execution gates',()=>{
+test('old OpenClaw role workflow excludes Q/Kryon; GitHub native owns 16/17 UTC',()=>{
  const wf=read('.github/workflows/agent-role-cron.yml');
- assert.ok(wf.includes("cron: '23 0-17 * * *'"));
+ assert.ok(wf.includes("cron: '23 0-15 * * *'"));
  assert.ok(wf.includes('INPUT_AGENT_ID'));
  assert.ok(wf.includes('agent-role-cron.yml'));
  assert.ok(wf.includes("due.length > 1"));
  assert.ok(wf.includes("result.runtime!=='openclaw-agent-exec-trusted-tools'"));
  assert.ok(wf.includes('Do not merge your own PR'));
+ assert.ok(wf.includes("if (manual === 'q' || manual === 'kryon')"));
+ const native=read('.github/workflows/q-kryon-github-native.yml');
+ assert.ok(native.includes("cron: '23 16 * * *'"));
+ assert.ok(native.includes("cron: '23 17 * * *'"));
+ assert.ok(native.includes('node scripts/q-kryon-github-native.js'));
+ assert.ok(native.includes('node scripts/mission-alignment.js'));
+ assert.ok(native.includes('contents: read'));
+ assert.ok(native.includes('issues: read'));
+ assert.ok(!native.includes('OPENCLAW_VERCEL_URL'));
+ assert.ok(!native.includes('id-token: write'));
 });
 
 test('GitHub governance and Telegram carry both canonical agent commands',()=>{
@@ -84,4 +94,22 @@ test('GitHub governance and Telegram carry both canonical agent commands',()=>{
  assert.ok(tgrbac.includes('29 agents'));
 });
 
-console.log('Q_KRYON_SMOKE_PASS: static/executable contracts only; LLM runtime needs separate live execution.');
+test('Q and Kryon create traceable issue-based analyses without model or server calls',()=>{
+ const {buildReport}=require('../q-kryon-github-native.js');
+ const issues=[
+  {state:'open',number:42,title:'API outage error',html_url:'https://github.com/quantdeus/quantdeus.github.io/issues/42',labels:[{name:'priority'}],assignees:[]},
+  {state:'open',number:43,title:'Community contributor onboarding',html_url:'https://github.com/quantdeus/quantdeus.github.io/issues/43',labels:[{name:'community'}],assignees:[{login:'volunteer'}]},
+  {state:'open',number:44,title:'Normal issue',html_url:'https://github.com/quantdeus/quantdeus.github.io/issues/44',labels:[],assignees:[]}
+ ];
+ const q=buildReport('q',issues,[]);
+ const kryon=buildReport('kryon',issues,[]);
+ assert.equal(q.issue_number,42);
+ assert.equal(kryon.issue_number,43);
+ for(const result of [q,kryon]){
+   assert.match(result.markdown,/GitHub-native evidence scan/);
+   assert.match(result.markdown,/not executed/);
+   assert.match(result.markdown,/Changes performed: \*\*none\*\*/);
+ }
+});
+
+console.log('Q_KRYON_SMOKE_PASS: native GitHub evidence logic tested; no LLM execution asserted.');
