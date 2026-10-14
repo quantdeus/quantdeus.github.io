@@ -36,7 +36,7 @@ concurrency:
 jobs:
   native-recon:
     runs-on: ubuntu-latest
-    timeout-minutes: 19
+    timeout-minutes: 29
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,21 +59,37 @@ jobs:
           npm i -g openclaw@latest --allow-scripts=openclaw
           openclaw --version
 
+      - name: Install Ollama on GitHub runner (local keyless model API)
+        uses: ai-action/setup-ollama@v2
+        with:
+          version: '0.32.15'
+
+      - name: Start local LLM service and pull a small open model
+        shell: bash
+        run: |
+          set -euo pipefail
+          ollama serve > "$RUNNER_TEMP/quantdeus-ollama.log" 2>&1 &
+          for i in {1..40}; do
+            if curl --silent --fail http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --silent --show-error --fail http://127.0.0.1:11434/api/tags > /dev/null
+          ollama pull qwen2.5:1.5b
+          ollama list
+          test "$(ollama list | grep -c 'qwen2.5:1.5b')" -ge 1
+
       - name: Register Q + Kryon as isolated OpenClaw agent profiles
         shell: bash
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OLLAMA_API_KEY: ollama-local
           AGENT_ID: ${{ inputs.agent_id || 'both' }}
           GITHUB_SCHEDULE: ${{ github.event.schedule }}
         run: |
           set -euo pipefail
           export OPENCLAW_HOME="$RUNNER_TEMP/quantdeus-openclaw"
           export OPENCLAW_STATE_DIR="$OPENCLAW_HOME/state"
-          if [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
-            openclaw onboard --non-interactive --accept-risk --skip-health --skip-daemon --skip-skills --skip-channels --skip-hooks --auth-choice openrouter-api-key --secret-input-mode ref
-          else
-            openclaw setup --baseline
-          fi
+          openclaw setup --baseline
+          openclaw models list --provider ollama
           case "${GITHUB_EVENT_NAME:-}" in
             schedule)
               case "$GITHUB_SCHEDULE" in
@@ -91,7 +107,7 @@ jobs:
           esac
           for id in "${ids[@]}"; do
             node scripts/q-kryon-openclaw.js prepare "$id"
-            openclaw agents add "$id" --workspace "$PWD/artifacts/openclaw-native/$id" --model openrouter/openrouter/free --non-interactive --json
+            openclaw agents add "$id" --workspace "$PWD/artifacts/openclaw-native/$id" --model ollama/qwen2.5:1.5b --non-interactive --json
           done
           openclaw agents list --json > artifacts/openclaw-native/registered-agents.json
           node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync("artifacts/openclaw-native/registered-agents.json"));const t=JSON.stringify(d);for(const id of process.argv.slice(1)){if(!new RegExp("\\b"+id+"\\b").test(t))throw Error("OpenClaw agent absent: "+id)}console.log("REAL_OPENCLAW_PROFILES_REGISTERED",process.argv.slice(1).join(","))' "${ids[@]}"
@@ -99,7 +115,7 @@ jobs:
       - name: Execute real OpenClaw model turns (no Vercel)
         shell: bash
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OLLAMA_API_KEY: ollama-local
           AGENT_ID: ${{ inputs.agent_id || 'both' }}
           GITHUB_SCHEDULE: ${{ github.event.schedule }}
         run: |
@@ -121,16 +137,10 @@ jobs:
                 *) exit 1 ;;
               esac ;;
           esac
-          if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
-            echo "::warning::OPENROUTER_API_KEY secret missing; OpenClaw profiles installed but NO model turns executed"
-            for id in "${ids[@]}"; do
-              printf '{"ok":false,"openclaw_executed":false,"agent_id":"%s","reason":"missing_OPENROUTER_API_KEY"}\n' "$id" > "artifacts/openclaw-native/$id/status.json"
-            done
-            echo "### OpenClaw native profiles registered; model turn BLOCKED (missing secret)" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
+          echo "Using Ollama local API on GitHub Actions; external provider credentials not needed"
+          curl --silent --show-error --fail http://127.0.0.1:11434/api/tags > /dev/null
           for id in "${ids[@]}"; do
-            openclaw agent --local --agent "$id" --model openrouter/openrouter/free --message-file "$PWD/artifacts/openclaw-native/$id/TASK.md" --json > "artifacts/openclaw-native/$id/raw-result.json"
+            openclaw agent --local --agent "$id" --message "$(cat "artifacts/openclaw-native/$id/TASK.md")" --json > "artifacts/openclaw-native/$id/raw-result.json"
             node scripts/q-kryon-openclaw.js verify "$id"
           done
 
