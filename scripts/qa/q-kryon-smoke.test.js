@@ -119,7 +119,12 @@ test('OpenClaw GitHub Actions boots canonical Q/Kryon profiles, never Vercel',()
  assert.ok(wf.includes('openclaw agents add "$id"'));
  assert.ok(wf.includes('openclaw agent --local --agent "$id"'));
  assert.ok(wf.includes('node scripts/q-kryon-openclaw.js verify "$id"'));
- assert.ok(wf.includes('OPENROUTER_API_KEY'));
+ assert.ok(wf.includes('OLLAMA_API_KEY: ollama-local'));
+ assert.ok(wf.includes('ollama pull qwen2.5:1.5b'));
+ assert.ok(wf.includes('openclaw models list --provider ollama'));
+ assert.ok(wf.includes('--model ollama/qwen2.5:1.5b'));
+ assert.ok(!wf.includes('OPENROUTER_API_KEY'));
+ assert.ok(!wf.includes('openrouter'));
  assert.ok(!wf.includes('OPENCLAW_VERCEL_URL'));
  assert.ok(!wf.includes('vercel-dispatcher'));
  assert.ok(!wf.includes('id-token: write'));
