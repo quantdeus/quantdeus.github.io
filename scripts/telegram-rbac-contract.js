@@ -22,7 +22,7 @@ const checks = [
   ['Vercel router accepts direct slash role commands', /const direct = value\.match/],
   ['Vercel fast /agents path uses canonical registry', /async function fastPublicCommandReply[\s\S]*const data = await registry\(\)[\s\S]*agents\.map\(agent =>/],
   ['Vercel fast /agents path has no five-role hardcode', /fastPublicCommandReply[\s\S]*refreshRuntimeTelegramCommands\(agents\)/],
-  ['Vercel runtime command self-heal requires full 27-agent registry', /async function refreshRuntimeTelegramCommands\(agents = \[\]\)[\s\S]*agents\.length < 27/],
+  ['Vercel runtime command self-heal requires full 29-agent registry', /async function refreshRuntimeTelegramCommands\(agents = \[\]\)[\s\S]*agents\.length < 29/],
 ];
 
 let failed = false;
@@ -34,8 +34,8 @@ for (const [name, pattern] of checks) {
 }
 
 const ids = (agents.agents || []).map(a => a.id);
-const rosterOk = ids.length === 27 && ids.includes('data');
-console.log((rosterOk ? 'PASS' : 'FAIL') + ' — canonical Telegram roster is 27 agents including data');
+const rosterOk = ids.length === 29 && ids.includes('data');
+console.log((rosterOk ? 'PASS' : 'FAIL') + ' — canonical Telegram roster is 29 agents including data');
 failed ||= !rosterOk;
 
 const active = new Set(agents.agents.filter(a => a.operational_status !== 'medbay').map(a => a.id));
