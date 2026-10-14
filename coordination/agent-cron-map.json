@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-05",
+  "updated": "2026-10-14",
   "timezone": "UTC",
   "policy": {
     "source_of_truth": "coordination/agents.json",
@@ -350,6 +350,30 @@
         "data-positronic-cycle.yml"
       ],
       "legacy_cron_migration": "coordination/data-training/picoclaw-cron-migration.json"
+    },
+    {
+      "id": "q",
+      "department": "Science & R&D",
+      "title": "Q / Anomaly & Possibility Officer",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        16
+      ],
+      "mission": "Audit one assumption in a real active QuantDeus plan: construct 2-3 counterfactual scenarios, state a falsifier and the smallest reversible experiment; do not bypass safety or QA.",
+      "operational_status": "active"
+    },
+    {
+      "id": "kryon",
+      "department": "Executive & Strategy",
+      "title": "Kryon / Harmony & Long-Horizon Officer",
+      "workflow": "agent-role-cron.yml",
+      "cadence": "daily",
+      "utc_hours": [
+        17
+      ],
+      "mission": "Identify one grounded voluntary-cooperation or stakeholder-alignment opportunity for QuantDeus, distinguish symbolic language from evidence, and propose one consent-based measurable next step.",
+      "operational_status": "active"
     }
   ]
 }

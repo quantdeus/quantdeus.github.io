@@ -1,6 +1,6 @@
 # QuantDeus Daily Context Checkpoint
 
-- date: 2026-10-03
+- date: 2026-10-14
 - canonical_repo: `quantdeus/quantdeus.github.io`
 - canonical_branch: `main`
 - canonical_url: `https://quantdeus.whf.bz/`
@@ -14,13 +14,13 @@
 - active_language: `Russian UI; technical identifiers remain stable`
 - doctrine_version: `2026.10-neon-horizon-v4`
 - doctrine_source: `coordination/civilization-doctrine.json`
-- doctrine_inheritance: `all 26 registered agents`
-- collective_cognition: `borg-collective-v1 / all 26 agents / deduction + induction + abduction + emotional intelligence + prudence + anti-duplication handoff discipline`
+- doctrine_inheritance: `all 29 registered agents`
+- collective_cognition: `borg-collective-v1 / all 29 agents / deduction + induction + abduction + emotional intelligence + prudence + anti-duplication handoff discipline`
 - canonical_manifest_sources:
   - `Манифест Неонового Горизонта — QuantDeus v4.0 / Dropbox: /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf`
   - `Эпидемия Добра — 24-месячный план / Dropbox: QuantDeus_2Y_Epidemiya_Dobra_Cron.pdf`
 - adaptive_manifest: `coordination/manifesto-living.md / living-v1 / updated from evidence-backed world + Russia + science/technology/economic/community signals`
-- agent_cron_registry: `coordination/agent-cron-map.json / all 26 registered agents`
+- agent_cron_registry: `coordination/agent-cron-map.json / all 29 registered agents`
 - growth_platform_registry: `coordination/growth/platform-playbook.json / owned surfaces autopublish after QA; external platforms draft until authorized connector/account exists`
 - legacy_manifest_archive: `Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v2.0.pdf`
 - constitutional_motto: `Единство в цели. Свобода в путях. Доказательства в результатах.`
@@ -51,7 +51,7 @@
 - telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`
 - telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
-- native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.whf.bz / inherited by all 27 registered agents through trusted OpenClaw`
+- native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.whf.bz / inherited by all 29 registered agents through trusted OpenClaw`
 - wordpress_mcp_swarm_policy: `hourly + autonomous scheduled lanes read-only; direct WordPress writes only for explicit owner-authorized trusted tasks and only with configured MCP authorization; missing auth fails closed for writes; WPVibe is not a dependency`
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
@@ -59,7 +59,7 @@
 - qa_self_heal: `bounded autonomous repair: site lane every 6h at :17 and Actions lane every 6h at :47, staggered by 3h; fixes must use qa/self-heal/* branch + PR; merge only after QA Triad and Static Smoke are green; secrets and guardrail weakening are forbidden`
 - openclaw_evolution: `daily 02:31 UTC evidence loop; OpenClaw reads its fresh-main self-evolution skill on trusted runs; Tier A skill/docs/ledger improvements may auto-merge after QA+Smoke; Tier B runtime/auth/MCP/workflow changes remain reviewable PRs`
 - scheduled_workflows:
-  - `every 2 hours at :19 UTC — QuantDeus Crew Health Check / 27-agent registry + bridge crew + medbay/delegates + READY/ACTIVE/BLOCKED + key Actions`
+  - `every 2 hours at :19 UTC — QuantDeus Crew Health Check / 29-agent registry + bridge crew + medbay/delegates + READY/ACTIVE/BLOCKED + key Actions`
   - `06:27 UTC — QuantDeus Swarm Secretary`
   - `06:37 UTC — QuantDeus Six-Pillar Executor`
   - `06:42 UTC — QuantDeus Contributor Growth`
@@ -92,3 +92,6 @@
 - next_step: `verify live Telegram webhook → named homunculus reply in private bot and QuantDeus group; if group ordinary messages are absent, inspect can_read_all_group_messages / Privacy Mode`
 
 - data_positronic_cycle: `37 */6 * * * UTC — Lt. Cmdr. Data read-only PicoClaw legacy successor; positronic consolidation + deep synthesis + cognitive hygiene + context-drift recommendations; artifact-only, no schedule self-mutation`
+
+- new_specialist_profiles: `q (Star Trek anomaly/counterfactuals) + kryon (creative harmony/long-horizon), 28th and 29th canonical agents; all governance, QA, evidence and Human Override rules inherited`
+- specialist_role_crons: `q 16:23 UTC, kryon 17:23 UTC on agent-role-cron.yml; schedules become active only after reviewed merge and valid OpenClaw runtime configuration`

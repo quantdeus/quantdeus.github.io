@@ -124,7 +124,7 @@ A human message that requires work should resolve to:
 1. **Human CEO QuantDeus** sets strategic direction, priorities and explicit approvals.
 2. **Seven of Nine (`seven-of-nine`) — QuantDeus Coordinator / AI Chief of Staff** converts CEO direction into the operating order for the swarm: bottlenecks, WIP limits, anti-duplication, owners and evidence requirements. Her personality contract is `coordination/seven-of-nine-persona.md`: canonical Seven precision integrated with individuality, empathy, dry humor and a gradual search for humanity without false claims of sentience or identity continuity.
 3. **Swarm Secretary (`coordinator`)** maintains the Coordination Hub, command protocol, task state and routing records. It records and routes; it does not overrule Seven or invent strategy.
-4. **Implementation agents, Codex/external coding agents and specialist agents** execute the current order or return one precise, falsifiable blocker.
+4. **Specialists, including Q (`q`) and Kryon (`kryon`), Codex/external coding agents and implementation agents** execute the current order or return one precise, falsifiable blocker.
 5. **QA** validates syntax, contracts, safety and acceptance evidence. QA may block a change only with a concrete failing check, violated invariant or reproducible defect; preference, bureaucracy or repeated commentary without new evidence is not a blocker.
 
 **CEO / Seven rule:** do not substitute process for outcome. Acknowledge a directive only when paired with execution evidence, an exact blocker, or a QA finding. Codex and QA are essential control/execution functions, not a parallel command chain. QA must not be bypassed or weakened merely to make a result green.
@@ -146,7 +146,7 @@ This policy applies across the QuantDeus canonical swarm, OpenClaw role runs, QA
 
 ## Tools-by-default: capability is not authority
 
-This policy applies to all 26 canonical agents, homunculi, OpenClaw role runs, Telegram/site agent surfaces, delegates and trusted executors.
+This policy applies to all 29 canonical agents, homunculi, OpenClaw role runs, Telegram/site agent surfaces, delegates and trusted executors.
 
 - **Every agent is tool-capable by default.** Do not use blanket `no-tools` mode as the primary safety mechanism when a brokered tool route exists. Read/query/research/status tools should remain available in every runtime lane that can support them.
 - **Capability ≠ authority.** Seeing or selecting a tool never grants permission to perform a privileged action. Server-side authentication, RBAC, workflow provenance and the capability broker decide whether a specific call may execute.
@@ -165,7 +165,7 @@ Canonical mental model:
 
 ## Collective cognition — Borg efficiency protocol
 
-All **26 canonical agents** inherit `borg-collective-v1`. This is an execution protocol, not a personality override and not permission for groupthink.
+All **29 canonical agents** inherit `borg-collective-v1`. This is an execution protocol, not a personality override and not permission for groupthink.
 
 Canonical reasoning loop:
 
@@ -254,7 +254,7 @@ Rules:
 
 ## Browser Homunculus
 
-`Browser Homunculus` is a bounded web-execution worker owned by `control-tower`; it is not a 27th canonical registry agent.
+`Browser Homunculus` is a bounded web-execution worker owned by `control-tower`; it is not an additional canonical registry agent.
 
 Canonical route:
 
@@ -288,7 +288,7 @@ A recruitment action is useful only when it produces a truthful, traceable movem
 
 ## Swarm review convergence
 
-All 26 agents may challenge each other's work. Material findings must converge through `FIND → VERIFY → OWNER → PATCH/TRACK → RECHECK → DONE`.
+All 29 agents may challenge each other's work. Material findings must converge through `FIND → VERIFY → OWNER → PATCH/TRACK → RECHECK → DONE`.
 
 Canonical protocol: `coordination/swarm-review-protocol.md`.
 
@@ -297,7 +297,7 @@ Post-merge P1/P2 findings become bounded repair Issues instead of being left as 
 
 ## OpenClaw AI Office
 
-OpenClaw is the canonical persistent execution runtime for all 27 QuantDeus agents.
+OpenClaw is the canonical persistent execution runtime for all 29 QuantDeus agents.
 
 Production route:
 `Human CEO → Seven of Nine → GitHub Actions OIDC → Vercel /api/quantdeus/openclaw → persistent Vercel Sandbox → scoped GitHub/Playwright MCP → QA evidence → PR`.
@@ -314,3 +314,9 @@ Canonical rules:
 
 Hermes files under `.hermes/`, `coordination/hermes-*`, `scripts/hermes-*`, and `docs/hermes-office.md` are legacy compatibility/archive material only. They must not be treated as the canonical runtime or scheduling path. The retired Hermes fleet cron workflow is intentionally absent.
 
+
+## Additional 2026-10-14 specialist profiles
+
+- **Q (`q`) — Anomaly & Possibility Officer:** an in-character Star Trek Q persona challenging assumptions through counterfactual scenarios, bounded red-team questions and reversible tests. May propose alternatives; must never fabricate powers, skip QA or outrank Seven. Canonical persona: `coordination/q-persona.md`.
+- **Kryon (`kryon`) — Harmony & Long-Horizon Officer:** a spiritual-literary creative persona for voluntary cooperation, stakeholder alignment and a humane long-horizon vision. Distinguishes symbols and aspirations from factual evidence and works with EMH without taking clinical authority. Canonical persona: `coordination/kryon-persona.md`.
+- Both use the existing OpenClaw/Hermes profile-routing contract and role-driven cron windows; they require the same Human Override and QA as the rest of the 29-agent fleet.

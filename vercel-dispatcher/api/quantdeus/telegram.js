@@ -188,7 +188,7 @@ function telegramCommandsForAgents(agents = []) {
 }
 
 async function refreshRuntimeTelegramCommands(agents = []) {
-  if (!Array.isArray(agents) || agents.length < 27) {
+  if (!Array.isArray(agents) || agents.length < 29) {
     return { ok: false, reason: 'registry_incomplete', agent_count: Array.isArray(agents) ? agents.length : 0 };
   }
   const botToken = runtimeTelegramBotToken();
@@ -1498,7 +1498,7 @@ async function fastPublicCommandReply(raw) {
   ) {
     const data = await registry();
     const agents = Array.isArray(data?.agents) ? data.agents : [];
-    if (agents.length < 27) {
+    if (agents.length < 29) {
       return {
         text: '⚠️ QuantDeus AI Fleet: канонический реестр временно недоступен полностью. Неполный список не публикую; повтори /agents.',
         menu: true

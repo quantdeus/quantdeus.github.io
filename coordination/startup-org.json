@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "title": "QuantDeus Holding Startup Organization",
-  "updated": "2026-10-05",
+  "updated": "2026-10-14",
   "model": "Founder-led AI-native holding",
   "mission": "Снижать измеримый дефицит и увеличивать способность людей добровольно созидать: человек сохраняет достоинство, выбор и EXIT; AI снимает рутину и ускоряет проверяемые исследования, прототипы и координацию; каждый успех стремится стать воспроизводимым артефактом и новым автономным узлом.",
   "workforce": {
     "human_leadership": true,
-    "ai_agents": 27,
+    "ai_agents": 29,
     "departments": 5
   },
   "departments": [
@@ -22,7 +22,8 @@
         "pillar-executor",
         "strategic-hub",
         "data",
-        "control-tower"
+        "control-tower",
+        "kryon"
       ]
     },
     {
@@ -37,7 +38,8 @@
         "energy",
         "justice",
         "space",
-        "potential"
+        "potential",
+        "q"
       ]
     },
     {

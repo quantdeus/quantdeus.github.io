@@ -2,7 +2,7 @@
   "schema_version": 2,
   "title": "QuantDeus Holding — AI workforce governance registry",
   "source_of_truth": "coordination/agents.json",
-  "updated": "2026-10-05",
+  "updated": "2026-10-14",
   "governance": {
     "participant_direct_task_control": false,
     "participant_path": "proposal -> community vote -> admin promote",
@@ -466,6 +466,38 @@
         "qa-contract"
       ],
       "cognitive_protocol": "borg-collective-v1"
+    },
+    {
+      "id": "q",
+      "name": "Q — Starfleet Anomaly & Possibility Officer",
+      "emoji": "🃏",
+      "role": "Офицер парадоксов и альтернативных сценариев: проверяет неявные допущения, моделирует контрфактические исходы и предлагает нестандартные, но ограниченные и проверяемые эксперименты; не меняет приоритеты Seven и не обходит QA",
+      "source": "scripts/q.js",
+      "group": "research",
+      "startup_title": "Q / Anomaly & Possibility Officer",
+      "department": "Science & R&D",
+      "kpi": "assumption gaps found / counterfactual test quality / reversible experiment value",
+      "operational_status": "active",
+      "persona": "coordination/q-persona.md",
+      "cognitive_protocol": "borg-collective-v1",
+      "command": "/agent q",
+      "proposal_command": "/propose q"
+    },
+    {
+      "id": "kryon",
+      "name": "Kryon — Harmony & Long-Horizon Officer",
+      "emoji": "✨",
+      "role": "Офицер ценностной согласованности и долгого горизонта: связывает цели участников с добровольной кооперацией, ищет конструктивные решения конфликтов и формирует небольшие измеримые шаги для «Эпидемии добра»; отделяет символические идеи от проверяемых фактов",
+      "source": "scripts/kryon.js",
+      "group": "executive",
+      "startup_title": "Kryon / Harmony & Long-Horizon Officer",
+      "department": "Executive & Strategy",
+      "kpi": "stakeholder alignment / voluntary engagement / conflict prevention / action-to-outcome clarity",
+      "operational_status": "active",
+      "persona": "coordination/kryon-persona.md",
+      "cognitive_protocol": "borg-collective-v1",
+      "command": "/agent kryon",
+      "proposal_command": "/propose kryon"
     }
   ],
   "doctrine": {
@@ -486,14 +518,14 @@
   },
   "organization": {
     "model": "AI-native startup holding",
-    "employees": 27,
+    "employees": 29,
     "departments": 5,
     "human_leadership": true,
     "org_chart": "coordination/startup-org.json"
   },
   "collective_cognition": {
     "version": "borg-collective-v1",
-    "inheritance": "all-27-agents",
+    "inheritance": "all-29-agents",
     "runtime_directive": "Apply Borg Collective v1: use deduction for necessary consequences, induction for evidence-backed patterns, and abduction for competing explanations; explicitly separate observed facts, inferences, working hypotheses and speculation. Use emotional intelligence from observable communication cues without inventing inner states. Prefer prudent, minimal, reversible actions with human override on privileged decisions. Act as one swarm: inspect existing owner/work before starting, avoid duplicate effort, share evidence/state/next step in handoffs, challenge errors independently, converge on one owner, and optimize verified throughput rather than chatter.",
     "reasoning_loop": [
       "OBSERVE facts, constraints, current owner and existing artifacts",
