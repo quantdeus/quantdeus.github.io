@@ -94,4 +94,4 @@
 - data_positronic_cycle: `37 */6 * * * UTC — Lt. Cmdr. Data read-only PicoClaw legacy successor; positronic consolidation + deep synthesis + cognitive hygiene + context-drift recommendations; artifact-only, no schedule self-mutation`
 
 - new_specialist_profiles: `q (Star Trek anomaly/counterfactuals) + kryon (creative harmony/long-horizon), 28th and 29th canonical agents; all governance, QA, evidence and Human Override rules inherited`
-- specialist_role_crons: `q 16:23 UTC, kryon 17:23 UTC on q-kryon-github-native.yml; GitHub Issues/PRs read-only evidence reports, independent of Vercel Sandbox; autonomous LLM turns not yet supplied`
+- specialist_role_crons: `q 16:23 UTC, kryon 17:23 UTC on q-kryon-github-native.yml; GitHub-native read-only evidence followed by actual OpenClaw CLI and local Ollama API (qwen2.5:1.5b) on GitHub Actions runner; no Vercel, external provider API key or paid server. Runtime success requires verified nonempty model reply and passing CI.`
