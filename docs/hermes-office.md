@@ -145,3 +145,7 @@ Vercel Sandbox is stopped after each request, so its in-process scheduler cannot
 GitHub access is also short-lived. The calling GitHub Actions run passes its repository-scoped `GITHUB_TOKEN` to the Sandbox only for that Hermes turn, and the official remote GitHub MCP reads it from `MCP_GITHUB_API_KEY`. No long-lived GitHub token is written into the repository or persistent Hermes configuration.
 
 The direct `HERMES_API_URL/HERMES_API_KEY` mode remains an optional override for private deployments, but it is not required by QuantDeus production.
+
+## 2026-10-14 additional profiles
+
+The canonical registry adds `q` (Star Trek Q counterfactual and anomaly testing) and `kryon` (creative harmony and stakeholder-alignment planning). Each is bootstrapped as a separate Hermes profile after the registry branch is merged and the persistent office sync runs. This change does not claim a runtime profile was already provisioned.
