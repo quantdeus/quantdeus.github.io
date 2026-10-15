@@ -1,0 +1,28 @@
+name: ITC V1 Offline Signal QA
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/itc-v1/**'
+      - '.github/workflows/itc-v1-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signal-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Parse V1 ES modules
+        run: |
+          node --check experiments/itc-v1/signal.mjs
+          node --check experiments/itc-v1/app.mjs
+          node --check experiments/itc-v1/test.mjs
+      - name: Run deterministic PCM/WAV tests
+        run: node --test experiments/itc-v1/test.mjs
