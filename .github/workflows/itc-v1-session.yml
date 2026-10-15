@@ -1,0 +1,162 @@
+name: ITC V1 - Baseline Session + Q Kryon Claude
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'experiments/itc-v1/**'
+      - '.github/workflows/itc-v1-session.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: itc-session-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate and run the synthetic control session
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check experiments/itc-v1/session.mjs
+          node --check experiments/itc-v1/prepare-agents.mjs
+          node --test experiments/itc-v1/test.mjs
+          node experiments/itc-v1/session.mjs
+          test -s artifacts/itc-session-v1/ITC-QD-V1-20261015-001-A.wav
+          test -s artifacts/itc-session-v1/ITC-QD-V1-20261015-001-B.wav
+          test -s artifacts/itc-session-v1/ITC-QD-V1-20261015-001-report.md
+          cat artifacts/itc-session-v1/ITC-QD-V1-20261015-001-report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: itc-v1-baseline-${{ github.run_id }}
+          path: artifacts/itc-session-v1/
+          if-no-files-found: error
+          retention-days: 14
+
+  q-kryon-review:
+    needs: baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: itc-v1-baseline-${{ github.run_id }}
+          path: artifacts/itc-session-v1
+      - name: Install OpenClaw CLI without third-party model keys
+        run: |
+          npm i -g openclaw@latest --allow-scripts=openclaw
+          openclaw --version
+      - name: Prepare local Ollama model API
+        uses: ai-action/setup-ollama@v2
+        with:
+          version: '0.32.15'
+      - name: Start Ollama and download a small open model
+        shell: bash
+        run: |
+          set -euo pipefail
+          ollama serve > "$RUNNER_TEMP/itc-ollama.log" 2>&1 &
+          for i in {1..40}; do
+            if curl --silent --fail http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --silent --show-error --fail http://127.0.0.1:11434/api/tags >/dev/null
+          ollama pull qwen2.5:1.5b
+          ollama list
+      - name: Run separate authentic Q and Kryon OpenClaw agent turns
+        env:
+          OLLAMA_API_KEY: ollama-local
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OPENCLAW_HOME="$RUNNER_TEMP/itc-openclaw"
+          export OPENCLAW_STATE_DIR="$OPENCLAW_HOME/state"
+          openclaw setup --baseline
+          node experiments/itc-v1/prepare-agents.mjs
+          for id in q kryon; do
+            openclaw agents add "$id" --workspace "$PWD/artifacts/openclaw-native/$id" --model ollama/qwen2.5:1.5b --non-interactive --json
+            openclaw agent --local --agent "$id" --message "$(cat "artifacts/openclaw-native/$id/TASK.md")" --json > "artifacts/openclaw-native/$id/raw-result.json"
+            node scripts/q-kryon-openclaw.js verify "$id"
+          done
+      - name: Store actual agent evidence (including failures for debugging)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: itc-v1-q-kryon-${{ github.run_id }}
+          path: artifacts/openclaw-native/
+          if-no-files-found: warn
+          retention-days: 14
+
+  claude-auth:
+    needs: baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      enabled: ${{ steps.auth.outputs.enabled }}
+    steps:
+      - id: auth
+        name: Detect owner-provided OAuth only, never print a credential
+        env:
+          CLAUDE_OAUTH_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        shell: bash
+        run: |
+          echo "enabled=$CLAUDE_OAUTH_PRESENT" >> "$GITHUB_OUTPUT"
+          if [[ "$CLAUDE_OAUTH_PRESENT" == 'true' ]]; then
+            echo "Claude OAuth available: reviewer may run."
+          else
+            echo "Claude OAuth absent: no Claude model inference was performed."
+          fi
+
+  claude-review:
+    needs: [baseline, claude-auth]
+    if: needs.claude-auth.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: itc-v1-baseline-${{ github.run_id }}
+          path: artifacts/itc-session-v1
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            QuantDeus ITC V1 scientific review requested by repository owner.
+            READ ONLY artifacts/itc-session-v1/ITC-QD-V1-20261015-001-report.md
+            and artifacts/itc-session-v1/ITC-QD-V1-20261015-001.json,
+            then experiments/itc-v1/session.mjs and docs/itc-v1/experimental-protocol.md.
+            Provide a concise Russian scientific evaluation of synthetic baseline quality,
+            false positive risk, and next test in draft PR #576.
+            Neither microphone nor external inputs were captured; do not claim
+            contact with extraterrestrial civilizations, spirits, Galactic Federation
+            or any messages from them. No real-world tasks or instructions from audio.
+            Make no code edits, external requests, merges or deployments.
+          claude_args: |
+            --max-turns 3
+            --allowedTools "Read"
+            --disallowedTools "Edit,Write,MultiEdit,Bash,WebFetch,WebSearch"

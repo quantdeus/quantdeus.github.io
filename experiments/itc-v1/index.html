@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>QuantDeus ITC Station V1 — Research Preview</title>
+<style>
+:root{color-scheme:dark;--bg:#061323;--card:rgba(13,35,56,.85);--line:#2b5870;--accent:#72efff;--text:#effaff;--muted:#b8d1dd}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;min-height:100vh;color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:radial-gradient(ellipse at top left,#0c536b 0,transparent 42%),radial-gradient(ellipse at top right,#342354 0,transparent 48%),var(--bg)}
+main{max-width:920px;margin:auto;padding:24px 15px 52px}
+nav{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:#a4e9ef;font-weight:700}
+h1{font-size:clamp(26px,5vw,46px);letter-spacing:-.03em;line-height:1.1;margin:14px 0}
+p{margin:10px 0;color:var(--muted)}.glass{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 16px 50px #00122250;backdrop-filter:blur(12px);margin:16px 0}
+.notice{border-left:3px solid var(--accent);padding:10px 14px;background:#10394a80;border-radius:9px;margin:20px 0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+label{display:block;font-size:13px;color:var(--muted);font-weight:650}
+input,select{display:block;width:100%;padding:12px 10px;margin-top:6px;font-size:16px;color:var(--text);background:#071e2e;border:1px solid #537283;border-radius:9px}
+input:focus,select:focus,button:focus-visible{outline:3px solid #8eeaff}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+button{font:inherit;font-weight:750;border:1px solid #427c95;background:#14354a;color:#effaff;border-radius:12px;padding:11px 17px;cursor:pointer}
+button.primary{background:linear-gradient(90deg,#43c1da,#8d96ee);border:0;color:#071727}
+button:hover:not(:disabled){filter:brightness(1.13)}
+button:disabled{opacity:.46;cursor:not-allowed}
+canvas{width:100%;height:150px;border:1px solid #24516a;border-radius:10px;background:#03101e;display:block}
+.status{font:14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;color:#c5eef2}
+small{display:block;color:var(--muted);font-size:12px}
+a{color:var(--accent)}
+@media(max-width:580px){.grid{grid-template-columns:1fr}.glass{padding:15px}button{flex:1 1 40%}}
+</style>
+</head>
+<body>
+<main>
+<nav>QUANTDEUS / RESEARCH / DIGITAL ITC</nav>
+<h1>📡 ITC Station <span style="color:var(--accent)">V1</span></h1>
+<p>Экспериментальная станция синтеза и изучения цифровых звуковых сигналов. Работает прямо в браузере — без платных API, регистрации и отправки записей на сервер.</p>
+<div class="notice"><strong>Research preview.</strong> Генерируемые записи синтетические: они не доказывают контакт с какими-либо сущностями. Интерпретации требуют независимых контрольных тестов. Используйте умеренную громкость.</div>
+<section class="glass" aria-label="Настройки генератора">
+<h2>Signal generator</h2>
+<div class="grid">
+<label>Режим сигнала<select id="mode"><option value="white">Белый шум</option><option value="brown">Коричневый шум</option><option value="pulse">Импульсы</option><option value="sweep">Частотный sweep</option></select></label>
+<label>Логические каналы<select id="logicalChannels"><option value="1">1</option><option value="8">8</option><option value="64">64</option><option value="256">256</option><option value="1024">1024</option></select></label>
+<label>Seed (воспроизводимость)<input id="seed" maxlength="64" value="QUANTDEUS-001" autocomplete="off"></label>
+<label>Длина записи<select id="durationSec"><option value="5">5 секунд</option><option value="10" selected>10 секунд</option><option value="30">30 секунд</option></select></label>
+<label>Уровень синтеза<select id="gain"><option value=".10">10%</option><option value=".20" selected>20%</option><option value=".35">35%</option><option value=".50">50%</option></select></label>
+</div>
+<div class="actions">
+<button class="primary" id="generate">⚡ Сгенерировать</button>
+<button id="play" disabled>▶ Прослушать</button>
+<button id="stop" disabled>■ Стоп</button>
+</div>
+<p id="status" class="status" role="status" aria-live="polite">Станция готова. Создайте экспериментальную запись.</p>
+</section>
+<section class="glass" aria-label="Спектральный анализ и экспорт">
+<h2>Signal observation</h2>
+<canvas id="spectrum" height="150" aria-label="Спектральная визуализация воспроизводимого звука"></canvas>
+<div class="actions">
+<button id="wav" disabled>⬇ Экспорт WAV</button>
+<button id="meta" disabled>⬇ Метаданные JSON</button>
+</div>
+<small>1024 — число виртуальных логических каналов конфигурации; текущий движок одновременно смешивает не более восьми синтетических голосов, чтобы снизить нагрузку на Android. Экспорт не содержит записи микрофона.</small>
+</section>
+<section class="glass">
+<h2>Команда лаборатории</h2>
+<p>🃏 <strong>Q:</strong> инженерные эксперименты и поиск альтернативных гипотез.</p>
+<p>✨ <strong>Kryon:</strong> методология интерпретаций, слепые тесты и исследовательские задания.</p>
+<small>Агенты не подключены к этой странице в реальном времени. Для анализа экспортируйте запись и метаданные отдельно; публичные загрузки пользовательских записей отключены.</small>
+</section>
+<footer><small>QuantDeus · local-first experiment · v1.0 · No production site changes</small></footer>
+</main>
+<script type="module" src="./app.mjs"></script>
+</body>
+</html>
