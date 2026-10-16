@@ -1,0 +1,27 @@
+name: Galactic Academy — isolated Godot smoke
+on:
+  push:
+    branches:
+      - feature/galactic-academy-bootstrap
+    paths:
+      - 'projects/galactic-academy/**'
+      - '.github/workflows/galactic-academy-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  godot-smoke:
+    if: github.ref == 'refs/heads/feature/galactic-academy-bootstrap'
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and parse project
+        run: godot --headless --path projects/galactic-academy --editor --quit
+      - name: Offline economy tests
+        run: godot --headless --path projects/galactic-academy --script res://tests/metaverse_model_test.gd
+      - name: Main scene startup smoke
+        run: godot --headless --path projects/galactic-academy --quit-after 10
