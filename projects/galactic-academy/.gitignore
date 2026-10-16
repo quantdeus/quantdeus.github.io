@@ -1,0 +1,7 @@
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+assets/audio/*.mp3
+assets/audio/*.ogg
+assets/audio/*.wav
