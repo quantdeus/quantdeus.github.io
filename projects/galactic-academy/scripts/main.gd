@@ -1,4 +1,5 @@
 extends Control
+const EconomyModel = preload("res://scripts/metaverse_model.gd")
 # Staged, self-contained Godot 4 prototype: 2D/3D, science quest, two audio streams.
 const STAR_POINTS := [Vector2(0.18, 0.42), Vector2(0.39, 0.70), Vector2(0.71, 0.38), Vector2(0.84, 0.66)]
 const STAR_NAMES := ["Aero Prime", "Eltara", "New Horizon", "Veridian"]
@@ -10,8 +11,12 @@ var quest: Label
 var main_music := AudioStreamPlayer.new()
 var personal_audio := AudioStreamPlayer.new()
 var selected_star := 0
+var economy = EconomyModel.new()
+var economy_status: Label
+var economy_feedback: Label
 
 func _ready() -> void:
+    economy.load_state()
     _build_world()
     _configure_audio()
     _build_interface()
@@ -146,6 +151,51 @@ func _build_interface() -> void:
         b.text = answer
         b.pressed.connect(_quiz_answer.bind(answer))
         answers.add_child(b)
+    _build_metaverse_panel(layout)
+
+func _build_metaverse_panel(layout: VBoxContainer) -> void:
+    var panel := PanelContainer.new()
+    layout.add_child(panel)
+    var content := VBoxContainer.new()
+    panel.add_child(content)
+    var heading := Label.new()
+    heading.text = "QUANTDEUS METAVERSE / AGENTCHAIN — LOCAL DEMO"
+    heading.add_theme_color_override("font_color", Color("#66eee5"))
+    content.add_child(heading)
+    economy_status = Label.new()
+    content.add_child(economy_status)
+    var actions := HBoxContainer.new()
+    content.add_child(actions)
+    var buy_button := Button.new()
+    buy_button.text = "Aero skin (40 Credits)"
+    buy_button.pressed.connect(_buy_demo_skin)
+    actions.add_child(buy_button)
+    var data_button := Button.new()
+    data_button.text = "Simulate Data task (10 Credits)"
+    data_button.pressed.connect(_simulate_data_task)
+    actions.add_child(data_button)
+    economy_feedback = Label.new()
+    economy_feedback.text = "Sandbox only: no wallet, token, NFT mint, or real AI request."
+    economy_feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    content.add_child(economy_feedback)
+    _refresh_economy()
+
+func _refresh_economy() -> void:
+    economy_status.text = "Credits: %d | Aero skin: %s | Agent demos: %d | Pilot roles: %d | Registry design target: %d" % [
+        economy.credits,
+        "Owned" if economy.aero_skin_owned else "Not owned",
+        economy.simulated_agent_requests,
+        EconomyModel.PILOT_ROLES.size(),
+        EconomyModel.AGENT_REGISTRY_TARGET
+    ]
+
+func _buy_demo_skin() -> void:
+    economy_feedback.text = economy.buy_aero_skin()
+    _refresh_economy()
+
+func _simulate_data_task() -> void:
+    economy_feedback.text = economy.simulate_data_task()
+    _refresh_economy()
 
 func _set_mode(mode: bool) -> void:
     is_3d = mode
@@ -164,4 +214,9 @@ func _toggle_personal() -> void:
         personal_btn.text = "Add v17_local.mp3/ogg to enable"
 
 func _quiz_answer(answer: String) -> void:
-    quest.text = "✓ Correct! Aero-class blueprint unlocked." if answer == "Mars" else "Try again: iron-oxide dust is the clue."
+    if answer != "Mars":
+        quest.text = "Try again: iron-oxide dust is the clue."
+        return
+    var reward: int = economy.complete_academy_quest()
+    quest.text = "✓ Correct! Aero-class blueprint unlocked. +25 Credits" if reward > 0 else "✓ Correct! Blueprint already unlocked."
+    _refresh_economy()
