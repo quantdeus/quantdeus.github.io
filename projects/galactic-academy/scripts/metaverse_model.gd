@@ -9,6 +9,7 @@ const AGENT_DEMO_PRICE := 10
 const AGENT_REGISTRY_TARGET := 10000
 const PILOT_ROLES := ["Seven of Nine", "Data", "Sherlock Holmes", "Tuvok"]
 
+var save_path: String = SAVE_PATH
 var credits: int = STARTING_CREDITS
 var academy_reward_claimed: bool = false
 var aero_skin_owned: bool = false
@@ -41,9 +42,9 @@ func simulate_data_task() -> String:
     return "Data task simulated and logged locally. No external agent invoked."
 
 func load_state() -> void:
-    if not FileAccess.file_exists(SAVE_PATH):
+    if not FileAccess.file_exists(save_path):
         return
-    var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+    var file := FileAccess.open(save_path, FileAccess.READ)
     if file == null:
         return
     var parsed = JSON.parse_string(file.get_as_text())
@@ -55,7 +56,7 @@ func load_state() -> void:
     simulated_agent_requests = clampi(int(parsed.get("simulated_agent_requests", 0)), 0, 100000)
 
 func save_state() -> void:
-    var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+    var file := FileAccess.open(save_path, FileAccess.WRITE)
     if file == null:
         push_warning("Could not write local metaverse save data.")
         return
