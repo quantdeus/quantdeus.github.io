@@ -1688,6 +1688,14 @@ async function retrySmokeComplete(req, res) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'GET' && String(req.query?.bot_config || '') === '1') {
+    return res.status(200).json({
+      ok: true,
+      telegram_multi_bot_version: 2,
+      roles: ['agent', 'store'],
+      telegram_store_webhook: '/api/quantdeus/telegram?bot=store'
+    });
+  }
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
 
   if (req.body?.mode === 'site_ai') return siteAiRequest(req, res);
