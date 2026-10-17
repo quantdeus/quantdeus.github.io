@@ -1162,7 +1162,7 @@ function normalizeRepositoryStatusOutput(text, snapshot) {
 
 async function openClawTransport(agentId, requestedAgentId, system, user, source, extraMetadata = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45000);
+  const timer = setTimeout(() => controller.abort(), 8500);
   try {
     const oidc = await getVercelOidcToken({ audience: 'quantdeus-internal-openclaw' });
     if (!oidc) throw new Error('vercel_oidc_missing');
