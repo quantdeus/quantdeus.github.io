@@ -1,4 +1,5 @@
 name: QuantDeus Social Fleet — YouTube + VK insights
+run-name: "Аналитика социальных сетей"
 
 on:
   workflow_dispatch:

@@ -1,4 +1,5 @@
 name: Data Positronic Cycle 🤖🖖
+run-name: "Аналитика команды Дейты"
 
 on:
   schedule:
@@ -26,15 +27,15 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Run Data positronic maintenance cycle
+      - name: Запустить Data positronic maintenance cycle
         env:
           DATA_POSITRONIC_REPORT: /tmp/quantdeus-data-positronic-cycle.json
         run: node scripts/data-positronic-cycle.js
 
-      - name: Upload positronic evidence
+      - name: Сохранить positronic evidence
         uses: actions/upload-artifact@v4
         with:
           name: quantdeus-data-positronic-cycle

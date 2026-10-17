@@ -1,4 +1,5 @@
 name: QuantDeus Agent Role Cron 🧬
+run-name: "Задачи агентов по расписанию"
 
 on:
   schedule:
@@ -45,9 +46,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
-      - name: Run due role agent
+      - name: Запустить due role agent
         id: role
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -225,7 +226,7 @@ jobs:
           NODE
 
 
-      - name: Publish role-agent Issue deterministically
+      - name: Опубликовать role-agent Issue deterministically
         if: steps.role.outputs.action == 'open_issue'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -235,7 +236,7 @@ jobs:
         run: node scripts/publish-agent-issue.js
 
 
-      - name: Verify role-agent PR and dispatch independent QA
+      - name: Проверить role-agent PR and dispatch independent QA
         if: steps.role.outputs.action == 'pr'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -298,7 +299,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
       - name: Read-only trusted OpenClaw profile smoke
         env:

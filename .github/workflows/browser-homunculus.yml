@@ -1,4 +1,5 @@
 name: QuantDeus Browser Homunculus 🌐
+run-name: "Проверка браузерного помощника"
 
 on:
   workflow_dispatch:
@@ -47,15 +48,15 @@ jobs:
             --json number,title,url,body,labels \
             > browser-issue.json
 
-      - name: Validate governance and manifest before installing a browser
+      - name: Проверить governance and manifest before installing a browser
         run: node scripts/browser-homunculus.js --validate
 
-      - name: Install Vercel agent-browser and Chrome
+      - name: Установить Vercel agent-browser and Chrome
         run: |
           npm install -g agent-browser@0.38.1
           agent-browser install --with-deps
 
-      - name: Execute bounded browser task
+      - name: Выполнить bounded browser task
         env:
           QD_BROWSER_EMAIL: ${{ secrets.QD_BROWSER_EMAIL }}
           QD_BROWSER_USERNAME: ${{ secrets.QD_BROWSER_USERNAME }}
@@ -65,7 +66,7 @@ jobs:
           QD_BROWSER_LLM_BRIDGE: https://quantdeus.vercel.app/api/quantdeus/llm
         run: node scripts/browser-homunculus.js
 
-      - name: Publish public-safe result to the Issue
+      - name: Опубликовать public-safe result to the Issue
         if: always()
         run: |
           if [ -f browser-result.md ]; then
@@ -74,7 +75,7 @@ jobs:
               --body-file browser-result.md
           fi
 
-      - name: Upload non-secret browser artifacts
+      - name: Сохранить non-secret browser artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:

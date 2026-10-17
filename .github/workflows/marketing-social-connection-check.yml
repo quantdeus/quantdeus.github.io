@@ -1,4 +1,5 @@
 name: QuantDeus Social Fleet — VK + YouTube connection check
+run-name: "Связь с социальными сетями"
 
 on:
   workflow_dispatch:
@@ -15,5 +16,5 @@ jobs:
       COMPOSIO_API: ${{ secrets.COMPOSIO_API }}
     steps:
       - uses: actions/checkout@v4
-      - name: Validate social integrations without publishing
+      - name: Проверить social integrations without publishing
         run: node scripts/marketing-social-connection-check.mjs

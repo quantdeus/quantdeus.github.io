@@ -1,4 +1,5 @@
 name: QuantDeus Contributor Growth 📣
+run-name: "Развитие сообщества"
 
 on:
   schedule:
@@ -33,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate shared mission
+      - name: Проверить shared mission
         run: node scripts/mission-alignment.js
       - name: Advance contributor-growth loop
         env:

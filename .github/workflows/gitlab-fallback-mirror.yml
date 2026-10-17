@@ -1,4 +1,5 @@
 name: GitLab Hot-Standby Mirror
+run-name: "Проверка запасного зеркала"
 
 on:
   push:
@@ -24,13 +25,13 @@ jobs:
       GITLAB_MIRROR_REPOSITORY: ${{ vars.GITLAB_MIRROR_REPOSITORY }}
       GITLAB_MIRROR_HOST: ${{ vars.GITLAB_MIRROR_HOST }}
     steps:
-      - name: Checkout full QuantDeus history
+      - name: Загрузить файлы проекта full QuantDeus history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Verify swarm continuity payload
+      - name: Проверить swarm continuity payload
         shell: bash
         run: |
           set -euo pipefail
@@ -56,7 +57,7 @@ jobs:
           console.log('continuity payload OK; canonical agents='+ids.length+' homunculi='+hom.agents.length);
           NODE
 
-      - name: Check whether GitLab standby is armed
+      - name: Проверить whether GitLab standby is armed
         id: standby
         shell: bash
         run: |
