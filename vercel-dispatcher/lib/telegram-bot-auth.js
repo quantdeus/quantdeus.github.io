@@ -48,7 +48,15 @@ async function resolveStoreBotUsername() {
 }
 
 export function telegramSiteOrigin() {
-  return clean(process.env.QUANTDEUS_CANONICAL_ORIGIN) || DEFAULT_SITE_ORIGIN;
+  const configured = clean(process.env.QUANTDEUS_CANONICAL_ORIGIN);
+  // Старый временный адрес больше не является точкой входа.
+  if (!configured || configured === "https://quantdeus.whf.bz") return DEFAULT_SITE_ORIGIN;
+  try {
+    const origin = new URL(configured);
+    return origin.protocol === "https:" ? origin.origin : DEFAULT_SITE_ORIGIN;
+  } catch {
+    return DEFAULT_SITE_ORIGIN;
+  }
 }
 
 function key(label) {
