@@ -129,7 +129,7 @@ function publicText(value, max = 18000) {
 }
 
 function publicHeadText(value, max = 18000) {
-  return redactSensitive(value).slice(0, max);
+  return redactSensitive(value).slice(0, max).trimEnd();
 }
 
 function safeRepairPath(path) {
