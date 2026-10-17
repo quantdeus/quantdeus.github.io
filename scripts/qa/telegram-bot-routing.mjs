@@ -8,6 +8,8 @@ import { telegramDirectModelReply } from '../../vercel-dispatcher/lib/telegram-d
 const route = fs.readFileSync('vercel-dispatcher/api/quantdeus/telegram.js', 'utf8');
 const setup = fs.readFileSync('scripts/telegram-webhook-setup.js', 'utf8');
 const federation = fs.readFileSync('vercel-dispatcher/lib/telegram-federation.js', 'utf8');
+const retry = fs.readFileSync('scripts/telegram-bot.js', 'utf8');
+const workflow = fs.readFileSync('.github/workflows/telegram-bot.yml', 'utf8');
 
 const agents = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8')).agents;
 assert.equal(agents.length, 29, 'all registered agents');
@@ -27,6 +29,9 @@ const checks = [
   ['distinct chat rate-limits', federation.includes("botKind + ':' + chatType + ':' + chatId")],
   ['LLM fallback on agent chat', route.includes('telegramDirectModelReply({ system, user: groundedQuery, agentId })')],
   ['LLM fallback on site chat', route.includes('telegramDirectModelReply({ system, user: siteShield.normalized, agentId })')],
+  ['retry uses specific Store token', retry.includes("message?.__qdBotKind === 'store'") && retry.includes('telegramToken = storeTelegramToken;')],
+  ['retry rejects shared Store and Agent tokens', retry.includes('telegram_store_token_missing_or_shared')],
+  ['retry workflow has Store secret', workflow.includes('TELEGRAM_STORE_BOT_TOKEN: ${{ secrets.QUANTDEUS_STORE_TELEGRAM_BOT_TOKEN')],
   ['no Telegram polling', !route.includes('getUpdates(') && !setup.includes('getUpdates(')]
 ];
 for (const [label, ok] of checks) {
