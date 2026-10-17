@@ -17,7 +17,8 @@ const checks = [
   ['runtime suppresses immediate duplicate updates', /blocked_duplicate_update/.test(runtime)],
   ['runtime has bounded per-chat rate limiting', /rate_limited/.test(runtime) && /privateMax/.test(runtime) && /groupMax/.test(runtime)],
   ['runtime exposes advisory health snapshot', /telegramFederationHealth/.test(runtime) && /owner-review/.test(runtime)],
-  ['telegram webhook invokes federation ingress guard', /guardTelegramIngress\(update\)/.test(telegram)],
+  ['telegram webhook invokes federation ingress guard', /guardTelegramIngress\(update, undefined, botRole\)/.test(telegram)],
+  ['bot-specific duplicate and rate keys', /botRole \+ ':' \+ String\(update\.update_id\)/.test(runtime) && /botRole \+ ':' \+ chatType/.test(runtime)],
   ['telegram setup reports federation health', /telegramFederationHealth\(info\)/.test(telegram)]
 ];
 
