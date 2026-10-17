@@ -1,0 +1,23 @@
+name: Ежедневная проверка русского языка сайта
+run-name: "Русский язык на quantdeus.ru"
+
+on:
+  schedule:
+    - cron: '47 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  russian-site:
+    name: Проверить основные страницы QuantDeus
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Получить файлы проекта
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Проверить русский язык на работающем сайте
+        run: node scripts/qa/site-ru-audit.mjs
