@@ -80,4 +80,5 @@ if (summaryPath) {
   const { appendFile } = await import('node:fs/promises');
   await appendFile(summaryPath, report);
 }
-console.log('QuantDeus Social Fleet: connection check completed. See job summary for statuses.');
+console.log(report);
+console.log('QuantDeus Social Fleet: connection check completed.');
