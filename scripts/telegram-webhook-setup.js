@@ -154,6 +154,14 @@ async function main() {
     storeData = await setupBot(storeBotToken, 'store');
     storeInterface = await configureTelegramInterface(storeBotToken, 'store');
     storeCommands = await configureTelegramCommands(storeBotToken, 'store');
+    if (storeData?.bot?.username && /^[A-Za-z0-9_]{5,32}$/.test(storeData.bot.username)) {
+      fs.writeFileSync('telegram-store-public.json', JSON.stringify({
+        configured: true,
+        bot_id: storeData.bot.id,
+        username: storeData.bot.username,
+        name: 'QuantDeus Store'
+      }, null, 2) + '\n');
+    }
   } else {
     console.warn('Telegram Store: отдельный токен не настроен; вебхук магазина не изменён.');
   }
