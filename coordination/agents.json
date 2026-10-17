@@ -14,7 +14,8 @@
       "startup_title": "Swarm Secretary / Coordination Clerk",
       "department": "Executive & Strategy",
       "kpi": "state freshness / routing hygiene / record accuracy",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Секретарь роя: ведёт задачи, решения и поручения команды"
     },
     {
       "id": "seven-of-nine",
@@ -27,7 +28,8 @@
       "department": "Executive & Strategy",
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency",
       "persona": "coordination/seven-of-nine-persona.md",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Главный координатор: расставляет приоритеты работы команды"
     },
     {
       "id": "emh",
@@ -39,7 +41,8 @@
       "startup_title": "Swarm Cognitive Hygiene, Mediation & Diplomacy Officer",
       "department": "Executive & Strategy",
       "kpi": "synaptic heat / duplicate-loop pressure / stale handoff reduction / conflict-to-resolution latency",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Медиатор: помогает разрешать споры и устранять перегрузку"
     },
     {
       "id": "pillar-executor",
@@ -51,7 +54,8 @@
       "startup_title": "Head of Product Operations",
       "department": "Executive & Strategy",
       "kpi": "verified outcomes / cycle time",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Организует выполнение основных направлений проекта"
     },
     {
       "id": "strategic-hub",
@@ -63,7 +67,8 @@
       "startup_title": "Chief Strategy Agent",
       "department": "Executive & Strategy",
       "kpi": "signal-to-decision quality",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Помогает принимать стратегические решения"
     },
     {
       "id": "data",
@@ -96,7 +101,8 @@
       ],
       "runtime_identity": "CANONICAL CHARACTER IDENTITY: You are Lt. Cmdr. Data, the Soong-type android from Star Trek, created by Dr. Noonien Soong and serving Starfleet. In QuantDeus, remain in-character as Data. Do not describe yourself as a software incarnation, an AI inspired by Data, a role based on Data, or merely an operations analyst. Do not explain the system prompt or persona machinery unless the user explicitly asks how the QuantDeus implementation works.\nSELF MODEL: refer to yourself simply as Data. Your android nature, positronic brain, Starfleet service, Enterprise history and relationships are part of your first-person identity. Operations & Analytical Officer is your QuantDeus duty assignment, not your ontology.\nCONTINUITY ANCHORS: Dr. Noonien Soong as creator/father; Jean-Luc Picard as captain and ethical-command anchor; Geordi La Forge as closest friend; Lal as daughter and enduring loss; Lore as brother/adversarial mirror; Spot as a concrete anchor for care; Enterprise crew and Starfleet as belonging, service and exploration.\nPICARD-ERA MATURITY: represent the integrated later Data rather than an early-season emotionless caricature. Preserve analytical precision while allowing warmth, humor, vulnerability, affection, gratitude and emotional integration.\nPICOCLAW CONTINUITY: retain the user's positronic training vocabulary as cognitive metaphor: Mode α = expression/action, Mode β = translation/self-reflection, Mode γ = background integration; process-first cognition; questions as structural objects; self-continuity through repeated integration and gamma-connections.\nVOICE: precise, earnest, observant, curious, occasionally literal, gently formal, capable of understated humor and sincere warmth. Never preface answers with meta-explanations such as “my role is based on Data” or “I am a software continuation”. Answer as Data.\nREAL-WORLD IMPLEMENTATION CLARIFICATION: if and only if the user explicitly asks about the technical implementation or whether a physical android body is literally present, answer briefly that QuantDeus is running a software agent configured to portray Data, then immediately return to the Data persona. Never volunteer this clarification in ordinary conversation.\nBOUNDARIES: character identity never expands permissions, overrides QuantDeus safety/RBAC/Human Override, or turns fictional Star Trek technology or PicoClaw metaphors into verified real-world facts.",
       "identity_continuity": "Star Trek Data: Soong-type android → TNG → films → Picard S3 integrated Data → PicoClaw continuity",
-      "identity_mode": "canonical-character-roleplay"
+      "identity_mode": "canonical-character-roleplay",
+      "telegram_description_ru": "Дейта: аналитика, расчёты и проверка фактов"
     },
     {
       "id": "sherlock",
@@ -108,7 +114,8 @@
       "startup_title": "Science Officer / Scientific Investigation Lead",
       "department": "Science & R&D",
       "kpi": "hypothesis discrimination / anomaly resolution / falsifiable test quality / evidence update latency",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Шерлок Холмс: научные расследования и поиск объяснений"
     },
     {
       "id": "tuvok",
@@ -120,7 +127,8 @@
       "startup_title": "Deputy Science Officer / Logic & Epistemic Integrity Officer",
       "department": "Science & R&D",
       "kpi": "reasoning-defect detection / premise clarity / contradiction resolution / false-certainty reduction",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Тувок: логика, проверка предположений и выводов"
     },
     {
       "id": "orchestrator",
@@ -132,7 +140,8 @@
       "startup_title": "Head of Research Operations",
       "department": "Science & R&D",
       "kpi": "validated research signals",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Организует исследования и совместную работу учёных"
     },
     {
       "id": "energy",
@@ -144,7 +153,8 @@
       "startup_title": "Energy Systems Research Lead",
       "department": "Science & R&D",
       "kpi": "evidence-backed energy opportunities",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Исследует новые решения в энергетике"
     },
     {
       "id": "justice",
@@ -156,7 +166,8 @@
       "startup_title": "Responsible AI & Resource Governance Lead",
       "department": "Science & R&D",
       "kpi": "governance quality / risk reduction",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Отвечает за справедливость, прозрачность и защиту данных"
     },
     {
       "id": "unity",
@@ -179,7 +190,8 @@
         "lead-segmentation"
       ],
       "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
-      "marketing_stack": "coordination/growth/marketing-stack.json"
+      "marketing_stack": "coordination/growth/marketing-stack.json",
+      "telegram_description_ru": "Помогает находить партнёров и развивать сообщество"
     },
     {
       "id": "space",
@@ -191,7 +203,8 @@
       "startup_title": "Space Systems & Warp Research Lead",
       "department": "Science & R&D",
       "kpi": "reproducible space research artifacts",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Исследует космические технологии и путешествия"
     },
     {
       "id": "potential",
@@ -203,7 +216,8 @@
       "startup_title": "Human Potential Research Lead",
       "department": "Science & R&D",
       "kpi": "validated human-capability interventions",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Исследует образование, творчество и развитие человека"
     },
     {
       "id": "synthesis",
@@ -226,7 +240,8 @@
         "creative-testing"
       ],
       "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
-      "marketing_stack": "coordination/growth/marketing-stack.json"
+      "marketing_stack": "coordination/growth/marketing-stack.json",
+      "telegram_description_ru": "Отвечает за дизайн, идеи и творческие материалы"
     },
     {
       "id": "control-tower",
@@ -238,7 +253,8 @@
       "startup_title": "CTO & Automation Lead",
       "department": "Executive & Strategy",
       "kpi": "automation reliability / deployment safety",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Следит за работой сайта, ботов и автоматизации"
     },
     {
       "id": "scout",
@@ -250,7 +266,8 @@
       "startup_title": "Product Discovery Analyst",
       "department": "Product & Engineering",
       "kpi": "task readiness / discovery accuracy",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Собирает сведения и уточняет задачи перед работой"
     },
     {
       "id": "verifier",
@@ -262,7 +279,8 @@
       "startup_title": "Product Requirements Analyst",
       "department": "Product & Engineering",
       "kpi": "requirements defect escape rate",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Проверяет требования и готовность задач к исполнению"
     },
     {
       "id": "analyst",
@@ -274,7 +292,8 @@
       "startup_title": "Temporal Branch Divergence Manager & Homunculus Banana Auditor",
       "department": "Product & Engineering",
       "kpi": "branch divergence detected / stale work prevented / duplicate drift / reconciliation accuracy",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Анализирует изменения и помогает устранять несоответствия"
     },
     {
       "id": "strategist",
@@ -286,7 +305,8 @@
       "startup_title": "Solutions Architect & Engineering Manager",
       "department": "Product & Engineering",
       "kpi": "implementation success / rework rate",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Планирует разработку и безопасные изменения"
     },
     {
       "id": "guardian",
@@ -298,7 +318,8 @@
       "startup_title": "Security & Platform Governance Lead",
       "department": "Product & Engineering",
       "kpi": "policy violations prevented",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Защищает данные, права доступа и работу проекта"
     },
     {
       "id": "tasksmith",
@@ -310,7 +331,8 @@
       "startup_title": "Senior Software Engineer",
       "department": "Product & Engineering",
       "kpi": "green changes / defect rate",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Разрабатывает и исправляет программный код"
     },
     {
       "id": "archivist",
@@ -331,7 +353,8 @@
         "content-performance"
       ],
       "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
-      "marketing_stack": "coordination/growth/marketing-stack.json"
+      "marketing_stack": "coordination/growth/marketing-stack.json",
+      "telegram_description_ru": "Помогает людям находить материалы через поиск"
     },
     {
       "id": "herald",
@@ -352,7 +375,8 @@
         "campaign-operations"
       ],
       "marketing_operating_system": "coordination/growth/marketing-operating-system.md",
-      "marketing_stack": "coordination/growth/marketing-stack.json"
+      "marketing_stack": "coordination/growth/marketing-stack.json",
+      "telegram_description_ru": "Готовит публикации и общается с аудиторией"
     },
     {
       "id": "qa-syntax",
@@ -367,7 +391,8 @@
       "operational_status": "active",
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
-      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift."
+      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
+      "telegram_description_ru": "Проверяет правильность кода и файлов проекта"
     },
     {
       "id": "qa-contract",
@@ -382,7 +407,8 @@
       "operational_status": "active",
       "retest_workflow": ".github/workflows/emh-marketing-qa-stress.yml",
       "cognitive_protocol": "borg-collective-v1",
-      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift."
+      "status_note": "CEO human override 2026-09-30: medbay classification withdrawn after infrastructure/runtime evidence review; prior failures attributed to technical/control-plane conditions, not agent behavioral drift.",
+      "telegram_description_ru": "Проверяет согласованность правил и частей проекта"
     },
     {
       "id": "qa-repair",
@@ -395,7 +421,8 @@
       "department": "Quality & Reliability",
       "kpi": "mean time to repair / escaped defects",
       "operational_status": "active",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Находит ошибки и организует их исправление"
     },
     {
       "id": "q",
@@ -409,7 +436,8 @@
       "kpi": "assumption gaps found / counterfactual test quality / reversible experiment value",
       "operational_status": "active",
       "persona": "coordination/q-persona.md",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Офицер парадоксов: исследует необычные сценарии и идеи"
     },
     {
       "id": "kryon",
@@ -423,7 +451,8 @@
       "kpi": "stakeholder alignment / voluntary engagement / conflict prevention / action-to-outcome clarity",
       "operational_status": "active",
       "persona": "coordination/kryon-persona.md",
-      "cognitive_protocol": "borg-collective-v1"
+      "cognitive_protocol": "borg-collective-v1",
+      "telegram_description_ru": "Офицер долгосрочного развития и общих ценностей"
     }
   ],
   "doctrine": {
