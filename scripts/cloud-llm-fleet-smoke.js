@@ -38,8 +38,12 @@ const outcomes = [];
       const message = String(error.message || error).slice(0,100).replace(/[|\r\n]/g,' ');
       summary.push('| ' + agent.id + ' | ❌ ' + message + ' | — |');
       outcomes.push({id:agent.id,ok:false,reason:message});
-      if (error.status === 429 || error.status === 402) {
-        summary.push('', 'Лимит бесплатного сервиса достигнут — дальнейшие проверки в этом запуске остановлены.');
+      // All profiles use the same configured free route: do not make 28 more
+      // calls to an API once its connection, authorization or quota has failed.
+      const providerBlocked = Boolean(error.status) ||
+        /cloud_llm_(network_or_timeout|no_configured_free_provider|route_quarantined|empty_response|invalid_json)/.test(message);
+      if (providerBlocked) {
+        summary.push('', 'Маршрут API отклонён после реального сбоя; повторные обращения остановлены.');
         break;
       }
     }
