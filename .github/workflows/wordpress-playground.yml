@@ -82,7 +82,7 @@ jobs:
           test -f wordpress/blueprint.json
           test -f assets/portal-shell.css
           test -f assets/portal-shell.js
-          grep -q 'https://quantdeus.whf.bz/' index.html
+          grep -q 'https://quantdeus.ru/' index.html
           grep -q 'Публичное зеркало QuantDeus' index.html
           if grep -q 'playground.wordpress.net' index.html; then echo "GitHub Pages root must remain the independent production mirror, not Playground"; exit 1; fi
           grep -q "location.replace('/')" wordpress/index.html
