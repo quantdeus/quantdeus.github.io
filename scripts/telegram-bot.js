@@ -6,11 +6,14 @@ const { execFileSync } = require('child_process');
 
 const repo = process.env.GITHUB_REPOSITORY;
 const githubToken = process.env.GITHUB_TOKEN;
-const telegramToken =
+let telegramToken =
   process.env.TELEGRAM_BOT_TOKEN ||
   process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
   process.env.TELEGRAM_TOKEN ||
   process.env.TELEGRAM;
+const storeTelegramToken =
+  process.env.TELEGRAM_STORE_BOT_TOKEN ||
+  process.env.QUANTDEUS_STORE_TELEGRAM_BOT_TOKEN || '';
 const telegramIdSet = (...values) => new Set(
   values
     .flatMap(value => String(value || '').split(','))
@@ -806,6 +809,12 @@ function decodeWebhookUpdate() {
 
 async function main() {
   const { update, message } = decodeWebhookUpdate();
+  if (message?.__qdBotKind === 'store') {
+    if (!storeTelegramToken || storeTelegramToken === telegramToken) {
+      throw new Error('telegram_store_token_missing_or_shared: refusing cross-bot reply');
+    }
+    telegramToken = storeTelegramToken;
+  }
   if (update.quantdeus_retry_smoke === true) {
     await runRetrySmoke(update);
     return;

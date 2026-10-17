@@ -21,8 +21,8 @@ const checks = [
   ['Vercel setup derives role commands from canonical agents', /function telegramCommandsForAgents\(agents = \[\]\)[\s\S]*roleCommands/],
   ['Vercel router accepts direct slash role commands', /const direct = value\.match/],
   ['Vercel fast /agents path uses canonical registry', /async function fastPublicCommandReply[\s\S]*const data = await registry\(\)[\s\S]*agents\.map\(agent =>/],
-  ['Vercel fast /agents path has no five-role hardcode', /fastPublicCommandReply[\s\S]*refreshRuntimeTelegramCommands\(agents\)/],
-  ['Vercel runtime command self-heal requires full 29-agent registry', /async function refreshRuntimeTelegramCommands\(agents = \[\]\)[\s\S]*agents\.length < 29/],
+  ['Vercel fast /agents path has no five-role hardcode', /fastPublicCommandReply[\s\S]*refreshRuntimeTelegramCommands\(agents,\s*message\?\.__qdBotKind\)/],
+  ['Vercel runtime command self-heal requires full 29-agent registry', /async function refreshRuntimeTelegramCommands\(agents = \[\], botKind = 'agent'\)[\s\S]*agents\.length < 29/],
 ];
 
 let failed = false;

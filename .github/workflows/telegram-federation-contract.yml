@@ -6,6 +6,9 @@ on:
     paths:
       - 'coordination/telegram-federation.json'
       - 'vercel-dispatcher/lib/telegram-federation.js'
+      - 'vercel-dispatcher/lib/telegram-direct-llm.js'
+      - 'scripts/telegram-webhook-setup.js'
+      - 'scripts/qa/telegram-bot-routing.mjs'
       - 'vercel-dispatcher/api/quantdeus/telegram.js'
       - 'scripts/qa/telegram-federation-contract.js'
       - '.github/workflows/telegram-federation-contract.yml'
@@ -14,6 +17,9 @@ on:
     paths:
       - 'coordination/telegram-federation.json'
       - 'vercel-dispatcher/lib/telegram-federation.js'
+      - 'vercel-dispatcher/lib/telegram-direct-llm.js'
+      - 'scripts/telegram-webhook-setup.js'
+      - 'scripts/qa/telegram-bot-routing.mjs'
       - 'vercel-dispatcher/api/quantdeus/telegram.js'
       - 'scripts/qa/telegram-federation-contract.js'
       - '.github/workflows/telegram-federation-contract.yml'
@@ -31,5 +37,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Проверить governed Telegram federation invariants
+      - name: Проверить код Telegram
+        run: |
+          node --check vercel-dispatcher/api/quantdeus/telegram.js
+          node --check vercel-dispatcher/lib/telegram-direct-llm.js
+          node --check scripts/telegram-webhook-setup.js
+      - name: Проверить связь Telegram с Федерацией
         run: node scripts/qa/telegram-federation-contract.js
+      - name: Проверить независимые боты и резервный LLM
+        run: node scripts/qa/telegram-bot-routing.mjs
