@@ -31,13 +31,15 @@ function storeBotToken() {
 async function resolveStoreBotUsername() {
   const configured = telegramBotUsername();
   if (configured) return configured;
-  const token = storeBotToken();
-  if (!token) throw new Error("telegram_store_bot_unconfigured");
   if (cachedStoreUsername && Date.now() - cachedStoreUsernameAt < 60 * 60 * 1000) return cachedStoreUsername;
-  const response = await fetch("https://api.telegram.org/bot" + token + "/getMe", { method: "POST" });
+  const token = storeBotToken();
+  const source = token
+    ? "https://api.telegram.org/bot" + token + "/getMe"
+    : "https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/telegram-store-public.json";
+  const response = await fetch(source, token ? { method: "POST" } : { headers: { Accept: "application/json" } });
   const data = await response.json().catch(() => null);
-  const username = clean(data?.result?.username).replace(/^@/, "");
-  if (!response.ok || data?.ok !== true || !/^[A-Za-z0-9_]{5,32}$/.test(username)) {
+  const username = clean(token ? data?.result?.username : data?.username).replace(/^@/, "");
+  if (!response.ok || (token ? data?.ok !== true : data?.configured !== true) || !/^[A-Za-z0-9_]{5,32}$/.test(username)) {
     throw new Error("telegram_store_bot_unavailable");
   }
   cachedStoreUsername = username;
@@ -67,7 +69,7 @@ function hmac(label, value, bytes = 16) {
 
 export function telegramBotAuthHealth() {
   return {
-    configured: Boolean(botToken() && (telegramBotUsername() || storeBotToken())),
+    configured: Boolean(botToken()),
     username: telegramBotUsername() || cachedStoreUsername || null,
     site_origin: telegramSiteOrigin()
   };
