@@ -8,7 +8,7 @@ Supersedes the Vercel-as-WordPress-production decision recorded here on 2026-10-
 
 **The canonical public QuantDeus production site is:**
 
-`https://quantdeus.whf.bz`
+`https://quantdeus.ru`
 
 It is the persistent native WordPress runtime and owns:
 
@@ -26,7 +26,7 @@ WordPress is currently running as WordPress 7.1.2 on PHP 8.3.x with free/self-ho
 
 ```
 Canonical production
-https://quantdeus.whf.bz
+https://quantdeus.ru
         │
         ├── WordPress / wp-admin / REST / native MCP
         │
@@ -52,13 +52,13 @@ GitHub Pages remains a public mirror and repository-backed fallback surface, but
 
 The canonical free/self-hosted MCP endpoint is:
 
-`https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp`
+`https://quantdeus.ru/wp-json/easy-mcp-ai/v1/mcp`
 
 It is the WordPress lane inherited by the registered QuantDeus swarm through trusted OpenClaw. WPVibe is not required.
 
 Rules:
 
-1. All WordPress MCP operations target only `https://quantdeus.whf.bz` unless the owner explicitly names another site.
+1. All WordPress MCP operations target only `https://quantdeus.ru` unless the owner explicitly names another site.
 2. Hourly and autonomous scheduled swarm lanes are read-only; the runtime exposes only read/discovery tool families to those lanes.
 3. Direct WordPress writes require an explicitly owner-authorized trusted task.
 4. Write-capable MCP exposure additionally requires `QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION`; when it is absent, writes fail closed.
@@ -68,7 +68,7 @@ Rules:
 
 ## Source of truth split
 
-- WordPress production content/state: `https://quantdeus.whf.bz`.
+- WordPress production content/state: `https://quantdeus.ru`.
 - Application source, agent policy, CI, Issues and evidence: `quantdeus/quantdeus.github.io@main`.
 - Vercel: mirror + API + OpenClaw execution plane.
 - GitHub Pages: mirror.

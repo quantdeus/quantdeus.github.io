@@ -28,7 +28,7 @@ add_action('wp_enqueue_scripts', function(){
         'telegramLoginUrl'=>rest_url('quantdeus/v1/telegram/login'),'telegramBrokerUrl'=>rest_url('quantdeus/v1/telegram/broker'),
         'telegramStartUrl'=>'https://quantdeus.vercel.app/api/quantdeus/bot-auth',
         'telegramClientId'=>defined('QD_TELEGRAM_CLIENT_ID')?(string)QD_TELEGRAM_CLIENT_ID:'8122160274',
-        'canonicalOrigin'=>'https://quantdeus.whf.bz',
+        'canonicalOrigin'=>'https://quantdeus.ru',
         'githubStartUrl'=>'https://quantdeus.vercel.app/api/quantdeus/github-auth',
         'githubConfigUrl'=>'https://quantdeus.vercel.app/api/quantdeus/github-auth?health=1',
         'githubBrokerUrl'=>rest_url('quantdeus/v1/github/broker'),'githubConfigured'=>true,

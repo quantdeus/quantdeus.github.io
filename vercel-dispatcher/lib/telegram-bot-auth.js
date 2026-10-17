@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const DEFAULT_BOT_USERNAME = "QuantDeus_bot";
-const DEFAULT_SITE_ORIGIN = "https://quantdeus.whf.bz";
+const DEFAULT_SITE_ORIGIN = "https://quantdeus.ru";
 const REQUEST_TTL_SECONDS = 10 * 60;
 const ASSERTION_TTL_SECONDS = 5 * 60;
 

@@ -10,13 +10,13 @@ WordPress is the canonical QuantDeus application/CMS runtime after the owner-dec
 - root `/index.html` — canonical GitHub Pages WordPress launcher at `https://quantdeus.github.io/`.
 - `wordpress/index.html` — compatibility redirect from the former `/wordpress/` URL to the root.
 
-**Current production is the native WordPress runtime at `https://quantdeus.whf.bz`.** WordPress Playground is preview/CI only. Vercel (`https://quantdeus.vercel.app`) is the reverse-proxy mirror plus API/OpenClaw control plane, and GitHub Pages (`https://quantdeus.github.io`) is a public mirror.
+**Current production is the native WordPress runtime at `https://quantdeus.ru`.** WordPress Playground is preview/CI only. Vercel (`https://quantdeus.vercel.app`) is the reverse-proxy mirror plus API/OpenClaw control plane, and GitHub Pages (`https://quantdeus.github.io`) is a public mirror.
 
 ## Runtime rule
 
 WordPress owns public pages, content, users, roles, services, guest inquiries, forum/community data and admin.
 
-GitHub remains canonical for source code, CI, issues, evidence and swarm coordination. Telegram/OpenClaw integrate through WordPress REST, GitHub-native paths, and the guarded native WordPress MCP lane at `https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp`. All registered agents inherit this production target; scheduled autonomous lanes are read-only, while direct production writes require an explicitly owner-authorized trusted task plus configured MCP authorization.
+GitHub remains canonical for source code, CI, issues, evidence and swarm coordination. Telegram/OpenClaw integrate through WordPress REST, GitHub-native paths, and the guarded native WordPress MCP lane at `https://quantdeus.ru/wp-json/easy-mcp-ai/v1/mcp`. All registered agents inherit this production target; scheduled autonomous lanes are read-only, while direct production writes require an explicitly owner-authorized trusted task plus configured MCP authorization.
 
 **Make.com is not an application dependency.** Do not add Make scenarios, Make webhooks, polling bridges or a second orchestration layer to the canonical WordPress runtime.
 
@@ -35,7 +35,7 @@ Legacy GitHub Pages/Vercel Portal code may remain temporarily as rollback/histor
 
 ## Production runtime status
 
-The production gate is satisfied by the owner-selected native WordPress host at `https://quantdeus.whf.bz`:
+The production gate is satisfied by the owner-selected native WordPress host at `https://quantdeus.ru`:
 
 - WordPress 7.1.2;
 - PHP 8.3.x;

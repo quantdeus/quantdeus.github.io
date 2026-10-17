@@ -33,7 +33,7 @@
     },
     {
       "source": "/:path((?!api/).*)",
-      "destination": "https://quantdeus.whf.bz/:path*"
+      "destination": "https://quantdeus.ru/:path*"
     }
   ]
 }

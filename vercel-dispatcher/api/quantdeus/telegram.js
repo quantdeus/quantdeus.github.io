@@ -28,14 +28,14 @@ const TELEGRAM_BOT_DESCRIPTION =
   'QuantDeus Store Bot: AI Fleet, мартышки, Pro-доступ, Telegram Login и быстрые команды QuantDeus.';
 const TELEGRAM_BOT_SHORT_DESCRIPTION = 'QuantDeus AI Fleet, Store Bot и Mini App.';
 const PUBLIC_BOT_USERNAME = String(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME || 'QuantDeus_bot').replace(/^@/, '').trim();
-const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
-const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.whf.bz/account/';
+const QUANTDEUS_PRO_URL = 'https://quantdeus.ru/ai-fleet/pro/';
+const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.ru/account/';
 const REGISTRY_URL = 'https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/coordination/agents.json';
 const TELEGRAM_CIDRS = ['149.154.160.0/20', '91.108.4.0/22'];
 const LIVE_RESEARCH_TIMEOUT_MS = 7000;
 const LIVE_RESEARCH_MAX_ITEMS = 8;
-const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
-const WORDPRESS_SITE_AI_VERIFY_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/verify-token';
+const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.ru/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
+const WORDPRESS_SITE_AI_VERIFY_URL = 'https://quantdeus.ru/wp-json/quantdeus/v1/ai-fleet/verify-token';
 let jwksCache = [];
 let jwksAt = 0;
 let registryCache = null;
@@ -105,7 +105,7 @@ function mainMenuReplyMarkup() {
     inline_keyboard: [
       [{ text: '🐒 Мартышки · AI Fleet', url: `https://t.me/${bot}?start=agents` }],
       [{ text: '⭐ QuantDeus Pro', url: `https://t.me/${bot}?start=pro` }],
-      [{ text: '🌐 QuantDeus', url: 'https://quantdeus.whf.bz/' }]
+      [{ text: '🌐 QuantDeus', url: 'https://quantdeus.ru/' }]
     ]
   };
 }

@@ -1329,7 +1329,7 @@ export default async function handler(req, res) {
     const wordpressWriteCapable = !wordpressReadOnly && Boolean(wordpressMcpAuth);
     const wordpressMcp = {
       transport: 'streamable-http',
-      url: 'https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp',
+      url: 'https://quantdeus.ru/wp-json/easy-mcp-ai/v1/mcp',
       ...(wordpressMcpAuth ? { headers: { Authorization: wordpressMcpAuth } } : {}),
       connectionTimeoutMs: 10000,
       requestTimeoutMs: 45000,
@@ -1400,10 +1400,10 @@ export default async function handler(req, res) {
     };
     const productionTopologyPrompt = trustedOffice ? [
       'QUANTDEUS PRODUCTION TOPOLOGY:',
-      '- Canonical public production and native WordPress admin: https://quantdeus.whf.bz',
+      '- Canonical public production and native WordPress admin: https://quantdeus.ru',
       '- https://quantdeus.vercel.app is the reverse-proxy mirror plus API/agent control plane; it is not the canonical public production origin.',
       '- https://quantdeus.github.io is a public mirror; it is not the canonical production origin.',
-      '- Native WordPress MCP: https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp (free/self-hosted lane; no WPVibe dependency).',
+      '- Native WordPress MCP: https://quantdeus.ru/wp-json/easy-mcp-ai/v1/mcp (free/self-hosted lane; no WPVibe dependency).',
       '- Hourly/scheduled autonomous lanes are MCP read-only. Do not mutate WordPress from those lanes.',
       '- Direct WordPress writes are allowed only in an explicitly owner-authorized trusted task and only when QUANTDEUS_WORDPRESS_MCP_AUTHORIZATION is configured.',
       '- Missing WordPress MCP authentication fails closed for writes; never invent access, secrets or hidden credentials.',
