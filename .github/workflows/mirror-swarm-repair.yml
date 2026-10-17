@@ -1,4 +1,5 @@
 name: QuantDeus Mirror Swarm Repair 🪞🐒
+run-name: "Восстановление зеркал QuantDeus"
 
 on:
   workflow_run:
@@ -49,7 +50,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate mirror sources
+      - name: Проверить mirror sources
         run: |
           node --check scripts/mirror-swarm-client.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
@@ -57,7 +58,7 @@ jobs:
           node --test vercel-dispatcher/tests/mirror-model-router.test.mjs vercel-dispatcher/tests/mirror-swarm-contract.test.mjs
           node scripts/mission-alignment.js
 
-      - name: Collect deterministic QA state
+      - name: Собрать deterministic QA state
         id: qa
         shell: bash
         run: |
@@ -75,7 +76,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Build mirror evidence
+      - name: Собрать mirror evidence
         id: evidence
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -170,7 +171,7 @@ jobs:
         if: ${{ steps.evidence.outputs.wake_required != 'true' && github.event_name == 'workflow_run' }}
         run: echo "Mirror pulse healthy; model plane remains asleep."
 
-      - name: Run independent Mirror Swarm
+      - name: Запустить independent Зеркало Swarm
         if: ${{ steps.evidence.outputs.wake_required == 'true' || github.event_name != 'workflow_run' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

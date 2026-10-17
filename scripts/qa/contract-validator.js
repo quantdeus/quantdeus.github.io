@@ -403,7 +403,7 @@ check(openclawOfficeClient.includes("error?.retrySafe === true") && openclawOffi
 
 const openclawAdminSmoke = fs.readFileSync(path.join(root,'.github','workflows','openclaw-admin-smoke.yml'),'utf8');
 check(
-  openclawAdminSmoke.includes('Verify brokered-read OpenClaw publicrepo MCP lane') &&
+  openclawAdminSmoke.includes('Проверить brokered-read OpenClaw publicrepo MCP lane') &&
   openclawAdminSmoke.includes('trusted: false') &&
   openclawAdminSmoke.includes("result.runtime !== 'openclaw-agent-exec-brokered-read-tools'") &&
   openclawAdminSmoke.includes("summary.tools[0] !== 'publicrepo__get_file'") &&
@@ -592,7 +592,7 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
 }
 
 const qaSelfHealWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-self-heal.yml'),'utf8');
-check(qaSelfHealWorkflow.includes('trigger_run_id:') && qaSelfHealWorkflow.includes('Verify claimed repair PR exists'), 'qa-self-heal.yml', 'QA self-heal receives failure evidence and verifies a real repair PR');
+check(qaSelfHealWorkflow.includes('trigger_run_id:') && qaSelfHealWorkflow.includes('Проверить claimed repair PR exists'), 'qa-self-heal.yml', 'QA self-heal receives failure evidence and verifies a real repair PR');
 check(qaSelfHealWorkflow.includes('.conclusion=="success"') && !qaSelfHealWorkflow.includes('.conclusion=="skipped"'), 'qa-self-heal.yml', 'QA self-heal merge requires successful independent QA/Smoke checks');
 
 const qaFailureRadarWorkflow = fs.readFileSync(path.join(root,'.github','workflows','qa-failure-radar.yml'),'utf8');
@@ -660,7 +660,7 @@ check(!/^\s*schedule\s*:/m.test(telegramWorkflow), 'telegram-bot.yml', 'Telegram
 check(telegramWorkflow.includes('telegram_update_b64') && telegramWorkflow.includes('scripts/telegram-webhook-setup.js'), 'telegram-bot.yml', 'Telegram workflow accepts webhook-dispatched updates and can configure the webhook');
 check(
   telegramWorkflow.includes("'scripts/telegram-retry-smoke.js'") &&
-  telegramWorkflow.includes('Verify Vercel → Actions retry lane') &&
+  telegramWorkflow.includes('Проверить Vercel → Actions retry lane') &&
   telegramWorkflow.includes("github.event_name == 'push'") &&
   telegramWorkflow.includes('node scripts/telegram-retry-smoke.js'),
   'telegram-bot.yml',

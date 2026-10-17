@@ -1,4 +1,5 @@
 name: QuantDeus Telegram GitHub Bot 🤖
+run-name: "Работа Telegram-бота"
 
 on:
   workflow_dispatch:
@@ -47,7 +48,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
       - name: Ensure Telegram webhook points at Vercel
@@ -57,7 +58,7 @@ jobs:
           TELEGRAM_STORE_BOT_TOKEN: ${{ secrets.QUANTDEUS_STORE_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_STORE_BOT_TOKEN || secrets.QUANTDEUS_STORE_BOT_TOKEN || secrets.STORE_TELEGRAM_BOT_TOKEN || secrets.QUANTDEUS_STORE_TOKEN }}
         run: node scripts/telegram-webhook-setup.js
 
-      - name: Verify Vercel → Actions retry lane
+      - name: Проверить Vercel → Actions retry lane
         if: ${{ github.event_name == 'push' }}
         run: node scripts/telegram-retry-smoke.js
 

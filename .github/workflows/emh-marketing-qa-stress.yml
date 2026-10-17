@@ -1,4 +1,5 @@
 name: QuantDeus EMH Marketing + QA Stress Test 🩺🐒
+run-name: "Проверка маркетинга и устойчивости"
 
 on:
   workflow_dispatch:
@@ -52,10 +53,10 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: EMH bounded-pool brokered-read stress-test Marketing + QA agents
+      - name: EMH bounded-pool brokered-read stress-test Маркетинг + QA agents
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -279,7 +280,7 @@ jobs:
           });
           NODE
 
-      - name: Upload EMH stress-test report
+      - name: Сохранить EMH stress-test report
         if: always()
         uses: actions/upload-artifact@v4
         with:

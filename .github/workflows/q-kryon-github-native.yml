@@ -1,4 +1,5 @@
 name: QuantDeus Q + Kryon Native Recon 🃏✨
+run-name: "Задачи Q и Крайона"
 
 on:
   schedule:
@@ -44,7 +45,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate QuantDeus shared mission
+      - name: Проверить QuantDeus shared mission
         run: node scripts/mission-alignment.js
       - name: Read real GitHub Issues and PRs without Vercel
         env:
@@ -52,19 +53,19 @@ jobs:
           AGENT_ID: ${{ inputs.agent_id || 'both' }}
           GITHUB_SCHEDULE: ${{ github.event.schedule }}
         run: node scripts/q-kryon-github-native.js
-      - name: Install actual OpenClaw CLI on GitHub runner
+      - name: Установить actual OpenClaw CLI on GitHub runner
         shell: bash
         run: |
           set -euo pipefail
           npm i -g openclaw@latest --allow-scripts=openclaw
           openclaw --version
 
-      - name: Install Ollama on GitHub runner (local keyless model API)
+      - name: Установить Ollama on GitHub runner (local keyless model API)
         uses: ai-action/setup-ollama@v2
         with:
           version: '0.32.15'
 
-      - name: Start local LLM service and pull a small open model
+      - name: Запустить local LLM service and pull a small open model
         shell: bash
         run: |
           set -euo pipefail
@@ -112,7 +113,7 @@ jobs:
           openclaw agents list --json > artifacts/openclaw-native/registered-agents.json
           node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync("artifacts/openclaw-native/registered-agents.json"));const t=JSON.stringify(d);for(const id of process.argv.slice(1)){if(!new RegExp("\\b"+id+"\\b").test(t))throw Error("OpenClaw agent absent: "+id)}console.log("REAL_OPENCLAW_PROFILES_REGISTERED",process.argv.slice(1).join(","))' "${ids[@]}"
 
-      - name: Execute real OpenClaw model turns (no Vercel)
+      - name: Выполнить real OpenClaw model turns (no Vercel)
         shell: bash
         env:
           OLLAMA_API_KEY: ollama-local

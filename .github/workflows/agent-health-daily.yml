@@ -1,4 +1,5 @@
 name: QuantDeus Crew Health Check 🩺🖖
+run-name: "Проверка работы команды ИИ"
 
 on:
   schedule:
@@ -25,35 +26,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout
+      - name: Загрузить файлы проекта
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Setup Node.js
+      - name: Подготовить Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
 
-      - name: Validate shared post-scarcity mission
+      - name: Проверить shared post-scarcity mission
         id: mission
         run: node scripts/mission-alignment.js
 
-      - name: Check registered agents + bridge crew
+      - name: Проверить registered agents + bridge crew
         id: health
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node scripts/agent-monitor.js
 
-      - name: Publish bridge summary
+      - name: Опубликовать bridge summary
         if: always()
         run: |
           if [ -f /tmp/quantdeus-agent-health.md ]; then
             cat /tmp/quantdeus-agent-health.md >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Upload crew health report
+      - name: Сохранить crew health report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -64,7 +65,7 @@ jobs:
             /tmp/quantdeus-mission-alignment.json
           if-no-files-found: ignore
 
-      - name: Create or update monitoring issue on hard failure
+      - name: Создать or update monitoring issue on hard failure
         if: steps.health.outcome == 'failure' || steps.mission.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

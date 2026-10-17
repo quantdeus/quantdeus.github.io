@@ -1,4 +1,5 @@
 name: QuantDeus Static Smoke
+run-name: "Быстрая проверка проекта"
 
 on:
   push:
@@ -17,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate JavaScript syntax
+      - name: Проверить JavaScript syntax
         run: |
           node --check scripts/coordinator.js
           node --check scripts/seven-of-nine.js
@@ -52,16 +53,16 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/community.js
           node --check vercel-dispatcher/api/quantdeus/orders.js
 
-      - name: Test forum and store API authorization and order flow
+      - name: Протестировать forum and store API authorization and order flow
         run: node --test vercel-dispatcher/tests/portal-api.test.mjs
 
-      - name: Verify Seven LLM briefing and degraded contract
+      - name: Проверить Seven LLM briefing and degraded contract
         run: node --test scripts/qa/seven-reasoning.test.js scripts/qa/role-dialogue.test.js
 
-      - name: Execute Q and Kryon agent smoke 🃏✨
+      - name: Выполнить Q and Kryon agent smoke 🃏✨
         run: node --test scripts/qa/q-kryon-smoke.test.js
 
-      - name: Verify contributor onboarding guardrails
+      - name: Проверить contributor onboarding guardrails
         run: |
           node --test scripts/qa/contributor-onboarding.test.js
           node - <<'NODE'
@@ -85,13 +86,13 @@ jobs:
           console.log('contributor onboarding guardrails: OK');
           NODE
 
-      - name: Run QA syntax validator
+      - name: Запустить QA syntax validator
         run: node scripts/qa/syntax-validator.js
 
-      - name: Run QA contract validator
+      - name: Запустить QA contract validator
         run: node scripts/qa/contract-validator.js
 
-      - name: Validate remaining runtime-gap guardrails
+      - name: Проверить remaining runtime-gap guardrails
         run: |
           node <<'NODE'
           const fs=require('fs');
@@ -119,7 +120,7 @@ jobs:
           must(failureRadar.includes('repair_trigger_run_id='), 'Failure Radar must output the actual repair target run id');
           must(failureRadar.includes("source: 'unresolved-scan'"), 'Scheduled/manual Radar scans must preserve unresolved-run provenance');
           must(failureRadarWorkflow.includes('steps.radar.outputs.repair_trigger_run_id'), 'Failure Radar workflow must dispatch the selected failing run, not the event run');
-          must(selfHeal.includes('Verify triggering run is actually repair-worthy'), 'Self-Heal must independently verify trigger conclusion');
+          must(selfHeal.includes('Проверить triggering run is actually repair-worthy'), 'Self-Heal must independently verify trigger conclusion');
           must(selfHeal.includes("steps.trigger.outputs.verified_failure == 'true'"), 'Self-Heal failure logs must require a verified failed run');
           must(selfHeal.includes("TRIGGER_VERIFIED_FAILURE"), 'Self-Heal must pass verified failure state into repair logic');
           must(selfHeal.includes("=== 'true'"), 'Self-Heal must not treat any non-empty run id as failure');
@@ -172,18 +173,18 @@ jobs:
           console.log('remaining runtime-gap guardrails: OK');
           NODE
 
-      - name: Verify evolution boundaries and merge guard behavior
+      - name: Проверить evolution boundaries and merge guard behavior
         run: node --test scripts/qa/openclaw-evolution.test.js
 
-      - name: Verify Browser Homunculus contract
+      - name: Проверить Browser Homunculus contract
         run: node --test scripts/qa/browser-homunculus.test.js
 
-      - name: Validate OpenClaw Office contract
+      - name: Проверить OpenClaw Office contract
         run: |
           node scripts/qa/openclaw-office-validator.js
           node --test scripts/qa/office-session.test.js
 
-      - name: Validate production routes
+      - name: Проверить production routes
         run: |
           test -f index.html
           test -f telegram/index.html
@@ -258,7 +259,7 @@ jobs:
           test -f login/index.html
           test -f 404.html
           test ! -f CNAME
-          grep -q 'https://quantdeus.whf.bz/' index.html
+          grep -q 'https://quantdeus.ru/' index.html
           grep -q 'Публичное зеркало QuantDeus' index.html
           if grep -q 'playground.wordpress.net' index.html; then echo 'GitHub Pages root must not launch Playground'; exit 1; fi
           grep -q "location.replace('/')" wordpress/index.html
@@ -270,8 +271,8 @@ jobs:
           grep -q 'Концерт Ксении Чередниковой' telegram/index.html
           grep -q '>Услуги<' telegram/index.html
           if grep -q 'Магазин мини-приложений' telegram/index.html; then echo 'legacy Telegram store shell found'; exit 1; fi
-          grep -q 'https://quantdeus.whf.bz/forum/' forum/index.html
-          grep -q 'https://quantdeus.whf.bz/services/' store/index.html
+          grep -q 'https://quantdeus.ru/forum/' forum/index.html
+          grep -q 'https://quantdeus.ru/services/' store/index.html
           grep -q 'noindex,follow' forum/index.html
           grep -q 'noindex,follow' store/index.html
           if grep -Fq '\n  <script' store/index.html forum/index.html; then echo 'literal \\n found in portal HTML'; exit 1; fi
@@ -282,7 +283,7 @@ jobs:
           grep -q 'anonymous_web' vercel-dispatcher/api/quantdeus/orders.js
           node -e "const c=require('./telegram-public.json'); if(!c.configured||!c.client_id||!c.username) throw new Error('Telegram public auth config is incomplete')"
 
-      - name: Validate agent registry
+      - name: Проверить agent registry
         run: |
           node - <<'NODE'
           const fs=require('fs');
@@ -293,7 +294,7 @@ jobs:
           console.log('agents:',data.agents.length);
           NODE
 
-      - name: Validate public-page inline JavaScript
+      - name: Проверить public-page inline JavaScript
         run: |
           node - <<'NODE'
           const fs=require('fs');
@@ -308,7 +309,7 @@ jobs:
           }
           NODE
 
-      - name: Validate homunculi registry
+      - name: Проверить homunculi registry
         run: |
           node - <<'NODE'
           const fs=require('fs');

@@ -1,4 +1,5 @@
 name: QuantDeus Growth + Site Cycle 📣🌐
+run-name: "Развитие сайта и аудитории"
 
 on:
   schedule:
@@ -34,12 +35,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
-      - name: Install GitHub Copilot CLI
+      - name: Установить GitHub Copilot CLI
         run: npm install -g @github/copilot@latest --no-audit --no-fund
 
-      - name: Run GitHub-native rotating growth/site specialist
+      - name: Запустить GitHub-native rotating growth/site specialist
         id: github_native
         continue-on-error: true
         env:
@@ -48,7 +49,7 @@ jobs:
           INPUT_AGENT_ID: ${{ inputs.agent_id }}
           COPILOT_AUTO_UPDATE: 'false'
         run: node scripts/github-growth-cycle.js
-      - name: Run OpenClaw growth/site fallback
+      - name: Запустить OpenClaw growth/site fallback
         id: openclaw_fallback
         if: steps.github_native.outcome == 'failure'
         env:

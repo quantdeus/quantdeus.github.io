@@ -1,4 +1,5 @@
 name: QuantDeus Live WordPress Mirror 🪞
+run-name: "Обновление зеркала сайта"
 
 on:
   push:
@@ -36,18 +37,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify canonical production
+      - name: Проверить canonical production
         run: |
           set -euo pipefail
-          curl -fsSIL --max-time 20 https://quantdeus.whf.bz/ >/tmp/qd-production-headers.txt
+          curl -fsSIL --max-time 20 https://quantdeus.ru/ >/tmp/qd-production-headers.txt
           grep -qi '^HTTP/.* 2' /tmp/qd-production-headers.txt
 
-      - name: Build live mirror snapshot
+      - name: Собрать live mirror snapshot
         env:
-          MIRROR_SOURCE: https://quantdeus.whf.bz
+          MIRROR_SOURCE: https://quantdeus.ru
         run: bash scripts/build-wordpress-mirror.sh _site
 
-      - name: Validate mirror artifact
+      - name: Проверить mirror artifact
         run: |
           set -euo pipefail
           test -s _site/index.html
@@ -56,7 +57,7 @@ jobs:
           ! grep -RIl 'quantdeus[.]whf[.]bz[/]wp[/]' _site --include='*.html' | grep -q .
           echo "Live mirror artifact OK"
 
-      - name: Upload Pages artifact
+      - name: Сохранить Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
@@ -69,6 +70,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy mirror to GitHub Pages
+      - name: Опубликовать mirror to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

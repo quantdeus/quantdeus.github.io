@@ -1,4 +1,5 @@
 name: QuantDeus Daily Swarm Learning 📚🐒
+run-name: "Ежедневное обучение ИИ-команды"
 
 on:
   schedule:
@@ -27,7 +28,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
       - name: Inference-only engineering study
@@ -153,7 +154,7 @@ jobs:
           });
           NODE
 
-      - name: Upload learning evidence
+      - name: Сохранить learning evidence
         uses: actions/upload-artifact@v4
         with:
           name: quantdeus-daily-swarm-learning

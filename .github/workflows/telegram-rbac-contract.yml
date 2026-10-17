@@ -1,4 +1,5 @@
 name: QuantDeus Telegram RBAC Contract
+run-name: "Проверка прав доступа Telegram"
 
 on:
   pull_request:
@@ -28,5 +29,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate Telegram RBAC and delegation invariants
+      - name: Проверить Telegram RBAC and delegation invariants
         run: node scripts/telegram-rbac-contract.js

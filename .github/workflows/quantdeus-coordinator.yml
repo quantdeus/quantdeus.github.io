@@ -1,4 +1,5 @@
 name: QuantDeus Seven + Swarm Secretary 🖖🗂️
+run-name: "Координация команды QuantDeus"
 
 on:
   schedule:
@@ -48,10 +49,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate shared THRIVE / Venus / Реновация / Рубежи mission
+      - name: Проверить shared THRIVE / Venus / Реновация / Рубежи mission
         run: node scripts/mission-alignment.js
 
-      - name: Validate post-scarcity civilization doctrine
+      - name: Проверить post-scarcity civilization doctrine
         run: node -e "const d=require('./scripts/doctrine').loadDoctrine(); console.log('Doctrine', d.version)"
 
       - name: Dispatch owner-requested VST test immediately

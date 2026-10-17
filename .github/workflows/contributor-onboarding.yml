@@ -1,4 +1,5 @@
 name: QuantDeus Contributor Onboarding 🧑‍🚀
+run-name: "Подключение участников"
 
 on:
   workflow_dispatch:
@@ -32,13 +33,13 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Validate onboarding unit contract
+      - name: Проверить onboarding unit contract
         run: node --test scripts/qa/contributor-onboarding.test.js
 
-      - name: Prepare read-only contributor registry PR
+      - name: Подготовить read-only contributor registry PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}

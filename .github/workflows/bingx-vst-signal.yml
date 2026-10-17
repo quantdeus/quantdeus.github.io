@@ -1,4 +1,5 @@
 name: QuantDeus BingX VST Autotrade
+run-name: "Торговые сигналы — проверка без сделок"
 
 on:
   schedule:
@@ -28,10 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Run GitHub-native guarded BingX VST autotrade cycle
+      - name: Запустить GitHub-native guarded BingX VST autotrade cycle
         id: github_native
         continue-on-error: true
         working-directory: vercel-dispatcher
@@ -43,7 +44,7 @@ jobs:
           npm install --omit=dev --no-audit --no-fund
           node scripts/run-bingx-vst-native.mjs
 
-      - name: Run Vercel VST fallback
+      - name: Запустить Vercel VST fallback
         # A crashed live run may have submitted an order; never retry via a
         # second provider before human reconciliation of live positions.
         if: steps.github_native.outcome == 'failure' && env.BINGX_TRADING_ENV != 'prod-live'

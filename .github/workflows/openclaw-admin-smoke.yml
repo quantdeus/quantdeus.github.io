@@ -1,4 +1,5 @@
 name: QuantDeus OpenClaw Admin Office Smoke
+run-name: "Проверка управления OpenClaw"
 # production re-smoke after Hermes-lite provider failover 2026-10-04
 # production re-smoke after LLM Gateway failover 2026-10-04
 # production re-smoke after direct MCP schemas 16e6f1f
@@ -41,7 +42,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify BingX VST signed authentication
+      - name: Проверить BingX VST signed authentication
         run: |
           node <<'NODE'
           (async () => {
@@ -78,7 +79,7 @@ jobs:
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
-      - name: Verify trusted OpenClaw GitHub MCP lane
+      - name: Проверить trusted OpenClaw GitHub MCP lane
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -128,7 +129,7 @@ jobs:
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
-      - name: Verify brokered-read OpenClaw publicrepo MCP lane
+      - name: Проверить brokered-read OpenClaw publicrepo MCP lane
         run: |
           node <<'NODE'
           const office = require('./scripts/openclaw-office-client');
@@ -169,7 +170,7 @@ jobs:
           })().catch(error => { console.error(error.message || error); process.exit(1); });
           NODE
 
-      - name: Verify trusted OpenClaw Playwright MCP lane
+      - name: Проверить trusted OpenClaw Playwright MCP lane
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

@@ -1,4 +1,5 @@
 name: QuantDeus Native WordPress MCP Check
+run-name: "Настройка входа на сайт"
 
 on:
   workflow_dispatch:
@@ -19,8 +20,8 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Validate native WordPress MCP contract
+      - name: Проверить native WordPress MCP contract
         run: node scripts/qa/contract-validator.js

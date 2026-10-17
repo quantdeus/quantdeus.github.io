@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE="${MIRROR_SOURCE:-https://quantdeus.whf.bz}"
+SOURCE="${MIRROR_SOURCE:-https://quantdeus.ru}"
 OUT="${1:-_site}"
 TMP="$(mktemp -d)"
 URLS="$TMP/urls.txt"
@@ -65,12 +65,12 @@ wget \
   --adjust-extension \
   --execute robots=off \
   --restrict-file-names=windows \
-  --domains quantdeus.whf.bz \
+  --domains quantdeus.ru \
   --user-agent='QuantDeus-GitHub-Pages-Mirror/1.0' \
   --directory-prefix "$TMP/site" \
   --input-file "$URLS"
 
-ROOT="$TMP/site/quantdeus.whf.bz"
+ROOT="$TMP/site/quantdeus.ru"
 test -s "$ROOT/index.html"
 
 cp -a "$ROOT/." "$OUT/"
@@ -119,20 +119,20 @@ cat > "$OUT/lite/index.html" <<'HTML'
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
 <meta name="quantdeus-mirror" content="emergency-lite">
-<title>QuantDeus Lite — аварийный вход</title>
+<title>QuantDeus — запасной вход</title>
 </head>
 <body>
 <main>
-<h1>QuantDeus Lite</h1>
+<h1>Облегчённая версия QuantDeus</h1>
 <p><strong>Аварийный вход в QuantDeus.</strong> Эта страница работает без JavaScript, внешних таблиц стилей, шрифтов, изображений и аналитики.</p>
 <p>Если основной портал не открывается или отображает белый экран:</p>
 <ul>
-<li><a href="https://quantdeus.whf.bz/">Основной QuantDeus</a></li>
-<li><a href="https://quantdeus.whf.bz/lite/">WordPress Lite</a></li>
-<li><a href="https://vk.ru/neon_y2k">QuantDeus в VK</a></li>
+<li><a href="https://quantdeus.ru/">Основной QuantDeus</a></li>
+<li><a href="https://quantdeus.ru/lite/">Облегчённая версия WordPress</a></li>
+<li><a href="https://vk.ru/andromeda_2077">QuantDeus в VK</a></li>
 <li><a href="https://t.me/quantdeus_chat">QuantDeus Telegram</a></li>
 </ul>
-<p>Этот аварийный документ статичен и хранится независимо в GitHub Pages mirror.</p>
+<p>Этот аварийный документ статичен и хранится независимо в зеркале GitHub Pages.</p>
 </main>
 </body>
 </html>

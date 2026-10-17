@@ -1,4 +1,5 @@
 name: QuantDeus Seven Priority Cycle 🖖
+run-name: "Приоритеты Седьмой из Девяти"
 
 on:
   schedule:
@@ -35,7 +36,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
       - name: Capture public community and execution state
         env:
@@ -211,7 +212,7 @@ jobs:
             process.exit(1);
           });
           NODE
-      - name: Publish Seven-proposed Issue deterministically
+      - name: Опубликовать Seven-proposed Issue deterministically
         if: steps.seven.outputs.action == 'open_issue'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

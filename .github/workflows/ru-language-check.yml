@@ -1,0 +1,29 @@
+name: Контроль русского языка
+run-name: "🇷🇺 Проверка языка QuantDeus"
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  language:
+    name: Проверка новых надписей
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Получить файлы проекта
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Найти английские надписи в новых изменениях
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node scripts/check-ru-language.mjs

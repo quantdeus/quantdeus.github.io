@@ -1,3 +1,5 @@
+> **Правило для каждого агента:** русский — язык общения, документации, понятных отчётов и интерфейсов QuantDeus. Перед изменением прочитайте [правила русского языка](docs/ru-language-policy.md). Пишите простыми словами. Не переводите команды, адреса, секреты и технические идентификаторы. Не допускайте возвращения английских надписей.
+
 # QuantDeus Agents + Vercel Swarm Dispatcher README
 
 This file is the operational README for QuantDeus agents, the Vercel Swarm Dispatcher, and automation runtimes interacting with this repository.

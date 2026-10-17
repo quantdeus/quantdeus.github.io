@@ -1,6 +1,7 @@
 # Owner-triggered Claude Code review with read-only Composio GitHub MCP.
 # This workflow is configuration-only. No model calls from PR checks or branch pushes.
 name: Claude Code — Skyrim + Composio MCP
+run-name: "Разработка дополнений Skyrim"
 
 on:
   issue_comment:
@@ -42,13 +43,13 @@ jobs:
       has_composio: ${{ steps.auth.outputs.has_composio }}
       has_identity: ${{ steps.auth.outputs.has_identity }}
     steps:
-      - name: Checkout workflow configuration for unit tests
+      - name: Загрузить файлы проекта workflow configuration for unit tests
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Test static Composio MCP gate without network or inference
+      - name: Протестировать static Composio MCP gate without network or inference
         run: node --test scripts/claude-composio-mcp.test.mjs
-      - name: Verify authorization presence (never expose values)
+      - name: Проверить authorization presence (never expose values)
         id: auth
         env:
           API_SET: ${{ secrets.ANTHROPIC_API_KEY != '' }}
@@ -105,22 +106,22 @@ jobs:
       actions: read
       id-token: write
     steps:
-      - name: Checkout secure MCP bridge configuration from main
+      - name: Загрузить файлы проекта secure MCP bridge configuration from main
         uses: actions/checkout@v4
         with:
           ref: main
           persist-credentials: false
           fetch-depth: 1
-      - name: Checkout Skyrim game branch separately for review
+      - name: Загрузить файлы проекта Skyrim game branch separately for review
         uses: actions/checkout@v4
         with:
           ref: feat/skyrim-mobile-webgl-500mb
           path: review-target
           persist-credentials: false
           fetch-depth: 1
-      - name: Install Composio session SDK
+      - name: Установить Composio session SDK
         run: npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund '@composio/core@^0.19.1'
-      - name: Create restricted Composio GitHub MCP session
+      - name: Создать restricted Composio GitHub MCP session
         env:
           COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
           COMPOSIO_USER_ID: ${{ secrets.COMPOSIO_USER_ID }}

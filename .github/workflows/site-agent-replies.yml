@@ -1,4 +1,5 @@
 name: QuantDeus Site Agent Replies
+run-name: "Ответы агентов на сайте"
 
 on:
   issue_comment:
