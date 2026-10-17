@@ -1345,10 +1345,10 @@ async function homunculusReply(message, retryUpdate = null) {
     return '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь';
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    return 'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.';
+    return 'Команды QuantDeus:\n/monkeys или /agents — 🐒 команда агентов\n/pro — ⭐ подписка\n/shield — состояние защиты\n/agent <id> <вопрос> — обратиться к агенту\n\nВ группах отвечаю на команды, упоминания и ответы на мои сообщения.';
   }
   if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    return `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: BROKERED READ / QUERY / RESEARCH\nPrivileged writes: authenticated owner/admin broker only\nPrompt injection: deterministic pre-filter + system firewall + untrusted-tool-output rule\nSecret leakage: output filter\nGroups: commands / mentions / replies only`;
+    return `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nПубличный чат: открыт\nИнструменты: чтение, поиск и исследования с проверкой доступа\nИзменения системы: только после подтверждения прав владельца или администратора\nЗащита от вредоносных команд и утечки данных: включена\nГруппы: ответы на команды, упоминания и обращения`;
   }
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return proText(await telegramEntitlement(message));
@@ -1369,7 +1369,7 @@ async function homunculusReply(message, retryUpdate = null) {
     /^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) ||
     /^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(raw)
   ) {
-    return [`🐒 QuantDeus AI Fleet · ${agents.length} агентов`, ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`), '', 'Нажми команду роли или напиши /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'].join('\n').slice(0, 3900);
+    return [`🐒 QuantDeus AI Fleet · ${agents.length} агентов`, ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.telegram_description_ru || agent.role}`), '', 'Нажми команду роли или напиши /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'].join('\n').slice(0, 3900);
   }
 
   const entitlement = await telegramEntitlement(message);
@@ -1530,13 +1530,13 @@ async function fastPublicCommandReply(raw) {
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     return {
-      text: 'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.',
+      text: 'Команды QuantDeus:\n/monkeys или /agents — 🐒 команда агентов\n/pro — ⭐ подписка\n/shield — состояние защиты\n/agent <id> <вопрос> — обратиться к агенту\n\nВ группах отвечаю на команды, упоминания и ответы на мои сообщения.',
       menu: true
     };
   }
   if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     return {
-      text: `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: BROKERED READ / QUERY / RESEARCH\nPrivileged writes: authenticated owner/admin broker only\nPrompt injection: deterministic pre-filter + system firewall + untrusted-tool-output rule\nSecret leakage: output filter\nGroups: commands / mentions / replies only`,
+      text: `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nПубличный чат: открыт\nИнструменты: чтение, поиск и исследования с проверкой доступа\nИзменения системы: только после подтверждения прав владельца или администратора\nЗащита от вредоносных команд и утечки данных: включена\nГруппы: ответы на команды, упоминания и обращения`,
       menu: false
     };
   }
@@ -1556,7 +1556,7 @@ async function fastPublicCommandReply(raw) {
     return {
       text: [
         `🐒 QuantDeus AI Fleet · ${agents.length} агентов`,
-        ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`),
+        ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.telegram_description_ru || agent.role}`),
         '',
         'Нажми команду роли или используй /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'
       ].join('\n').slice(0, 3900),
