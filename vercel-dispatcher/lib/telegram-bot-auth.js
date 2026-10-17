@@ -29,8 +29,13 @@ function storeBotToken() {
   );
 }
 async function resolveStoreBotUsername() {
+  const agentUsername = clean(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME || "QuantDeus_bot").replace(/^@/, "").toLowerCase();
+  const ensureSeparateIdentity = username => {
+    if (clean(username).toLowerCase() === agentUsername) throw new Error("telegram_store_bot_identity_conflict");
+    return username;
+  };
   const configured = telegramBotUsername();
-  if (configured) return configured;
+  if (configured) return ensureSeparateIdentity(configured);
   if (cachedStoreUsername && Date.now() - cachedStoreUsernameAt < 60 * 60 * 1000) return cachedStoreUsername;
   const token = storeBotToken();
   const source = token
@@ -42,6 +47,7 @@ async function resolveStoreBotUsername() {
   if (!response.ok || (token ? data?.ok !== true : data?.configured !== true) || !/^[A-Za-z0-9_]{5,32}$/.test(username)) {
     throw new Error("telegram_store_bot_unavailable");
   }
+  ensureSeparateIdentity(username);
   cachedStoreUsername = username;
   cachedStoreUsernameAt = Date.now();
   return username;
