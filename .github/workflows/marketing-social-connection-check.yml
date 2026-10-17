@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 5
     env:
       VK_TOKEN_GROUP: ${{ secrets.VK_TOKEN_GROUP }}
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_API: ${{ secrets.COMPOSIO_API }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate social integrations without publishing
