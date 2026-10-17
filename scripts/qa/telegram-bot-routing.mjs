@@ -9,6 +9,13 @@ const route = fs.readFileSync('vercel-dispatcher/api/quantdeus/telegram.js', 'ut
 const setup = fs.readFileSync('scripts/telegram-webhook-setup.js', 'utf8');
 const federation = fs.readFileSync('vercel-dispatcher/lib/telegram-federation.js', 'utf8');
 
+const agents = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8')).agents;
+assert.equal(agents.length, 29, 'all registered agents');
+for (const agent of agents) {
+  assert.match(agent.telegram_description_ru || '', /[А-Яа-яЁё]/, 'Russian description for ' + agent.id);
+  assert.doesNotMatch(agent.telegram_description_ru || '', /\\b(?:workflow|bot|marketing|research|agent|LLM)\\b/i, 'No English jargon in ' + agent.id);
+}
+
 const checks = [
   ['store webhook uses its own URL', route.includes("DEFAULT_WEBHOOK_URL + '?bot=store'")],
   ['store inbound checks token-derived secret', route.includes("webhookSecret(botKind)") && route.includes("botKind === 'agent'")],
