@@ -124,7 +124,7 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/telegram.js
           node --check vercel-dispatcher/lib/github-auth.js
           node --check vercel-dispatcher/lib/telegram-bot-auth.js
-          grep -q "https://quantdeus.whf.bz/login/" assets/portal-shell.js
+          grep -q "https://quantdeus.ru/login/" assets/portal-shell.js
           grep -q "canonical.href" assets/portal-shell.js
           if grep -q "Telegram.Login.auth" index.html; then echo "legacy Telegram Login SDK forbidden"; exit 1; fi
           grep -q "telegramBrokerUrl" wordpress/src/quantdeus-aero/app.js
@@ -132,8 +132,8 @@ jobs:
           grep -q "qd_telegram_assertion" wordpress/src/quantdeus-aero/app.js
           grep -q "syncTelegramBotSession" wordpress/src/quantdeus-aero/app.js
           grep -q "qd_github_assertion" wordpress/src/quantdeus-aero/app.js
-          grep -q 'DEFAULT_SITE_ORIGIN = "https://quantdeus.whf.bz"' vercel-dispatcher/lib/github-auth.js
-          grep -q 'DEFAULT_SITE_ORIGIN = "https://quantdeus.whf.bz"' vercel-dispatcher/lib/telegram-bot-auth.js
+          grep -q 'DEFAULT_SITE_ORIGIN = "https://quantdeus.ru"' vercel-dispatcher/lib/github-auth.js
+          grep -q 'DEFAULT_SITE_ORIGIN = "https://quantdeus.ru"' vercel-dispatcher/lib/telegram-bot-auth.js
           grep -q 'telegramSiteOrigin() + "/login/"' vercel-dispatcher/lib/telegram-bot-auth.js
           grep -q "data-telegram-login" wordpress/src/quantdeus-aero/page-login.php
           grep -q "QuantDeus Store Bot" wordpress/src/quantdeus-aero/page-login.php
