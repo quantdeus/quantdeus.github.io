@@ -136,9 +136,9 @@ async function askChatAgent(agentId, userContent, metadata, options = {}) {
 
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
 
-const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
-const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.whf.bz/account/';
-const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
+const QUANTDEUS_PRO_URL = 'https://quantdeus.ru/ai-fleet/pro/';
+const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.ru/account/';
+const WORDPRESS_TELEGRAM_PLAN_URL = 'https://quantdeus.ru/wp-json/quantdeus/v1/ai-fleet/telegram-plan';
 const RETRY_SMOKE_AUDIENCE = 'quantdeus-vercel-telegram';
 const RETRY_SMOKE_ENDPOINT = process.env.TELEGRAM_RETRY_SMOKE_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 const PUBLIC_BOT_USERNAME = String(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME || 'QuantDeus_bot').replace(/^@/, '').trim();
@@ -543,7 +543,7 @@ function mainMenuReplyMarkup() {
     inline_keyboard: [
       [{ text: '🐒 Мартышки · AI Fleet', url: `https://t.me/${bot}?start=agents` }],
       [{ text: '⭐ QuantDeus Pro', url: `https://t.me/${bot}?start=pro` }],
-      [{ text: '🌐 QuantDeus', url: 'https://quantdeus.whf.bz/' }]
+      [{ text: '🌐 QuantDeus', url: 'https://quantdeus.ru/' }]
     ]
   };
 }
