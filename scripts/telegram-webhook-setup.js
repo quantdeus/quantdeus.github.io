@@ -59,7 +59,7 @@ async function telegram(botToken, method, payload = {}) {
   return body.result;
 }
 
-async function configureTelegramInterface(botToken) {
+async function configureTelegramInterface(botToken, botKind = 'agent') {
   const webAppUrl = String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
   await telegram(botToken, 'setChatMenuButton', {
     menu_button: {
@@ -69,10 +69,14 @@ async function configureTelegramInterface(botToken) {
     }
   });
   await telegram(botToken, 'setMyDescription', {
-    description: TELEGRAM_BOT_DESCRIPTION
+    description: botKind === 'store'
+      ? 'QuantDeus Store — магазин услуг, тарифы Free и Pro, помощь с заказами и связь с командой QuantDeus.'
+      : 'QuantDeus Agent — интеллектуальный помощник проекта: исследования, ответы и общение с 29 агентами.'
   });
   await telegram(botToken, 'setMyShortDescription', {
-    short_description: TELEGRAM_BOT_SHORT_DESCRIPTION
+    short_description: botKind === 'store'
+      ? 'Магазин услуг QuantDeus, заказы и поддержка на русском языке.'
+      : 'Общение с ИИ-командой QuantDeus на русском языке.'
   });
   return { menu_button_url: webAppUrl };
 }
@@ -114,23 +118,38 @@ async function main() {
   const storeBotToken = String(process.env.TELEGRAM_STORE_BOT_TOKEN || '').trim();
 
   const oidc = await getGithubOidcToken(AUDIENCE);
-  const response = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: {
-      authorization: 'Bearer ' + oidc,
-      'content-type': 'application/json',
-      accept: 'application/json'
-    },
-    body: JSON.stringify({ mode: 'setup', bot_token: botToken })
-  });
-  const raw = await response.text();
-  if (!response.ok) throw new Error('Telegram webhook setup ' + response.status + ': ' + raw.slice(0, 1200));
-  const data = JSON.parse(raw);
-  const botInterface = await configureTelegramInterface(botToken);
+  const setupBot = async (token, kind) => {
+    const response = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + oidc,
+        'content-type': 'application/json',
+        accept: 'application/json'
+      },
+      body: JSON.stringify({ mode: 'setup', bot_kind: kind, bot_token: token })
+    });
+    const raw = await response.text();
+    if (!response.ok) throw new Error('Telegram ' + kind + ' webhook setup ' + response.status + ': ' + raw.slice(0, 600));
+    return JSON.parse(raw);
+  };
+  const data = await setupBot(botToken, 'agent');
+  const botInterface = await configureTelegramInterface(botToken, 'agent');
   const primaryCommands = await configureTelegramCommands(botToken, 'primary');
-  const storeCommands = storeBotToken && storeBotToken !== botToken
-    ? await configureTelegramCommands(storeBotToken, 'store')
-    : null;
+  let storeCommands = null;
+  let storeSetup = null;
+  if (storeBotToken && storeBotToken !== botToken) {
+    try {
+      storeSetup = await setupBot(storeBotToken, 'store');
+      await configureTelegramInterface(storeBotToken, 'store');
+      storeCommands = await configureTelegramCommands(storeBotToken, 'store');
+    } catch (error) {
+      // Keep the primary bot functional and expose the missing Store configuration.
+      storeSetup = { ok: false, error: String(error?.message || error).slice(0, 500) };
+      console.error('Telegram Store is not ready: ' + storeSetup.error);
+    }
+  } else {
+    console.warn('Telegram Store: отдельный токен не настроен в GitHub Secrets.');
+  }
   console.log('Telegram webhook configured:', JSON.stringify({
     bot_username: data.bot?.username || null,
     can_read_all_group_messages: data.bot?.can_read_all_group_messages ?? null,
@@ -145,6 +164,10 @@ async function main() {
     interface: botInterface,
     primary_commands: primaryCommands,
     store_commands: storeCommands,
+    store_webhook_ok: storeSetup?.ok === true,
+    store_webhook_error: storeSetup?.ok === false ? storeSetup.error : null,
+    store_webhook_url: storeSetup?.webhook?.url || null,
+    store_llm_smoke_ok: storeSetup?.llm_smoke?.ok ?? null,
     url: data.webhook?.url || null,
     pending_update_count: data.webhook?.pending_update_count ?? null,
     last_error_message: data.webhook?.last_error_message || null
