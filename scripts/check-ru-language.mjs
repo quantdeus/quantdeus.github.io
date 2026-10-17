@@ -21,7 +21,7 @@ let file = '';
 let checked = 0;
 function examine(value, kind) {
   const label = value.trim().replace(/^["']|["']$/g, '');
-  if (!label || /[А-Яа-яЁё]/u.test(label) || brand.test(label)) return;
+  if (!label || label.startsWith('https://') || label.startsWith('http://') || /[А-Яа-яЁё]/u.test(label) || brand.test(label)) return;
   if (kind === 'workflow' && /[A-Za-z]{4}/.test(label)) {
     errors.push(file + ': этап без русского названия: ' + label.slice(0, 120));
   } else if (kind !== 'workflow' && forbidden.test(label)) {
