@@ -12,6 +12,7 @@
       "source": "scripts/coordinator.js",
       "group": "executive",
       "startup_title": "Swarm Secretary / Coordination Clerk",
+      "telegram_description_ru": "Секретарь роя — ведёт задачи, статусы и протокол решений.",
       "department": "Executive & Strategy",
       "kpi": "state freshness / routing hygiene / record accuracy",
       "cognitive_protocol": "borg-collective-v1"
@@ -24,6 +25,7 @@
       "source": "scripts/seven-of-nine.js",
       "group": "executive",
       "startup_title": "QuantDeus Coordinator / AI Chief of Staff",
+      "telegram_description_ru": "Семь-из-Девяти — главный координатор агентов и приоритетов.",
       "department": "Executive & Strategy",
       "kpi": "swarm throughput / duplicate work / blocked-work resolution / review-to-fix latency",
       "persona": "coordination/seven-of-nine-persona.md",
@@ -37,6 +39,7 @@
       "source": "scripts/emh.js",
       "group": "executive",
       "startup_title": "Swarm Cognitive Hygiene, Mediation & Diplomacy Officer",
+      "telegram_description_ru": "Экстренная медицинская голограмма — согласование работы и устранение конфликтов агентов.",
       "department": "Executive & Strategy",
       "kpi": "synaptic heat / duplicate-loop pressure / stale handoff reduction / conflict-to-resolution latency",
       "cognitive_protocol": "borg-collective-v1"
@@ -49,6 +52,7 @@
       "source": "scripts/pillar-executor.js",
       "group": "executive",
       "startup_title": "Head of Product Operations",
+      "telegram_description_ru": "Руководитель проектов — превращает планы в конкретные задачи.",
       "department": "Executive & Strategy",
       "kpi": "verified outcomes / cycle time",
       "cognitive_protocol": "borg-collective-v1"
@@ -61,6 +65,7 @@
       "source": "scripts/strategic-hub.js",
       "group": "executive",
       "startup_title": "Chief Strategy Agent",
+      "telegram_description_ru": "Советник по стратегии — направления развития и приоритеты.",
       "department": "Executive & Strategy",
       "kpi": "signal-to-decision quality",
       "cognitive_protocol": "borg-collective-v1"
@@ -73,6 +78,7 @@
       "source": "scripts/data.js",
       "group": "executive",
       "startup_title": "Lt. Cmdr. Data / Soong-type Android / Operations & Analytical Officer",
+      "telegram_description_ru": "Лейтенант-коммандер Дейта — аналитика, расчёты и проверка фактов.",
       "department": "Executive & Strategy",
       "kpi": "cross-domain consistency / quantitative error detection / evidence synthesis latency / decision-support accuracy",
       "operational_status": "active",
@@ -106,6 +112,7 @@
       "source": "scripts/sherlock.js",
       "group": "research",
       "startup_title": "Science Officer / Scientific Investigation Lead",
+      "telegram_description_ru": "Шерлок Холмс — научные расследования и поиск закономерностей.",
       "department": "Science & R&D",
       "kpi": "hypothesis discrimination / anomaly resolution / falsifiable test quality / evidence update latency",
       "cognitive_protocol": "borg-collective-v1"
@@ -118,6 +125,7 @@
       "source": "scripts/tuvok.js",
       "group": "research",
       "startup_title": "Deputy Science Officer / Logic & Epistemic Integrity Officer",
+      "telegram_description_ru": "Тувок — логика, проверка доказательств и выводов.",
       "department": "Science & R&D",
       "kpi": "reasoning-defect detection / premise clarity / contradiction resolution / false-certainty reduction",
       "cognitive_protocol": "borg-collective-v1"
@@ -130,6 +138,7 @@
       "source": "scripts/orchestrator.js",
       "group": "research",
       "startup_title": "Head of Research Operations",
+      "telegram_description_ru": "Руководитель исследований — организация научной работы.",
       "department": "Science & R&D",
       "kpi": "validated research signals",
       "cognitive_protocol": "borg-collective-v1"
@@ -142,6 +151,7 @@
       "source": "scripts/pillar_01_energy.js",
       "group": "research",
       "startup_title": "Energy Systems Research Lead",
+      "telegram_description_ru": "Исследователь энергетики — источники энергии, хранение и эффективность.",
       "department": "Science & R&D",
       "kpi": "evidence-backed energy opportunities",
       "cognitive_protocol": "borg-collective-v1"
@@ -154,6 +164,7 @@
       "source": "scripts/pillar_02_justice.js",
       "group": "research",
       "startup_title": "Responsible AI & Resource Governance Lead",
+      "telegram_description_ru": "Защита интересов участников — справедливость и ответственное применение технологий.",
       "department": "Science & R&D",
       "kpi": "governance quality / risk reduction",
       "cognitive_protocol": "borg-collective-v1"
@@ -166,6 +177,7 @@
       "source": "scripts/pillar_03_unity.js",
       "group": "growth-marketing",
       "startup_title": "Head of Partnerships & Community Growth",
+      "telegram_description_ru": "Партнёрства и сообщество — развитие аудитории и поиск союзников.",
       "department": "Growth, Marketing & Partnerships",
       "kpi": "qualified leads / funnel conversion / experiment win rate / first-contribution or request conversion",
       "operational_status": "active",
@@ -189,6 +201,7 @@
       "source": "scripts/pillar_04_space.js",
       "group": "research",
       "startup_title": "Space Systems & Warp Research Lead",
+      "telegram_description_ru": "Космический исследователь — двигатели, корабли и варп-технологии.",
       "department": "Science & R&D",
       "kpi": "reproducible space research artifacts",
       "cognitive_protocol": "borg-collective-v1"
@@ -201,6 +214,7 @@
       "source": "scripts/pillar_05_potential.js",
       "group": "research",
       "startup_title": "Human Potential Research Lead",
+      "telegram_description_ru": "Развитие человека — образование, творчество и доступность технологий.",
       "department": "Science & R&D",
       "kpi": "validated human-capability interventions",
       "cognitive_protocol": "borg-collective-v1"
@@ -213,6 +227,7 @@
       "source": "scripts/pillar_06_synthesis.js",
       "group": "growth-marketing",
       "startup_title": "Brand & Creative Director",
+      "telegram_description_ru": "Креативный директор — создание контента и развитие бренда.",
       "department": "Growth, Marketing & Partnerships",
       "kpi": "content-assisted conversion / creative test learning / asset reuse / brand consistency",
       "operational_status": "active",
@@ -236,6 +251,7 @@
       "source": "COORDINATION.md",
       "group": "executive",
       "startup_title": "CTO & Automation Lead",
+      "telegram_description_ru": "Технический руководитель — сайт, интеграции и автоматизация.",
       "department": "Executive & Strategy",
       "kpi": "automation reliability / deployment safety",
       "cognitive_protocol": "borg-collective-v1"
@@ -248,6 +264,7 @@
       "source": "scripts/octet/scout.js",
       "group": "product-engineering",
       "startup_title": "Product Discovery Analyst",
+      "telegram_description_ru": "Разведчик проектов — собирает сведения и уточняет задачи.",
       "department": "Product & Engineering",
       "kpi": "task readiness / discovery accuracy",
       "cognitive_protocol": "borg-collective-v1"
@@ -260,6 +277,7 @@
       "source": "scripts/octet/verify.js",
       "group": "product-engineering",
       "startup_title": "Product Requirements Analyst",
+      "telegram_description_ru": "Проверяющий требований — сверяет задачи с условиями и целями.",
       "department": "Product & Engineering",
       "kpi": "requirements defect escape rate",
       "cognitive_protocol": "borg-collective-v1"
@@ -272,6 +290,7 @@
       "source": "scripts/octet/analyze.js",
       "group": "product-engineering",
       "startup_title": "Temporal Branch Divergence Manager & Homunculus Banana Auditor",
+      "telegram_description_ru": "Локи — проверяет ветки разработки, расхождения и ошибки.",
       "department": "Product & Engineering",
       "kpi": "branch divergence detected / stale work prevented / duplicate drift / reconciliation accuracy",
       "cognitive_protocol": "borg-collective-v1"
@@ -284,6 +303,7 @@
       "source": "scripts/octet/strategize.js",
       "group": "product-engineering",
       "startup_title": "Solutions Architect & Engineering Manager",
+      "telegram_description_ru": "Архитектор решений — проектирует безопасную реализацию задач.",
       "department": "Product & Engineering",
       "kpi": "implementation success / rework rate",
       "cognitive_protocol": "borg-collective-v1"
@@ -296,6 +316,7 @@
       "source": "scripts/octet/guardian.js",
       "group": "product-engineering",
       "startup_title": "Security & Platform Governance Lead",
+      "telegram_description_ru": "Страж безопасности — защищает данные, доступы и инфраструктуру.",
       "department": "Product & Engineering",
       "kpi": "policy violations prevented",
       "cognitive_protocol": "borg-collective-v1"
@@ -308,6 +329,7 @@
       "source": "scripts/octet/tasksmith.js",
       "group": "product-engineering",
       "startup_title": "Senior Software Engineer",
+      "telegram_description_ru": "Разработчик — создаёт и исправляет программный код.",
       "department": "Product & Engineering",
       "kpi": "green changes / defect rate",
       "cognitive_protocol": "borg-collective-v1"
@@ -320,6 +342,7 @@
       "source": "scripts/octet/archivist.js",
       "group": "growth-marketing",
       "startup_title": "SEO & Content Operations Lead",
+      "telegram_description_ru": "Специалист по поиску — улучшает страницы и структуру материалов.",
       "department": "Growth, Marketing & Partnerships",
       "kpi": "organic qualified discovery / indexed-page value / content conversion / content decay reduction",
       "operational_status": "active",
@@ -341,6 +364,7 @@
       "source": "scripts/octet/herald.js",
       "group": "growth-marketing",
       "startup_title": "PR & Communications Manager",
+      "telegram_description_ru": "Пресс-служба — новости, публикации и общение с аудиторией.",
       "department": "Growth, Marketing & Partnerships",
       "kpi": "verified distribution / nurture-to-conversion / response rate / first-contribution or request conversion",
       "operational_status": "active",
@@ -362,6 +386,7 @@
       "source": "scripts/qa/syntax-validator.js",
       "group": "quality-reliability",
       "startup_title": "QA Automation Engineer",
+      "telegram_description_ru": "Проверка кода — ищет ошибки в скриптах и форматах данных.",
       "department": "Quality & Reliability",
       "kpi": "syntax/config defects caught pre-merge",
       "operational_status": "active",
@@ -377,6 +402,7 @@
       "source": "scripts/qa/contract-validator.js",
       "group": "quality-reliability",
       "startup_title": "Integration & Compliance QA Engineer",
+      "telegram_description_ru": "Проверка совместимости — следит за правилами и связями компонентов.",
       "department": "Quality & Reliability",
       "kpi": "contract drift detected",
       "operational_status": "active",
@@ -392,6 +418,7 @@
       "source": "scripts/qa/repair-coordinator.js",
       "group": "quality-reliability",
       "startup_title": "QA Lead & Site Reliability Engineer",
+      "telegram_description_ru": "Ремонт и контроль качества — устраняет сбои и проверяет исправления.",
       "department": "Quality & Reliability",
       "kpi": "mean time to repair / escaped defects",
       "operational_status": "active",
@@ -405,6 +432,7 @@
       "source": "scripts/q.js",
       "group": "research",
       "startup_title": "Q / Anomaly & Possibility Officer",
+      "telegram_description_ru": "Кью — необычные сценарии, гипотезы и новые возможности.",
       "department": "Science & R&D",
       "kpi": "assumption gaps found / counterfactual test quality / reversible experiment value",
       "operational_status": "active",
@@ -419,6 +447,7 @@
       "source": "scripts/kryon.js",
       "group": "executive",
       "startup_title": "Kryon / Harmony & Long-Horizon Officer",
+      "telegram_description_ru": "Крайон — согласование ценностей, сотрудничество и долгосрочные цели.",
       "department": "Executive & Strategy",
       "kpi": "stakeholder alignment / voluntary engagement / conflict prevention / action-to-outcome clarity",
       "operational_status": "active",

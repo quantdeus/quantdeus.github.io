@@ -1,7 +1,8 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-const DEFAULT_BOT_USERNAME = "QuantDeus_bot";
-const DEFAULT_SITE_ORIGIN = "https://quantdeus.whf.bz";
+const DEFAULT_SITE_ORIGIN = "https://quantdeus.ru";
+let cachedStoreUsername = "";
+let cachedStoreUsernameAt = 0;
 const REQUEST_TTL_SECONDS = 10 * 60;
 const ASSERTION_TTL_SECONDS = 5 * 60;
 
@@ -18,11 +19,50 @@ function botToken() {
 }
 
 export function telegramBotUsername() {
-  return clean(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME) || DEFAULT_BOT_USERNAME;
+  return clean(process.env.QUANTDEUS_TELEGRAM_STORE_BOT_USERNAME || process.env.TELEGRAM_STORE_BOT_USERNAME).replace(/^@/, "");
+}
+function storeBotToken() {
+  return clean(
+    process.env.QUANTDEUS_STORE_TELEGRAM_BOT_TOKEN ||
+    process.env.TELEGRAM_STORE_BOT_TOKEN ||
+    process.env.QUANTDEUS_STORE_BOT_TOKEN
+  );
+}
+async function resolveStoreBotUsername() {
+  const agentUsername = clean(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME || "QuantDeus_bot").replace(/^@/, "").toLowerCase();
+  const ensureSeparateIdentity = username => {
+    if (clean(username).toLowerCase() === agentUsername) throw new Error("telegram_store_bot_identity_conflict");
+    return username;
+  };
+  const configured = telegramBotUsername();
+  if (configured) return ensureSeparateIdentity(configured);
+  if (cachedStoreUsername && Date.now() - cachedStoreUsernameAt < 60 * 60 * 1000) return cachedStoreUsername;
+  const token = storeBotToken();
+  const source = token
+    ? "https://api.telegram.org/bot" + token + "/getMe"
+    : "https://raw.githubusercontent.com/quantdeus/quantdeus.github.io/main/telegram-store-public.json";
+  const response = await fetch(source, token ? { method: "POST" } : { headers: { Accept: "application/json" } });
+  const data = await response.json().catch(() => null);
+  const username = clean(token ? data?.result?.username : data?.username).replace(/^@/, "");
+  if (!response.ok || (token ? data?.ok !== true : data?.configured !== true) || !/^[A-Za-z0-9_]{5,32}$/.test(username)) {
+    throw new Error("telegram_store_bot_unavailable");
+  }
+  ensureSeparateIdentity(username);
+  cachedStoreUsername = username;
+  cachedStoreUsernameAt = Date.now();
+  return username;
 }
 
 export function telegramSiteOrigin() {
-  return clean(process.env.QUANTDEUS_CANONICAL_ORIGIN) || DEFAULT_SITE_ORIGIN;
+  const configured = clean(process.env.QUANTDEUS_CANONICAL_ORIGIN);
+  // Старый временный адрес больше не является точкой входа.
+  if (!configured || configured === "https://quantdeus.whf.bz") return DEFAULT_SITE_ORIGIN;
+  try {
+    const origin = new URL(configured);
+    return origin.protocol === "https:" ? origin.origin : DEFAULT_SITE_ORIGIN;
+  } catch {
+    return DEFAULT_SITE_ORIGIN;
+  }
 }
 
 function key(label) {
@@ -44,13 +84,14 @@ function hmac(label, value, bytes = 16) {
 export function telegramBotAuthHealth() {
   return {
     configured: Boolean(botToken()),
-    username: telegramBotUsername(),
+    username: telegramBotUsername() || cachedStoreUsername || null,
     site_origin: telegramSiteOrigin()
   };
 }
 
-export function issueTelegramLoginRequest() {
+export async function issueTelegramLoginRequest() {
   if (!botToken()) throw new Error("telegram_bot_auth_unconfigured");
+  const storeUsername = await resolveStoreBotUsername();
   const exp = Math.floor(Date.now() / 1000) + REQUEST_TTL_SECONDS;
   const body = Buffer.allocUnsafe(12);
   body.writeUInt32BE(exp, 0);
@@ -59,7 +100,7 @@ export function issueTelegramLoginRequest() {
   const token = Buffer.concat([body, sig]).toString("base64url");
   return {
     start_payload: "qdl_" + token,
-    bot_url: "https://t.me/" + telegramBotUsername() + "?start=qdl_" + token,
+    bot_url: "https://t.me/" + storeUsername + "?start=qdl_" + token,
     expires_in: REQUEST_TTL_SECONDS
   };
 }

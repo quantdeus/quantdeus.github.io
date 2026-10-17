@@ -24,9 +24,17 @@ const JWKS_URL = `${ISSUER}/.well-known/jwks`;
 const AUDIENCE = 'quantdeus-vercel-telegram';
 const DEFAULT_WEBHOOK_URL = 'https://quantdeus.vercel.app/api/quantdeus/telegram';
 const DEFAULT_TELEGRAM_WEB_APP_URL = 'https://quantdeus.github.io/telegram/';
-const TELEGRAM_BOT_DESCRIPTION =
-  'QuantDeus Store Bot: AI Fleet, мартышки, Pro-доступ, Telegram Login и быстрые команды QuantDeus.';
-const TELEGRAM_BOT_SHORT_DESCRIPTION = 'QuantDeus AI Fleet, Store Bot и Mini App.';
+const TELEGRAM_BOT_PROFILES = {
+  agent: {
+    description: 'QuantDeus Agent — помощник научной и технической команды. Общайся с 29 агентами: исследования, код, координация и проверка результатов.',
+    short_description: 'Команда из 29 агентов: исследования, технологии и помощь.'
+  },
+  store: {
+    description: 'QuantDeus Store — магазин услуг и вход на сайт через Telegram. Узнавай об автоматизации бизнеса, проектах и подписке Pro.',
+    short_description: 'Услуги QuantDeus, личный кабинет и вход через Telegram.'
+  }
+};
+const STORE_BOT_USERNAME = String(process.env.QUANTDEUS_TELEGRAM_STORE_BOT_USERNAME || process.env.TELEGRAM_STORE_BOT_USERNAME || '').replace(/^@/, '').trim();
 const PUBLIC_BOT_USERNAME = String(process.env.QUANTDEUS_TELEGRAM_BOT_USERNAME || 'QuantDeus_bot').replace(/^@/, '').trim();
 const QUANTDEUS_PRO_URL = 'https://quantdeus.whf.bz/ai-fleet/pro/';
 const QUANTDEUS_ACCOUNT_URL = 'https://quantdeus.whf.bz/account/';
@@ -99,7 +107,14 @@ function proReplyMarkup() {
   return proReplyMarkupForEntitlement({ plan: 'free' });
 }
 
-function mainMenuReplyMarkup() {
+function mainMenuReplyMarkup(role = 'agent') {
+  if (role === 'store') return {
+    inline_keyboard: [
+      [{ text: '🛍️ Услуги QuantDeus', url: 'https://quantdeus.ru/services/' }],
+      [{ text: '🔐 Войти на сайт', url: 'https://quantdeus.ru/login/' }],
+      [{ text: '🤖 Команда агентов', url: 'https://quantdeus.ru/ai-fleet/' }]
+    ]
+  };
   const bot = PUBLIC_BOT_USERNAME || 'QuantDeus_bot';
   return {
     inline_keyboard: [
@@ -162,14 +177,14 @@ function telegramCommandsForAgents(agents = []) {
   const base = [
     { command: 'start', description: 'Запустить QuantDeus' },
     { command: 'help', description: 'Команды QuantDeus' },
-    { command: 'agents', description: '🐒 Мартышки · AI Fleet' },
-    { command: 'monkeys', description: '🐒 Мартышки · AI Fleet' },
-    { command: 'pro', description: '⭐ QuantDeus Free / Pro' },
-    { command: 'shield', description: 'Статус защиты QuantDeus Shield' },
-    { command: 'agent', description: 'Обратиться к конкретной роли AI Fleet' },
-    { command: 'propose', description: 'Предложить идею для admin-публикации' },
-    { command: 'status', description: 'Состояние очереди QuantDeus' },
-    { command: 'task', description: 'Прямой task для Telegram admin' }
+    { command: 'agents', description: 'Показать команду из 29 агентов' },
+    { command: 'monkeys', description: 'Познакомиться с агентами QuantDeus' },
+    { command: 'pro', description: 'Проверить мой тариф' },
+    { command: 'shield', description: 'Проверить защиту бота' },
+    { command: 'agent', description: 'Задать вопрос выбранному агенту' },
+    { command: 'propose', description: 'Предложить идею для команды' },
+    { command: 'status', description: 'Состояние задач и очереди' },
+    { command: 'task', description: 'Назначить задачу с правами администратора' }
   ];
   const reserved = new Set(base.map(item => item.command));
   const roleCommands = agents
@@ -177,11 +192,11 @@ function telegramCommandsForAgents(agents = []) {
       const command = telegramRoleCommand(agent);
       if (!command || reserved.has(command)) return null;
       reserved.add(command);
-      const title = String(agent?.startup_title || agent?.name || agent?.role || agent?.id || 'QuantDeus agent')
+      const title = String(agent?.telegram_description_ru || agent?.role || 'Агент QuantDeus')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 220);
-      return { command, description: title || 'QuantDeus agent' };
+      return { command, description: title || 'Агент QuantDeus' };
     })
     .filter(Boolean);
   return [...base, ...roleCommands].slice(0, 100);
@@ -378,7 +393,7 @@ async function verifyGithubOidc(token) {
   return claims;
 }
 
-function webhookSecret() {
+function webhookSecret(role = 'agent') {
   const base = String(
     process.env.TELEGRAM_WEBHOOK_SECRET ||
     process.env.CRON_SECRET ||
@@ -386,7 +401,8 @@ function webhookSecret() {
     ''
   ).trim();
   if (!base) return '';
-  return crypto.createHash('sha256').update('quantdeus-telegram-webhook:' + base).digest('base64url');
+  const domain = role === 'store' ? 'quantdeus-telegram-webhook:store:' : 'quantdeus-telegram-webhook:';
+  return crypto.createHash('sha256').update(domain + base).digest('base64url');
 }
 
 function safeEqual(actual, expected) {
@@ -425,12 +441,14 @@ function fromTelegramNetwork(req) {
   return Boolean(ip) && TELEGRAM_CIDRS.some(cidr => cidrContains(ip, cidr));
 }
 
-function publicMessageAddressed(message) {
+function publicMessageAddressed(message, role = 'agent') {
   const chatType = String(message?.chat?.type || 'private');
   if (chatType === 'private') return true;
   const text = String(message?.text || '');
+  const safeUsername = (role === 'store' ? STORE_BOT_USERNAME : PUBLIC_BOT_USERNAME).replace(/[^A-Za-z0-9_]/g, '');
+  const commandTarget = text.match(/^\/[a-z0-9_]+@([A-Za-z0-9_]+)/i);
+  if (commandTarget && (!safeUsername || commandTarget[1].toLowerCase() !== safeUsername.toLowerCase())) return false;
   if (/^\//.test(text.trim())) return true;
-  const safeUsername = PUBLIC_BOT_USERNAME.replace(/[^A-Za-z0-9_]/g, '');
   if (safeUsername && new RegExp('@' + safeUsername + '\\b', 'i').test(text)) return true;
   const replyUsername = String(message?.reply_to_message?.from?.username || '').replace(/^@/, '');
   return Boolean(replyUsername && safeUsername && replyUsername.toLowerCase() === safeUsername.toLowerCase());
@@ -444,6 +462,28 @@ function runtimeTelegramBotToken() {
     process.env.TELEGRAM ||
     ''
   ).trim();
+}
+function runtimeStoreBotToken() {
+  return String(
+    process.env.QUANTDEUS_STORE_TELEGRAM_BOT_TOKEN ||
+    process.env.TELEGRAM_STORE_BOT_TOKEN ||
+    process.env.QUANTDEUS_STORE_BOT_TOKEN ||
+    ''
+  ).trim();
+}
+function runtimeTokenForRole(role = 'agent') {
+  return role === 'store' ? runtimeStoreBotToken() : runtimeTelegramBotToken();
+}
+function storeTelegramCommands() {
+  return [
+    { command: 'start', description: 'Открыть магазин QuantDeus' },
+    { command: 'help', description: 'Помощь по магазину и входу' },
+    { command: 'services', description: 'Посмотреть услуги QuantDeus' },
+    { command: 'account', description: 'Открыть личный кабинет' },
+    { command: 'login', description: 'Войти на сайт через Telegram' },
+    { command: 'pro', description: 'Узнать о подписке Pro' },
+    { command: 'agents', description: 'Перейти к команде агентов' }
+  ];
 }
 async function telegram(botToken, method, payload = {}) {
   const response = await fetch(`https://api.telegram.org/bot${botToken}/${method}`, {
@@ -468,11 +508,18 @@ async function setupWebhook(req, res) {
   }
 
   const botToken = String(req.body?.bot_token || '').trim();
+  const botRole = String(req.body?.bot_role || 'agent');
+  if (!['agent', 'store'].includes(botRole)) return res.status(400).json({ ok: false, error: 'invalid_bot_role' });
   if (!botToken) return res.status(400).json({ ok: false, error: 'bot_token_required' });
 
   const me = await telegram(botToken, 'getMe');
-  const secret = webhookSecret();
-  const webhookUrl = String(process.env.TELEGRAM_WEBHOOK_URL || DEFAULT_WEBHOOK_URL);
+  const secret = webhookSecret(botRole);
+  const primaryWebhookUrl = String(process.env.TELEGRAM_WEBHOOK_URL || DEFAULT_WEBHOOK_URL);
+  const storeWebhookUrl = new URL(primaryWebhookUrl);
+  storeWebhookUrl.searchParams.set('bot', 'store');
+  const webhookUrl = botRole === 'store'
+    ? String(process.env.TELEGRAM_WEBHOOK_STORE_URL || storeWebhookUrl.toString())
+    : primaryWebhookUrl;
   const webhookPayload = {
     url: webhookUrl,
     allowed_updates: ['message'],
@@ -484,34 +531,34 @@ async function setupWebhook(req, res) {
   await telegram(botToken, 'setWebhook', webhookPayload);
   const setupRegistry = await registry();
   const setupAgents = Array.isArray(setupRegistry?.agents) ? setupRegistry.agents : [];
-  const setupCommands = telegramCommandsForAgents(setupAgents);
+  const setupCommands = botRole === 'store' ? storeTelegramCommands() : telegramCommandsForAgents(setupAgents);
   await telegram(botToken, 'setMyCommands', { commands: setupCommands });
   const webAppUrl = String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
   const menuButton = await telegram(botToken, 'setChatMenuButton', {
     menu_button: {
       type: 'web_app',
-      text: 'QuantDeus',
+      text: botRole === 'store' ? 'Магазин' : 'Агенты',
       web_app: { url: webAppUrl }
     }
   });
   const description = await telegram(botToken, 'setMyDescription', {
-    description: TELEGRAM_BOT_DESCRIPTION
+    description: TELEGRAM_BOT_PROFILES[botRole].description
   });
   const shortDescription = await telegram(botToken, 'setMyShortDescription', {
-    short_description: TELEGRAM_BOT_SHORT_DESCRIPTION
+    short_description: TELEGRAM_BOT_PROFILES[botRole].short_description
   });
   const info = await telegram(botToken, 'getWebhookInfo');
   const federation = telegramFederationHealth(info);
-  const researchProbe = await liveNewsResearch('OpenAI latest news');
+  const researchProbe = botRole === 'agent' ? await liveNewsResearch('OpenAI latest news') : { ok: true, providers: [], items: [] };
   // Keep setup smoke to one LLM request. Anonymous fallback providers can throttle
   // back-to-back calls, which made a healthy role route look broken immediately
   // after the standalone LLM probe.
-  const roleProbe = await homunculusReply({
+  const roleProbe = botRole === 'agent' ? await homunculusReply({
     text: '/data Кто ты? Ответь одной короткой фразой.',
     message_id: 1,
     from: { id: 1, username: 'telegram-smoke', is_bot: false },
     chat: { id: 1, type: 'private' }
-  });
+  }) : '';
   const roleProbeBody = String(roleProbe || '').split('\n').slice(1).join('\n').trim();
   const roleProbeHealthy =
     Boolean(roleProbe) &&
@@ -541,6 +588,7 @@ async function setupWebhook(req, res) {
       preview: researchProbe?.items?.[0]?.title || null
     },
     bot: {
+      role: botRole,
       id: me.id,
       username: me.username || null,
       can_join_groups: me.can_join_groups ?? null,
@@ -1297,10 +1345,10 @@ async function homunculusReply(message, retryUpdate = null) {
     return '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь';
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    return 'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.';
+    return 'Команды QuantDeus:\n/monkeys или /agents — 🐒 команда агентов\n/pro — ⭐ подписка\n/shield — состояние защиты\n/agent <id> <вопрос> — обратиться к агенту\n\nВ группах отвечаю на команды, упоминания и ответы на мои сообщения.';
   }
   if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
-    return `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: BROKERED READ / QUERY / RESEARCH\nPrivileged writes: authenticated owner/admin broker only\nPrompt injection: deterministic pre-filter + system firewall + untrusted-tool-output rule\nSecret leakage: output filter\nGroups: commands / mentions / replies only`;
+    return `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nПубличный чат: открыт\nИнструменты: чтение, поиск и исследования с проверкой доступа\nИзменения системы: только после подтверждения прав владельца или администратора\nЗащита от вредоносных команд и утечки данных: включена\nГруппы: ответы на команды, упоминания и обращения`;
   }
   if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return proText(await telegramEntitlement(message));
@@ -1321,7 +1369,7 @@ async function homunculusReply(message, retryUpdate = null) {
     /^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) ||
     /^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(raw)
   ) {
-    return [`🐒 QuantDeus AI Fleet · ${agents.length} агентов`, ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`), '', 'Нажми команду роли или напиши /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'].join('\n').slice(0, 3900);
+    return [`🐒 QuantDeus AI Fleet · ${agents.length} агентов`, ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.telegram_description_ru || agent.role}`), '', 'Нажми команду роли или напиши /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'].join('\n').slice(0, 3900);
   }
 
   const entitlement = await telegramEntitlement(message);
@@ -1476,19 +1524,19 @@ async function fastPublicCommandReply(raw) {
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text) &&
       !/^\/start(?:@[A-Za-z0-9_]+)?\s+(?:(?:pro|agents|monkeys)(?:\s|$)|qdl_|agent_)/i.test(text)) {
     return {
-      text: '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь',
+      text: '🖖 QuantDeus Agent на связи. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь',
       menu: true
     };
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     return {
-      text: 'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.',
+      text: 'Команды QuantDeus:\n/monkeys или /agents — 🐒 команда агентов\n/pro — ⭐ подписка\n/shield — состояние защиты\n/agent <id> <вопрос> — обратиться к агенту\n\nВ группах отвечаю на команды, упоминания и ответы на мои сообщения.',
       menu: true
     };
   }
   if (/^\/shield(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
     return {
-      text: `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nPublic access: OPEN\nPublic tools: BROKERED READ / QUERY / RESEARCH\nPrivileged writes: authenticated owner/admin broker only\nPrompt injection: deterministic pre-filter + system firewall + untrusted-tool-output rule\nSecret leakage: output filter\nGroups: commands / mentions / replies only`,
+      text: `🛡️ QuantDeus Shield ${QUANTDEUS_SHIELD_VERSION}\nПубличный чат: открыт\nИнструменты: чтение, поиск и исследования с проверкой доступа\nИзменения системы: только после подтверждения прав владельца или администратора\nЗащита от вредоносных команд и утечки данных: включена\nГруппы: ответы на команды, упоминания и обращения`,
       menu: false
     };
   }
@@ -1508,7 +1556,7 @@ async function fastPublicCommandReply(raw) {
     return {
       text: [
         `🐒 QuantDeus AI Fleet · ${agents.length} агентов`,
-        ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`),
+        ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.telegram_description_ru || agent.role}`),
         '',
         'Нажми команду роли или используй /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'
       ].join('\n').slice(0, 3900),
@@ -1518,11 +1566,28 @@ async function fastPublicCommandReply(raw) {
   return null;
 }
 
+function fastStoreCommandReply(raw) {
+  const text = String(raw || '').trim();
+  if (/^\/(?:services|catalog|shop)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    return '🛍️ Услуги QuantDeus: автоматизация бизнеса, творческие проекты и сотрудничество. Каталог: https://quantdeus.ru/services/';
+  }
+  if (/^\/account(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    return '👤 Личный кабинет: https://quantdeus.ru/account/\nВход через Telegram: https://quantdeus.ru/login/';
+  }
+  if (/^\/login(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    return '🔐 Для безопасного входа открой https://quantdeus.ru/login/ и нажми «Войти через Telegram».';
+  }
+  if (/^\/agents(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text)) {
+    return '🤖 Исследованиями и техническими задачами занимается QuantDeus Agent. Список команды: https://quantdeus.ru/ai-fleet/';
+  }
+  return '🛍️ Я — QuantDeus Store, магазин и помощник по услугам.\n\n/services — услуги\n/account — личный кабинет\n/login — вход через Telegram\n/pro — подписка Pro\n/agents — команда агентов\n\nОпиши интересующую услугу или открой каталог: https://quantdeus.ru/services/';
+}
+
 async function fastTelegramEntitlement(message) {
   return telegramEntitlement(message);
 }
 
-async function telegramOutbound(res, message, text, replyMarkup = null, kind = 'reply') {
+async function telegramOutbound(res, message, text, replyMarkup = null, kind = 'reply', role = 'agent') {
   const payload = {
     chat_id: message.chat.id,
     text: String(text).slice(0, 4096),
@@ -1530,7 +1595,9 @@ async function telegramOutbound(res, message, text, replyMarkup = null, kind = '
   };
   if (replyMarkup) payload.reply_markup = replyMarkup;
 
-  const botToken = runtimeTelegramBotToken();
+  // Ответ на вебхук магазина всегда отправляется Telegram от имени Store.
+  // Даже ошибочно заданный токен Agent не сможет отправить сообщение вместо магазина.
+  const botToken = role === 'store' ? '' : runtimeTokenForRole(role);
   if (botToken) {
     try {
       await telegram(botToken, 'sendMessage', payload);
@@ -1550,7 +1617,7 @@ async function telegramOutbound(res, message, text, replyMarkup = null, kind = '
   return res.status(200).json({ method: 'sendMessage', ...payload });
 }
 
-async function webhookLoginReply(res, message, loginUrl) {
+async function webhookLoginReply(res, message, loginUrl, role = 'store') {
   return telegramOutbound(
     res,
     message,
@@ -1560,12 +1627,13 @@ async function webhookLoginReply(res, message, loginUrl) {
         { text: '🚀 Вернуться в QuantDeus', url: loginUrl }
       ]]
     },
-    'login'
+    'login',
+    role
   );
 }
 
-async function webhookReply(res, message, text, replyMarkup = null) {
-  return telegramOutbound(res, message, text, replyMarkup, 'chat');
+async function webhookReply(res, message, text, replyMarkup = null, role = 'agent') {
+  return telegramOutbound(res, message, text, replyMarkup, 'chat', role);
 }
 
 async function retrySmokeStart(req, res) {
@@ -1620,6 +1688,14 @@ async function retrySmokeComplete(req, res) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'GET' && String(req.query?.bot_config || '') === '1') {
+    return res.status(200).json({
+      ok: true,
+      telegram_multi_bot_version: 2,
+      roles: ['agent', 'store'],
+      telegram_store_webhook: '/api/quantdeus/telegram?bot=store'
+    });
+  }
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
 
   if (req.body?.mode === 'site_ai') return siteAiRequest(req, res);
@@ -1639,7 +1715,9 @@ export default async function handler(req, res) {
     }
   }
 
-  const expectedSecret = webhookSecret();
+  const botRole = String(req.query?.bot || 'agent');
+  if (!['agent', 'store'].includes(botRole)) return res.status(400).json({ ok: false, error: 'invalid_bot_role' });
+  const expectedSecret = webhookSecret(botRole);
   const providedSecret = req.headers['x-telegram-bot-api-secret-token'];
   if (expectedSecret) {
     if (!safeEqual(providedSecret, expectedSecret)) {
@@ -1655,7 +1733,7 @@ export default async function handler(req, res) {
   }
 
   const message = update.message;
-  const ingress = guardTelegramIngress(update);
+  const ingress = guardTelegramIngress(update, undefined, botRole);
   if (!ingress.ok) {
     console.warn(
       '[telegram-federation] status=' + ingress.status +
@@ -1674,30 +1752,42 @@ export default async function handler(req, res) {
   }
 
   const rawText = String(message.text || '').trim();
-  if (!publicMessageAddressed(message)) {
+  if (!publicMessageAddressed(message, botRole)) {
     return res.status(200).json({ ok: true, status: 'ignored_unaddressed_group_message', update_id: update.update_id });
   }
   const loginMatch = rawText.match(/^\/start(?:@[A-Za-z0-9_]+)?\s+(qdl_[A-Za-z0-9_-]+)$/i);
   if (loginMatch) {
+    if (botRole !== 'store') {
+      return webhookReply(res, message, '🔐 Для входа в QuantDeus открой магазин через страницу https://quantdeus.ru/login/', null, botRole);
+    }
     if (String(message.chat?.type || '') !== 'private') {
-      return webhookReply(res, message, '🔐 Вход через QuantDeus Store Bot работает только в личном чате с ботом.');
+      return webhookReply(res, message, '🔐 Вход работает только в личном чате с магазином QuantDeus.', null, botRole);
     }
     try {
       verifyTelegramLoginRequest(loginMatch[1]);
       const assertion = issueTelegramBotAssertion(message.from);
       const loginUrl = telegramReturnUrl(assertion);
       console.info('[telegram-bot-auth] status=approved user_id=' + String(message.from?.id || 'unknown'));
-      return webhookLoginReply(res, message, loginUrl);
+      return webhookLoginReply(res, message, loginUrl, botRole);
     } catch (error) {
       const code = String(error?.message || 'telegram_bot_login_failed');
       console.warn('[telegram-bot-auth] status=rejected code=' + code);
-      return webhookReply(res, message, '⚠️ Ссылка входа устарела или недействительна. Вернись на QuantDeus и нажми «Войти через Telegram» ещё раз.');
+      return webhookReply(res, message, '⚠️ Ссылка входа устарела или недействительна. Открой https://quantdeus.ru/login/ и повтори вход.', null, botRole);
     }
+  }
+
+  if (botRole === 'store') {
+    if (/^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText) || /^\/start(?:@[A-Za-z0-9_]+)?\s+pro(?:\s|$)/i.test(rawText)) {
+      const entitlement = await fastTelegramEntitlement(message);
+      return webhookReply(res, message, proText(entitlement), proReplyMarkupForEntitlement(entitlement), botRole);
+    }
+    const storeReply = fastStoreCommandReply(rawText);
+    return webhookReply(res, message, storeReply, mainMenuReplyMarkup(botRole), botRole);
   }
 
   const fastReply = await fastPublicCommandReply(rawText);
   if (fastReply) {
-    return webhookReply(res, message, fastReply.text, fastReply.menu ? mainMenuReplyMarkup() : undefined);
+    return webhookReply(res, message, fastReply.text, fastReply.menu ? mainMenuReplyMarkup(botRole) : undefined, botRole);
   }
 
   if (
@@ -1705,7 +1795,7 @@ export default async function handler(req, res) {
     /^\/pro(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
   ) {
     const entitlement = await fastTelegramEntitlement(message);
-    return webhookReply(res, message, proText(entitlement), proReplyMarkupForEntitlement(entitlement));
+    return webhookReply(res, message, proText(entitlement), proReplyMarkupForEntitlement(entitlement), botRole);
   }
 
   try {
@@ -1714,9 +1804,9 @@ export default async function handler(req, res) {
       /^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(?:agents|monkeys))?(?:\s|$)/i.test(rawText) ||
       /^\/(?:help|agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
     );
-    return webhookReply(res, message, reply, showMenu ? mainMenuReplyMarkup() : undefined);
+    return webhookReply(res, message, reply, showMenu ? mainMenuReplyMarkup(botRole) : undefined, botRole);
   } catch (error) {
     console.error('[telegram-homunculus]', String(error?.message || error).slice(0, 800));
-    return webhookReply(res, message, '⚠️ QuantDeus: обработчик временно недоступен, но webhook работает. Повтори сообщение чуть позже.');
+    return webhookReply(res, message, '⚠️ QuantDeus: обработчик временно недоступен. Повтори сообщение чуть позже.', null, botRole);
   }
 }

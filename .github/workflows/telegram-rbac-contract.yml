@@ -1,4 +1,4 @@
-name: QuantDeus Telegram RBAC Contract
+name: QuantDeus — проверка прав и отдельных ботов Telegram
 run-name: "Проверка прав доступа Telegram"
 
 on:
@@ -7,6 +7,12 @@ on:
       - 'scripts/telegram-bot.js'
       - 'scripts/telegram-rbac-contract.js'
       - 'coordination/agents.json'
+      - 'scripts/telegram-webhook-setup.js'
+      - 'scripts/qa/telegram-multibot-contract.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
+      - 'vercel-dispatcher/api/quantdeus/bot-auth.js'
+      - 'vercel-dispatcher/lib/telegram-bot-auth.js'
+      - 'vercel-dispatcher/lib/telegram-federation.js'
       - '.github/workflows/telegram-rbac-contract.yml'
   push:
     branches: [main]
@@ -14,6 +20,12 @@ on:
       - 'scripts/telegram-bot.js'
       - 'scripts/telegram-rbac-contract.js'
       - 'coordination/agents.json'
+      - 'scripts/telegram-webhook-setup.js'
+      - 'scripts/qa/telegram-multibot-contract.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
+      - 'vercel-dispatcher/api/quantdeus/bot-auth.js'
+      - 'vercel-dispatcher/lib/telegram-bot-auth.js'
+      - 'vercel-dispatcher/lib/telegram-federation.js'
       - '.github/workflows/telegram-rbac-contract.yml'
   workflow_dispatch:
 
@@ -29,5 +41,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Проверить Telegram RBAC and delegation invariants
+      - name: Проверить права доступа и передачу обязанностей
         run: node scripts/telegram-rbac-contract.js
+      - name: Проверить разделение Store и Agent и русский язык
+        run: node scripts/qa/telegram-multibot-contract.js
+      - name: Проверить синтаксис обработчиков Telegram
+        run: |
+          node --check scripts/telegram-webhook-setup.js
+          node --check vercel-dispatcher/api/quantdeus/telegram.js
+          node --check vercel-dispatcher/api/quantdeus/bot-auth.js
+          node --check vercel-dispatcher/lib/telegram-bot-auth.js
+          node --check vercel-dispatcher/lib/telegram-federation.js
