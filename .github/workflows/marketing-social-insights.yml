@@ -1,0 +1,19 @@
+name: QuantDeus Social Fleet — YouTube + VK insights
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  social-insights:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      COMPOSIO_API: ${{ secrets.COMPOSIO_API }}
+      VK_TOKEN_GROUP: ${{ secrets.VK_TOKEN_GROUP }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read social insights without publishing
+        run: node scripts/marketing-social-insights.mjs
