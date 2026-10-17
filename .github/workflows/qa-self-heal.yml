@@ -1,4 +1,5 @@
 name: QuantDeus QA Self-Heal 🛠️
+run-name: "Поиск и исправление ошибок"
 
 on:
   schedule:
@@ -51,10 +52,10 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
 
-      - name: Collect local QA state
+      - name: Собрать local QA state
         id: localqa
         shell: bash
         run: |
@@ -72,7 +73,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Collect recent main Actions state
+      - name: Собрать recent main Actions state
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -106,7 +107,7 @@ jobs:
           })().catch(e => { console.error(e); process.exit(1); });
           NODE
 
-      - name: Verify triggering run is actually repair-worthy
+      - name: Проверить triggering run is actually repair-worthy
         id: trigger
         if: inputs.trigger_run_id != ''
         env:
@@ -141,7 +142,7 @@ jobs:
           gh run view "$TRIGGER_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed > /tmp/qd-trigger-failure.log 2>&1
           exit 0
 
-      - name: Run bounded QA repair agent
+      - name: Запустить bounded QA repair agent
         id: heal
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -303,7 +304,7 @@ jobs:
           });
           NODE
 
-      - name: Verify claimed repair PR exists
+      - name: Проверить claimed repair PR exists
         if: steps.heal.outputs.action == 'pr'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -318,7 +319,7 @@ jobs:
           test "$(jq -r .headRefName <<<"$meta")" = "$EXPECTED_BRANCH"
           [[ "$EXPECTED_BRANCH" == qa/self-heal/* ]]
 
-      - name: Verify claimed escalation Issue exists
+      - name: Проверить claimed escalation Issue exists
         if: steps.heal.outputs.action == 'issue'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -393,7 +394,7 @@ jobs:
           test "$latest_sha" = "$sha"
           gh pr merge "$pr" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
 
-      - name: Upload self-heal evidence
+      - name: Сохранить self-heal evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:

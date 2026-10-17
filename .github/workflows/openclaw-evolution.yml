@@ -1,4 +1,5 @@
 name: QuantDeus OpenClaw Evolution 🧬
+run-name: "Развитие OpenClaw"
 
 on:
   schedule:
@@ -38,9 +39,9 @@ jobs:
           node-version: '24'
       - id: base
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Validate shared QuantDeus mission
+      - name: Проверить shared QuantDeus mission
         run: node scripts/mission-alignment.js
-      - name: Collect operational evidence with read-only credentials
+      - name: Собрать operational evidence with read-only credentials
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -52,7 +53,7 @@ jobs:
         env:
           EVOLUTION_BASE_SHA: ${{ steps.base.outputs.sha }}
         run: node scripts/openclaw-evolution.js observe
-      - name: Upload evolution evidence
+      - name: Сохранить evolution evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -82,14 +83,14 @@ jobs:
         with:
           name: quantdeus-openclaw-evolution
           path: /tmp/qd-openclaw-evolution/
-      - name: Validate shared QuantDeus mission before bounded PR creation
+      - name: Проверить shared QuantDeus mission before bounded PR creation
         run: node scripts/mission-alignment.js
-      - name: Validate proposal and create exactly one review-only PR
+      - name: Проверить proposal and create exactly one review-only PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVOLUTION_BASE_SHA: ${{ needs.observe.outputs.base_sha }}
         run: node scripts/openclaw-evolution.js propose
-      - name: Upload independently verified publication evidence
+      - name: Сохранить independently verified publication evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:

@@ -1,4 +1,5 @@
 name: QuantDeus Octet Squad B Lifecycle ✅
+run-name: "Работа группы агентов"
 
 on:
   pull_request:

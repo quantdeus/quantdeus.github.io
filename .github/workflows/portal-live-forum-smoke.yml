@@ -1,4 +1,5 @@
 name: QuantDeus Portal Live Forum Smoke 🧪
+run-name: "Проверка форума сайта"
 
 on:
   push:
@@ -33,8 +34,8 @@ jobs:
             exit 1
           fi
 
-      - name: Validate live smoke syntax
+      - name: Проверить live smoke syntax
         run: node --check vercel-dispatcher/tests/portal-live-forum-smoke.mjs
 
-      - name: Run authenticated two-user persisted forum smoke
+      - name: Запустить authenticated two-user persisted forum smoke
         run: node vercel-dispatcher/tests/portal-live-forum-smoke.mjs

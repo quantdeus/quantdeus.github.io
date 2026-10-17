@@ -1,4 +1,5 @@
 name: QuantDeus Octet Squad B ⚒️
+run-name: "Команда восьми помощников"
 
 on:
   issues:
@@ -38,7 +39,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: ⚒️ Run second execution crew
+      - name: ⚒️ Запустить second execution crew
         run: node scripts/octet/task-handler.js
 
   validate:

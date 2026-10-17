@@ -1,4 +1,5 @@
 name: QuantDeus OpenClaw Evolution Gate
+run-name: "Проверка развития OpenClaw"
 
 on:
   workflow_run:
