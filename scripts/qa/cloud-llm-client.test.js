@@ -100,3 +100,23 @@ test('empty 200 response does not falsely certify a working API', async () => {
   }),/cloud_llm_empty_response/);
   assert.equal(healthSnapshot(cloudRoutes({OPENROUTER_API_KEY:key})[0]).healthy,false);
 });
+
+test('retired APIs and GitLab fallback cannot return to executable workflows', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  assert.equal(fs.existsSync('.github/workflows/gitlab-fallback-mirror.yml'), false);
+  const roots = ['.github/workflows', 'scripts', 'vercel-dispatcher/api', 'vercel-dispatcher/lib'];
+  const retired = ['models.' + 'github.ai', 'models.inference.ai.' + 'azure.com'];
+  const walk = dir => {
+    for (const item of fs.readdirSync(dir,{withFileTypes:true})) {
+      const full = path.join(dir,item.name);
+      if (item.isDirectory()) {walk(full);continue;}
+      if (!/\.(?:js|mjs|cjs|ts|yml|yaml)$/.test(item.name)) continue;
+      const src = fs.readFileSync(full,'utf8');
+      for (const endpoint of retired) {
+        assert.equal(src.includes(endpoint),false,'retired model endpoint: '+full);
+      }
+    }
+  };
+  for (const root of roots) walk(root);
+});
