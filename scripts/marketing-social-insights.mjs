@@ -13,11 +13,15 @@ const vkToken = process.env.VK_TOKEN_GROUP || '';
 const summary = ['# QuantDeus — экономная статистика соцсетей', '', 'Только чтение. Публикаций, комментариев и повторных попыток нет.', ''];
 let failures = 0;
 let apiCalls = {composio: 0, youtube: 0, vk: 0};
+const MAX_CALLS = Object.freeze({composio: 1, youtube: 1, vk: 1});
 
 const n = v => v === undefined || v === null || v === '' || !Number.isFinite(Number(v))
   ? 'неизвестно' : Number(v).toLocaleString('ru-RU');
 
 async function request(url, options, source) {
+  if (!Object.hasOwn(MAX_CALLS, source) || apiCalls[source] >= MAX_CALLS[source]) {
+    throw new Error('Лимит запросов за запуск исчерпан');
+  }
   apiCalls[source]++;
   const response = await fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
   if (!response.ok) {
