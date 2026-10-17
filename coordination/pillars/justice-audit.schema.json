@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantdeus.github.io/schemas/agent-action-audit-v1.json",
+  "title": "QuantDeus Agent Action Audit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "agent",
+    "goal",
+    "evidence",
+    "affected_surface",
+    "privacy",
+    "reversibility",
+    "cost",
+    "human_approval",
+    "result",
+    "timestamp"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "agent": { "type": "string", "minLength": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "ref"],
+        "properties": {
+          "source": { "type": "string", "minLength": 1 },
+          "ref": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "affected_surface": {
+      "enum": [
+        "repository_nonprod",
+        "production_publication",
+        "spending",
+        "secrets_private_data",
+        "irreversible_action",
+        "external_outreach",
+        "other"
+      ]
+    },
+    "privacy": {
+      "enum": ["none", "read_private", "write_private", "expose_private"]
+    },
+    "reversibility": {
+      "enum": ["high", "medium", "low", "irreversible"]
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "unit"],
+      "properties": {
+        "amount": { "type": "number", "minimum": 0 },
+        "unit": { "type": "string", "minLength": 1 }
+      }
+    },
+    "human_approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "status"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "status": {
+          "enum": ["not_required", "pending", "approved", "rejected"]
+        },
+        "evidence": { "type": ["string", "null"] }
+      }
+    },
+    "result": {
+      "enum": ["planned", "started", "completed", "blocked", "failed"]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "affected_surface": {
+            "enum": [
+              "production_publication",
+              "spending",
+              "secrets_private_data",
+              "irreversible_action"
+            ]
+          }
+        },
+        "required": ["affected_surface"]
+      },
+      "then": {
+        "properties": {
+          "human_approval": {
+            "properties": { "required": { "const": true } },
+            "required": ["required"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "result": { "const": "completed" },
+          "affected_surface": {
+            "enum": [
+              "production_publication",
+              "spending",
+              "secrets_private_data",
+              "irreversible_action"
+            ]
+          }
+        },
+        "required": ["result", "affected_surface"]
+      },
+      "then": {
+        "properties": {
+          "human_approval": {
+            "properties": {
+              "required": { "const": true },
+              "status": { "const": "approved" }
+            },
+            "required": ["required", "status"]
+          }
+        }
+      }
+    }
+  ]
+}
