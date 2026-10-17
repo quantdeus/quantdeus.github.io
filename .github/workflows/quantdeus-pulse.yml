@@ -1,4 +1,5 @@
 name: QuantDeus Six-Pillar Executor 🧭
+run-name: "Состояние QuantDeus"
 
 on:
   schedule:
@@ -33,10 +34,10 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate shared THRIVE / Venus / Реновация / Рубежи mission
+      - name: Проверить shared THRIVE / Venus / Реновация / Рубежи mission
         run: node scripts/mission-alignment.js
 
-      - name: Validate post-scarcity civilization doctrine
+      - name: Проверить post-scarcity civilization doctrine
         run: node -e "const d=require('./scripts/doctrine').loadDoctrine(); console.log('Doctrine', d.version)"
 
       - name: Apply governance gate

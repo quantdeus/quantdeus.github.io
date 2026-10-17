@@ -1,4 +1,5 @@
 name: QuantDeus Telegram Federation Contract
+run-name: "Проверка связи Telegram с Федерацией"
 
 on:
   pull_request:
@@ -30,5 +31,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate governed Telegram federation invariants
+      - name: Проверить governed Telegram federation invariants
         run: node scripts/qa/telegram-federation-contract.js

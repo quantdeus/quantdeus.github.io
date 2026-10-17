@@ -1,4 +1,5 @@
 name: QuantDeus Static Smoke
+run-name: "Быстрая проверка проекта"
 
 on:
   push:
@@ -17,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate JavaScript syntax
+      - name: Проверить JavaScript syntax
         run: |
           node --check scripts/coordinator.js
           node --check scripts/seven-of-nine.js
@@ -52,16 +53,16 @@ jobs:
           node --check vercel-dispatcher/api/quantdeus/community.js
           node --check vercel-dispatcher/api/quantdeus/orders.js
 
-      - name: Test forum and store API authorization and order flow
+      - name: Протестировать forum and store API authorization and order flow
         run: node --test vercel-dispatcher/tests/portal-api.test.mjs
 
-      - name: Verify Seven LLM briefing and degraded contract
+      - name: Проверить Seven LLM briefing and degraded contract
         run: node --test scripts/qa/seven-reasoning.test.js scripts/qa/role-dialogue.test.js
 
-      - name: Execute Q and Kryon agent smoke 🃏✨
+      - name: Выполнить Q and Kryon agent smoke 🃏✨
         run: node --test scripts/qa/q-kryon-smoke.test.js
 
-      - name: Verify contributor onboarding guardrails
+      - name: Проверить contributor onboarding guardrails
         run: |
           node --test scripts/qa/contributor-onboarding.test.js
           node - <<'NODE'
@@ -85,13 +86,13 @@ jobs:
           console.log('contributor onboarding guardrails: OK');
           NODE
 
-      - name: Run QA syntax validator
+      - name: Запустить QA syntax validator
         run: node scripts/qa/syntax-validator.js
 
-      - name: Run QA contract validator
+      - name: Запустить QA contract validator
         run: node scripts/qa/contract-validator.js
 
-      - name: Validate remaining runtime-gap guardrails
+      - name: Проверить remaining runtime-gap guardrails
         run: |
           node <<'NODE'
           const fs=require('fs');
@@ -172,18 +173,18 @@ jobs:
           console.log('remaining runtime-gap guardrails: OK');
           NODE
 
-      - name: Verify evolution boundaries and merge guard behavior
+      - name: Проверить evolution boundaries and merge guard behavior
         run: node --test scripts/qa/openclaw-evolution.test.js
 
-      - name: Verify Browser Homunculus contract
+      - name: Проверить Browser Homunculus contract
         run: node --test scripts/qa/browser-homunculus.test.js
 
-      - name: Validate OpenClaw Office contract
+      - name: Проверить OpenClaw Office contract
         run: |
           node scripts/qa/openclaw-office-validator.js
           node --test scripts/qa/office-session.test.js
 
-      - name: Validate production routes
+      - name: Проверить production routes
         run: |
           test -f index.html
           test -f telegram/index.html
@@ -282,7 +283,7 @@ jobs:
           grep -q 'anonymous_web' vercel-dispatcher/api/quantdeus/orders.js
           node -e "const c=require('./telegram-public.json'); if(!c.configured||!c.client_id||!c.username) throw new Error('Telegram public auth config is incomplete')"
 
-      - name: Validate agent registry
+      - name: Проверить agent registry
         run: |
           node - <<'NODE'
           const fs=require('fs');
@@ -293,7 +294,7 @@ jobs:
           console.log('agents:',data.agents.length);
           NODE
 
-      - name: Validate public-page inline JavaScript
+      - name: Проверить public-page inline JavaScript
         run: |
           node - <<'NODE'
           const fs=require('fs');
@@ -308,7 +309,7 @@ jobs:
           }
           NODE
 
-      - name: Validate homunculi registry
+      - name: Проверить homunculi registry
         run: |
           node - <<'NODE'
           const fs=require('fs');
