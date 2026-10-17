@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
   if (req.method === "GET" && (req.query?.action === "start" || req.query?.start === "1")) {
     try {
-      const request = issueTelegramLoginRequest();
+      const request = await issueTelegramLoginRequest();
       if (req.query?.format === "json") {
         return json(res, 200, { ok: true, ...request, username: telegramBotAuthHealth().username });
       }
