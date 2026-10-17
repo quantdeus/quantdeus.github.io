@@ -40,12 +40,12 @@ jobs:
       - name: Проверить canonical production
         run: |
           set -euo pipefail
-          curl -fsSIL --max-time 20 https://quantdeus.whf.bz/ >/tmp/qd-production-headers.txt
+          curl -fsSIL --max-time 20 https://quantdeus.ru/ >/tmp/qd-production-headers.txt
           grep -qi '^HTTP/.* 2' /tmp/qd-production-headers.txt
 
       - name: Собрать live mirror snapshot
         env:
-          MIRROR_SOURCE: https://quantdeus.whf.bz
+          MIRROR_SOURCE: https://quantdeus.ru
         run: bash scripts/build-wordpress-mirror.sh _site
 
       - name: Проверить mirror artifact
