@@ -80,7 +80,9 @@ async function readYouTube() {
         // Log only JSON object keys, never provider response values or identifiers.
         const topKeys = Object.keys(result).slice(0, 8).join(',');
         const dataKeys = Object.keys(p || {}).slice(0, 8).join(',');
-        attempts.push('no channel match [keys:' + topKeys + '/' + dataKeys + ']');
+        const records = Array.isArray(channels) ? channels.length : 0;
+        const validId = Array.isArray(channels) && channels.some(ch => typeof ch?.id === 'string' && ch.id.startsWith('UC'));
+        attempts.push('no target channel in authenticated response [channels:' + records + ', channelIdPresent:' + validId + ', keys:' + topKeys + '/' + dataKeys + ']');
         continue;
       }
       const stat = selected.statistics || {};
