@@ -82,7 +82,8 @@ export function guardTelegramIngress(update, now = Date.now()) {
   const current = limits();
   trimMap(recentUpdates, now, current.duplicateMs, current.maxEntries);
 
-  const updateId = Number.isInteger(update?.update_id) ? String(update.update_id) : '';
+  const botKind = String(message?.__qdBotKind || 'agent');
+  const updateId = Number.isInteger(update?.update_id) ? botKind + ':' + String(update.update_id) : '';
   if (updateId) {
     const previous = recentUpdates.get(updateId);
     if (previous && now - previous < current.duplicateMs) {
@@ -94,7 +95,7 @@ export function guardTelegramIngress(update, now = Date.now()) {
   const chatId = String(message?.chat?.id ?? 'unknown');
   const chatType = String(message?.chat?.type || 'private');
   const max = chatType === 'private' ? current.privateMax : current.groupMax;
-  const key = chatType + ':' + chatId;
+  const key = botKind + ':' + chatType + ':' + chatId;
   const previousWindow = chatWindows.get(key);
   const window = !previousWindow || now - previousWindow.startedAt >= current.windowMs
     ? { startedAt: now, count: 0, at: now }
