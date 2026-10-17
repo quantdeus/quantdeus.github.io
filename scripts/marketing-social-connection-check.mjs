@@ -4,7 +4,7 @@
  * No publishing, posting, comments, or other public mutations.
  */
 const vkToken = process.env.VK_TOKEN_GROUP || '';
-const composioKey = process.env.COMPOSIO_API_KEY || '';
+const composioKey = process.env.COMPOSIO_API || process.env.COMPOSIO_API_KEY || '';
 const summaryPath = process.env.GITHUB_STEP_SUMMARY;
 const lines = [
   '## QuantDeus social fleet readiness',
