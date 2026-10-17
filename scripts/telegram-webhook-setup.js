@@ -34,7 +34,7 @@ function telegramCommands() {
     const command = telegramRoleCommand(agent);
     if (!command || reserved.has(command)) return null;
     reserved.add(command);
-    const description = String(agent.startup_title || agent.name || agent.role || agent.id || 'QuantDeus agent')
+    const description = String(agent.telegram_description_ru || agent.role || agent.startup_title || agent.name || agent.id || 'Агент QuantDeus')
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 220);
