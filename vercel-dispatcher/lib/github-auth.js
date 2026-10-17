@@ -8,10 +8,10 @@ import {
 } from "node:crypto";
 
 const DEFAULT_REPOSITORY = "quantdeus/quantdeus.github.io";
-const DEFAULT_SITE_ORIGIN = "https://quantdeus.whf.bz";
+const DEFAULT_SITE_ORIGIN = "https://quantdeus.ru";
 const DEFAULT_CALLBACK_URL = "https://quantdeus.vercel.app/api/quantdeus/github-auth";
 const STATE_TTL_SECONDS = 10 * 60;
-const ASSERTION_TTL_SECONDS = 8 * 60 * 60;
+const ASSERTION_TTL_SECONDS = 5 * 60; // One-time browser redirect must expire quickly.
 
 const clean = value => String(value ?? "").trim();
 const firstEnv = names => {
@@ -215,15 +215,23 @@ export async function githubPermission(login, config = githubAuthConfig(), userT
   if (!match) throw new Error("github_repository_invalid");
 
   const repoUrl = `https://api.github.com/repos/${match[1]}/${match[2]}`;
-  const repoResponse = await githubFetch(repoUrl, token);
-  if (repoResponse.ok) {
-    const repo = await repoResponse.json().catch(() => null);
-    const permissions = repo?.permissions || {};
-    if (permissions.admin === true) return "admin";
-    if (permissions.maintain === true) return "maintain";
-    if (permissions.push === true) return "write";
-    if (permissions.triage === true) return "triage";
-    if (permissions.pull === true) return "read";
+  // Never mistake the service token's repository permissions for the signing-in user's.
+  // The /repos endpoint is only safe for this purpose with the OAuth user's own token.
+  if (clean(userToken)) {
+    const actor = await githubProfile(userToken);
+    if (actor.login.toLowerCase() !== clean(login).toLowerCase()) {
+      throw new Error("github_identity_mismatch");
+    }
+    const repoResponse = await githubFetch(repoUrl, userToken);
+    if (repoResponse.ok) {
+      const repo = await repoResponse.json().catch(() => null);
+      const permissions = repo?.permissions || {};
+      if (permissions.admin === true) return "admin";
+      if (permissions.maintain === true) return "maintain";
+      if (permissions.push === true) return "write";
+      if (permissions.triage === true) return "triage";
+      if (permissions.pull === true) return "read";
+    }
   }
 
   const permissionUrl = repoUrl + "/collaborators/" + encodeURIComponent(login) + "/permission";
@@ -234,9 +242,15 @@ export async function githubPermission(login, config = githubAuthConfig(), userT
   return clean(body?.role_name || body?.permission || "none").toLowerCase();
 }
 
-export function roleForGithubPermission(permission) {
+export function roleForGithubPermission(permission, login = "") {
   const value = clean(permission).toLowerCase();
   if (value === "admin") return "administrator";
+  // Trusted named staff may have full WordPress rights without changing repository write access.
+  // Still require a live, authenticated GitHub collaborator permission check.
+  const trustedAdmins = clean(process.env.QUANTDEUS_GITHUB_ADMIN_ALLOWLIST)
+    .split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
+  if ((value === "maintain" || value === "write") &&
+      trustedAdmins.includes(clean(login).toLowerCase())) return "administrator";
   if (value === "maintain" || value === "write") return "qd_moderator";
   return "qd_member";
 }
@@ -276,7 +290,7 @@ export async function completeGithubOAuth(code, state) {
   const profile = await githubProfile(userToken);
   const permission = await githubPermission(profile.login, config, userToken);
   if (!["write", "maintain", "admin"].includes(permission)) throw new Error("github_staff_required");
-  const role = roleForGithubPermission(permission);
+  const role = roleForGithubPermission(permission, profile.login);
   const assertion = issue("qd-gh-assertion", {
     github_id: profile.id,
     login: profile.login,
@@ -307,6 +321,6 @@ export async function verifyGithubAssertion(token) {
     login,
     avatar_url: clean(payload.avatar_url) || null,
     permission,
-    role: roleForGithubPermission(permission)
+    role: roleForGithubPermission(permission, login)
   };
 }
