@@ -743,7 +743,7 @@ final class QD_Core {
             'github_id'=>$github_id,
             'login'=>$login,
             'permission'=>$permission,
-            'role'=>self::role_for_github_permission($permission),
+            'role'=>self::role_for_github_permission($permission,$login),
             'avatar_url'=>esc_url_raw((string)($user['avatar_url'] ?? '')),
         ];
     }
@@ -752,7 +752,7 @@ final class QD_Core {
         $github_id=(string)$identity['github_id'];
         $login=(string)$identity['login'];
         $permission=(string)$identity['permission'];
-        $role=self::role_for_github_permission($permission);
+        $role=self::role_for_github_permission($permission,$login);
         $users=get_users(['meta_key'=>'qd_github_id','meta_value'=>$github_id,'number'=>1]);
         $user=$users ? $users[0] : null;
         if (!$user) {
@@ -775,7 +775,7 @@ final class QD_Core {
         if (!empty($identity['avatar_url'])) update_user_meta($user->ID,'qd_github_avatar',esc_url_raw((string)$identity['avatar_url']));
         set_transient('qd_gh_broker_assertion_'.$user->ID,$assertion,8*HOUR_IN_SECONDS);
         set_transient('qd_gh_staff_ok_'.$user->ID,$permission,5*MINUTE_IN_SECONDS);
-        if ($permission==='admin') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
+        if ($role==='administrator') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
         wp_set_current_user($user->ID);
         wp_set_auth_cookie($user->ID,true,is_ssl());
         return rest_ensure_response([
@@ -823,8 +823,12 @@ final class QD_Core {
         return strtolower((string)($data['permission'] ?? 'none'));
     }
 
-    private static function role_for_github_permission(string $permission): string {
-        if ($permission==='admin') return 'administrator';
+    private static function role_for_github_permission(string $permission,string $login=''): string {
+        // Owner / verified repo admins have administrator rights; named staff admins
+        // require an independent, live write/maintain permission too.
+        $trusted=defined('QD_GITHUB_ADMIN_ALLOWLIST') ? (string)QD_GITHUB_ADMIN_ALLOWLIST : 'goplay1937';
+        $admins=array_filter(array_map('trim',explode(',',strtolower($trusted))));
+        if ($permission==='admin' || (in_array($permission,['maintain','write'],true) && in_array(strtolower($login),$admins,true))) return 'administrator';
         if (in_array($permission,['maintain','write'],true)) return 'qd_moderator';
         return 'qd_member';
     }
@@ -897,7 +901,7 @@ final class QD_Core {
         if ($login==='' || $github_id==='') return new WP_Error('github_profile','GitHub profile unavailable',['status'=>401]);
 
         $permission=self::github_permission($token,$login);
-        $role=self::role_for_github_permission($permission);
+        $role=self::role_for_github_permission($permission,$login);
         $users=get_users(['meta_key'=>'qd_github_id','meta_value'=>$github_id,'number'=>1]);
         $user=$users ? $users[0] : null;
         if (!$user) {
@@ -925,7 +929,7 @@ final class QD_Core {
         $protected=self::protect_github_token($token);
         if ($protected!=='') set_transient('qd_gh_token_'.$user->ID,$protected,8*HOUR_IN_SECONDS);
         set_transient('qd_gh_staff_ok_'.$user->ID,$permission,5*MINUTE_IN_SECONDS);
-        if ($permission==='admin') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
+        if ($role==='administrator') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
 
         wp_set_current_user($user->ID);
         wp_set_auth_cookie($user->ID,true,is_ssl());
@@ -944,7 +948,7 @@ final class QD_Core {
 
         $cached_permission=strtolower((string)get_transient('qd_gh_staff_ok_'.$user->ID));
         if (in_array($cached_permission,['write','maintain','admin'],true)) {
-            $expected=self::role_for_github_permission($cached_permission);
+            $expected=self::role_for_github_permission($cached_permission,$login);
             if (!in_array($expected,$user->roles,true)) $user->set_role($expected);
             return true;
         }
@@ -974,12 +978,12 @@ final class QD_Core {
 
         update_user_meta($user->ID,'qd_github_permission',$permission);
         update_user_meta($user->ID,'qd_github_verified_at',time());
-        $role=self::role_for_github_permission($permission);
+        $role=self::role_for_github_permission($permission,$login);
         $user->set_role($role);
 
         if (in_array($permission,['write','maintain','admin'],true)) {
             set_transient('qd_gh_staff_ok_'.$user->ID,$permission,5*MINUTE_IN_SECONDS);
-            if ($permission==='admin') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
+            if ($role==='administrator') set_transient('qd_gh_admin_ok_'.$user->ID,'1',5*MINUTE_IN_SECONDS);
             else delete_transient('qd_gh_admin_ok_'.$user->ID);
             return true;
         }
@@ -993,7 +997,7 @@ final class QD_Core {
         if (!self::github_staff_session_valid($live)) return false;
         $user=wp_get_current_user();
         return in_array('administrator',$user->roles,true)
-            && strtolower((string)get_user_meta($user->ID,'qd_github_permission',true))==='admin';
+            && self::role_for_github_permission(strtolower((string)get_user_meta($user->ID,'qd_github_permission',true)),(string)get_user_meta($user->ID,'qd_github_login',true))==='administrator';
     }
 
     public static function guard_admin(): void {
@@ -1002,6 +1006,8 @@ final class QD_Core {
 
         $user=wp_get_current_user();
         if (in_array('administrator',$user->roles,true)) {
+            // Existing email/password WordPress administrators must keep native access.
+            if (!get_user_meta($user->ID,'qd_github_id',true)) return;
             if (self::github_admin_session_valid(true)) return;
             wp_logout();
             wp_safe_redirect(home_url('/login/?admin=github-admin-required'));
@@ -1022,13 +1028,13 @@ final class QD_Core {
     public static function show_admin_bar(bool $show): bool {
         if (!$show || !is_user_logged_in()) return false;
         $user=wp_get_current_user();
-        if (in_array('administrator',$user->roles,true)) return self::github_admin_session_valid(false);
+        if (in_array('administrator',$user->roles,true)) return !get_user_meta($user->ID,'qd_github_id',true) || self::github_admin_session_valid(false);
         if (in_array('qd_moderator',$user->roles,true)) return self::github_staff_session_valid(false);
         return false;
     }
 
     public static function block_password_admin($user, $password) {
-        if ($user instanceof WP_User && (
+        if ($user instanceof WP_User && get_user_meta($user->ID,'qd_github_id',true) && (
             user_can($user,'manage_options') || in_array('qd_moderator',$user->roles,true)
         )) {
             return new WP_Error('github_staff_only','WordPress staff access requires live GitHub repository permission verification.');
@@ -1043,7 +1049,7 @@ final class QD_Core {
         if (!is_user_logged_in()) return $result;
 
         $user=wp_get_current_user();
-        if (in_array('administrator',$user->roles,true) && !self::github_admin_session_valid(true)) {
+        if (in_array('administrator',$user->roles,true) && get_user_meta($user->ID,'qd_github_id',true) && !self::github_admin_session_valid(true)) {
             return new WP_Error('github_admin_required','GitHub repository-admin verification required',['status'=>403]);
         }
         if (in_array('qd_moderator',$user->roles,true) && !self::github_staff_session_valid(true)) {
