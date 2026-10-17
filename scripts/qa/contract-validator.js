@@ -65,16 +65,16 @@ check(
 check(cognitiveOpenClawClient.includes('agentRegistry.collective_cognition?.runtime_directive') && cognitiveOpenClawClient.includes('Collective cognition:'), 'scripts/openclaw-office-client.js', 'OpenClaw Office consumes canonical collective cognition directive');
 check(cognitiveTelegram.includes('data.collective_cognition?.runtime_directive') && cognitiveTelegram.includes('Collective cognition:'), 'vercel-dispatcher/api/quantdeus/telegram.js', 'Telegram homunculus prompt consumes canonical collective cognition directive');
 check(
-  openclawRuntime.includes("url: 'https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp'") &&
+  openclawRuntime.includes("url: 'https://quantdeus.ru/wp-json/easy-mcp-ai/v1/mcp'") &&
   openclawRuntime.includes('const wordpressReadOnly = hourlyOffice || autonomousWorker') &&
   openclawRuntime.includes('const wordpressWriteCapable = !wordpressReadOnly && Boolean(wordpressMcpAuth)') &&
-  openclawRuntime.includes("Canonical public production and native WordPress admin: https://quantdeus.whf.bz") &&
+  openclawRuntime.includes("Canonical public production and native WordPress admin: https://quantdeus.ru") &&
   openclawRuntime.includes("wordpress_mode"),
   'vercel-dispatcher/api/quantdeus/openclaw.js',
   'trusted OpenClaw config declares native WordPress MCP with read-only autonomous lanes and auth-gated owner writes'
 );
 check(
-  cronContext.includes('- canonical_url: `https://quantdeus.whf.bz/`') &&
+  cronContext.includes('- canonical_url: `https://quantdeus.ru/`') &&
   cronContext.includes('native_wordpress_mcp:') &&
   cronContext.includes('wordpress_mcp_swarm_policy:') &&
   cronContext.includes('https://quantdeus.vercel.app = reverse-proxy mirror + API/OpenClaw control plane') &&
@@ -83,7 +83,7 @@ check(
   'swarm context names whf.bz as canonical production, native WordPress MCP as the swarm lane, and Vercel/GitHub as mirrors'
 );
 check(
-  wordpressReadme.includes('Current production is the native WordPress runtime at `https://quantdeus.whf.bz`') &&
+  wordpressReadme.includes('Current production is the native WordPress runtime at `https://quantdeus.ru`') &&
   wordpressReadme.includes('guarded native WordPress MCP lane'),
   'wordpress/README.md',
   'WordPress runtime documentation matches production and native MCP topology'
@@ -764,7 +764,7 @@ check(
 );
 check(
   telegramSource.includes("/^\\/pro") &&
-  telegramSource.includes('https://quantdeus.whf.bz/ai-fleet/pro/') &&
+  telegramSource.includes('https://quantdeus.ru/ai-fleet/pro/') &&
   telegramSource.includes('QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON') &&
   telegramSource.includes('proReplyMarkup()') &&
   telegramSource.includes("\\s+pro(?:\\s|$)") &&
@@ -847,7 +847,7 @@ check(
     telegramBridge.includes("/^\\/pro") &&
     telegramBridge.includes("setMyCommands") &&
     telegramBridge.includes("command: 'pro'") &&
-    telegramBridge.includes('https://quantdeus.whf.bz/ai-fleet/pro/') &&
+    telegramBridge.includes('https://quantdeus.ru/ai-fleet/pro/') &&
     telegramBridge.includes('QUANTDEUS_PRO_PAYMENT_PROVIDERS_JSON') &&
     telegramBridge.includes('proReplyMarkup()') &&
     telegramBridge.includes("\\s+pro(?:\\s|$)") &&
