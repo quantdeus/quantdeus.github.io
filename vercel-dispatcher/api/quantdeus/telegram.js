@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { generateText } from 'ai';
+import { telegramDirectModelReply } from '../../lib/telegram-direct-llm.js';
 import { getVercelOidcToken } from '@vercel/oidc';
 import {
   issueTelegramBotAssertion,
@@ -1246,6 +1247,7 @@ async function siteAiRequest(req, res) {
         user_ref: 'wp:' + String(entitlement.user_id || 'unknown')
       }
     );
+    if (!answer) answer = await telegramDirectModelReply({ system, user: siteShield.normalized, agentId });
     if (!answer) return res.status(503).json({ ok: false, error: 'site_ai_unavailable' });
     if (dataIdentityViolation(agentId, answer, siteShield.normalized)) {
       console.warn('[data-identity] channel=site status=violation retry=true');
@@ -1416,6 +1418,7 @@ async function homunculusReply(message, retryUpdate = null) {
     ? [query.slice(0, 5200), '', liveResearchBlock(research)].join('\n')
     : query.slice(0, 7000);
   let answer = await openClawInternalReply(agentId, requestedAgentId, system, groundedQuery);
+  if (!answer) answer = await telegramDirectModelReply({ system, user: groundedQuery, agentId });
   if (answer && dataIdentityViolation(agentId, answer, query)) {
     console.warn('[data-identity] channel=telegram status=violation retry=true');
     const identityRetryQuery = [
