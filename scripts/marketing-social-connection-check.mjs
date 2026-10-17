@@ -41,9 +41,38 @@ if (!vkToken) {
   }
 }
 if (!composioKey) {
-  lines.push('| YouTube via Composio | ⚠️ COMPOSIO_API_KEY secret missing in GitHub Actions |');
+  lines.push('| YouTube via Composio | ⚠️ COMPOSIO_API secret missing in GitHub Actions |');
+  process.exitCode = 1;
 } else {
-  lines.push('| YouTube via Composio | ◻️ API key present; account linkage and scopes still require verification |');
+  try {
+    // Read-only: validate this project's API key and look for an authorized YouTube connection.
+    // Never print the response body: connection metadata may contain sensitive fields.
+    const response = await fetch('https://backend.composio.dev/api/v3.1/connected_accounts?limit=100', {
+      headers: { 'x-api-key': composioKey, Accept: 'application/json' },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!response.ok) {
+      lines.push('| YouTube via Composio | ❌ Project API key validation failed (HTTP ' + response.status + ') |');
+      process.exitCode = 1;
+    } else {
+      const payload = await response.json();
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      const yt = items.filter(item => item?.toolkit?.slug === 'youtube' || item?.toolkit_slug === 'youtube');
+      const active = yt.filter(item => item.status === 'ACTIVE' && !item.is_disabled);
+      if (active.length) {
+        lines.push('| YouTube via Composio | ✅ Valid key; ACTIVE YouTube connection in this project (' + active.length + ') |');
+      } else if (payload.next_cursor) {
+        lines.push('| YouTube via Composio | ⚠️ Valid key; no YouTube among first 100 connections — paginate to confirm |');
+        process.exitCode = 1;
+      } else {
+        lines.push('| YouTube via Composio | ⚠️ Valid key, but no ACTIVE YouTube connection in this project |');
+        process.exitCode = 1;
+      }
+    }
+  } catch {
+    lines.push('| YouTube via Composio | ❌ Project API connection failed; verify endpoint/network |');
+    process.exitCode = 1;
+  }
 }
 lines.push('', '> Read-only diagnostic. No videos, posts, or comments were published.');
 const report = lines.join('\n') + '\n';
