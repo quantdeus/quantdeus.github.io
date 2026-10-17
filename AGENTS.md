@@ -183,6 +183,22 @@ Operational rules:
 
 The protocol applies to Telegram, website-agent chat, OpenClaw Office, scheduled role runs and trusted execution lanes. Role-specific expertise remains intact: Sherlock still leads scientific investigation, Tuvok logic integrity, EMH cognitive hygiene, Seven coordination, QA verification, and each specialist keeps its own mission.
 
+## Topological Intuition Protocol — experimental research extension
+
+Canonical proposal: [`docs/TOPOLOGICAL_INTUITION_PROTOCOL.md`](docs/TOPOLOGICAL_INTUITION_PROTOCOL.md) (TIP-v0.1, 2026-10-13).
+
+For the 27-agent AI fleet, TIP is an **optional, research-stage augmentation** to `borg-collective-v1` for complex problems, not a replacement for deduction, induction or abduction.
+
+`OBSERVE → MAP → CLASSIFY → LINK → INTUIT (generate hypotheses) → CHALLENGE → TEST → DECIDE → LEARN`
+
+- Build provenance-aware concept maps across disciplines with typed relationships, explicit assumptions and uncertainty.
+- Treat intuitive insights as **hypotheses, not facts**; test rival explanations and avoid mistaking coincidence, correlation or analogy for causation.
+- Use the smallest safe, reproducible test; record the evidence, outcome and one actionable next step.
+- Sherlock leads investigation, Tuvok challenges assumptions, Data structures evidence and checks, Seven coordinates, and QA verifies results.
+- For simple tasks, prefer the existing compact reasoning workflow rather than unnecessary diagrams.
+- TIP grants no new permissions or authority: existing tool access controls, QA and Human Override remain unchanged.
+- Evaluate the method on measurable tasks before claiming it is more effective than baseline reasoning.
+
 ## Swarm mediation and science officers
 
 - `emh` — **Swarm Mediation & Diplomacy Officer**. Converts repeated disagreement into facts, shared interests, options, one owner and one testable next step. It does not diagnose people and cannot override human decisions.
