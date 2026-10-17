@@ -1,20 +1,46 @@
-name: QuantDeus Social Fleet — YouTube + VK insights
-run-name: "Аналитика социальных сетей"
+name: QuantDeus — экономная аналитика YouTube и VK
+run-name: "Мартышки: статистика без лишних запросов"
 
 on:
+  schedule:
+    - cron: '19 7 * * *'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Режим: без запросов или получить текущую статистику'
+        type: choice
+        required: true
+        default: 'test-only'
+        options:
+          - test-only
+          - read-stats
 
 permissions:
   contents: read
 
+concurrency:
+  group: quantdeus-social-insights-readonly
+  cancel-in-progress: true
+
 jobs:
   social-insights:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 4
     env:
       COMPOSIO_API: ${{ secrets.COMPOSIO_API }}
       VK_TOKEN_GROUP: ${{ secrets.VK_TOKEN_GROUP }}
     steps:
       - uses: actions/checkout@v4
-      - name: Read social insights without publishing
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Проверить ссылки на услуги и расчёт продаж без API
+        run: node --test scripts/qa/marketing-sales.test.mjs
+      - name: Прочитать YouTube и VK ровно по одному разу
+        if: github.event_name == 'schedule' || inputs.mode == 'read-stats'
         run: node scripts/marketing-social-insights.mjs
+      - name: Подтвердить экономный тест без обращений к API
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'test-only'
+        run: echo '✅ Только локальные тесты. Расход API = 0.' >> "$GITHUB_STEP_SUMMARY"
