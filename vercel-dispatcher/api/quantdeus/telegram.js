@@ -379,7 +379,7 @@ async function verifyGithubOidc(token) {
   return claims;
 }
 
-function webhookSecret() {
+function legacyWebhookSecret() {
   const base = String(
     process.env.TELEGRAM_WEBHOOK_SECRET ||
     process.env.CRON_SECRET ||
@@ -388,6 +388,13 @@ function webhookSecret() {
   ).trim();
   if (!base) return '';
   return crypto.createHash('sha256').update('quantdeus-telegram-webhook:' + base).digest('base64url');
+}
+function webhookSecret(botKind = 'agent') {
+  const token = runtimeTelegramBotToken(botKind);
+  if (!token) return '';
+  return crypto.createHash('sha256')
+    .update('quantdeus-telegram-webhook-v2:' + botKind + ':' + token)
+    .digest('base64url');
 }
 
 function safeEqual(actual, expected) {
@@ -481,12 +488,19 @@ async function setupWebhook(req, res) {
     return res.status(401).json({ ok: false, error: 'telegram_setup_auth_failed', detail: String(error.message || error) });
   }
 
+  const botKind = String(req.body?.bot_kind || 'agent').trim().toLowerCase();
+  if (!['agent', 'store'].includes(botKind)) return res.status(400).json({ ok: false, error: 'bot_kind_invalid' });
   const botToken = String(req.body?.bot_token || '').trim();
   if (!botToken) return res.status(400).json({ ok: false, error: 'bot_token_required' });
+  const expectedToken = runtimeTelegramBotToken(botKind);
+  if (!expectedToken) return res.status(409).json({ ok: false, error: 'vercel_' + botKind + '_token_missing' });
+  if (!safeEqual(botToken, expectedToken)) return res.status(409).json({ ok: false, error: 'vercel_' + botKind + '_token_mismatch' });
 
   const me = await telegram(botToken, 'getMe');
-  const secret = webhookSecret();
-  const webhookUrl = String(process.env.TELEGRAM_WEBHOOK_URL || DEFAULT_WEBHOOK_URL);
+  const secret = webhookSecret(botKind);
+  const webhookUrl = String(botKind === 'store'
+    ? (process.env.TELEGRAM_STORE_WEBHOOK_URL || DEFAULT_WEBHOOK_URL + '?bot=store')
+    : (process.env.TELEGRAM_WEBHOOK_URL || DEFAULT_WEBHOOK_URL));
   const webhookPayload = {
     url: webhookUrl,
     allowed_updates: ['message'],
@@ -509,10 +523,14 @@ async function setupWebhook(req, res) {
     }
   });
   const description = await telegram(botToken, 'setMyDescription', {
-    description: TELEGRAM_BOT_DESCRIPTION
+    description: botKind === 'store'
+      ? 'QuantDeus Store — магазин услуг, тарифы Free и Pro, помощь с заказами и связь с командой QuantDeus.'
+      : 'QuantDeus Agent — интеллектуальный помощник проекта: исследования, ответы и общение с 29 агентами.'
   });
   const shortDescription = await telegram(botToken, 'setMyShortDescription', {
-    short_description: TELEGRAM_BOT_SHORT_DESCRIPTION
+    short_description: botKind === 'store'
+      ? 'Магазин услуг QuantDeus, заказы и поддержка на русском языке.'
+      : 'Общение с ИИ-командой QuantDeus на русском языке.'
   });
   const info = await telegram(botToken, 'getWebhookInfo');
   const federation = telegramFederationHealth(info);
@@ -554,6 +572,7 @@ async function setupWebhook(req, res) {
       item_count: researchProbe?.items?.length || 0,
       preview: researchProbe?.items?.[0]?.title || null
     },
+    bot_kind: botKind,
     bot: {
       id: me.id,
       username: me.username || null,
@@ -564,7 +583,7 @@ async function setupWebhook(req, res) {
     public_access: true,
     public_mode: 'brokered-read-tools',
     prompt_shield: QUANTDEUS_SHIELD_VERSION,
-    outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback',
+    outbound_mode: runtimeTelegramBotToken(botKind) ? 'bot-api-' + botKind : 'webhook-response-fallback',
     federation,
     interface: {
       menu_button_ok: Boolean(menuButton),
@@ -1655,14 +1674,18 @@ export default async function handler(req, res) {
     }
   }
 
-  const expectedSecret = webhookSecret();
+  const botKind = String(req.query?.bot || 'agent').trim().toLowerCase();
+  if (!['agent', 'store'].includes(botKind)) return res.status(400).json({ ok: false, error: 'telegram_bot_kind_invalid' });
+  const expectedSecret = webhookSecret(botKind);
+  if (!expectedSecret) return res.status(503).json({ ok: false, error: 'telegram_' + botKind + '_not_configured' });
   const providedSecret = req.headers['x-telegram-bot-api-secret-token'];
-  if (expectedSecret) {
-    if (!safeEqual(providedSecret, expectedSecret)) {
-      return res.status(401).json({ ok: false, error: 'telegram_webhook_auth_failed' });
-    }
-  } else if (!fromTelegramNetwork(req)) {
-    return res.status(401).json({ ok: false, error: 'telegram_webhook_source_not_allowed' });
+  // Preserve legacy agent webhook delivery during migration. The store bot
+  // always requires its own token-derived secret, preventing cross-bot injection.
+  const legacyAllowed = botKind === 'agent' &&
+    (safeEqual(providedSecret, legacyWebhookSecret()) ||
+      (!providedSecret && fromTelegramNetwork(req)));
+  if (!safeEqual(providedSecret, expectedSecret) && !legacyAllowed) {
+    return res.status(401).json({ ok: false, error: 'telegram_webhook_auth_failed' });
   }
 
   const update = req.body;
@@ -1671,6 +1694,7 @@ export default async function handler(req, res) {
   }
 
   const message = update.message;
+  if (message && typeof message === 'object') message.__qdBotKind = botKind;
   const ingress = guardTelegramIngress(update);
   if (!ingress.ok) {
     console.warn(
