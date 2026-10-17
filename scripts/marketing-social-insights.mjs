@@ -51,13 +51,21 @@ async function readYouTube() {
         headers: {'x-api-key': composioKey, 'Content-Type': 'application/json'},
         body: JSON.stringify({
           connected_account_id: account.id,
+          ...(account.user_id ? {user_id: account.user_id} : {}),
           version: 'latest',
           arguments: {mine: true, part: 'snippet,statistics'},
         }),
         signal: AbortSignal.timeout(20000),
       });
       if (!response.ok) {
-        attempts.push('HTTP ' + response.status);
+        // Do not log raw provider errors: restrict diagnostics to safe error codes.
+        let safeCode = '';
+        try {
+          const j = await response.json();
+          const code = String(j?.error?.code || j?.code || '');
+          if (/^[a-zA-Z0-9_-]{1,60}$/.test(code)) safeCode = ' (' + code + ')';
+        } catch { /* response might not be JSON */ }
+        attempts.push('HTTP ' + response.status + safeCode);
         continue;
       }
       const result = await response.json();
