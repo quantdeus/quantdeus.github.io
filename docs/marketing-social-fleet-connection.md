@@ -3,7 +3,7 @@
 ## Verified 2026-10-17
 - The YouTube account **Energotron me (@energotron)** is ACTIVE through Composio in ChatGPT. Channel ID: `UClJUCP1tX2R6fglNKqnKIyQ`. Channel read-only calls succeeded.
 - GitHub Actions secret `VK_TOKEN_GROUP` exists (value never read).
-- GitHub Actions secret `COMPOSIO_API_KEY` was **not present** at verification time.
+- GitHub Actions secret `COMPOSIO_API` was **not present** at verification time.
 - Do not assume a Composio connection in ChatGPT is automatically available in GitHub Actions.
 
 ## Integration boundaries
@@ -18,5 +18,5 @@
 - No edits to existing social playbooks. YouTube ChatGPT Composio connection remains separate until bridged.
 
 ## Remaining setup
-- Add `COMPOSIO_API_KEY` to GitHub Actions Secrets **only** if the matching Composio project and authorized runtime user have been confirmed.
+- Add `COMPOSIO_API` to GitHub Actions Secrets **only** if the matching Composio project and authorized runtime user have been confirmed.
 - Implement scoped YouTube actions in a follow-up adapter; this PR deliberately does not assert that an API key alone transfers OAuth authorization.
