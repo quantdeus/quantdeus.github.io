@@ -2,7 +2,7 @@
 /**
  * Plugin Name: QuantDeus Core
  * Description: Canonical WordPress application layer for QuantDeus.
- * Version: 1.7.0
+ * Version: 1.8.0
  * Requires PHP: 8.1
  * Text Domain: quantdeus
  */
@@ -10,13 +10,17 @@ if (!defined('ABSPATH')) { exit; }
 
 final class QD_Core {
     public const NS = 'quantdeus/v1';
-    public const VERSION = '1.7.0';
+    public const VERSION = '1.8.0';
 
     public static function boot(): void {
         add_action('init', [self::class, 'register_types']);
         add_action('init', [self::class, 'maybe_upgrade'], 20);
         add_action('rest_api_init', [self::class, 'routes']);
         add_action('admin_init', [self::class, 'guard_admin']);
+        add_action('show_user_profile', [self::class, 'plan_profile']);
+        add_action('edit_user_profile', [self::class, 'plan_profile']);
+        add_action('personal_options_update', [self::class, 'save_plan_profile']);
+        add_action('edit_user_profile_update', [self::class, 'save_plan_profile']);
         add_action('wp_dashboard_setup', [self::class, 'dashboard_widgets']);
         add_action('add_meta_boxes', [self::class, 'meta_boxes']);
         add_action('save_post', [self::class, 'save_meta_boxes']);
@@ -400,6 +404,21 @@ final class QD_Core {
         register_rest_route(self::NS, '/forum/(?P<id>\d+)/reply', [
             'methods'=>'POST','permission_callback'=>fn()=>is_user_logged_in(),'callback'=>[self::class,'forum_reply'],
         ]);
+        register_rest_route(self::NS, '/forum/issues', [
+            'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'forum_issue_list'],
+        ]);
+        register_rest_route(self::NS, '/forum/issues/(?P<id>\d+)', [
+            'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'forum_issue_detail'],
+        ]);
+        register_rest_route(self::NS, '/forum/issues/(?P<id>\d+)/reply', [
+            'methods'=>'POST','permission_callback'=>fn()=>is_user_logged_in(),'callback'=>[self::class,'forum_issue_reply'],
+        ]);
+        register_rest_route(self::NS, '/forum/agent-request/(?P<token>[a-f0-9]{64})', [
+            'methods'=>'GET','permission_callback'=>'__return_true','callback'=>[self::class,'forum_agent_request'],
+        ]);
+        register_rest_route(self::NS, '/ai-fleet/telegram-plan', [
+            'methods'=>'POST','permission_callback'=>'__return_true','callback'=>[self::class,'telegram_plan_lookup'],
+        ]);
         register_rest_route(self::NS, '/telegram/config', [
             'methods'=>'GET','permission_callback'=>'__return_true','callback'=>fn()=>rest_ensure_response([
                 'client_id'=>defined('QD_TELEGRAM_CLIENT_ID') ? (string)QD_TELEGRAM_CLIENT_ID : '8122160274',
@@ -511,6 +530,329 @@ final class QD_Core {
         return new WP_REST_Response(['ok'=>true,'id'=>$comment],201);
     }
 
+    private static function configured_ids(string $constant): array {
+        if (!defined($constant)) return [];
+        return array_values(array_filter(array_map('trim',preg_split('/[\\s,;]+/',(string)constant($constant)))));
+    }
+
+    public static function current_plan(?int $user_id=null): string {
+        $uid=$user_id ?? get_current_user_id();
+        if ($uid<1) return 'free';
+        $user=get_user_by('id',$uid);
+        if ($user && in_array('administrator',(array)$user->roles,true)) return 'pro';
+        foreach (['qd_plan','quantdeus_plan'] as $key) {
+            if (strtolower(trim((string)get_user_meta($uid,$key,true)))==='pro') return 'pro';
+        }
+        $telegram_id=trim((string)get_user_meta($uid,'qd_telegram_id',true));
+        if ($telegram_id!=='') {
+            $privileged=array_merge(self::configured_ids('QD_OWNER_TELEGRAM_IDS'),self::configured_ids('QD_ADMIN_TELEGRAM_IDS'));
+            if (in_array($telegram_id,$privileged,true)) return 'pro';
+        }
+        return 'free';
+    }
+
+    public static function plan_profile($user): void {
+        if (!current_user_can('manage_options') || !($user instanceof WP_User)) return;
+        $stored=strtolower(trim((string)get_user_meta($user->ID,'qd_plan',true)))==='pro' ? 'pro' : 'free';
+        wp_nonce_field('qd_plan_'.$user->ID,'qd_plan_nonce');
+        echo '<h2>QuantDeus entitlement</h2>';
+        echo '<table class="form-table" role="presentation"><tr><th><label for="qd_plan">Plan</label></th><td>';
+        echo '<select name="qd_plan" id="qd_plan">';
+        echo '<option value="free" '.selected($stored,'free',false).'>Free</option>';
+        echo '<option value="pro" '.selected($stored,'pro',false).'>Pro</option>';
+        echo '</select>';
+        echo '<p class="description">Тариф отделён от RBAC. Pro не выдаёт moderator/admin. WordPress administrator всегда вычисляется как Pro.</p>';
+        echo '</td></tr></table>';
+    }
+
+    public static function save_plan_profile(int $user_id): void {
+        if (!current_user_can('manage_options') || !current_user_can('edit_user',$user_id)) return;
+        $nonce=(string)($_POST['qd_plan_nonce'] ?? '');
+        if ($nonce==='' || !wp_verify_nonce($nonce,'qd_plan_'.$user_id)) return;
+        $plan=strtolower(sanitize_key((string)($_POST['qd_plan'] ?? 'free')));
+        if ($plan==='pro') update_user_meta($user_id,'qd_plan','pro');
+        else delete_user_meta($user_id,'qd_plan');
+    }
+
+    private static function forum_github_token(): string {
+        if (defined('QD_GITHUB_FORUM_TOKEN') && trim((string)QD_GITHUB_FORUM_TOKEN)!=='') {
+            return trim((string)QD_GITHUB_FORUM_TOKEN);
+        }
+        if (defined('QD_GITHUB_TOKEN') && trim((string)QD_GITHUB_TOKEN)!=='') {
+            return trim((string)QD_GITHUB_TOKEN);
+        }
+        $env=getenv('QUANTDEUS_GITHUB_TOKEN');
+        return is_string($env) ? trim($env) : '';
+    }
+
+    private static function forum_issue_request(string $method,string $path,array $payload=[]) {
+        $repo=self::github_repo();
+        if (!preg_match('~^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$~',$repo)) {
+            return new WP_Error('github_repo_invalid','GitHub repository is invalid',['status'=>503]);
+        }
+        if (!preg_match('~^/[A-Za-z0-9_./?=&%+-]+$~',$path)) {
+            return new WP_Error('github_path_invalid','GitHub path is invalid',['status'=>400]);
+        }
+        $token=self::forum_github_token();
+        if (strtoupper($method)!=='GET' && $token==='') {
+            return new WP_Error('github_forum_write_unconfigured','Forum GitHub write token is not configured',['status'=>503]);
+        }
+        $headers=[
+            'Accept'=>'application/vnd.github+json',
+            'X-GitHub-Api-Version'=>'2026-03-10',
+            'User-Agent'=>'QuantDeus-WordPress-Forum',
+        ];
+        if ($token!=='') $headers['Authorization']='Bearer '.$token;
+        if ($payload) $headers['Content-Type']='application/json';
+        $args=['method'=>strtoupper($method),'headers'=>$headers,'timeout'=>15,'redirection'=>2];
+        if ($payload) $args['body']=wp_json_encode($payload);
+        $response=wp_remote_request('https://api.github.com/repos/'.$repo.$path,$args);
+        if (is_wp_error($response)) {
+            return new WP_Error('github_forum_unavailable','GitHub Issues bridge unavailable',['status'=>503]);
+        }
+        $status=(int)wp_remote_retrieve_response_code($response);
+        $body=json_decode((string)wp_remote_retrieve_body($response),true);
+        if ($status<200 || $status>=300) {
+            $message=is_array($body) ? self::text($body['message'] ?? 'GitHub request failed',180) : 'GitHub request failed';
+            return new WP_Error('github_forum_'.$status,$message,['status'=>$status===404?404:($status===403?403:502)]);
+        }
+        return is_array($body) ? $body : [];
+    }
+
+    private static function forum_issue_data(array $issue,bool $full=false): array {
+        $labels=[];
+        foreach ((array)($issue['labels'] ?? []) as $label) {
+            $name=is_array($label) ? ($label['name'] ?? '') : $label;
+            $name=self::text($name,80);
+            if ($name!=='') $labels[]=$name;
+        }
+        $assignees=[];
+        foreach ((array)($issue['assignees'] ?? []) as $assignee) {
+            $login=is_array($assignee) ? self::text($assignee['login'] ?? '',80) : '';
+            if ($login!=='') $assignees[]=$login;
+        }
+        return [
+            'number'=>(int)($issue['number'] ?? 0),
+            'title'=>self::text($issue['title'] ?? '',180),
+            'body'=>self::text($issue['body'] ?? '',$full?12000:1200),
+            'state'=>self::text($issue['state'] ?? 'open',20),
+            'labels'=>array_values(array_unique($labels)),
+            'assignees'=>array_values(array_unique($assignees)),
+            'comments'=>(int)($issue['comments'] ?? 0),
+            'author'=>self::text($issue['user']['login'] ?? '',80),
+            'created_at'=>self::text($issue['created_at'] ?? '',40),
+            'updated_at'=>self::text($issue['updated_at'] ?? '',40),
+            'url'=>esc_url_raw((string)($issue['html_url'] ?? '')),
+        ];
+    }
+
+    public static function forum_issue_list(WP_REST_Request $req) {
+        $state=strtolower(self::text($req->get_param('state'),12));
+        if (!in_array($state,['open','closed','all'],true)) $state='open';
+        $cache_key='qd_forum_issues_'.$state;
+        $cached=get_transient($cache_key);
+        if (is_array($cached)) return rest_ensure_response($cached);
+
+        $issues=[];
+        for ($page=1;$page<=3;$page++) {
+            $data=self::forum_issue_request('GET','/issues?state='.$state.'&per_page=100&sort=updated&direction=desc&page='.$page);
+            if (is_wp_error($data)) return $data;
+            foreach ($data as $issue) {
+                if (!is_array($issue) || !empty($issue['pull_request'])) continue;
+                $issues[]=self::forum_issue_data($issue,false);
+            }
+            if (count($data)<100) break;
+        }
+        $payload=[
+            'ok'=>true,
+            'repository'=>self::github_repo(),
+            'source'=>'github-live',
+            'issues'=>$issues,
+        ];
+        set_transient($cache_key,$payload,45);
+        return rest_ensure_response($payload);
+    }
+
+    public static function forum_issue_detail(WP_REST_Request $req) {
+        $id=(int)$req['id'];
+        if ($id<1) return new WP_Error('issue_invalid','Invalid issue',['status'=>400]);
+        $issue=self::forum_issue_request('GET','/issues/'.$id);
+        if (is_wp_error($issue)) return $issue;
+        if (!empty($issue['pull_request'])) return new WP_Error('issue_not_found','Issue not found',['status'=>404]);
+        $rows=self::forum_issue_request('GET','/issues/'.$id.'/comments?per_page=100');
+        if (is_wp_error($rows)) return $rows;
+        $comments=[];
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $raw=(string)($row['body'] ?? '');
+            $comments[]=[
+                'id'=>(int)($row['id'] ?? 0),
+                'author'=>self::text($row['user']['login'] ?? 'github',80),
+                'body'=>self::text($raw,8000),
+                'created_at'=>self::text($row['created_at'] ?? '',40),
+                'updated_at'=>self::text($row['updated_at'] ?? '',40),
+                'agent_reply'=>str_contains($raw,'<!-- qd-agent-reply -->'),
+                'forum_user'=>str_contains($raw,'<!-- qd:forum-user -->'),
+                'url'=>esc_url_raw((string)($row['html_url'] ?? '')),
+            ];
+        }
+        return rest_ensure_response([
+            'ok'=>true,
+            'issue'=>self::forum_issue_data($issue,true),
+            'comments'=>$comments,
+            'viewer'=>[
+                'logged_in'=>is_user_logged_in(),
+                'plan'=>self::current_plan(),
+                'can_reply'=>is_user_logged_in(),
+            ],
+        ]);
+    }
+
+    private static function forum_request_key(string $token): string {
+        return 'qd_forum_req_'.substr(hash('sha256',$token),0,32);
+    }
+
+    private static function normalize_agent_ids($value): array {
+        $items=is_array($value) ? $value : preg_split('/[\s,;]+/',(string)$value);
+        $ids=[];
+        foreach ((array)$items as $item) {
+            $id=strtolower(trim((string)$item));
+            if (!preg_match('/^[a-z0-9][a-z0-9_-]{1,47}$/',$id)) continue;
+            if (!in_array($id,$ids,true)) $ids[]=$id;
+        }
+        return array_slice($ids,0,3);
+    }
+
+    private static function forum_issue_rate_limit(int $user_id,string $plan,bool $agent_request) {
+        $window=15*MINUTE_IN_SECONDS;
+        $limit=$agent_request ? ($plan==='pro' ? 20 : 4) : ($plan==='pro' ? 60 : 12);
+        $kind=$agent_request ? 'agent' : 'reply';
+        $bucket='qd_forum_issue_'.$kind.'_'.md5((string)$user_id);
+        $count=(int)get_transient($bucket);
+        if ($count >= $limit) {
+            return new WP_Error('rate_limited','Forum Issue rate limit reached',['status'=>429,'limit'=>$limit,'window_minutes'=>15]);
+        }
+        set_transient($bucket,$count+1,$window);
+        return null;
+    }
+
+    public static function forum_issue_reply(WP_REST_Request $req) {
+        $id=(int)$req['id'];
+        $content=self::text($req->get_param('content'),8000);
+        if ($id<1 || mb_strlen($content)<2) return new WP_Error('invalid_reply','Issue and reply are required',['status'=>400]);
+
+        $issue=self::forum_issue_request('GET','/issues/'.$id);
+        if (is_wp_error($issue)) return $issue;
+        if (!empty($issue['pull_request'])) return new WP_Error('issue_not_found','Issue not found',['status'=>404]);
+        if (($issue['state'] ?? '')!=='open') return new WP_Error('issue_closed','Issue is closed',['status'=>409]);
+
+        $user=wp_get_current_user();
+        $plan=self::current_plan($user->ID);
+        $ask_agents=rest_sanitize_boolean($req->get_param('ask_agents'));
+        $limited=self::forum_issue_rate_limit((int)$user->ID,$plan,false);
+        if (is_wp_error($limited)) return $limited;
+        if ($ask_agents) {
+            $agent_limited=self::forum_issue_rate_limit((int)$user->ID,$plan,true);
+            if (is_wp_error($agent_limited)) return $agent_limited;
+        }
+        $agents=[];
+        if ($ask_agents) {
+            $agents=$plan==='pro' ? self::normalize_agent_ids($req->get_param('agents')) : ['seven-of-nine'];
+            if (!$agents) $agents=['seven-of-nine'];
+        }
+
+        $request_token='';
+        if ($ask_agents) {
+            try { $request_token=bin2hex(random_bytes(32)); }
+            catch (Throwable $e) { return new WP_Error('agent_request_token','Unable to prepare agent request',['status'=>500]); }
+            set_transient(self::forum_request_key($request_token),[
+                'issue_id'=>$id,
+                'comment_id'=>0,
+                'plan'=>$plan,
+                'agents'=>$agents,
+                'created_at'=>time(),
+            ],HOUR_IN_SECONDS);
+        }
+
+        $author=self::text($user->display_name ?: $user->user_login,80);
+        $parts=[
+            '**'.$author.' via QuantDeus Forum**',
+            '',
+            $content,
+        ];
+        if ($ask_agents) {
+            $parts[]='';
+            $parts[]='🤖 AI Fleet request: '.implode(', ',$agents);
+        }
+        $parts[]='';
+        $parts[]='<!-- qd:forum-user -->';
+        if ($request_token!=='') $parts[]='<!-- qd:forum-agent-request='.$request_token.' -->';
+
+        $comment=self::forum_issue_request('POST','/issues/'.$id.'/comments',['body'=>implode("\n",$parts)]);
+        if (is_wp_error($comment)) {
+            if ($request_token!=='') delete_transient(self::forum_request_key($request_token));
+            return $comment;
+        }
+        if ($request_token!=='') {
+            set_transient(self::forum_request_key($request_token),[
+                'issue_id'=>$id,
+                'comment_id'=>(int)($comment['id'] ?? 0),
+                'plan'=>$plan,
+                'agents'=>$agents,
+                'created_at'=>time(),
+            ],HOUR_IN_SECONDS);
+        }
+        return new WP_REST_Response([
+            'ok'=>true,
+            'comment'=>[
+                'id'=>(int)($comment['id'] ?? 0),
+                'url'=>esc_url_raw((string)($comment['html_url'] ?? '')),
+            ],
+            'agent_request'=>$ask_agents,
+            'plan'=>$plan,
+            'agents'=>$agents,
+        ],201);
+    }
+
+    public static function forum_agent_request(WP_REST_Request $req) {
+        $token=strtolower((string)$req['token']);
+        if (!preg_match('/^[a-f0-9]{64}$/',$token)) return new WP_Error('request_not_found','Request not found',['status'=>404]);
+        $data=get_transient(self::forum_request_key($token));
+        if (!is_array($data)) return new WP_Error('request_not_found','Request not found',['status'=>404]);
+        $issue_id=(int)$req->get_param('issue_id');
+        $comment_id=(int)$req->get_param('comment_id');
+        if ($issue_id<1 || $comment_id<1 || $issue_id!==(int)($data['issue_id'] ?? 0) || $comment_id!==(int)($data['comment_id'] ?? 0)) {
+            return new WP_Error('request_mismatch','Request does not match this GitHub comment',['status'=>403]);
+        }
+        return rest_ensure_response([
+            'ok'=>true,
+            'plan'=>($data['plan'] ?? 'free')==='pro' ? 'pro' : 'free',
+            'agents'=>self::normalize_agent_ids($data['agents'] ?? []),
+            'issue_id'=>$issue_id,
+            'comment_id'=>$comment_id,
+        ]);
+    }
+
+    public static function telegram_plan_lookup(WP_REST_Request $req) {
+        $telegram_id=self::text($req->get_param('telegram_id'),40);
+        if ($telegram_id==='' || !preg_match('/^[0-9]{1,20}$/',$telegram_id)) {
+            return new WP_Error('telegram_id_invalid','Telegram user id required',['status'=>400]);
+        }
+        $users=get_users(['meta_key'=>'qd_telegram_id','meta_value'=>$telegram_id,'number'=>1]);
+        $user=$users ? $users[0] : null;
+        if (!$user) {
+            return rest_ensure_response(['ok'=>true,'role'=>'member','plan'=>'free','source'=>'wordpress']);
+        }
+        $wp_role=(string)($user->roles[0] ?? 'qd_member');
+        $role=$wp_role==='administrator' ? 'admin' : ($wp_role==='qd_moderator' ? 'moderator' : 'member');
+        return rest_ensure_response([
+            'ok'=>true,
+            'role'=>$role,
+            'plan'=>self::current_plan((int)$user->ID),
+            'source'=>'wordpress',
+        ]);
+    }
+
     private static function telegram_bot_token(): string {
         return defined('QD_TELEGRAM_BOT_TOKEN') ? trim((string)QD_TELEGRAM_BOT_TOKEN) : '';
     }
@@ -593,6 +935,7 @@ final class QD_Core {
                 'name'=>$user->display_name,
                 'role'=>$user->roles[0] ?? 'qd_member',
                 'provider'=>'telegram',
+                'plan'=>self::current_plan($user->ID),
             ],
         ]);
     }
@@ -786,6 +1129,7 @@ final class QD_Core {
                 'name'=>$login,
                 'role'=>$role,
                 'provider'=>'github',
+                'plan'=>self::current_plan($user->ID),
             ],
         ]);
     }
