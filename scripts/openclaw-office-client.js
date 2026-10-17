@@ -66,7 +66,14 @@ function isTransientError(error) {
   );
 }
 
+function quotaExhausted(raw) {
+  const text = String(raw || '').toLowerCase();
+  return text.includes('openclaw_external_capacity_blocked') &&
+    (text.includes('vercel_sandbox_capacity') || text.includes('hobby plan usage limit exceeded'));
+}
+
 function looksTransient(status, raw) {
+  if (quotaExhausted(raw)) return false;
   const text = String(raw || '').toLowerCase();
   return TRANSIENT_STATUS_CODES.has(Number(status)) ||
     text.includes('incomplete_turn') ||
@@ -145,10 +152,10 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
       let errorData = null;
       try { errorData = JSON.parse(raw); } catch {}
       throw officeError('OpenClaw Office ' + response.status + ': ' + raw.slice(0, 1600), {
-        code: looksTransient(response.status, raw) ? 'OPENCLAW_TRANSIENT' : 'OPENCLAW_HTTP_ERROR',
+        code: quotaExhausted(raw) ? 'OPENCLAW_CAPACITY_EXHAUSTED' : (looksTransient(response.status, raw) ? 'OPENCLAW_TRANSIENT' : 'OPENCLAW_HTTP_ERROR'),
         status: response.status,
         transient: looksTransient(response.status, raw),
-        retrySafe: errorData?.retry_safe === true
+        retrySafe: !quotaExhausted(raw) && errorData?.retry_safe === true
       });
     }
 

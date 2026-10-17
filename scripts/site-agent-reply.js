@@ -1,5 +1,6 @@
 const fs = require('fs');
 const openclawOffice = require('./openclaw-office-client');
+const cloudLLM = require('./cloud-llm-client');
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -303,7 +304,7 @@ async function createIssueFromRequest(agent, query, snapshot) {
   const rawDraft = await callModel([
     { role: 'system', content: prompt },
     { role: 'user', content: query }
-  ]);
+  ], agent.id);
   const draft = extractJsonObject(rawDraft);
   const title = normalizeTitle(draft.title);
   if (!title) throw new Error('issue_draft_title_missing');
@@ -574,16 +575,16 @@ async function callProvider(url, key, providerLabel, model, messages) {
   return String(text).trim();
 }
 
-async function callModel(messages) {
-  if (requestedProvider === 'openrouter' && !openRouterKey) throw new Error('OPENROUTER_API_KEY_required');
-  if ((requestedProvider === 'openrouter' || requestedProvider === 'auto') && openRouterKey) {
-    activeProvider = 'openrouter';
-    activeModel = openRouterModel;
-    return callProvider('https://openrouter.ai/api/v1/chat/completions', openRouterKey, 'OpenRouter', openRouterModel, messages);
+async function callModel(messages, profile = 'seven-of-nine') {
+  // Public site messages run directly on the GitHub Actions runner with a
+  // strictly free text-only model; Vercel Sandbox is not required.
+  if (!['auto', 'openrouter'].includes(requestedProvider)) {
+    throw new Error('unsupported_cloud_llm_provider');
   }
-  activeProvider = 'oidc-bridge';
-  activeModel = 'runtime-configured';
-  return callVercelOidcBridge(messages);
+  const result = await cloudLLM.askCloud({profile, messages});
+  activeProvider = 'github-cloud-free';
+  activeModel = result.model;
+  return result.text;
 }
 
 async function buildReply(agentId, query) {
@@ -623,7 +624,8 @@ async function buildReply(agentId, query) {
     return createIssueFromRequest(agent, normalizedQuery, snapshot);
   }
 
-  if (openclawOffice.configured()) {
+  if (trustedAction && !openclawOffice.configured()) throw new Error('trusted_openclaw_unavailable');
+  if (trustedAction && openclawOffice.configured()) {
     try {
       const result = await openclawOffice.ask({
         profile: agent.id,
@@ -652,10 +654,11 @@ async function buildReply(agentId, query) {
       }
     } catch (error) {
       console.error('OpenClaw Office route failed:', error.message || error);
+      throw error; // Never downgrade an authorised repository mutation to text-only chat.
     }
   }
 
-  const text = await callModel(messages);
+  const text = await callModel(messages, agent.id);
   const validation = validateRepositoryStatusOutput(text, snapshot, statusRequest);
   if (!validation.ok) throw new Error('repository_status_grounding_failed:' + validation.reasons.slice(0, 8).join(','));
   return { text, llm: true, agent };
@@ -666,6 +669,7 @@ async function postReply(result) {
     activeProvider === 'openclaw-agent-exec-trusted-tools' ? 'OpenClaw Office (trusted GitHub MCP)' :
     activeProvider === 'openclaw-agent-exec-brokered-read-tools' ? 'OpenClaw Office (brokered read tools)' :
     activeProvider === 'openrouter' ? 'OpenRouter' :
+    activeProvider === 'github-cloud-free' ? 'GitHub Actions / OpenRouter Free' :
     activeProvider === 'oidc-bridge' ? 'Authenticated provider bridge' :
     'OpenClaw Office';
   const footer = result.llm

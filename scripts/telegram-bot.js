@@ -1,5 +1,6 @@
 const fs = require('fs');
 const openclawOffice = require('./openclaw-office-client');
+const cloudLLM = require('./cloud-llm-client');
 const { getGithubOidcToken } = require('./github-oidc');
 const { QUANTDEUS_SHIELD_VERSION, shieldInput } = require('./prompt-shield');
 const { execFileSync } = require('child_process');
@@ -116,20 +117,28 @@ function agentMessages(agentId, userContent, recovery = false) {
 }
 
 async function askChatAgent(agentId, userContent, metadata, options = {}) {
-  let result = await openclawOffice.ask({
-    profile: agentId,
-    messages: agentMessages(agentId, userContent),
-    metadata,
-    retryTransient: options.retryTransient === true
-  });
+  // Text-only fallback is allowed for public chat only. Admin actions still
+  // require verified trusted OpenClaw tools and fail closed when unavailable.
+  const invoke = async (recovery = false, cloudOnly = false) => {
+    const messages = agentMessages(agentId, userContent, recovery);
+    if (cloudOnly) return cloudLLM.askCloud({profile: agentId, messages});
+    try {
+      return await openclawOffice.ask({
+        profile: agentId,
+        messages,
+        metadata: recovery ? {...metadata, identity_recovery:'data'} : metadata,
+        retryTransient: options.retryTransient === true
+      });
+    } catch (error) {
+      if (error?.code !== 'OPENCLAW_CAPACITY_EXHAUSTED') throw error;
+      console.warn('[telegram-chat] Sandbox capacity exhausted; using GitHub Actions free cloud text lane');
+      return cloudLLM.askCloud({profile: agentId, messages});
+    }
+  };
+  let result = await invoke();
   if (result && dataIdentityViolation(agentId, result.text, userContent)) {
     console.warn('[data-identity] channel=telegram-actions status=violation retry=true');
-    result = await openclawOffice.ask({
-      profile: agentId,
-      messages: agentMessages(agentId, userContent, true),
-      metadata: { ...metadata, identity_recovery: 'data' },
-      retryTransient: options.retryTransient === true
-    });
+    result = await invoke(true, result.runtime === 'github-actions-cloud-no-tools');
   }
   return result;
 }

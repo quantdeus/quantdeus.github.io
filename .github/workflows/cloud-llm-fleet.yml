@@ -1,0 +1,44 @@
+name: Проверка облачных LLM всех агентов QuantDeus
+run-name: "Облачные модели GitHub — проверка мартышек"
+
+on:
+  schedule:
+    - cron: '17 8 * * *'
+  workflow_dispatch:
+    inputs:
+      agent_id:
+        description: "ID одного агента (пусто = ежедневная ротация)"
+        required: false
+        type: string
+      all_agents:
+        description: "Проверить все 29 агентов: расходует до 29 бесплатных запросов"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantdeus-cloud-llm-fleet
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Проверить 29 профилей и защиту бесплатного тарифа
+        run: node --test scripts/qa/cloud-llm-client.test.js
+      - name: Проверить настоящие ответы LLM из облачного GitHub Actions
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          AGENT_ID: ${{ inputs.agent_id }}
+          ALL_AGENTS: ${{ inputs.all_agents }}
+        run: node scripts/cloud-llm-fleet-smoke.js
