@@ -13,7 +13,7 @@ const agents = JSON.parse(fs.readFileSync('coordination/agents.json', 'utf8')).a
 assert.equal(agents.length, 29, 'all registered agents');
 for (const agent of agents) {
   assert.match(agent.telegram_description_ru || '', /[А-Яа-яЁё]/, 'Russian description for ' + agent.id);
-  assert.doesNotMatch(agent.telegram_description_ru || '', /\\b(?:workflow|bot|marketing|research|agent|LLM)\\b/i, 'No English jargon in ' + agent.id);
+  assert.doesNotMatch(agent.telegram_description_ru || '', /\b(?:workflow|bot|marketing|research|agent|LLM)\b/i, 'No English jargon in ' + agent.id);
 }
 
 const checks = [
