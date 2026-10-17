@@ -74,7 +74,7 @@ jobs:
 
       - name: Проверить canonical WordPress source
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           test -f index.html
           test -f wordpress/index.html
           test -f 404.html
