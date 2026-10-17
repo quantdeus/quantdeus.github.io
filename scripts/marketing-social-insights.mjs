@@ -1,171 +1,124 @@
 /**
- * QuantDeus Social Fleet — read-only social insights for humans and marketing agents.
- * Avoid leaking credentials/connection metadata. No publish, comment, delete or update calls.
+ * QuantDeus — экономная проверка соцсетей.
+ * За один запуск: до 1 чтения списка Composio, до 1 обращения к YouTube
+ * и до 1 обращения к VK. Без повторов после 429 и без публикаций.
+ * Доступ к публичной статистике не означает право загружать ролики.
  */
-const API = 'https://backend.composio.dev/api/v3.1';
-const TARGET_CHANNEL = 'UClJUCP1tX2R6fglNKqnKIyQ'; // Energotron me / QuantDeus
+const COMPOSIO_URL = 'https://backend.composio.dev/api/v3.1';
+const YOUTUBE_CHANNEL_ID = 'UClJUCP1tX2R6fglNKqnKIyQ';
+const VK_GROUP = 'andromeda_2077';
 const composioKey = process.env.COMPOSIO_API || '';
 const vkToken = process.env.VK_TOKEN_GROUP || '';
-const report = [
-  '# QuantDeus Social Fleet — Read-only platform insights',
-  '',
-  'This diagnostic makes no edits to YouTube or VK.',
-  '',
-];
-let errors = 0;
-async function append() {
-  const text = report.join('\n') + '\n';
-  if (process.env.GITHUB_STEP_SUMMARY) {
-    const {appendFile} = await import('node:fs/promises');
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, text);
+
+const summary = ['# QuantDeus — экономная статистика соцсетей', '', 'Только чтение. Публикаций, комментариев и повторных попыток нет.', ''];
+let failures = 0;
+let apiCalls = {composio: 0, youtube: 0, vk: 0};
+
+const n = v => v === undefined || v === null || v === '' || !Number.isFinite(Number(v))
+  ? 'неизвестно' : Number(v).toLocaleString('ru-RU');
+
+async function request(url, options, source) {
+  apiCalls[source]++;
+  const response = await fetch(url, { ...options, signal: AbortSignal.timeout(15000) });
+  if (!response.ok) {
+    // Записываем только статус, без данных о токенах и содержимого ответа.
+    const err = new Error('HTTP ' + response.status);
+    err.status = response.status;
+    throw err;
   }
-  console.log(text);
-}
-function fail(label) {
-  errors++;
-  report.push(label);
-}
-async function composioGet(path) {
-  const response = await fetch(API + path, {
-    headers: {'x-api-key': composioKey, Accept: 'application/json'},
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!response.ok) throw new Error('Composio HTTP ' + response.status);
   return response.json();
 }
-async function readYouTube() {
-  report.push('## YouTube: Energotron me (@energotron)');
-  if (!composioKey) return fail('⚠️ Missing COMPOSIO_API GitHub Actions secret.');
-  try {
-    const accounts = await composioGet('/connected_accounts?limit=100');
-    const eligible = (accounts.items || []).filter(a =>
-      a.status === 'ACTIVE' && !a.is_disabled &&
-      (a.toolkit?.slug === 'youtube' || a.toolkit_slug === 'youtube')
-    ).slice(0, 10);
-    if (!eligible.length) return fail('❌ No active YouTube connected account in this Composio project.');
-    const attempts = [];
-    for (const account of eligible) {
-      // Only call a read-only tool on connected accounts in the authorized project.
-      const response = await fetch(API + '/tools/execute/YOUTUBE_GET_CHANNEL_STATISTICS', {
-        method: 'POST',
-        headers: {'x-api-key': composioKey, 'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          connected_account_id: account.id,
-          ...(account.user_id ? {user_id: account.user_id} : {}),
-          version: 'latest',
-          arguments: {mine: true, part: 'snippet,statistics'},
-        }),
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!response.ok) {
-        // Do not log raw provider errors: restrict diagnostics to safe error codes.
-        let safeCode = '';
-        try {
-          const j = await response.json();
-          const code = String(j?.error?.code || j?.code || '');
-          if (/^[a-zA-Z0-9_-]{1,60}$/.test(code)) safeCode = ' (' + code + ')';
-        } catch { /* response might not be JSON */ }
-        attempts.push('HTTP ' + response.status + safeCode);
-        continue;
-      }
-      const result = await response.json();
-      if (result.successful === false) {
-        attempts.push('tool execution returned unsuccessful');
-        continue;
-      }
-      const p = result.data || result;
-      const channels = p.channels || p.items || p.data?.channels || p.data?.items || [];
-      const selected = channels.find(c => c.id === TARGET_CHANNEL);
-      if (!selected) {
-        // Log only JSON object keys, never provider response values or identifiers.
-        const topKeys = Object.keys(result).slice(0, 8).join(',');
-        const dataKeys = Object.keys(p || {}).slice(0, 8).join(',');
-        const records = Array.isArray(channels) ? channels.length : 0;
-        const validId = Array.isArray(channels) && channels.some(ch => typeof ch?.id === 'string' && ch.id.startsWith('UC'));
-        attempts.push('no target channel in authenticated response [channels:' + records + ', channelIdPresent:' + validId + ', keys:' + topKeys + '/' + dataKeys + ']');
-        continue;
-      }
-      const stat = selected.statistics || {};
-      const n = v => Number.isFinite(Number(v)) ? Number(v).toLocaleString('ru-RU') : '—';
-      report.push('✅ Channel verified through the Composio project.',
-        '',
-        '| Subscribers | Views | Videos |',
-        '|---:|---:|---:|',
-        '| ' + n(stat.subscriberCount) + ' | ' + n(stat.viewCount) + ' | ' + n(stat.videoCount) + ' |',
-        '',
-        'Channel: https://www.youtube.com/channel/' + TARGET_CHANNEL);
-      return;
-    }
-    // Connected ChatGPT/Composio account and the Actions API-key project can be different.
-    // Fall back to explicitly addressed PUBLIC channel statistics, not privileged ownership claims.
-    for (const account of eligible) {
-      try {
-        const response = await fetch(API + '/tools/execute/YOUTUBE_GET_CHANNEL_STATISTICS', {
-          method: 'POST',
-          headers: {'x-api-key': composioKey, 'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            connected_account_id: account.id,
-            ...(account.user_id ? {user_id: account.user_id} : {}),
-            version: 'latest',
-            arguments: {id: TARGET_CHANNEL, part: 'snippet,statistics'},
-          }),
-          signal: AbortSignal.timeout(20000),
-        });
-        if (!response.ok) continue;
-        const result = await response.json();
-        if (result.successful === false) continue;
-        const p = result.data || result;
-        const channels = p.channels || p.items || p.data?.channels || p.data?.items || [];
-        const selected = channels.find(c => c.id === TARGET_CHANNEL);
-        if (!selected) continue;
-        const stat = selected.statistics || {};
-        const n = v => Number.isFinite(Number(v)) ? Number(v).toLocaleString('ru-RU') : '—';
-        report.push('✅ Публичная статистика YouTube получена по идентификатору канала.',
-          '⚠️ Владелец канала в GitHub Actions ещё НЕ подтверждён: личная аналитика, загрузка и ответы отключены.',
-          '',
-          '| Подписчики | Просмотры | Видео |',
-          '|---:|---:|---:|',
-          '| ' + n(stat.subscriberCount) + ' | ' + n(stat.viewCount) + ' | ' + n(stat.videoCount) + ' |',
-          '',
-          'Канал: https://www.youtube.com/channel/' + TARGET_CHANNEL);
-        return;
-      } catch { /* Move to next project-scoped connection without leaking response */ }
-    }
-    fail('❌ Не удалось прочитать канал даже по публичному ID. Проверка владельца не пройдена. Диагностика: ' + attempts.join('; ') + '.');
-  } catch {
-    fail('❌ YouTube read failed (see Composio project connection / API scopes).');
-  }
+
+function errorStatus(platform, e) {
+  failures++;
+  const status = e?.status === 429
+    ? 'Квота 429: остановлено без повтора, следующая плановая попытка завтра.'
+    : 'Ошибка чтения: ' + (Number.isInteger(e?.status) ? 'HTTP ' + e.status : 'сетевой сбой');
+  summary.push('⚠️ ' + platform + ': ' + status);
 }
-async function readVK() {
-  report.push('', '## VK: andromeda_2077');
-  if (!vkToken) return fail('⚠️ Missing VK_TOKEN_GROUP GitHub Actions secret.');
+
+async function checkYouTube() {
+  summary.push('## YouTube — @energotron');
+  if (!composioKey) { failures++; summary.push('⚠️ В GitHub отсутствует секрет COMPOSIO_API.'); return; }
+  try {
+    const listing = await request(COMPOSIO_URL + '/connected_accounts?limit=100', {
+      headers: {'x-api-key': composioKey, Accept: 'application/json'}
+    }, 'composio');
+    const active = (Array.isArray(listing.items) ? listing.items : []).find(a =>
+      a?.status === 'ACTIVE' && !a?.is_disabled &&
+      (a?.toolkit?.slug === 'youtube' || a?.toolkit_slug === 'youtube')
+    );
+    if (!active) { failures++; summary.push('⚠️ Нет активного YouTube-подключения в этом проекте.'); return; }
+
+    // Важно: один публичный запрос по точному ID. Не опрашивать "mine" на
+    // каждом аккаунте, если ключ относится к другому аккаунту Composio.
+    const result = await request(COMPOSIO_URL + '/tools/execute/YOUTUBE_GET_CHANNEL_STATISTICS', {
+      method: 'POST',
+      headers: {'x-api-key': composioKey, 'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        connected_account_id: active.id,
+        ...(active.user_id ? {user_id: active.user_id} : {}),
+        version: 'latest',
+        arguments: {id: YOUTUBE_CHANNEL_ID, part: 'snippet,statistics'}
+      })
+    }, 'youtube');
+    if (result.successful === false) {
+      failures++; summary.push('⚠️ YouTube не ответил успешными данными. Без повторных запросов.'); return;
+    }
+    const p = result.data || result;
+    const channels = p.channels || p.items || p.data?.channels || p.data?.items || [];
+    const channel = Array.isArray(channels) ? channels.find(c => c.id === YOUTUBE_CHANNEL_ID) : null;
+    if (!channel) {
+      failures++; summary.push('⚠️ Ответ не содержит нужного канала. Без перебора подключений.'); return;
+    }
+    const st = channel.statistics || {};
+    summary.push('✅ Публичная статистика доступна.',
+      '| Подписчики | Просмотры | Видео |',
+      '|---:|---:|---:|',
+      '| ' + n(st.subscriberCount) + ' | ' + n(st.viewCount) + ' | ' + n(st.videoCount) + ' |',
+      '',
+      'Канал: https://www.youtube.com/channel/' + YOUTUBE_CHANNEL_ID,
+      '',
+      '> Это ПУБЛИЧНЫЕ показатели. Личная аналитика, публикация и комментарии этим запросом не проверяются.');
+  } catch (e) { errorStatus('YouTube/Composio', e); }
+}
+
+async function checkVK() {
+  summary.push('', '## ВКонтакте — ' + VK_GROUP);
+  if (!vkToken) { failures++; summary.push('⚠️ В GitHub отсутствует секрет VK_TOKEN_GROUP.'); return; }
   try {
     const body = new URLSearchParams({
       access_token: vkToken,
-      group_id: 'andromeda_2077',
+      group_id: VK_GROUP,
       fields: 'members_count',
-      v: '5.199',
+      v: '5.199'
     });
-    const response = await fetch('https://api.vk.com/method/groups.getById', {
+    const j = await request('https://api.vk.com/method/groups.getById', {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body,
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!response.ok) return fail('❌ VK API HTTP error.');
-    const payload = await response.json();
-    if (!payload.response) return fail('❌ VK API did not accept the read-only request.');
-    const v = Array.isArray(payload.response) ? payload.response[0] :
-      Array.isArray(payload.response.groups) ? payload.response.groups[0] : payload.response;
-    const count = v?.members_count;
-    report.push('✅ VK group read access confirmed.',
-      'Group: https://vk.ru/andromeda_2077',
-      'Members: ' + (typeof count === 'number' ? count.toLocaleString('ru-RU') : 'not returned by this token'));
-  } catch {
-    fail('❌ VK group stats request failed.');
-  }
+      body
+    }, 'vk');
+    if (!j.response) { failures++; summary.push('⚠️ VK не предоставил статистику. Без повторов.'); return; }
+    const g = Array.isArray(j.response) ? j.response[0] :
+      Array.isArray(j.response.groups) ? j.response.groups[0] : j.response;
+    summary.push('✅ Группа доступна. Участников: ' + n(g?.members_count) + '.',
+      'Группа: https://vk.ru/' + VK_GROUP);
+  } catch (e) { errorStatus('ВКонтакте', e); }
 }
-await Promise.all([readYouTube(), readVK()]);
-report.push('', '> Agent scope: read-only. Draft/publish/reply actions require separate approval and workflow.');
-await append();
-if (errors) process.exitCode = 1;
+
+await checkYouTube();
+await checkVK();
+summary.push('', '## Бюджет запросов за этот запуск',
+  'Composio (список): ' + apiCalls.composio +
+  '; YouTube (статистика): ' + apiCalls.youtube +
+  '; VK (участники): ' + apiCalls.vk + '.',
+  '',
+  'Неизвестные продажи и заявки не приравниваются к нулю. Для оценки продаж нужны подтверждённые данные сайта/кассы.',
+  'Для контента используйте ссылки с UTM: `node scripts/social-sales-links.mjs youtube automation osen-2026 short-01`.');
+const report = summary.join('\n') + '\n';
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const {appendFile} = await import('node:fs/promises');
+  await appendFile(process.env.GITHUB_STEP_SUMMARY, report);
+}
+console.log(report);
+if (failures) process.exitCode = 1;
