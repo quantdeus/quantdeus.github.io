@@ -43,8 +43,7 @@ let registryCache = null;
 let registryAt = 0;
 let quantdeusSnapshotCache = null;
 let quantdeusSnapshotAt = 0;
-let telegramCommandsFingerprint = '';
-let telegramCommandsAt = 0;
+const telegramCommandsCache = new Map();
 
 const telegramPlanCache = new Map();
 
@@ -196,7 +195,8 @@ async function refreshRuntimeTelegramCommands(agents = [], botKind = 'agent') {
   if (!botToken) return { ok: false, reason: 'runtime_bot_token_missing', agent_count: agents.length };
   const commands = telegramCommandsForAgents(agents);
   const fingerprint = commands.map(item => item.command + ':' + item.description).join('|');
-  if (fingerprint === telegramCommandsFingerprint && Date.now() - telegramCommandsAt < 5 * 60 * 1000) {
+  const cached = telegramCommandsCache.get(botKind);
+  if (cached?.fingerprint === fingerprint && Date.now() - cached.at < 5 * 60 * 1000) {
     return { ok: true, cached: true, command_count: commands.length, agent_count: agents.length, data_command: commands.some(item => item.command === 'data') };
   }
   try {
@@ -205,8 +205,7 @@ async function refreshRuntimeTelegramCommands(agents = [], botKind = 'agent') {
     const names = Array.isArray(live) ? live.map(item => item.command) : [];
     const missing = commands.map(item => item.command).filter(command => !names.includes(command));
     if (missing.length) throw new Error('runtime_commands_missing:' + missing.join(','));
-    telegramCommandsFingerprint = fingerprint;
-    telegramCommandsAt = Date.now();
+    telegramCommandsCache.set(botKind, { fingerprint, at: Date.now() });
     console.info('[telegram-commands] status=refreshed agents=' + agents.length + ' commands=' + commands.length + ' data=' + names.includes('data'));
     return { ok: true, cached: false, command_count: commands.length, agent_count: agents.length, data_command: names.includes('data') };
   } catch (error) {
