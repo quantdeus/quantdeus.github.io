@@ -836,7 +836,9 @@ check(
   check(
     telegramBridge.includes('async function telegramOutbound') &&
     telegramBridge.includes("await telegram(botToken, 'sendMessage', payload)") &&
-    telegramBridge.includes("outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback'") &&
+    (telegramBridge.includes("outbound_mode: runtimeTelegramBotToken(botKind) ? 'bot-api-' + botKind : 'webhook-response-fallback'") ||
+      telegramBridge.includes("outbound_mode: runtimeTelegramBotToken() ? 'bot-api-primary' : 'webhook-response-fallback'")) &&
+    telegramBridge.includes("runtimeTelegramBotToken(message?.__qdBotKind)") &&
     telegramBridge.includes("link_preview_options: { is_disabled: true }") &&
     telegramBridge.includes("mode=webhook-response status=fallback") &&
     !telegramBridge.includes('disable_web_page_preview: true'),
