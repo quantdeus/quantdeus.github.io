@@ -77,7 +77,9 @@ async function telegram(botToken, method, payload = {}) {
 }
 
 async function configureTelegramInterface(botToken, role = 'agent') {
-  const webAppUrl = String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
+  const webAppUrl = role === 'store'
+    ? 'https://quantdeus.ru/services/'
+    : String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
   await telegram(botToken, 'setChatMenuButton', {
     menu_button: {
       type: 'web_app',
@@ -130,6 +132,16 @@ async function main() {
   if (!botToken) throw new Error('TELEGRAM_BOT_TOKEN_missing');
   const storeBotToken = String(process.env.TELEGRAM_STORE_BOT_TOKEN || '').trim();
   if (storeBotToken && storeBotToken === botToken) throw new Error('telegram_store_and_agent_tokens_identical');
+
+  // Не настраиваем Store через старую Vercel-функцию: иначе старый код
+  // ошибочно назначит магазинному боту адрес Agent.
+  const handshakeUrl = new URL(ENDPOINT);
+  handshakeUrl.searchParams.set('bot_config', '1');
+  const handshakeResponse = await fetch(handshakeUrl, { headers: { accept: 'application/json' } });
+  const handshake = await handshakeResponse.json().catch(() => null);
+  if (!handshakeResponse.ok || handshake?.telegram_multi_bot_version !== 2) {
+    throw new Error('telegram_vercel_multi_bot_not_deployed: сначала обнови сервер Vercel, потом повтори настройку');
+  }
 
   const oidc = await getGithubOidcToken(AUDIENCE);
   const setupBot = async (token, role) => {
