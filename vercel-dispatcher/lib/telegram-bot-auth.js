@@ -22,7 +22,7 @@ export function telegramBotUsername() {
 }
 
 export function telegramSiteOrigin() {
-  return clean(process.env.QUANTDEUS_CANONICAL_ORIGIN) || DEFAULT_SITE_ORIGIN;
+  return DEFAULT_SITE_ORIGIN; // Старые переменные окружения не могут вернуть пользователя на прежний домен.
 }
 
 function key(label) {
