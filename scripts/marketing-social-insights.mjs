@@ -43,6 +43,7 @@ async function readYouTube() {
       (a.toolkit?.slug === 'youtube' || a.toolkit_slug === 'youtube')
     ).slice(0, 10);
     if (!eligible.length) return fail('❌ No active YouTube connected account in this Composio project.');
+    const attempts = [];
     for (const account of eligible) {
       // Only call a read-only tool on connected accounts in the authorized project.
       const response = await fetch(API + '/tools/execute/YOUTUBE_GET_CHANNEL_STATISTICS', {
@@ -55,12 +56,25 @@ async function readYouTube() {
         }),
         signal: AbortSignal.timeout(20000),
       });
-      if (!response.ok) continue;
+      if (!response.ok) {
+        attempts.push('HTTP ' + response.status);
+        continue;
+      }
       const result = await response.json();
+      if (result.successful === false) {
+        attempts.push('tool execution returned unsuccessful');
+        continue;
+      }
       const p = result.data || result;
       const channels = p.channels || p.items || p.data?.channels || p.data?.items || [];
       const selected = channels.find(c => c.id === TARGET_CHANNEL);
-      if (!selected) continue;
+      if (!selected) {
+        // Log only JSON object keys, never provider response values or identifiers.
+        const topKeys = Object.keys(result).slice(0, 8).join(',');
+        const dataKeys = Object.keys(p || {}).slice(0, 8).join(',');
+        attempts.push('no channel match [keys:' + topKeys + '/' + dataKeys + ']');
+        continue;
+      }
       const stat = selected.statistics || {};
       const n = v => Number.isFinite(Number(v)) ? Number(v).toLocaleString('ru-RU') : '—';
       report.push('✅ Channel verified through the Composio project.',
@@ -72,7 +86,7 @@ async function readYouTube() {
         'Channel: https://www.youtube.com/channel/' + TARGET_CHANNEL);
       return;
     }
-    fail('❌ Connected accounts exist, but authorized access to the expected QuantDeus YouTube channel was not verified.');
+    fail('❌ Expected YouTube channel not verified. Read-only diagnostics: ' + attempts.join('; ') + '.');
   } catch {
     fail('❌ YouTube read failed (see Composio project connection / API scopes).');
   }
