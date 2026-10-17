@@ -415,6 +415,18 @@ async function createDraftRepairPr(token, baseSha, files, diagnosis, critique, q
   return { action: 'draft_pr', number: pr.number, url: pr.html_url, branch };
 }
 
+// Only called after GitHub OIDC verification. Prefer the configured Vercel
+// provider, otherwise borrow the optional Actions secret for a free-only route.
+// Neither the key nor incoming headers are included in evidence or logs.
+export function mirrorProviderEnv(env, actionsKey) {
+  if (String(env.OPENROUTER_API_KEY || '').trim()) return env;
+  const key = typeof actionsKey === 'string' && actionsKey.length <= 256
+    ? actionsKey.trim()
+    : '';
+  if (!key) return env;
+  return { ...env, OPENROUTER_API_KEY: key, OPENROUTER_MODEL: 'openrouter/free' };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
@@ -437,7 +449,11 @@ export default async function handler(req, res) {
         : []
     };
 
-    const providerProbes = await probeMirrorProviders(buildMirrorCandidates(process.env));
+    const providerEnv = mirrorProviderEnv(
+      process.env,
+      req.headers['x-quantdeus-mirror-openrouter-key']
+    );
+    const providerProbes = await probeMirrorProviders(buildMirrorCandidates(providerEnv));
     const providerState = providerProbes.map(({ ref, ok, status, detail }) => ({ ref, ok, status, detail }));
     const healthyRoutes = providerProbes
       .filter(item => item.ok)
