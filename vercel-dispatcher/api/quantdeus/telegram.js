@@ -1595,7 +1595,9 @@ async function telegramOutbound(res, message, text, replyMarkup = null, kind = '
   };
   if (replyMarkup) payload.reply_markup = replyMarkup;
 
-  const botToken = runtimeTokenForRole(role);
+  // Ответ на вебхук магазина всегда отправляется Telegram от имени Store.
+  // Даже ошибочно заданный токен Agent не сможет отправить сообщение вместо магазина.
+  const botToken = role === 'store' ? '' : runtimeTokenForRole(role);
   if (botToken) {
     try {
       await telegram(botToken, 'sendMessage', payload);
