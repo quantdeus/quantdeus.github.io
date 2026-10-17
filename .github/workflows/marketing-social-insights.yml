@@ -5,6 +5,15 @@ on:
   schedule:
     - cron: '19 7 * * *'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Режим: без запросов или получить текущую статистику'
+        type: choice
+        required: true
+        default: 'test-only'
+        options:
+          - test-only
+          - read-stats
 
 permissions:
   contents: read
@@ -30,4 +39,8 @@ jobs:
       - name: Проверить ссылки на услуги и расчёт продаж без API
         run: node --test scripts/qa/marketing-sales.test.mjs
       - name: Прочитать YouTube и VK ровно по одному разу
+        if: github.event_name == 'schedule' || inputs.mode == 'read-stats'
         run: node scripts/marketing-social-insights.mjs
+      - name: Подтвердить экономный тест без обращений к API
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'test-only'
+        run: echo '✅ Только локальные тесты. Расход API = 0.' >> "$GITHUB_STEP_SUMMARY"
