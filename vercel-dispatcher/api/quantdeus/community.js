@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { requestTelegramIdentity, roleForTelegramId } from "../../lib/telegram-auth.js";
 
 const REPO = "quantdeus/quantdeus.github.io";
+const WORDPRESS_SITE_AI_VERIFY_URL = "https://quantdeus.whf.bz/wp-json/quantdeus/v1/ai-fleet/verify-token";
 const FORUM_MARKER = "<!-- quantdeus-forum:v1 -->";
 const CATEGORIES = new Set(["news", "science", "space", "products", "community"]);
 const writesEnabled = () => process.env.VERCEL_ENV === "production" || process.env.QD_ENABLE_PREVIEW_WRITES === "true";
@@ -37,6 +38,29 @@ async function github(path, options = {}) {
   if (!response.ok) throw new Error(`github_${response.status}`);
   return body;
 }
+async function wordpressIdentity(req) {
+  const token = String(req.headers?.authorization || "").replace(/^Bearer\\s+/i, "").trim().slice(0, 220);
+  if (!token) throw new Error("wordpress_auth_invalid");
+  const response = await fetch(WORDPRESS_SITE_AI_VERIFY_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ token })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.ok !== true || !data?.user_id) throw new Error("wordpress_auth_invalid");
+  return {
+    id: "wp:" + String(data.user_id),
+    name: String(data.display_name || data.username || "WordPress member"),
+    username: String(data.username || ""),
+    qd_role: String(data.role || "member").toLowerCase(),
+    source: "wordpress"
+  };
+}
+async function writeIdentity(req) {
+  if (String(req.body?.auth_source || "") === "wordpress") return wordpressIdentity(req);
+  const user = await requestTelegramIdentity(req);
+  return { ...user, qd_role: roleFor(user.id), source: "telegram" };
+}
 const clean = value => String(value || "").trim();
 const safeText = (value, max) => clean(value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/<!--\s*(?:quantdeus-forum|qd:)[\s\S]*?-->/gi, "").slice(0, max);
 
@@ -45,6 +69,43 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method === "GET") {
     try {
+      if (req.query?.mirror === "issues") {
+        const issues = await github("/issues?state=all&per_page=100&sort=updated&direction=desc");
+        return json(res, 200, {
+          ok: true,
+          issues: issues.filter(x => !x.pull_request).map(x => ({
+            number: x.number,
+            title: String(x.title || ""),
+            body: String(x.body || ""),
+            state: String(x.state || "open"),
+            html_url: String(x.html_url || ""),
+            created_at: x.created_at,
+            updated_at: x.updated_at,
+            comments: Number(x.comments || 0),
+            labels: Array.isArray(x.labels) ? x.labels.map(label => typeof label === "string" ? label : String(label?.name || "")).filter(Boolean) : [],
+            author: String(x.user?.login || "GitHub")
+          }))
+        });
+      }
+      if (req.query?.mirror === "comments") {
+        const id = Number(req.query?.id);
+        if (!Number.isInteger(id) || id <= 0) return json(res, 400, { ok: false, error: "invalid_thread_id" });
+        const issue = await github(`/issues/${id}`);
+        if (issue.pull_request) return json(res, 404, { ok: false, error: "issue_not_found" });
+        const comments = await github(`/issues/${id}/comments?per_page=100`);
+        return json(res, 200, {
+          ok: true,
+          issue: { number: issue.number, state: issue.state, updated_at: issue.updated_at },
+          comments: comments.map(comment => ({
+            id: comment.id,
+            body: String(comment.body || ""),
+            html_url: String(comment.html_url || ""),
+            created_at: comment.created_at,
+            updated_at: comment.updated_at,
+            author: String(comment.user?.login || "GitHub")
+          }))
+        });
+      }
       if (req.query?.me === "1") {
         const user = await requestTelegramIdentity(req);
         return json(res, 200, { ok: true, role: roleFor(user.id) });
@@ -101,8 +162,11 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return json(res, 405, { ok: false, error: "method_not_allowed" });
   let user;
-  try { user = await requestTelegramIdentity(req); }
-  catch (error) { return json(res, ["telegram_auth_unavailable","telegram_oidc_unavailable","telegram_oidc_unconfigured"].includes(error.message) ? 503 : 401, { ok: false, error: error.message }); }
+  try { user = await writeIdentity(req); }
+  catch (error) {
+    const unavailable = ["telegram_auth_unavailable","telegram_oidc_unavailable","telegram_oidc_unconfigured"].includes(error.message);
+    return json(res, unavailable ? 503 : 401, { ok: false, error: error.message });
+  }
   if (!writesEnabled()) return json(res, 409, { ok: false, error: "preview_read_only" });
   const body = req.body || {};
   const action = safeText(body.action, 20);
@@ -114,6 +178,28 @@ export default async function handler(req, res) {
       const issue = await github("/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: `[FORUM] ${title}`, body: `${text}\n\n${FORUM_MARKER}\n<!-- qd:category=${category} -->\n<!-- qd:author=${author.replace(/-->/g, "") } -->` }) });
       return json(res, 201, { ok: true, thread: { number: issue.number, url: issue.html_url } });
     }
+    if (action === "issue_reply") {
+      if (user.source !== "wordpress") return json(res, 403, { ok: false, error: "wordpress_bridge_required" });
+      const id = Number(body.thread_id), text = safeText(body.text, 8000), clientRef = safeText(body.client_ref, 120);
+      if (!Number.isInteger(id) || id <= 0 || text.length < 2) return json(res, 400, { ok: false, error: "invalid_reply" });
+      const issue = await github(`/issues/${id}`);
+      if (issue.pull_request || issue.state !== "open") return json(res, 409, { ok: false, error: "thread_closed" });
+      const marker = clientRef ? `<!-- qd-wp-reply:${clientRef.replace(/-->/g, "")} -->` : "";
+      if (marker) {
+        const comments = await github(`/issues/${id}/comments?per_page=100`);
+        const existing = comments.find(comment => String(comment.body || "").includes(marker));
+        if (existing) return json(res, 200, { ok: true, deduplicated: true, reply: { id: existing.id, created_at: existing.created_at } });
+      }
+      const actorKind = safeText(body.actor_kind, 16);
+      const agentRole = safeText(body.agent_role, 100);
+      const author = safeText(user.name || user.username || "WordPress member", 80).replace(/-->/g, "");
+      const heading = actorKind === "agent"
+        ? `**🤖 AI Fleet · ${agentRole || "QuantDeus agent"}**`
+        : `**${author} · WordPress Forum**`;
+      const replyBody = [heading, "", text, "", marker].filter(Boolean).join("\\n");
+      const reply = await github(`/issues/${id}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: replyBody }) });
+      return json(res, 201, { ok: true, reply: { id: reply.id, created_at: reply.created_at } });
+    }
     if (action === "reply") {
       const id = Number(body.thread_id), text = safeText(body.text, 8000);
       if (!Number.isInteger(id) || id <= 0 || text.length < 2) return json(res, 400, { ok: false, error: "invalid_reply" });
@@ -124,7 +210,7 @@ export default async function handler(req, res) {
       return json(res, 201, { ok: true, reply: { id: reply.id, created_at: reply.created_at } });
     }
     if (action === "moderate") {
-      const role = roleFor(user.id);
+      const role = user.qd_role || roleFor(user.id);
       if (!new Set(["owner", "admin", "moderator"]).has(role)) return json(res, 403, { ok: false, error: "forbidden" });
       const id = Number(body.thread_id), command = safeText(body.command, 20);
       if (!Number.isInteger(id) || id <= 0 || !["lock", "unlock", "hide", "restore", "pin", "unpin", "move"].includes(command)) return json(res, 400, { ok: false, error: "invalid_moderation" });
