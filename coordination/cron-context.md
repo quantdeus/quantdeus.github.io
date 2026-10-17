@@ -1,12 +1,12 @@
 # QuantDeus Daily Context Checkpoint
 
-- date: 2026-10-14
+- date: 2026-10-17
 - canonical_repo: `quantdeus/quantdeus.github.io`
 - canonical_branch: `main`
-- canonical_url: `https://quantdeus.whf.bz/`
-- canonical_host: `native WordPress production / whf.bz`
-- production_topology: `https://quantdeus.whf.bz = canonical WordPress production; https://quantdeus.vercel.app = reverse-proxy mirror + API/OpenClaw control plane; https://quantdeus.github.io = public mirror`
-- active_frontend: `native WordPress QuantDeus portal at https://quantdeus.whf.bz`
+- canonical_url: `https://quantdeus.ru/`
+- canonical_host: `native WordPress production / quantdeus.ru`
+- production_topology: `https://quantdeus.ru = canonical WordPress production; https://quantdeus.vercel.app = reverse-proxy mirror + API/OpenClaw control plane; https://quantdeus.github.io = public mirror`
+- active_frontend: `native WordPress QuantDeus portal at https://quantdeus.ru`
 - active_store_name: `QuantDeus Store`
 - telegram_mini_app_target: `https://quantdeus.github.io/telegram/`
 - coordination_url: `https://quantdeus.github.io/coordination/`
@@ -51,7 +51,7 @@
 - telegram_transport: `Telegram webhook → Vercel /api/quantdeus/telegram → QuantDeus homunculus role router → LLM → inline Telegram Bot API reply`
 - telegram_webhook: `event-driven / no getUpdates polling / GitHub OIDC configures webhook / Vercel validates Telegram secret`
 - dispatcher_runtime: `Vercel Swarm Dispatcher`
-- native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.whf.bz/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.whf.bz / inherited by all 29 registered agents through trusted OpenClaw`
+- native_wordpress_mcp: `free/self-hosted MCP https://quantdeus.ru/wp-json/easy-mcp-ai/v1/mcp / canonical target https://quantdeus.ru / inherited by all 29 registered agents through trusted OpenClaw`
 - wordpress_mcp_swarm_policy: `hourly + autonomous scheduled lanes read-only; direct WordPress writes only for explicit owner-authorized trusted tasks and only with configured MCP authorization; missing auth fails closed for writes; WPVibe is not a dependency`
 - vercel_swarm_dispatcher: `GitHub Actions hourly trigger / 0 * * * * → Vercel OpenClaw trusted runtime → Seven of Nine → read-only GitHub MCP → at most one guarded Issue comment / tracked by Issue #154`
 - vercel_swarm_status: `hourly OpenClaw workflow merged in PR #231; production runtime smoke is green; first scheduled hourly dispatcher run remains the final cadence evidence`
