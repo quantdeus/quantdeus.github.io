@@ -96,7 +96,42 @@ async function readYouTube() {
         'Channel: https://www.youtube.com/channel/' + TARGET_CHANNEL);
       return;
     }
-    fail('❌ Expected YouTube channel not verified. Read-only diagnostics: ' + attempts.join('; ') + '.');
+    // Connected ChatGPT/Composio account and the Actions API-key project can be different.
+    // Fall back to explicitly addressed PUBLIC channel statistics, not privileged ownership claims.
+    for (const account of eligible) {
+      try {
+        const response = await fetch(API + '/tools/execute/YOUTUBE_GET_CHANNEL_STATISTICS', {
+          method: 'POST',
+          headers: {'x-api-key': composioKey, 'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            connected_account_id: account.id,
+            ...(account.user_id ? {user_id: account.user_id} : {}),
+            version: 'latest',
+            arguments: {id: TARGET_CHANNEL, part: 'snippet,statistics'},
+          }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!response.ok) continue;
+        const result = await response.json();
+        if (result.successful === false) continue;
+        const p = result.data || result;
+        const channels = p.channels || p.items || p.data?.channels || p.data?.items || [];
+        const selected = channels.find(c => c.id === TARGET_CHANNEL);
+        if (!selected) continue;
+        const stat = selected.statistics || {};
+        const n = v => Number.isFinite(Number(v)) ? Number(v).toLocaleString('ru-RU') : '—';
+        report.push('✅ Публичная статистика YouTube получена по идентификатору канала.',
+          '⚠️ Владелец канала в GitHub Actions ещё НЕ подтверждён: личная аналитика, загрузка и ответы отключены.',
+          '',
+          '| Подписчики | Просмотры | Видео |',
+          '|---:|---:|---:|',
+          '| ' + n(stat.subscriberCount) + ' | ' + n(stat.viewCount) + ' | ' + n(stat.videoCount) + ' |',
+          '',
+          'Канал: https://www.youtube.com/channel/' + TARGET_CHANNEL);
+        return;
+      } catch { /* Move to next project-scoped connection without leaking response */ }
+    }
+    fail('❌ Не удалось прочитать канал даже по публичному ID. Проверка владельца не пройдена. Диагностика: ' + attempts.join('; ') + '.');
   } catch {
     fail('❌ YouTube read failed (see Composio project connection / API scopes).');
   }
