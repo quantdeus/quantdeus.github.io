@@ -100,8 +100,8 @@ function proReplyMarkup() {
   return proReplyMarkupForEntitlement({ plan: 'free' });
 }
 
-function mainMenuReplyMarkup() {
-  const bot = PUBLIC_BOT_USERNAME || 'QuantDeus_bot';
+function mainMenuReplyMarkup(botKind = 'agent') {
+  const bot = botUsername(botKind) || PUBLIC_BOT_USERNAME || 'QuantDeus_bot';
   return {
     inline_keyboard: [
       [{ text: '🐒 Мартышки · AI Fleet', url: `https://t.me/${bot}?start=agents` }],
@@ -188,11 +188,11 @@ function telegramCommandsForAgents(agents = []) {
   return [...base, ...roleCommands].slice(0, 100);
 }
 
-async function refreshRuntimeTelegramCommands(agents = []) {
+async function refreshRuntimeTelegramCommands(agents = [], botKind = 'agent') {
   if (!Array.isArray(agents) || agents.length < 29) {
     return { ok: false, reason: 'registry_incomplete', agent_count: Array.isArray(agents) ? agents.length : 0 };
   }
-  const botToken = runtimeTelegramBotToken();
+  const botToken = runtimeTelegramBotToken(botKind);
   if (!botToken) return { ok: false, reason: 'runtime_bot_token_missing', agent_count: agents.length };
   const commands = telegramCommandsForAgents(agents);
   const fingerprint = commands.map(item => item.command + ':' + item.description).join('|');
@@ -301,7 +301,7 @@ function privilegedTelegramRole(userId) {
 
 async function telegramGroupAdmin(message) {
   if (!message?.chat || !message?.from || String(message.chat.type || 'private') === 'private') return false;
-  const botToken = runtimeTelegramBotToken();
+  const botToken = runtimeTelegramBotToken(message.__qdBotKind);
   if (!botToken) return false;
   try {
     const member = await telegram(botToken, 'getChatMember', {
@@ -426,17 +426,30 @@ function fromTelegramNetwork(req) {
   return Boolean(ip) && TELEGRAM_CIDRS.some(cidr => cidrContains(ip, cidr));
 }
 
+function botUsername(botKind = 'agent') {
+  return String(botKind === 'store'
+    ? (process.env.QUANTDEUS_STORE_TELEGRAM_BOT_USERNAME || '')
+    : (PUBLIC_BOT_USERNAME || 'QuantDeus_bot')).replace(/^@/, '').trim();
+}
 function publicMessageAddressed(message) {
   const chatType = String(message?.chat?.type || 'private');
   if (chatType === 'private') return true;
   const text = String(message?.text || '');
   if (/^\//.test(text.trim())) return true;
-  const safeUsername = PUBLIC_BOT_USERNAME.replace(/[^A-Za-z0-9_]/g, '');
+  const safeUsername = botUsername(message?.__qdBotKind).replace(/[^A-Za-z0-9_]/g, '');
   if (safeUsername && new RegExp('@' + safeUsername + '\\b', 'i').test(text)) return true;
   const replyUsername = String(message?.reply_to_message?.from?.username || '').replace(/^@/, '');
   return Boolean(replyUsername && safeUsername && replyUsername.toLowerCase() === safeUsername.toLowerCase());
 }
-function runtimeTelegramBotToken() {
+function runtimeTelegramBotToken(botKind = 'agent') {
+  if (botKind === 'store') {
+    return String(
+      process.env.TELEGRAM_STORE_BOT_TOKEN ||
+      process.env.QUANTDEUS_STORE_TELEGRAM_BOT_TOKEN ||
+      process.env.QUANTDEUS_STORE_BOT_TOKEN ||
+      ''
+    ).trim();
+  }
   return String(
     process.env.TELEGRAM_BOT_TOKEN ||
     process.env.QUANTDEUS_TELEGRAM_BOT_TOKEN ||
@@ -1296,7 +1309,7 @@ async function homunculusReply(message, retryUpdate = null) {
   // research services so Telegram can always receive a fast HTTP 200 response.
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) &&
       !/^\/start(?:@[A-Za-z0-9_]+)?\s+(?:pro|agents|monkeys)(?:\s|$)/i.test(raw)) {
-    return '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь';
+    return '🖖 QuantDeus Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь';
   }
   if (/^\/help(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw)) {
     return 'Команды QuantDeus:\n/monkeys или /agents — 🐒 мартышки AI Fleet\n/pro — ⭐ Free / Pro\n/shield — защита публичного бота\n/agent <id> <вопрос>\n\nЧат открыт всем. В группах бот отвечает на команды, упоминания и ответы на его сообщения.';
@@ -1474,12 +1487,12 @@ async function homunculusReply(message, retryUpdate = null) {
   return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${guarded.text}`.slice(0, 3900);
 }
 
-async function fastPublicCommandReply(raw) {
+async function fastPublicCommandReply(raw, message) {
   const text = String(raw || '').trim();
   if (/^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(text) &&
       !/^\/start(?:@[A-Za-z0-9_]+)?\s+(?:(?:pro|agents|monkeys)(?:\s|$)|qdl_|agent_)/i.test(text)) {
     return {
-      text: '🖖 QuantDeus Store Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь',
+      text: '🖖 QuantDeus Bot online. Публичный чат открыт для всех.\n\n🐒 Мартышки AI Fleet доступны прямо здесь — пиши вопрос обычным текстом или выбирай конкретную роль.\n⭐ QuantDeus Pro доступен из этого же бота; админам и создателю — автоматически.\n\n🛡️ QuantDeus Shield активен: prompt-injection, jailbreak, secret-exfiltration и повышение привилегий блокируются до LLM.\n\n/monkeys или /agents — мартышки\n/pro — мой Free / Pro статус\n/shield — статус защиты\n/help — помощь',
       menu: true
     };
   }
@@ -1507,7 +1520,7 @@ async function fastPublicCommandReply(raw) {
         menu: true
       };
     }
-    await refreshRuntimeTelegramCommands(agents);
+    await refreshRuntimeTelegramCommands(agents, message?.__qdBotKind);
     return {
       text: [
         `🐒 QuantDeus AI Fleet · ${agents.length} агентов`,
@@ -1533,7 +1546,7 @@ async function telegramOutbound(res, message, text, replyMarkup = null, kind = '
   };
   if (replyMarkup) payload.reply_markup = replyMarkup;
 
-  const botToken = runtimeTelegramBotToken();
+  const botToken = runtimeTelegramBotToken(message?.__qdBotKind);
   if (botToken) {
     try {
       await telegram(botToken, 'sendMessage', payload);
@@ -1698,9 +1711,9 @@ export default async function handler(req, res) {
     }
   }
 
-  const fastReply = await fastPublicCommandReply(rawText);
+  const fastReply = await fastPublicCommandReply(rawText, message);
   if (fastReply) {
-    return webhookReply(res, message, fastReply.text, fastReply.menu ? mainMenuReplyMarkup() : undefined);
+    return webhookReply(res, message, fastReply.text, fastReply.menu ? mainMenuReplyMarkup(botKind) : undefined);
   }
 
   if (
@@ -1717,7 +1730,7 @@ export default async function handler(req, res) {
       /^\/start(?:@[A-Za-z0-9_]+)?(?:\s+(?:agents|monkeys))?(?:\s|$)/i.test(rawText) ||
       /^\/(?:help|agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(rawText)
     );
-    return webhookReply(res, message, reply, showMenu ? mainMenuReplyMarkup() : undefined);
+    return webhookReply(res, message, reply, showMenu ? mainMenuReplyMarkup(botKind) : undefined);
   } catch (error) {
     console.error('[telegram-homunculus]', String(error?.message || error).slice(0, 800));
     return webhookReply(res, message, '⚠️ QuantDeus: обработчик временно недоступен, но webhook работает. Повтори сообщение чуть позже.');
