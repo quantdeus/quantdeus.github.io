@@ -55,8 +55,8 @@ export function githubAuthConfig() {
   const client_secret = oauthClientSecret();
   const verifier_token = serviceToken();
   const repository = firstEnv(["QUANTDEUS_GITHUB_ADMIN_REPOSITORY", "QD_GITHUB_ADMIN_REPOSITORY"]) || DEFAULT_REPOSITORY;
-  const canonical_origin = firstEnv(["QUANTDEUS_CANONICAL_ORIGIN"]) || DEFAULT_SITE_ORIGIN;
-  const callback_url = firstEnv(["QUANTDEUS_GITHUB_OAUTH_CALLBACK_URL"]) || DEFAULT_CALLBACK_URL;
+  const canonical_origin = DEFAULT_SITE_ORIGIN; // Только действующий домен QuantDeus.
+  const callback_url = DEFAULT_CALLBACK_URL; // Защита от старого callback URL в окружении.
   const oauth_configured = Boolean(client_id && client_secret);
   const assertion_signing_configured = Boolean(signingSecret());
   return {

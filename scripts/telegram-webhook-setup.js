@@ -5,7 +5,7 @@ const { getGithubOidcToken } = require('./github-oidc');
 
 const AUDIENCE = 'quantdeus-vercel-telegram';
 const ENDPOINT = process.env.TELEGRAM_WEBHOOK_SETUP_URL || 'https://quantdeus.vercel.app/api/quantdeus/telegram';
-const DEFAULT_TELEGRAM_WEB_APP_URL = 'https://quantdeus.github.io/telegram/';
+const DEFAULT_TELEGRAM_WEB_APP_URL = 'https://quantdeus.ru/login/';
 const TELEGRAM_BOT_DESCRIPTION =
   'QuantDeus Store Bot: AI Fleet, мартышки, Pro-доступ, Telegram Login и быстрые команды QuantDeus.';
 const TELEGRAM_BOT_SHORT_DESCRIPTION = 'QuantDeus AI Fleet, Store Bot и Mini App.';
@@ -60,7 +60,8 @@ async function telegram(botToken, method, payload = {}) {
 }
 
 async function configureTelegramInterface(botToken) {
-  const webAppUrl = String(process.env.TELEGRAM_WEB_APP_URL || DEFAULT_TELEGRAM_WEB_APP_URL).trim();
+  const candidate = String(process.env.TELEGRAM_WEB_APP_URL || '').trim();
+  const webAppUrl = candidate.startsWith('https://quantdeus.ru/') ? candidate : DEFAULT_TELEGRAM_WEB_APP_URL;
   await telegram(botToken, 'setChatMenuButton', {
     menu_button: {
       type: 'web_app',
