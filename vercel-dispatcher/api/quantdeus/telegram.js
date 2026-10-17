@@ -177,7 +177,7 @@ function telegramCommandsForAgents(agents = []) {
       const command = telegramRoleCommand(agent);
       if (!command || reserved.has(command)) return null;
       reserved.add(command);
-      const title = String(agent?.startup_title || agent?.name || agent?.role || agent?.id || 'QuantDeus agent')
+      const title = String(agent?.telegram_description_ru || agent?.role || agent?.startup_title || agent?.name || agent?.id || 'Агент QuantDeus')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 220);
@@ -1354,7 +1354,7 @@ async function homunculusReply(message, retryUpdate = null) {
     /^\/(?:agents|monkeys)(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(raw) ||
     /^\/start(?:@[A-Za-z0-9_]+)?\s+(?:agents|monkeys)(?:\s|$)/i.test(raw)
   ) {
-    return [`🐒 QuantDeus AI Fleet · ${agents.length} агентов`, ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`), '', 'Нажми команду роли или напиши /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'].join('\n').slice(0, 3900);
+    return [`🐒 QuantDeus AI Fleet · ${agents.length} агентов`, ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.telegram_description_ru || agent.role || agent.startup_title || agent.name}`), '', 'Нажми команду роли или напиши /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'].join('\n').slice(0, 3900);
   }
 
   const entitlement = await telegramEntitlement(message);
@@ -1542,7 +1542,7 @@ async function fastPublicCommandReply(raw, message) {
     return {
       text: [
         `🐒 QuantDeus AI Fleet · ${agents.length} агентов`,
-        ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.startup_title || agent.name || agent.role}`),
+        ...agents.map(agent => `/${telegramRoleCommand(agent)} — ${agent.telegram_description_ru || agent.role || agent.startup_title || agent.name}`),
         '',
         'Нажми команду роли или используй /agent <id> <вопрос>. Обычный вопрос тоже маршрутизируется автоматически.'
       ].join('\n').slice(0, 3900),
