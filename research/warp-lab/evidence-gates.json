@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "candidate": "Original Alcubierre metric; coordinate velocity parameter v=2c; G=c=R=1",
+  "checked_commit_sha": "UNKNOWN",
+  "physical_FTL_demonstrated": false,
+  "note": "Geometry PASS means equation/parameters provided only; NOT a viable FTL propulsion claim.",
+  "gates": {
+    "geometry": {
+      "status": "PASS",
+      "evidence": [
+        "research/warp-lab/warp_lab.py",
+        "research/warp-lab/README.md"
+      ],
+      "note": "Explicit Alcubierre metric and profile; no propulsion feasibility claim."
+    },
+    "eom": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not evaluated in this prototype."
+    },
+    "residual": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not evaluated in this prototype."
+    },
+    "nec": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not demonstrated by this diagnostic. Negative Eulerian energy violates WEC in the original metric."
+    },
+    "energy": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not demonstrated by this diagnostic. Negative Eulerian energy violates WEC in the original metric."
+    },
+    "curvature_tidal": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not evaluated in this prototype."
+    },
+    "horizon": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not evaluated in this prototype."
+    },
+    "causality": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not evaluated in this prototype."
+    },
+    "stability": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not evaluated in this prototype."
+    },
+    "eft": {
+      "status": "UNKNOWN",
+      "evidence": [],
+      "note": "Not evaluated in this prototype."
+    }
+  }
+}
