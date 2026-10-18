@@ -53,8 +53,8 @@ jobs:
 
       - name: Установить Vercel agent-browser and Chrome
         run: |
-          npm install -g agent-browser@0.38.1
-          agent-browser install --with-deps
+          npm install --no-save playwright@1.56.0
+          npx playwright install --with-deps chromium
 
       - name: Выполнить bounded browser task
         env:
@@ -64,7 +64,7 @@ jobs:
           QD_BROWSER_PHONE: ${{ secrets.QD_BROWSER_PHONE }}
           QD_BROWSER_RECOVERY_EMAIL: ${{ secrets.QD_BROWSER_RECOVERY_EMAIL }}
           QD_BROWSER_LLM_BRIDGE: https://quantdeus.vercel.app/api/quantdeus/llm
-        run: node scripts/browser-homunculus.js
+        run: node scripts/browser-youtube-playwright.js
 
       - name: Опубликовать public-safe result to the Issue
         if: always()
