@@ -1,0 +1,38 @@
+name: QuantDeus Scientific MCP Fleet — QA
+run-name: "🐒 Научные MCP: проверить права и роли"
+
+on:
+  pull_request:
+    paths:
+      - 'coordination/science-mcp-fleet.json'
+      - 'scripts/science-mcp-fleet.js'
+      - 'scripts/qa/science-mcp-fleet.test.js'
+      - 'docs/science-mcp-fleet.md'
+      - '.github/workflows/science-mcp-fleet-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: science-mcp-fleet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admission-qa:
+    name: 'Новые мартышки не обходят QA и бюджет'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 'Проверить синтаксис'
+        run: node --check scripts/science-mcp-fleet.js
+      - name: 'Проверить реестр и пределы полномочий'
+        run: node scripts/science-mcp-fleet.js
+      - name: 'Прогнать отрицательные тесты безопасности'
+        run: node --test scripts/qa/science-mcp-fleet.test.js
+      - name: 'Построить план научного поиска без сети'
+        run: node scripts/science-mcp-fleet.js --plan literature-cartographer
