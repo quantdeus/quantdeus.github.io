@@ -11,9 +11,9 @@ export function moonHeight(x,z){
 }
 export function createMoonState(){
  return {version:MOON_SAVE_VERSION,player:{x:0,z:-11,h:0,vy:0,yaw:0},
-  fan:{x:3,z:-5,h:0,vy:0,vx:0,vz:0,mode:'follow',launches:0},elapsed:0,
+  fan:{x:0.65,z:-5,h:0,vy:0,vx:0,vz:0,mode:'follow',flightTime:0,launches:0,flightTime:0},elapsed:0,shoutCooldown:0,earthArrivals:0,
   event:'Лунная миссия: фанат уже нашёл тебя даже здесь!',
-  line:'Великий капитан! Ваша походка великолепна даже при лунной гравитации!'};
+  line:'Во имя Азуры!!! Вы великий чемпион!'};
 }
 export function moveMoon(s,forward,right,dt){
  const t=clamp(Number(dt)||0,0,.1),m=Math.hypot(forward,right);if(!Number.isFinite(m)||m<.05)return s;
@@ -27,9 +27,17 @@ export function jumpMoon(s){
  s.player.vy=5.1;s.event='Лунный прыжок!';return true;
 }
 export function stepMoon(s,dt){
- const t=clamp(Number(dt)||0,0,.1),p=s.player,f=s.fan;s.elapsed+=t;
+ const t=clamp(Number(dt)||0,0,.1),p=s.player,f=s.fan;s.elapsed+=t;s.shoutCooldown=Math.max(0,(s.shoutCooldown||0)-t);
  if(p.h>0||p.vy>0){p.vy-=MOON_G*t;p.h+=p.vy*t;if(p.h<0){p.h=0;p.vy=0;}}
- if(f.mode==='flight'){
+ if(f.mode==='earthflight'){
+  f.flightTime+=t;
+  // Cinematic arcade trajectory toward the visible Earth, NOT a realistic transfer orbit.
+  f.h=Math.min(190,0.01+5.8*f.flightTime+1.95*f.flightTime*f.flightTime);
+  f.x=clamp(f.x+4.1*t,-86,86);f.z=clamp(f.z+7.2*t,-86,86);
+  if(f.flightTime>=8){f.mode='earthbound';f.h=190;s.earthArrivals++;
+   s.event='🌍 Фанат исчез в направлении Земли! Нажми «Вернуть», чтобы призвать его обратно.';
+   s.line='Во имя Азуры!!! Вы великий чемпион!';}
+ }else if(f.mode==='flight'){
   f.vy-=MOON_G*t;f.h+=f.vy*t;f.x=clamp(f.x+f.vx*t,-86,86);f.z=clamp(f.z+f.vz*t,-86,86);
   if(f.h<=0){f.h=0;f.vy=0;f.vx=0;f.vz=0;f.mode='follow';s.event='Фанат приземлился и готов к новому приключению!';}
  }else if(f.mode==='follow'){
@@ -39,7 +47,7 @@ export function stepMoon(s,dt){
 }
 export function toggleMoonFan(s){
  const f=s.fan;
- if(f.mode==='flight'){s.event='Фанат пока ещё летит!';return false;}
+ if(f.mode==='flight'||f.mode==='earthflight'||f.mode==='earthbound'){s.event='Фанат пока далеко от Луны!';return false;}
  if(distance(s.player,f)>8){s.event='Сначала подойди к фанату.';return false;}
  f.mode=f.mode==='follow'?'wait':'follow';
  s.line=f.mode==='wait'?'Я буду охранять этот кратер!':'За вами хоть на край Галактики, капитан!';
@@ -55,6 +63,18 @@ export function launchMoonFan(s){
  s.event='🚀 Фанат отправлен по лунной баллистической траектории!';
  return true;
 }
+export function shoutMoonFan(s){
+ const f=s.fan;
+ if(s.shoutCooldown>0){s.event='Крик восстанавливается: '+Math.ceil(s.shoutCooldown)+' с';return false;}
+ if(f.mode==='earthflight'||f.mode==='earthbound'||f.mode==='flight'){
+  s.event='Фанат уже летит! Верни его, чтобы повторить.';return false;
+ }
+ if(distance(s.player,f)>13){s.event='Фанат слишком далеко для FUS RO DAH. Подойди ближе!';return false;}
+ f.mode='earthflight';f.h=.01;f.flightTime=0;f.launches++;
+ f.vy=0;f.vx=0;f.vz=0;s.shoutCooldown=3.5;
+ s.line='ВО ИМЯ АЗУРЫ!!! ВЫ ВЕЛИКИЙ ЧЕМПИОН!';
+ s.event='💥 FUS RO DAH! Фанат отправился в сторону Земли!';return true;
+}
 export function rescueMoonFan(s){
  const f=s.fan,p=s.player;
  Object.assign(f,{x:clamp(p.x+Math.cos(p.yaw)*3,-86,86),z:clamp(p.z-Math.sin(p.yaw)*3,-86,86),h:0,vy:0,vx:0,vz:0,mode:'follow'});
@@ -67,7 +87,7 @@ export function deserializeMoon(raw){
   const v=JSON.parse(raw);if(v.version!==MOON_SAVE_VERSION)return createMoonState();
   const s=createMoonState();
   for(const name of ['player','fan']){
-   for(const key of name==='player'?['x','z','h','vy','yaw']:['x','z','h','vy','vx','vz','launches']){
+   for(const key of name==='player'?['x','z','h','vy','yaw']:['x','z','h','vy','vx','vz','launches','flightTime']){
     if(typeof v[name]?.[key]==='number'&&Number.isFinite(v[name][key]))s[name][key]=v[name][key];
    }
    s[name].x=clamp(s[name].x,-86,86);s[name].z=clamp(s[name].z,-86,86);
@@ -76,8 +96,10 @@ export function deserializeMoon(raw){
   s.player.yaw=clamp(s.player.yaw,-10000,10000);
   s.fan.vx=clamp(s.fan.vx,-10,10);s.fan.vz=clamp(s.fan.vz,-10,10);
   s.fan.launches=clamp(Math.floor(s.fan.launches),0,100000);
-  if(['wait','follow','flight'].includes(v.fan?.mode))s.fan.mode=v.fan.mode;
+  if(['wait','follow','flight','earthflight','earthbound'].includes(v.fan?.mode))s.fan.mode=v.fan.mode;
   s.elapsed=clamp(Number(v.elapsed)||0,0,10000000);
+  s.shoutCooldown=clamp(Number(v.shoutCooldown)||0,0,60);
+  s.earthArrivals=clamp(Math.floor(Number(v.earthArrivals)||0),0,100000);
   return s;
  }catch{return createMoonState();}
 }

@@ -1,6 +1,6 @@
-export type FanMode='follow'|'wait'|'flight';
+export type FanMode='follow'|'wait'|'flight'|'earthflight'|'earthbound';
 export interface Body{x:number;z:number;h:number;vy:number}
-export interface MoonState{version:number;player:Body&{yaw:number};fan:Body&{vx:number;vz:number;mode:FanMode;launches:number};elapsed:number;event:string;line:string}
+export interface MoonState{version:number;player:Body&{yaw:number};fan:Body&{vx:number;vz:number;mode:FanMode;launches:number;flightTime:number};elapsed:number;shoutCooldown:number;earthArrivals:number;event:string;line:string}
 export const MOON_G:number;
 export const MOON_SAVE_VERSION:number;
 export function moonHeight(x:number,z:number):number;
@@ -10,6 +10,7 @@ export function jumpMoon(s:MoonState):boolean;
 export function stepMoon(s:MoonState,dt:number):MoonState;
 export function toggleMoonFan(s:MoonState):boolean;
 export function launchMoonFan(s:MoonState):boolean;
+export function shoutMoonFan(s:MoonState):boolean;
 export function rescueMoonFan(s:MoonState):MoonState;
 export function serializeMoon(s:MoonState):string;
 export function deserializeMoon(raw:string):MoonState;

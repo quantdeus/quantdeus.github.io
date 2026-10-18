@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MOON_G,createMoonState,moveMoon,jumpMoon,stepMoon,toggleMoonFan,launchMoonFan,rescueMoonFan,serializeMoon,deserializeMoon,moonHeight} from '../src/moon-state.mjs';
+import {MOON_G,createMoonState,moveMoon,jumpMoon,stepMoon,toggleMoonFan,launchMoonFan,shoutMoonFan,rescueMoonFan,serializeMoon,deserializeMoon,moonHeight} from '../src/moon-state.mjs';
 test('Moon gravity: astronaut returns to surface',()=>{
  assert.equal(MOON_G,1.62);const s=createMoonState();assert.equal(jumpMoon(s),true);assert.equal(jumpMoon(s),false);
  for(let i=0;i<130;i++)stepMoon(s,.1);assert.equal(s.player.h,0);assert.equal(s.player.vy,0);
@@ -28,4 +28,28 @@ test('bounded movement and sanitized saves',()=>{
  assert.ok(Number.isFinite(restored.player.x));assert.equal(restored.fan.h,0);assert.equal(restored.fan.mode,'follow');
  assert.deepEqual(deserializeMoon('{broken'),createMoonState());
  assert.ok(Number.isFinite(moonHeight(30,-20)));
+});
+
+test('FUS RO DAH sends the adoring fan toward Earth, then allows rescue',()=>{
+ const s=createMoonState();
+ assert.equal(shoutMoonFan(s),true);assert.equal(s.fan.mode,'earthflight');
+ assert.match(s.line,/АЗУРЫ/);
+ assert.equal(shoutMoonFan(s),false);assert.ok(s.shoutCooldown>0);
+ const h0=s.fan.h;
+ for(let i=0;i<30;i++)stepMoon(s,.1);
+ assert.ok(s.fan.h>h0);assert.ok(s.fan.z>0);
+ const saved=deserializeMoon(serializeMoon(s));
+ assert.equal(saved.fan.mode,'earthflight');
+ for(let i=0;i<60;i++)stepMoon(saved,.1);
+ assert.equal(saved.fan.mode,'earthbound');
+ assert.equal(saved.earthArrivals,1);
+ assert.equal(shoutMoonFan(saved),false);
+ rescueMoonFan(saved);assert.equal(saved.fan.mode,'follow');
+ assert.equal(shoutMoonFan(saved),true);
+});
+test('FUS RO DAH cannot fire when target is far away or cooling down',()=>{
+ const s=createMoonState();s.fan.x=70;s.fan.z=70;
+ assert.equal(shoutMoonFan(s),false);
+ rescueMoonFan(s);s.shoutCooldown=1.8;assert.equal(shoutMoonFan(s),false);
+ stepMoon(s,.1);assert.ok(s.shoutCooldown<1.8);
 });
