@@ -1,22 +1,50 @@
 <!doctype html>
-<html lang="ru"><head>
+<html lang="ru">
+<head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"/>
-<meta name="theme-color" content="#061023"/>
-<title>Лунная программа фаната · QuantDeus</title>
-</head><body>
-<canvas id="moon-game" aria-label="Трёхмерная лунная поверхность"></canvas>
-<div id="error" role="alert" hidden></div>
-<header id="moon-hud"><div class="brand"><small>QuantDeus · ЛУННАЯ ПРОГРАММА</small><strong>ОБОЖАЮЩИЙ ФАНАТ 🌕</strong></div>
-<div class="stats"><span id="fps">— FPS</span><span id="height">Высота: 0 м</span><span id="launches">Полёты: 0</span></div>
-<a href="./index.html" class="moon-back">↩ В долину</a></header>
-<aside class="quest"><small>МИССИЯ</small><strong id="objective">Запусти фаната на Луне</strong>
-<p id="event">Прилунение героя…</p><blockquote id="speech">Великий капитан! Даже на Луне я ваш поклонник!</blockquote></aside>
-<div class="help">WASD — ходьба · мышь — обзор · E — говорить · F — запуск · R — спасение · пробел — прыжок</div>
-<div class="touch">
- <div id="move-pad" class="movement"><div id="move-thumb"></div><span>ДВИЖЕНИЕ</span></div>
- <div class="buttons"><button id="talk" type="button">💬<small>Ждать / идти</small></button><button id="jump" type="button">🦘<small>Прыжок</small></button>
- <button id="launch" class="launch" type="button">🚀<small>ЗАПУСК</small></button><button id="rescue" type="button">🛸<small>Вернуть</small></button></div>
+<meta name="theme-color" content="#0a0b0e"/>
+<meta name="description" content="Лунная программа — настоящая WebGL-игра QuantDeus с фэнтезийным фанатом, Землёй в небе и криком FUS RO DAH."/>
+<title>Обожающий фанат на Луне — QuantDeus WebGL</title>
+</head>
+<body>
+<canvas id="moon-game" aria-label="Интерактивная WebGL-сцена: фанат на Луне"></canvas>
+<div id="error" hidden role="alert"></div>
+<header class="topbar">
+ <div class="compass-frame" aria-label="Компас"><span class="rune">◈</span><span class="line"></span><span id="compass">С</span><span class="line"></span><span class="rune">◈</span></div>
+ <div class="menu-actions">
+  <button id="view" type="button" title="Сменить вид камеры">◉ <small>КАМЕРА</small></button>
+  <a class="return" href="./index.html">↩ В долину</a>
+ </div>
+</header>
+<aside class="quest" aria-live="polite">
+ <div class="eyebrow">◈ МИССИЯ</div>
+ <strong id="objective">Отправь фаната к Земле криком!</strong>
+ <p id="event">Во имя Азуры! Лунная миссия началась.</p>
+ <blockquote id="speech">Во имя Азуры!!! Вы великий чемпион!</blockquote>
+</aside>
+<div class="performance" aria-label="Параметры игры">
+ <span id="fps">— FPS</span>
+ <span id="height">Высота фаната: 0 м</span>
+ <span id="launches">Полёты: 0</span>
+ <span id="cooldown">Крик готов</span>
 </div>
+<div id="dialogue" class="subtitle" aria-live="polite" role="status"></div>
+<div class="vitals" aria-label="Здоровье, магия, выносливость">
+ <div class="vital"><span>♥</span><i class="health"></i></div>
+ <div class="vital"><span>✧</span><i class="magic"></i></div>
+ <div class="vital"><span>ϟ</span><i class="stamina"></i></div>
+</div>
+<div class="controls" aria-label="Сенсорное управление">
+ <div id="move-pad" class="movement" aria-label="Джойстик движения"><i id="move-thumb"></i><span>ДВИЖЕНИЕ</span></div>
+ <div class="buttons">
+  <button id="talk" type="button" aria-label="Поговорить с фанатом, приказать ждать или идти"><span>☷</span><small>ЖДАТЬ / ИДТИ</small></button>
+  <button id="jump" type="button" aria-label="Прыгнуть при лунной гравитации"><span>♞</span><small>ПРЫЖОК</small></button>
+  <button id="shout" class="shout" type="button" aria-label="Крик FUS RO DAH"><span>ᚠ</span><small>FUS RO DAH</small></button>
+  <button id="rescue" type="button" aria-label="Вернуть фаната с Земли"><span>⟲</span><small>ВЕРНУТЬ</small></button>
+ </div>
+</div>
+<div class="hint">WASD — движение · мышь/палец — обзор · F — FUS RO DAH · E — говорить · R — вернуть · V — камера · ПРОБЕЛ — прыжок</div>
 <script type="module" src="/src/moon.ts"></script>
-</body></html>
+</body>
+</html>
