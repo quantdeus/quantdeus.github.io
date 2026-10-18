@@ -2,6 +2,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const office = require('./openclaw-office-client');
 const { reason, inputDigest, render } = require('./seven-reasoning');
+const { readSwarmStatus } = require('./cloudflare-swarm-bridge');
 const { privileged, parseIssueCreateCommand, containsSensitiveMaterial } = require('./seven-command-gate');
 
 async function main() {
@@ -48,6 +49,8 @@ async function main() {
     tasks:{total:tasks.length,ready:ready.length,active:active.length,blocked:blocked.length,stale_active:staleActive.length},
     open_non_draft_prs:reviewQueue.length
   };
+  // Cloudflare — только измеренные статусы; сбой моста не прерывает координацию GitHub.
+  snapshot.external_swarms = await readSwarmStatus();
   let eventPayload = null;
   let conversationIssueNumber = hubIssue;
   if ((process.env.GITHUB_EVENT_NAME || '') === 'issue_comment' && process.env.GITHUB_EVENT_PATH) {
