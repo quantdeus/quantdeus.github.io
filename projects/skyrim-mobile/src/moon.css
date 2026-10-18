@@ -1,0 +1,52 @@
+:root{font-family:Georgia,"Times New Roman",serif;color:#eee5d2;background:#010308}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;touch-action:none;user-select:none}
+#moon-game{position:fixed;inset:0;width:100vw;height:100dvh;display:block;outline:none}
+.topbar{position:fixed;inset:0 0 auto;display:flex;align-items:center;justify-content:center;height:57px;pointer-events:none;background:linear-gradient(#03050acb,transparent)}
+.compass-frame{width:min(450px,56vw);display:flex;align-items:center;gap:11px;justify-content:center;color:#e4dfd4;text-shadow:0 2px 5px black;font-size:23px;letter-spacing:.13em;opacity:.94}
+.compass-frame .line{flex:1;border-top:1px solid #9e9687;border-bottom:1px solid #222;margin-top:2px}.rune{font-size:24px;color:#aca490}
+.menu-actions{position:absolute;right:14px;top:9px;display:flex;align-items:center;gap:8px;pointer-events:auto}
+.return,#view{border:1px solid #8e7d5d9e;color:#dfd0ad;background:#100f13c9;border-radius:5px;padding:8px 12px;text-decoration:none;font:11px system-ui,sans-serif;min-height:35px}
+#view{cursor:pointer}#view small{font-size:8px}
+.quest{position:fixed;top:73px;left:16px;max-width:min(370px,59vw);border:1px solid #81745e;box-shadow:0 0 0 3px #07080bb0,0 8px 27px #0009;background:linear-gradient(130deg,#242329df,#08090eef);padding:13px 18px 14px;color:#f2ede6}
+.quest:before,.quest:after{content:"✥";position:absolute;color:#bfa77f;font-size:19px}.quest:before{top:-11px;left:-9px}.quest:after{bottom:-11px;right:-9px}
+.eyebrow{font-size:11px;color:#e1b86d;letter-spacing:.13em;margin-bottom:6px}
+.quest strong{font-size:clamp(12px,1.7vw,17px);line-height:1.3;display:block}
+.quest p{font:12px/1.3 system-ui,sans-serif;color:#c8c4c4;margin:8px 0 6px}
+.quest blockquote{font-style:italic;font-size:clamp(12px,1.7vw,17px);line-height:1.34;color:#ffdc8d;border-left:2px solid #bda06b;padding-left:11px;margin:8px 0 0}
+.performance{position:fixed;top:63px;right:12px;display:grid;gap:3px;text-align:right;font:10px system-ui,sans-serif;color:#dad2c6;text-shadow:0 1px 5px black;pointer-events:none}
+.performance span{background:#0a0a10a4;padding:3px 5px;border-radius:4px}
+.subtitle{position:fixed;left:50%;bottom:clamp(174px,24vh,260px);transform:translateX(-50%);text-align:center;max-width:min(600px,84vw);width:max-content;padding:11px 19px;background:linear-gradient(90deg,#0b0a0ee0,#222027e0,#0b0a0ee0);border:1px solid #bba071a4;box-shadow:0 4px 25px #000c;font-size:clamp(13px,2.5vw,19px);color:#fff0d4;display:none;pointer-events:none}
+.subtitle.visible{display:block}
+.vitals{position:fixed;left:17px;bottom:clamp(160px,20vh,240px);width:min(260px,37vw);display:grid;gap:7px;pointer-events:none}
+.vital{display:flex;align-items:center;gap:7px;font-size:15px;color:#c8ac78;text-shadow:0 1px 4px #000}
+.vital span{width:20px;text-align:center}
+.vital i{position:relative;display:block;flex:1;height:11px;border:2px solid #988565;box-shadow:0 0 0 2px #08080a,0 3px 9px #000 inset}
+.vital i:after{content:"";position:absolute;inset:1px;box-shadow:0 1px 3px #fff5 inset}
+.vital .health{background:linear-gradient(#be3737,#7c101e)}.vital .magic{background:linear-gradient(#4299ca,#1d4276)}.vital .stamina{background:linear-gradient(#54975e,#1f563b)}
+.controls{position:fixed;inset:auto 0 max(13px,env(safe-area-inset-bottom)) 0;height:151px;pointer-events:none}
+.movement{position:absolute;left:clamp(10px,3vw,65px);bottom:10px;width:124px;height:124px;border:2px solid #998368a8;border-radius:50%;background:#0f1016a0;display:grid;place-items:center;pointer-events:auto;touch-action:none}
+.movement:after{content:"◈";font-size:19px;color:#bcac89;opacity:.3}.movement span{position:absolute;bottom:8px;font:9px system-ui,sans-serif;color:#d9cbac;letter-spacing:.08em}
+#move-thumb{position:absolute;top:50%;left:50%;width:47px;height:47px;border:1px solid #bda579;border-radius:50%;background:radial-gradient(#8a816f,#373538);transform:translate(-50%,-50%);pointer-events:none;box-shadow:inset 0 0 11px #000a}
+.buttons{position:absolute;right:clamp(12px,3vw,55px);bottom:9px;display:grid;grid-template-columns:repeat(2,84px);gap:5px;pointer-events:auto}
+.buttons button{color:#d9c9ac;border:1px solid #ab916b;outline:1px solid #191414;background:linear-gradient(145deg,#2e2b2dcc,#080809ee);border-radius:4px;min-height:60px;display:grid;place-content:center;justify-items:center;gap:1px;cursor:pointer;touch-action:manipulation;text-shadow:0 2px 5px black}
+.buttons button span{font-size:23px;line-height:1}.buttons button small{font:10px Georgia,serif}
+.buttons button.shout{border-color:#86cbff;background:linear-gradient(135deg,#09223ca8,#171119ed);box-shadow:0 0 12px #279be555 inset}
+.buttons button.shout span{color:#b4e5ff;text-shadow:0 0 11px #3cb9ff}
+.buttons button:disabled{opacity:.42;filter:saturate(.5)}.buttons button:active{transform:scale(.95)}
+.hint{position:fixed;bottom:4px;left:50%;transform:translateX(-50%);color:#dddfdcad;font:9px system-ui,sans-serif;text-shadow:0 1px 3px black;pointer-events:none;white-space:nowrap}
+#error{position:fixed;inset:0;z-index:40;background:#0d0e10;padding:20vh 12vw;text-align:center;color:#efd6a1}
+[hidden]{display:none!important}
+@media(max-width:700px){
+ .topbar{height:45px}.menu-actions{top:6px;right:7px}.return,#view{padding:6px;font-size:9px;min-height:30px}
+ .compass-frame{width:48vw;font-size:15px}.rune{font-size:17px}
+ .quest{top:53px;left:10px;max-width:69vw;padding:10px 12px}
+ .quest strong{font-size:12px}.quest p{font-size:10px}.quest blockquote{font-size:12px}
+ .performance{top:53px;right:5px;font-size:9px}
+ .vitals{bottom:149px;left:12px;width:38vw;gap:4px}.vital{gap:4px}.vital i{height:8px}
+ .controls{height:127px}.movement{width:106px;height:106px}.buttons{grid-template-columns:repeat(2,65px)}.buttons button{min-height:52px}.buttons button span{font-size:20px}.buttons button small{font-size:8px}
+ .subtitle{bottom:145px;max-width:85vw;font-size:13px;padding:9px 12px}.hint{display:none}
+}
+@media(max-height:460px){
+ .quest{top:45px;max-width:40vw}.quest p{display:none}.performance{display:none}
+ .vitals{bottom:100px;width:190px}.controls{height:108px}.movement{width:90px;height:90px}.buttons button{min-height:43px}.subtitle{bottom:100px}
+}
