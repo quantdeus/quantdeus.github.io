@@ -5,7 +5,7 @@ import {
 } from '@babylonjs/core';
 import {
  createMoonState,deserializeMoon,serializeMoon,moonHeight,moveMoon,
- jumpMoon,stepMoon,toggleMoonFan,launchMoonFan,shoutMoonFan,rescueMoonFan,type MoonState
+ jumpMoon,stepMoon,toggleMoonFan,shoutMoonFan,rescueMoonFan,type MoonState
 } from './moon-state.mjs';
 import './moon.css';
 
@@ -146,7 +146,8 @@ const fur=paint('мех и ворот',[.58,.49,.38]);
 const leather=paint('кожа и ремни',[.29,.16,.105]);
 const iron=paint('железо норда',[.39,.45,.49],.67,.38);
 const black=paint('тёмная ткань',[.14,.13,.15]);
-const faceParts:{armLeft:TransformNode;armRight:TransformNode;head:TransformNode}|null=null;
+
+
 function fantasyCharacter(name:string,fan:boolean){
  const root=new TransformNode(name,scene);
  const body=fan?robe:leather,leg=fan?robe:black;
@@ -217,6 +218,39 @@ function fantasyCharacter(name:string,fan:boolean){
 }
 const heroActor=fantasyCharacter('воин',false),fanActor=fantasyCharacter('обожающий фанат',true);
 const hero=heroActor.root,fanMesh=fanActor.root;
+let firstPerson=true,blastTime=0;
+const blastMat=paint('FUS RO DAH сияние',[.42,.78,1],.1,.17);
+blastMat.emissiveColor=new Color3(.12,.51,1);blastMat.alpha=.74;
+const blast=MeshBuilder.CreateTorus('волна безжалостной силы',{diameter:2,thickness:.095,tessellation:40},scene);
+blast.rotation.x=Math.PI/2;blast.material=blastMat;blast.setEnabled(false);
+const gloveMaterial=paint('рукавицы героя',[.28,.26,.26],.55,.45);
+const leftGlove=MeshBuilder.CreateBox('левая рука от первого лица',{width:.30,height:.65,depth:.32},scene);
+const rightGlove=MeshBuilder.CreateBox('правая рука от первого лица',{width:.30,height:.65,depth:.32},scene);
+for(const [sign,glove] of [[-1,leftGlove],[1,rightGlove]] as const){
+ glove.parent=camera;glove.position.set(sign*.60,-.60,1.4);glove.rotation.x=-.45;glove.rotation.z=sign*.16;glove.material=gloveMaterial;
+}
+function switchView(){firstPerson=!firstPerson;hero.setEnabled(!firstPerson);}
+hero.setEnabled(false);
+function voiceLine(){
+ const message='Во имя Азуры!!! Вы великий чемпион!';
+ el('dialogue').textContent='Фанат: '+message;
+ el('dialogue').classList.add('visible');
+ if('speechSynthesis' in window){
+  try{
+   window.speechSynthesis.cancel();
+   const voice=new SpeechSynthesisUtterance(message);voice.lang='ru-RU';voice.rate=1.12;voice.pitch=1.24;
+   window.speechSynthesis.speak(voice);
+  }catch{/* No speech engine: subtitles stay readable */}
+ }
+}
+function castShout(){
+ if(!shoutMoonFan(state))return;
+ voiceLine();blastTime=1.15;
+ blast.position.set(state.player.x+Math.sin(state.player.yaw)*3.2,
+   surface(state.player.x,state.player.z)+2,
+   state.player.z+Math.cos(state.player.yaw)*3.2);
+ blast.rotation.y=state.player.yaw;blast.setEnabled(true);
+}
 const shadowMat=new StandardMaterial('тени на грунте',scene);shadowMat.diffuseColor=new Color3(.07,.07,.09);shadowMat.alpha=.48;
 const heroShadow=MeshBuilder.CreateDisc('тень героя',{radius:.7,tessellation:20},scene);
 const fanShadow=MeshBuilder.CreateDisc('тень фаната',{radius:.7,tessellation:20},scene);
@@ -228,14 +262,15 @@ window.addEventListener('keydown',e=>{
  keys.add(e.code);if(e.repeat)return;
  if(e.code==='Space')jumpMoon(state);
  if(e.code==='KeyE')toggleMoonFan(state);
- if(e.code==='KeyF')launchMoonFan(state);
+ if(e.code==='KeyF')castShout();
+ if(e.code==='KeyV')switchView();
  if(e.code==='KeyR')rescueMoonFan(state);
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('blur',()=>keys.clear());
 for(const [name,fn] of [
- ['talk',()=>toggleMoonFan(state)],['jump',()=>jumpMoon(state)],
- ['launch',()=>launchMoonFan(state)],['rescue',()=>rescueMoonFan(state)]
+ ['talk',()=>{toggleMoonFan(state);voiceLine();}],['jump',()=>jumpMoon(state)],
+ ['shout',castShout],['rescue',()=>rescueMoonFan(state)],['view',switchView]
 ] as const)el(name).addEventListener('click',fn);
 
 const pad=el('move-pad'),thumb=el('move-thumb');
@@ -273,24 +308,48 @@ function draw(dt:number){
  hero.position.set(p.x,surface(p.x,p.z)+p.h,p.z);hero.rotation.y=p.yaw;
  fanMesh.position.set(f.x,surface(f.x,f.z)+f.h,f.z);
  fanMesh.rotation.y=Math.atan2(p.x-f.x,p.z-f.z);
- fanMesh.rotation.z=f.mode==='flight'?Math.sin(state.elapsed*2.4)*.45:0;
+ fanMesh.rotation.z=(f.mode==='flight'||f.mode==='earthflight')?Math.sin(state.elapsed*2.4)*.65:0;
+ fanMesh.scaling.setAll(f.mode==='earthflight'?Math.max(.10,1-f.flightTime/10):1);
+ fanMesh.setEnabled(f.mode!=='earthbound');
+ fanActor.armLeft.rotation.z=-1.05+(f.mode==='earthflight'?Math.sin(state.elapsed*13)*.47:0);
+ fanActor.armRight.rotation.z=1.05+(f.mode==='earthflight'?Math.cos(state.elapsed*13)*.47:0);
  heroShadow.position.set(p.x,surface(p.x,p.z)+.05,p.z);
  fanShadow.position.set(f.x,surface(f.x,f.z)+.05,f.z);
  fanShadow.scaling.setAll(Math.max(.25,1-f.h/120));
- const boost=f.mode==='flight'?Math.min(f.h*.38,18):0,dist=14+boost;
- const cam=new Vector3(p.x-Math.sin(p.yaw)*dist,surface(p.x,p.z)+8+boost,p.z-Math.cos(p.yaw)*dist);
- camera.position=Vector3.Lerp(camera.position,cam,Math.min(1,dt*5));
- camera.setTarget(new Vector3(p.x,surface(p.x,p.z)+3+boost*.42,p.z));
- clouds.rotation.y+=dt*.009;
+ const y=surface(p.x,p.z)+p.h;
+ if(firstPerson){
+  const at=new Vector3(p.x,y+1.98,p.z);
+  camera.position=Vector3.Lerp(camera.position,at,Math.min(1,dt*10));
+  camera.setTarget(at.add(new Vector3(Math.sin(p.yaw)*11,-.12,Math.cos(p.yaw)*11)));
+ }else{
+  const dist=10;
+  const cam=new Vector3(p.x-Math.sin(p.yaw)*dist,y+5.6,p.z-Math.cos(p.yaw)*dist);
+  camera.position=Vector3.Lerp(camera.position,cam,Math.min(1,dt*5));
+  camera.setTarget(new Vector3(p.x,y+1.5,p.z));
+ }
+ leftGlove.setEnabled(firstPerson);rightGlove.setEnabled(firstPerson);
+ if(blastTime>0){
+  blastTime=Math.max(0,blastTime-dt);
+  const progress=1-blastTime/1.15;
+  blast.scaling.setAll(1+progress*9);
+  blastMat.alpha=.72*(1-progress);
+  leftGlove.position.z=1.4+Math.sin(progress*Math.PI)*.4;
+  rightGlove.position.z=1.4+Math.sin(progress*Math.PI)*.4;
+  if(blastTime===0)blast.setEnabled(false);
+ }else{leftGlove.position.z=1.4;rightGlove.position.z=1.4;}
+ clouds.rotation.y+=dt*.012;earth.rotation.y+=dt*.006;
  scene.render();
 }
 function updateHud(fps:number){
  el('fps').textContent=Math.round(fps)+' FPS';
- el('height').textContent='Высота: '+Math.round(state.fan.h)+' м';
+ el('height').textContent='Высота фаната: '+Math.round(state.fan.h)+' м';
  el('launches').textContent='Полёты: '+state.fan.launches;
  el('event').textContent=state.event;el('speech').textContent=state.line;
+ el('cooldown').textContent=state.shoutCooldown>0?'Крик: '+state.shoutCooldown.toFixed(1)+' с':'Крик готов';
+ (el('shout') as HTMLButtonElement).disabled=state.shoutCooldown>0;
+ el('compass').textContent=['С','СВ','В','ЮВ','Ю','ЮЗ','З','СЗ'][((Math.round((state.player.yaw%(2*Math.PI))*4/Math.PI)+8)%8)];
  el('objective').textContent=state.fan.mode==='flight'?'Фанат испытывает лунную баллистику!':
-  state.fan.mode==='wait'?'Фанат ждёт тебя':'Запусти фаната на Луне';
+  state.fan.mode==='earthbound'?'🌍 Фанат достиг орбиты Земли!':state.fan.mode==='wait'?'Фанат ждёт тебя':'Отправь фаната к Земле криком!';
 }
 engine.runRenderLoop(()=>{
  const now=performance.now(),dt=Math.min((now-previous)/1000,.12);previous=now;
