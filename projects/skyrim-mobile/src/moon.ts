@@ -1,11 +1,11 @@
 import {
  Engine, Scene, Color3, Color4, Vector3, MeshBuilder, PBRMaterial,
  StandardMaterial, HemisphericLight, DirectionalLight, UniversalCamera,
- VertexBuffer, VertexData, TransformNode
+ VertexBuffer, VertexData, TransformNode, DynamicTexture
 } from '@babylonjs/core';
 import {
  createMoonState,deserializeMoon,serializeMoon,moonHeight,moveMoon,
- jumpMoon,stepMoon,toggleMoonFan,launchMoonFan,rescueMoonFan,type MoonState
+ jumpMoon,stepMoon,toggleMoonFan,launchMoonFan,shoutMoonFan,rescueMoonFan,type MoonState
 } from './moon-state.mjs';
 import './moon.css';
 
@@ -40,7 +40,28 @@ sun.intensity=2.3;sun.diffuse=new Color3(1,.95,.84);sun.position.set(80,100,-50)
 function paint(name:string,rgb:[number,number,number],metal=0,rough=.9){
  const m=new PBRMaterial(name,scene);m.albedoColor=new Color3(...rgb);m.metallic=metal;m.roughness=rough;return m;
 }
-const dust=paint('лунный реголит',[.43,.43,.49]);
+const dust=paint('лунный реголит',[.93,.93,.93]);
+const hash=(x:number,y:number)=>{const n=Math.sin(x*127.1+y*311.7+43.4)*43758.5;return n-Math.floor(n);};
+function noise(x:number,y:number){
+ const X=Math.floor(x),Y=Math.floor(y),a=x-X,b=y-Y,u=a*a*(3-2*a),v=b*b*(3-2*b);
+ return (hash(X,Y)*(1-u)+hash(X+1,Y)*u)*(1-v)+(hash(X,Y+1)*(1-u)+hash(X+1,Y+1)*u)*v;
+}
+function fbm(x:number,y:number){
+ let n=0,w=.55;for(let i=0;i<5;i++){n+=noise(x,y)*w;x*=2.06;y*=2.04;w*=.52;}return n;
+}
+function makeTexture(name:string,w:number,h:number,pixel:(x:number,y:number)=>number[]){
+ const t=new DynamicTexture(name,{width:w,height:h},scene,false),c=t.getContext(),im=c.createImageData(w,h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  const p=pixel(x,y),i=(y*w+x)*4;
+  im.data[i]=p[0];im.data[i+1]=p[1];im.data[i+2]=p[2];im.data[i+3]=p[3];
+ }
+ c.putImageData(im,0,0);t.update(false);return t;
+}
+const regolith=makeTexture('процедурный лунный реголит',512,512,(x,y)=>{
+ const v=Math.min(186,Math.max(65,109+78*(fbm(x/48,y/48)-.48)+27*(hash(x,y)-.5)));
+ return [v,v,v*1.05,255];
+});
+regolith.uScale=14;regolith.vScale=14;dust.albedoTexture=regolith;
 const rocks=paint('вулканический камень',[.32,.33,.39]);
 const suit=paint('скафандр героя',[.83,.88,.94],.1,.55);
 const blue=paint('синие вставки',[.14,.35,.55],.2,.5);
@@ -83,13 +104,24 @@ for(let i=1;i<115;i++){
  dot.position.set(Math.sin(az)*Math.cos(elv)*rad,Math.sin(elv)*rad,Math.cos(az)*Math.cos(elv)*rad);
  dot.scaling.setAll(.65+rnd(i+900)*1.6);
 }
-const earth=MeshBuilder.CreateSphere('Земля',{diameter:35,segments:24},scene);
-earth.position.set(82,118,245);
-const earthMat=paint('Земля',[.09,.41,.82],.15,.44);earthMat.emissiveColor=new Color3(.03,.11,.23);
-earth.material=earthMat;
-const clouds=MeshBuilder.CreateSphere('облачный слой',{diameter:35.5,segments:20},scene);
+const earthMap=makeTexture('текстура Земли',512,256,(x,y)=>{
+ const u=x/512,v=y/256,lat=Math.abs(v-.5)*2;
+ const n=fbm(u*8.8+2,v*6.9+7)+.18*(noise(u*24,v*19)-.5);
+ let rgb=n>.52?(noise(u*18,v*12)>.48?[102,135,79]:[153,128,95]):[20,63+noise(u*13,v*8)*25,132];
+ if(lat>.8){const ice=Math.min(1,(lat-.8)*5);rgb=rgb.map(c=>c*(1-ice)+225*ice);}
+ return [...rgb,255];
+});
+const cloudMap=makeTexture('облака Земли',512,256,(x,y)=>{
+ const n=fbm(x/32+16,y/28+5);return [255,255,255,Math.min(200,Math.max(0,(n-.49)*820))];
+});
+const earth=MeshBuilder.CreateSphere('Земля',{diameter:72,segments:48},scene);
+earth.position.set(56,75,185);
+const earthMat=paint('Земля',[1,1,1],.1,.8);earthMat.albedoTexture=earthMap;earthMat.emissiveColor=new Color3(.02,.065,.13);earth.material=earthMat;
+const clouds=MeshBuilder.CreateSphere('облачный слой',{diameter:72.65,segments:36},scene);
 clouds.position.copyFrom(earth.position);
-const cloudsMat=paint('облака',[.87,.94,1],.1,.86);cloudsMat.alpha=.25;clouds.material=cloudsMat;
+const cloudsMat=new StandardMaterial('атмосферные облака',scene);
+cloudsMat.diffuseTexture=cloudMap;cloudsMat.useAlphaFromDiffuseTexture=true;cloudsMat.backFaceCulling=false;
+clouds.material=cloudsMat;
 // Original modular lunar lander.
 const module=MeshBuilder.CreateCylinder('лунный модуль',{diameter:4.7,height:4,tessellation:8},scene);
 module.position.set(-13,surface(-13,8)+3.1,8);module.material=steel;
