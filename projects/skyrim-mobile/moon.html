@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"/>
+<meta name="theme-color" content="#061023"/>
+<title>Лунная программа фаната · QuantDeus</title>
+</head><body>
+<canvas id="moon-game" aria-label="Трёхмерная лунная поверхность"></canvas>
+<div id="error" role="alert" hidden></div>
+<header id="moon-hud"><div class="brand"><small>QuantDeus · ЛУННАЯ ПРОГРАММА</small><strong>ОБОЖАЮЩИЙ ФАНАТ 🌕</strong></div>
+<div class="stats"><span id="fps">— FPS</span><span id="height">Высота: 0 м</span><span id="launches">Полёты: 0</span></div>
+<a href="./index.html" class="moon-back">↩ В долину</a></header>
+<aside class="quest"><small>МИССИЯ</small><strong id="objective">Запусти фаната на Луне</strong>
+<p id="event">Прилунение героя…</p><blockquote id="speech">Великий капитан! Даже на Луне я ваш поклонник!</blockquote></aside>
+<div class="help">WASD — ходьба · мышь — обзор · E — говорить · F — запуск · R — спасение · пробел — прыжок</div>
+<div class="touch">
+ <div id="move-pad" class="movement"><div id="move-thumb"></div><span>ДВИЖЕНИЕ</span></div>
+ <div class="buttons"><button id="talk" type="button">💬<small>Ждать / идти</small></button><button id="jump" type="button">🦘<small>Прыжок</small></button>
+ <button id="launch" class="launch" type="button">🚀<small>ЗАПУСК</small></button><button id="rescue" type="button">🛸<small>Вернуть</small></button></div>
+</div>
+<script type="module" src="/src/moon.ts"></script>
+</body></html>
