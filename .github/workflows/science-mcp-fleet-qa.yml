@@ -1,4 +1,4 @@
-name: QuantDeus Scientific MCP Fleet — QA
+name: Научный флот QuantDeus — проверка MCP
 run-name: "🐒 Научные MCP: проверить права и роли"
 
 on:
