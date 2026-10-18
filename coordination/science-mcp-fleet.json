@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "title": "QuantDeus Scientific MCP Fleet — экспериментальные роли",
+  "source_of_truth": "coordination/agents.json",
+  "status": "staged_not_live",
+  "updated": "2026-10-18",
+  "canonical_agent_count": 29,
+  "coordinator": "seven-of-nine",
+  "policy": {
+    "default_permissions": "read_only",
+    "external_mcp_default": "disabled_until_owner_connected_and_verified",
+    "no_implicit_account_sharing": true,
+    "chatgpt_connections_not_inherited_by_github_actions": true,
+    "no_auto_hiring": true,
+    "no_auto_merge": true,
+    "no_production_site_writes": true,
+    "no_api_key_in_git": true,
+    "no_shell_from_untrusted_papers": true,
+    "no_execution_of_paper_code_without_review": true,
+    "max_paid_usd_per_run": 0,
+    "max_paid_usd_per_day": 0,
+    "max_remote_calls_per_run": 12,
+    "max_citations_per_pass": 25,
+    "results_require_original_sources": true,
+    "no_ftl_proof_by_software": true,
+    "scientific_verdicts": [
+      "PASS",
+      "FAIL",
+      "UNKNOWN"
+    ]
+  },
+  "providers": [
+    {
+      "id": "openalex",
+      "kind": "remote_mcp",
+      "endpoint": "https://mcp.openalex.org/mcp",
+      "state": "not_connected_to_fleet",
+      "enabled": false,
+      "permission": "read",
+      "auth": "OAuth connection by owner",
+      "capabilities": [
+        "literature_search",
+        "citation_graph"
+      ],
+      "cost_policy": "free-quota-limited-check-current-terms"
+    },
+    {
+      "id": "semantic_scholar",
+      "kind": "composio",
+      "toolkit": "semanticscholar",
+      "state": "not_connected_to_fleet",
+      "enabled": false,
+      "permission": "read",
+      "auth": "manual Composio toolkit connection",
+      "capabilities": [
+        "literature_search",
+        "citation_graph"
+      ],
+      "cost_policy": "usage-quota-limited"
+    },
+    {
+      "id": "serpapi_scholar",
+      "kind": "composio",
+      "toolkit": "serpapi",
+      "state": "not_connected_to_fleet",
+      "enabled": false,
+      "permission": "read",
+      "auth": "manual connection + account quota",
+      "capabilities": [
+        "literature_search"
+      ],
+      "cost_policy": "not_enabled-with-zero-spend"
+    },
+    {
+      "id": "wolfram_alpha",
+      "kind": "composio",
+      "toolkit": "wolfram_alpha_api",
+      "state": "not_connected_to_fleet",
+      "enabled": false,
+      "permission": "read",
+      "auth": "manual Composio toolkit connection",
+      "capabilities": [
+        "symbolic_computation"
+      ],
+      "cost_policy": "not_enabled-with-zero-spend"
+    },
+    {
+      "id": "scholar_sidekick",
+      "kind": "chatgpt_plugin",
+      "state": "chat_session_only",
+      "enabled": false,
+      "permission": "read",
+      "auth": "separate ChatGPT app session",
+      "capabilities": [
+        "citation_audit"
+      ],
+      "cost_policy": "account-dependent-not-bridged"
+    },
+    {
+      "id": "scite",
+      "kind": "chatgpt_plugin",
+      "state": "not_connected_to_fleet",
+      "enabled": false,
+      "permission": "read",
+      "auth": "separate ChatGPT app connection",
+      "capabilities": [
+        "citation_context"
+      ],
+      "cost_policy": "plan-dependent-not-enabled"
+    },
+    {
+      "id": "crossref",
+      "kind": "public_api",
+      "endpoint": "https://api.crossref.org/works",
+      "state": "fallback_subject_to_rate_limits",
+      "enabled": false,
+      "permission": "read",
+      "auth": "public endpoint with rate limits",
+      "capabilities": [
+        "doi_metadata"
+      ],
+      "cost_policy": "rate-limited"
+    },
+    {
+      "id": "sympy",
+      "kind": "local_library",
+      "state": "dependency_install_required",
+      "enabled": false,
+      "permission": "read",
+      "auth": "no cloud account",
+      "capabilities": [
+        "symbolic_computation",
+        "numerical_verification"
+      ],
+      "cost_policy": "runner compute budget only"
+    },
+    {
+      "id": "warp_factory",
+      "kind": "research_software",
+      "source": "https://github.com/NerdsWithAttitudes/WarpFactory",
+      "state": "requires_matlab_license_or_compatible_setup",
+      "enabled": false,
+      "permission": "read",
+      "auth": "local numerical installation",
+      "capabilities": [
+        "metric_analysis"
+      ],
+      "cost_policy": "runtime-and-license-constraints"
+    },
+    {
+      "id": "github",
+      "kind": "existing_control_plane",
+      "state": "available_via_existing_authorized_workflows",
+      "enabled": false,
+      "permission": "read",
+      "auth": "scoped GitHub Actions GITHUB_TOKEN",
+      "capabilities": [
+        "versioned_evidence"
+      ],
+      "cost_policy": "actions runner quotas"
+    }
+  ],
+  "specialists": [
+    {
+      "id": "literature-cartographer",
+      "owner_agent": "space",
+      "mission": "Искать первоисточники о варп-метриках, связывать DOI и граф цитирования.",
+      "providers": [
+        "openalex",
+        "semantic_scholar",
+        "crossref"
+      ],
+      "deliverable": "Список DOI/ISBN со ссылкой на первоисточник и статусом доступа."
+    },
+    {
+      "id": "citation-forensic",
+      "owner_agent": "sherlock",
+      "mission": "Проверять реальность ссылок, отзывы публикаций и контекст цитирований.",
+      "providers": [
+        "scholar_sidekick",
+        "scite",
+        "openalex"
+      ],
+      "deliverable": "Аудит достоверности библиографии без вывода о правильности теории."
+    },
+    {
+      "id": "metric-mathematician",
+      "owner_agent": "data",
+      "mission": "Проверять размерности, метрики и символические преобразования.",
+      "providers": [
+        "sympy",
+        "wolfram_alpha"
+      ],
+      "deliverable": "Воспроизводимый расчёт с явными допущениями."
+    },
+    {
+      "id": "qft-energy-auditor",
+      "owner_agent": "tuvok",
+      "mission": "Проверять NEC/WEC и квантовые ограничения для всех указанных наблюдателей.",
+      "providers": [
+        "sympy",
+        "warp_factory"
+      ],
+      "deliverable": "Энергетический анализ с диапазоном параметров и ограничениями."
+    },
+    {
+      "id": "warp-simulation-engineer",
+      "owner_agent": "tasksmith",
+      "mission": "Собирать изолированные симуляции метрик с CI и тестами.",
+      "providers": [
+        "sympy",
+        "warp_factory",
+        "github"
+      ],
+      "deliverable": "Код, тесты, графики, версия модели и численные ошибки."
+    },
+    {
+      "id": "causality-red-team",
+      "owner_agent": "sherlock",
+      "mission": "Искать противоречия причинности, проблемы горизонтов и устойчивости.",
+      "providers": [
+        "openalex",
+        "sympy"
+      ],
+      "deliverable": "Фальсифицируемые возражения и статус PASS/FAIL/UNKNOWN."
+    },
+    {
+      "id": "science-provenance-archivist",
+      "owner_agent": "orchestrator",
+      "mission": "Дедуплицировать источники и сохранять связи гипотеза→статья→проверка.",
+      "providers": [
+        "openalex",
+        "github"
+      ],
+      "deliverable": "Структурированный отчёт со ссылками и статусом проверки."
+    },
+    {
+      "id": "science-quality-controller",
+      "owner_agent": "qa-contract",
+      "mission": "Не пропускать ложное подтверждение FTL и привилегированные действия.",
+      "providers": [
+        "github"
+      ],
+      "deliverable": "Независимый QA-отчёт с воспроизводимыми проверками."
+    }
+  ]
+}
