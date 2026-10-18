@@ -1,0 +1,41 @@
+name: Проверка моста Seven и Cloudflare
+
+on:
+  pull_request:
+    paths:
+      - scripts/seven-of-nine.js
+      - scripts/cloudflare-swarm-bridge.js
+      - tests/cloudflare-swarm-bridge.test.js
+      - .github/workflows/seven-cloudflare-bridge-tests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Проверить JavaScript
+        run: |
+          node --check scripts/cloudflare-swarm-bridge.js
+          node --check scripts/seven-of-nine.js
+          node --test tests/cloudflare-swarm-bridge.test.js
+      - name: Проверить связь с Cloudflare без права записи
+        run: |
+          node - <<'NODE'
+          const {readSwarmStatus} = require('./scripts/cloudflare-swarm-bridge');
+          (async()=>{
+            const result = await readSwarmStatus();
+            console.log('Seven Cloudflare status:',JSON.stringify(result));
+            if(result.state!=='connected') throw Error('Cloudflare bridge unavailable');
+            const ids=['github-office','galactic-metaverse','warp-research','warp-scheduler'];
+            for(const id of ids)if(!result.services[id]?.connected)throw Error('Swarm connection failed: '+id);
+            console.log('Мост Seven: все зарегистрированные контуры отвечают.');
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
