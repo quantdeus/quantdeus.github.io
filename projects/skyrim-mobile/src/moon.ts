@@ -50,7 +50,9 @@ function fbm(x:number,y:number){
  let n=0,w=.55;for(let i=0;i<5;i++){n+=noise(x,y)*w;x*=2.06;y*=2.04;w*=.52;}return n;
 }
 function makeTexture(name:string,w:number,h:number,pixel:(x:number,y:number)=>number[]){
- const t=new DynamicTexture(name,{width:w,height:h},scene,false),c=t.getContext(),im=c.createImageData(w,h);
+ const t=new DynamicTexture(name,{width:w,height:h},scene,false);
+ const c=t.getContext() as unknown as CanvasRenderingContext2D;
+ const im=c.createImageData(w,h);
  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
   const p=pixel(x,y),i=(y*w+x)*4;
   im.data[i]=p[0];im.data[i+1]=p[1];im.data[i+2]=p[2];im.data[i+3]=p[3];
