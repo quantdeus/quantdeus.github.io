@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#101b27" />
+  <meta name="description" content="Долина Северного Ветра — оригинальный мобильный RPG-прототип на WebGL 2" />
+  <title>Долина Северного Ветра · QuantDeus RPG</title>
+</head>
+<body>
+  <canvas id="game" aria-label="Трёхмерная игровая сцена"></canvas>
+  <div id="fallback" hidden role="alert"></div>
+  <header class="topbar">
+    <div class="brand"><strong>СЕВЕРНЫЙ ВЕТЕР</strong><small>QuantDeus · WebGL 2 Prototype</small></div>
+    <div id="fps" class="metric">— FPS</div>
+    <button id="settings" type="button" aria-label="Настройки">⚙</button>
+  </header>
+  <section class="quest" aria-live="polite">
+    <small>ЗАДАНИЕ</small>
+    <strong id="quest">Загрузка мира…</strong>
+    <p id="event">Пробуждение героя</p>
+  </section>
+  <section class="stats">
+    <div><label>ЗДОРОВЬЕ <span id="hp">100</span></label><meter id="hp-bar" min="0" max="100" value="100"></meter></div>
+    <div><label>ВЫНОСЛИВОСТЬ <span id="stamina">100</span></label><meter id="stamina-bar" min="0" max="100" value="100"></meter></div>
+    <div class="wallet">🪙 <span id="gold">0</span> <span id="inventory">Меч ×1</span></div>
+  </section>
+  <div class="controls" aria-label="Сенсорное управление">
+    <div id="move-pad" class="pad move"><span>ДВИЖЕНИЕ</span><i id="move-thumb"></i></div>
+    <div id="look-pad" class="pad look"><span>ОБЗОР</span></div>
+    <div class="actions">
+      <button id="attack" aria-label="Атаковать" type="button">⚔️<small>УДАР</small></button>
+      <button id="interact" aria-label="Взаимодействие" type="button">✦<small>ДЕЙСТВИЕ</small></button>
+      <button id="potion" aria-label="Выпить зелье" type="button">🧪<small>ЗЕЛЬЕ</small></button>
+    </div>
+  </div>
+  <div id="settings-panel" class="modal" hidden>
+    <div class="modal-body">
+      <h2>НАСТРОЙКИ</h2>
+      <label for="quality">Качество графики</label>
+      <select id="quality">
+        <option value="low">Экономный · 30 FPS</option>
+        <option value="medium" selected>Сбалансированный · 30–45 FPS</option>
+        <option value="high">Высокий · до 60 FPS</option>
+      </select>
+      <button id="save" type="button">Сохранить прогресс</button>
+      <button id="close" type="button">Вернуться в игру</button>
+      <small>WASD — движение · E — действие · F — удар · H — зелье · мышь/палец — обзор</small>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
