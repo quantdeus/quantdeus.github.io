@@ -6,7 +6,7 @@ const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const craters=[[-28,25,13,1.9],[28,31,18,2.4],[-42,-24,15,2.3],[46,-34,11,1.7],[2,50,9,1.5]];
 export function moonHeight(x,z){
  let y=.26*Math.sin(x*.085)+.2*Math.cos(z*.12)+.17*Math.sin(x*.13+z*.11);
- for(const [cx,cz,r,depth] of craters){const d=Math.hypot(x-cx,z-cz)/r;y-=depth*Math.exp(-d**4);y+=.55*Math.exp(-((d-1)/.2)**2);}
+ for(const [cx,cz,r,depth] of craters){const d=Math.hypot(x-cx,z-cz)/r;y-=depth*Math.exp(-(d**4));y+=.55*Math.exp(-(((d-1)/.2)**2));}
  return y;
 }
 export function createMoonState(){
