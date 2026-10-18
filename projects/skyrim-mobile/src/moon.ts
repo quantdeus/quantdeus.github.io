@@ -135,26 +135,88 @@ for(const dir of [-1,1]){
 }
 const landing=MeshBuilder.CreateCylinder('стартовая площадка',{diameter:7,height:.12,tessellation:28},scene);
 landing.position.set(0,surface(0,-5)+.12,-5);landing.material=glow;
-function astronaut(name:string,body:PBRMaterial,face:PBRMaterial,backpack:boolean){
+
+const skin=paint('лицо эльфа',[.91,.69,.50],0,.92);
+const ivory=paint('белки глаз и зубы',[.93,.92,.85]);
+const pupil=paint('зрачки',[.038,.025,.028],.05,.5);
+const goldenHair=paint('золотые волосы',[.87,.63,.11],.05,.8);
+const robe=paint('бордовые одежды фаната',[.39,.075,.17],0,.92);
+const embroidery=paint('золотая вышивка',[.86,.58,.16],.43,.45);
+const fur=paint('мех и ворот',[.58,.49,.38]);
+const leather=paint('кожа и ремни',[.29,.16,.105]);
+const iron=paint('железо норда',[.39,.45,.49],.67,.38);
+const black=paint('тёмная ткань',[.14,.13,.15]);
+const faceParts:{armLeft:TransformNode;armRight:TransformNode;head:TransformNode}|null=null;
+function fantasyCharacter(name:string,fan:boolean){
  const root=new TransformNode(name,scene);
- const torso=MeshBuilder.CreateBox(name+' / корпус',{width:.85,height:1.08,depth:.55},scene);
- torso.parent=root;torso.position.y=1.18;torso.material=body;
- const head=MeshBuilder.CreateSphere(name+' / шлем',{diameter:.82,segments:12},scene);
- head.parent=root;head.position.y=2.03;head.material=suit;
- const shield=MeshBuilder.CreateSphere(name+' / визор',{diameter:.66,segments:12},scene);
- shield.parent=root;shield.position.set(0,2.02,.29);shield.scaling.set(.94,.78,.34);shield.material=face;
- for(const x of [-.31,.31]){
-  const leg=MeshBuilder.CreateBox(name+' / нога',{width:.3,height:.85,depth:.31},scene);
-  leg.parent=root;leg.position.set(x,.43,0);leg.material=body;
-  const arm=MeshBuilder.CreateBox(name+' / рука',{width:.23,height:.93,depth:.29},scene);
-  arm.parent=root;arm.position.set(x*2.02,1.22,0);arm.material=body;
+ const body=fan?robe:leather,leg=fan?robe:black;
+ const attach=(mesh:any,parent:TransformNode,x:number,y:number,z:number,material:PBRMaterial)=>{
+  mesh.parent=parent;mesh.position.set(x,y,z);mesh.material=material;return mesh;
+ };
+ const torso=attach(MeshBuilder.CreateCylinder(name+' / туловище',{height:1.14,diameterTop:.96,diameterBottom:.73,tessellation:10},scene),root,0,1.3,0,body);
+ attach(MeshBuilder.CreateBox(name+' / пояс',{width:.96,height:.18,depth:.74},scene),root,0,.85,0,leather);
+ attach(MeshBuilder.CreateBox(name+' / плащ',{width:1.05,height:1.25,depth:.10},scene),root,0,1.1,-.43,fan?robe:fur);
+ for(const sign of [-1,1]){
+  attach(MeshBuilder.CreateCylinder(name+' / сапог',{height:.89,diameterTop:.32,diameterBottom:.41,tessellation:8},scene),root,sign*.25,.45,0,leg);
+  attach(MeshBuilder.CreateBox(name+' / башмак',{width:.36,height:.24,depth:.61},scene),root,sign*.25,.14,.16,leather);
  }
- const pack=MeshBuilder.CreateBox(name+' / значок',{width:backpack?.64:.33,height:backpack?.8:.32,depth:backpack?.3:.07},scene);
- pack.parent=root;pack.position.set(0,1.28,backpack?-.43:.3);pack.material=backpack?blue:glow;
- return root;
+ const armLeft=new TransformNode(name+' / левое плечо',scene);
+ const armRight=new TransformNode(name+' / правое плечо',scene);
+ for(const [sign,pivot] of [[-1,armLeft],[1,armRight]] as const){
+  pivot.parent=root;pivot.position.set(sign*.52,1.72,0);pivot.rotation.z=sign*(fan?1.05:.23);
+  attach(MeshBuilder.CreateCylinder(name+' / рукав',{height:.83,diameterTop:.33,diameterBottom:.23,tessellation:8},scene),pivot,0,-.40,0,body);
+  attach(MeshBuilder.CreateSphere(name+' / ладонь',{diameter:.3,segments:9},scene),pivot,0,-.85,0,fan?skin:leather);
+  attach(MeshBuilder.CreateCylinder(name+' / наруч',{height:.23,diameter:.30,tessellation:9},scene),pivot,0,-.65,0,fan?embroidery:iron);
+ }
+ const neck=attach(MeshBuilder.CreateCylinder(name+' / шея',{height:.32,diameter:.27},scene),root,0,1.95,0,skin);
+ const headRoot=new TransformNode(name+' / поворот головы',scene);
+ headRoot.parent=root;headRoot.position.y=2.13;
+ const face=attach(MeshBuilder.CreateSphere(name+' / лицо',{diameter:.78,segments:18},scene),headRoot,0,.06,0,fan?skin:iron);
+ face.scaling.set(.92,1.13,.83);
+ if(fan){
+  // Detailed readable elf face with grin, brows, pointed ears and absurd golden quiff.
+  for(const sign of [-1,1]){
+   const ear=attach(MeshBuilder.CreateSphere(name+' / эльфийское ухо',{diameter:.26,segments:10},scene),headRoot,sign*.42,.08,.03,skin);
+   ear.scaling.set(.65,.43,1.8);ear.rotation.z=sign*.45;
+   const eye=attach(MeshBuilder.CreateSphere(name+' / глаз',{diameter:.19,segments:9},scene),headRoot,sign*.17,.14,.315,ivory);
+   eye.scaling.z=.58;
+   const iris=attach(MeshBuilder.CreateSphere(name+' / зрачок',{diameter:.09,segments:7},scene),headRoot,sign*.17,.145,.405,pupil);
+   iris.scaling.z=.55;
+   const brow=attach(MeshBuilder.CreateBox(name+' / бровь',{width:.2,height:.045,depth:.055},scene),headRoot,sign*.18,.28,.342,goldenHair);
+   brow.rotation.z=sign*.26;
+  }
+  const mouth=attach(MeshBuilder.CreateSphere(name+' / радостный крик',{diameter:.37,segments:12},scene),headRoot,0,-.185,.317,pupil);
+  mouth.scaling.set(1,.72,.19);
+  attach(MeshBuilder.CreateBox(name+' / улыбка',{width:.3,height:.065,depth:.045},scene),headRoot,0,-.12,.4,ivory);
+  for(let i=0;i<8;i++){
+   const az=i*2.399,r=.16+.23*Math.sqrt(i/8);
+   const tuft=attach(MeshBuilder.CreateCylinder(name+' / прядь волос',{height:.30+(i%3)*.16,diameterTop:0,diameterBottom:.18,tessellation:6},scene),headRoot,Math.sin(az)*r,.48+((i%3)*.04),Math.cos(az)*r,goldenHair);
+   tuft.rotation.z=Math.sin(az)*.26;tuft.rotation.x=Math.cos(az)*.24;
+  }
+  const crest=attach(MeshBuilder.CreateCylinder(name+' / вихор',{height:.7,diameterTop:0,diameterBottom:.32,tessellation:9},scene),headRoot,0,.68,0,goldenHair);
+  crest.rotation.z=.18;
+  attach(MeshBuilder.CreateTorus(name+' / королевский медальон',{diameter:.39,thickness:.09,tessellation:20},scene),root,0,1.42,.49,embroidery);
+  attach(MeshBuilder.CreateSphere(name+' / медальон',{diameter:.18,segments:10},scene),root,0,1.42,.52,ivory);
+  for(const sign of [-1,1]){
+   attach(MeshBuilder.CreateBox(name+' / вышивка',{width:.11,height:.74,depth:.04},scene),root,sign*.35,1.39,.42,embroidery);
+  }
+  attach(MeshBuilder.CreateTorus(name+' / меховой ворот',{diameter:1.02,thickness:.22,tessellation:15},scene),root,0,1.83,0,fur);
+ }else{
+  // Nord-inspired adventurer: no spacesuit; distinct original sculpt.
+  const helm=attach(MeshBuilder.CreateCylinder(name+' / рогатый шлем',{height:.37,diameterTop:.51,diameterBottom:.76,tessellation:9},scene),headRoot,0,.3,0,iron);
+  for(const sign of [-1,1]){
+   const horn=attach(MeshBuilder.CreateCylinder(name+' / рог',{height:.58,diameterTop:0,diameterBottom:.2,tessellation:8},scene),headRoot,sign*.39,.54,0,fur);
+   horn.rotation.z=-sign*.50;
+  }
+  const shield=attach(MeshBuilder.CreateCylinder(name+' / щит',{height:.17,diameter:.94,tessellation:14},scene),root,0,1.33,-.43,iron);
+  shield.rotation.x=Math.PI/2;
+  const boss=attach(MeshBuilder.CreateSphere(name+' / умбон',{diameter:.27,segments:8},scene),root,0,1.33,-.54,embroidery);
+  attach(MeshBuilder.CreateBox(name+' / ножны меча',{width:.16,height:1.65,depth:.15},scene),root,.50,1.22,-.35,iron).rotation.z=.27;
+ }
+ return {root,armLeft,armRight,head:headRoot};
 }
-const hero=astronaut('игрок',suit,visor,true);
-const fanMesh=astronaut('обожающий фанат',tourist,gold,false);
+const heroActor=fantasyCharacter('воин',false),fanActor=fantasyCharacter('обожающий фанат',true);
+const hero=heroActor.root,fanMesh=fanActor.root;
 const shadowMat=new StandardMaterial('тени на грунте',scene);shadowMat.diffuseColor=new Color3(.07,.07,.09);shadowMat.alpha=.48;
 const heroShadow=MeshBuilder.CreateDisc('тень героя',{radius:.7,tessellation:20},scene);
 const fanShadow=MeshBuilder.CreateDisc('тень фаната',{radius:.7,tessellation:20},scene);
