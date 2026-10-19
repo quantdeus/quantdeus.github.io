@@ -90,6 +90,50 @@ function normalizeMessages(input) {
   });
 }
 
+// Cloudflare Workers AI Kimi K2.6 route. Credentials remain server-side secrets.
+async function generateWithCloudflare(normalized) {
+  const accountId = String(process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+  const apiToken = String(process.env.CLOUDFLARE_API_TOKEN || '').trim();
+  const gatewayId = String(process.env.CLOUDFLARE_AI_GATEWAY_ID || '').trim();
+  if (!accountId || !apiToken) throw new Error('cloudflare_ai_credentials_missing');
+
+  const model = String(process.env.QD_CLOUDFLARE_AI_MODEL || '@cf/moonshotai/kimi-k2.6').trim();
+  const endpoint = 'https://api.cloudflare.com/client/v4/accounts/' +
+    encodeURIComponent(accountId) + '/ai/v1/chat/completions';
+  const headers = {
+    authorization: 'Bearer ' + apiToken,
+    'content-type': 'application/json',
+    accept: 'application/json'
+  };
+  if (gatewayId) headers['cf-aig-gateway-id'] = gatewayId;
+
+  // The Vercel function has a 60-second ceiling; keep enough headroom for fallback.
+  const timeoutMs = Math.max(1000, Math.min(45000, Number(process.env.QD_CLOUDFLARE_AI_TIMEOUT_MS || 40000)));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        messages: normalized,
+        temperature: 0,
+        max_tokens: 900,
+        stream: false
+      })
+    });
+    if (!response.ok) throw new Error('cloudflare_ai_http_' + response.status);
+    const data = await response.json();
+    const answer = String(data?.choices?.[0]?.message?.content || '').trim();
+    if (!answer) throw new Error('cloudflare_ai_empty_response');
+    return { answer, model: String(data?.model || model) };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
 
@@ -98,6 +142,26 @@ export default async function handler(req, res) {
     if (!auth.startsWith('Bearer ')) throw new Error('github_oidc_missing');
     const claims = await verifyGitHubOidc(auth.slice(7));
     const normalized = normalizeMessages(req.body?.messages);
+    if (process.env.QD_CLOUDFLARE_AI_ENABLED === 'true') {
+      try {
+        const result = await generateWithCloudflare(normalized);
+        return res.status(200).json({
+          ok: true,
+          provider: 'cloudflare-workers-ai',
+          model: result.model,
+          text: result.answer,
+          github_run: {
+            actor: claims.actor || null,
+            workflow: claims.workflow || null,
+            event: claims.event_name || null,
+            repository: claims.repository
+          }
+        });
+      } catch (error) {
+        console.error('QuantDeus Cloudflare AI route unavailable; using hosted fallback:', String(error?.message || error).slice(0, 160));
+      }
+    }
+
     const instructions = normalized
       .filter(message => message.role === 'system')
       .map(message => message.content)
