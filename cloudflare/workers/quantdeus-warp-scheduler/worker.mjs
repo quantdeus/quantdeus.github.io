@@ -45,7 +45,7 @@ function basicQa(answer) {
 
 async function runTick(controller, env) {
   const current = new Date(controller.scheduledTime || Date.now());
-  const slot = current.toISOString().slice(0, 13) + ":00Z";
+  const slot = current.toISOString().slice(0, 16) + ":00Z";
   const day = current.toISOString().slice(0, 10);
   if (controller.cron !== EXPECTED_CRON) {
     console.log(JSON.stringify({ event: "unexpected_cron", cron: controller.cron }));
