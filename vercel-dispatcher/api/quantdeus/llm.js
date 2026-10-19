@@ -90,14 +90,14 @@ function normalizeMessages(input) {
   });
 }
 
-// Cloudflare Workers AI Kimi K2.6 route. Credentials remain server-side secrets.
+// Cloudflare Workers AI Gemma 4 route. Credentials remain server-side secrets.
 async function generateWithCloudflare(normalized) {
   const accountId = String(process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
   const apiToken = String(process.env.CLOUDFLARE_API_TOKEN || '').trim();
   const gatewayId = String(process.env.CLOUDFLARE_AI_GATEWAY_ID || '').trim();
   if (!accountId || !apiToken) throw new Error('cloudflare_ai_credentials_missing');
 
-  const model = String(process.env.QD_CLOUDFLARE_AI_MODEL || '@cf/moonshotai/kimi-k2.6').trim();
+  const model = String(process.env.QD_CLOUDFLARE_AI_MODEL || '@cf/google/gemma-4-26b-a4b-it').trim();
   const endpoint = 'https://api.cloudflare.com/client/v4/accounts/' +
     encodeURIComponent(accountId) + '/ai/v1/chat/completions';
   const headers = {
