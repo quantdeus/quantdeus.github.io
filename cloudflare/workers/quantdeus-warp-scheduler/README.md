@@ -1,35 +1,36 @@
 # QuantDeus Warp Scheduler — Gemma 4
 
-This directory is the version-controlled source for the Cloudflare Worker currently named `quantdeus-warp-scheduler`.
+Этот каталог содержит исходный код планировщика Cloudflare Worker `quantdeus-warp-scheduler`. GitHub остаётся источником истины для кода и изменений.
 
-## Runtime contract
+## Контракт запуска
 
-- Primary model: `@cf/google/gemma-4-26b-a4b-it`
-- Fallback model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
-- Trigger: `*/10 * * * *` (every 10 minutes)
-- Daily AI inference-attempt cap: 100 (primary and fallback attempts are counted separately)
-- Bindings: `AI` (Workers AI) and `DB` (existing D1 database)
-- GitHub remains the source of truth for task definitions; generated plans remain drafts requiring scientific review.
+- Основная модель: `@cf/google/gemma-4-26b-a4b-it`
+- Резервная модель: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
+- Расписание: `*/10 * * * *` — каждые 10 минут
+- Суточный лимит попыток инференса: 100; основная и резервная попытки считаются отдельно
+- Привязки: `AI` (Workers AI) и `DB` (существующая база D1)
+- Результаты остаются черновиками и требуют научной рецензии.
 
-The scheduler tries Gemma 4 first. If that inference call throws, it tries Llama 3.3 and records the model actually used in `warp_reports.model` and the successful tick log. Each inference attempt consumes one daily quota unit, including fallback. If the quota is exhausted after a failed Gemma attempt, the scheduler skips the fallback rather than exceeding the cap.
+Сначала планировщик вызывает Gemma 4. Если вызов завершается ошибкой, он пытается использовать Llama 3.3 и сохраняет фактически использованную модель в `warp_reports.model` и журнале запуска. Каждая попытка расходует одну единицу суточного лимита. Если лимит исчерпан после ошибки Gemma, резервный вызов пропускается, чтобы не превышать лимит.
 
-## Deployment and verification
+Ключ идемпотентности включает дату, час и минуту запуска в UTC. Это позволяет отдельным запускам по расписанию `*/10` в пределах одного часа обрабатываться независимо.
 
-Do not paste API tokens into the repository, Issues, PRs, or chat. Use the authorized Cloudflare deployment identity and the existing account.
+## Перед развёртыванием
 
-Before deploying:
-1. Confirm the account's Workers AI binding can run the Gemma model with a small Russian prompt.
-2. Confirm the target Worker still has the `AI` and `DB` bindings.
-3. Confirm the cron remains `*/10 * * * *` and the daily inference-attempt cap remains 100.
-4. Run static syntax validation on `worker.mjs`.
+1. Проверьте коротким запросом на русском языке, что Workers AI может вызвать Gemma 4 в этом аккаунте.
+2. Убедитесь, что у Worker сохранены привязки `AI` и `DB`.
+3. Убедитесь, что расписание осталось `*/10 * * * *`, а суточный лимит — 100 попыток.
+4. Проверьте синтаксис `worker.mjs` и успешные проверки GitHub Actions.
+5. Не помещайте API-токены в репозиторий, PR, Issues или чат.
 
-After deploying:
-1. Read the Worker settings and verify both bindings remain present.
-2. Verify the schedule is still `*/10 * * * *`.
-3. Inspect the next scheduler tick and D1 `warp_reports.model`; it should show Gemma 4 when the primary call succeeds, or Llama 3.3 when fallback was used.
-4. Confirm a generated report is labelled as a draft and remains in `needs_human_review` unless the existing QA rules explicitly classify it otherwise.
-5. If inference or QA fails, inspect the logged event and restore the previous Worker version rather than silently changing quotas or disabling review.
+## После развёртывания
 
-## Current deployment status
+1. Повторно прочитайте настройки Worker и подтвердите наличие обеих привязок.
+2. Подтвердите расписание `*/10 * * * *`.
+3. Дождитесь следующего запуска и проверьте запись в D1: `warp_reports.model` должен содержать Gemma 4 при успешном основном вызове или Llama 3.3 при резервном вызове.
+4. Убедитесь, что отчёт помечен как черновик, а нормальный результат остаётся в статусе `needs_human_review`; QA может отклонить некачественный ответ.
+5. При ошибке инференса или QA изучите журнал и при необходимости восстановите предыдущую версию Worker. Не отключайте научную рецензию и не меняйте лимиты молча.
 
-This PR adds the canonical source and operating checklist. It does **not** itself deploy code to Cloudflare. The live Worker must be updated through the authorized deployment path and then verified against the checklist above.
+## Статус развёртывания
+
+Этот PR добавляет версионируемый исходный код и инструкцию. Сам по себе он **не развёртывает** код в Cloudflare. Живой Worker должен обновляться через разрешённый путь развёртывания, после чего необходимо выполнить проверки выше.
