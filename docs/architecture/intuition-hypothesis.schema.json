@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantdeus.github.io/schemas/intuition-hypothesis.schema.json",
+  "title": "QuantDeus Intuition Engine hypothesis",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "task_id",
+    "claim",
+    "source_refs",
+    "assumptions",
+    "alternatives",
+    "falsification_test",
+    "risk_level",
+    "evidence_grade",
+    "status"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "author_agent": { "type": "string" },
+    "claim": { "type": "string", "minLength": 1 },
+    "reasoning_summary": { "type": "string" },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["uri", "supports"],
+        "properties": {
+          "uri": { "type": "string", "format": "uri" },
+          "supports": { "type": "string" },
+          "retrieved_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "alternatives": { "type": "array", "items": { "type": "string" } },
+    "predictions": { "type": "array", "items": { "type": "string" } },
+    "falsification_test": { "type": "string", "minLength": 1 },
+    "risk_level": { "enum": ["low", "medium", "high"] },
+    "evidence_grade": { "enum": ["A", "B", "C", "UNKNOWN"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "expected_value": { "type": "number" },
+    "test_cost": { "type": "number", "minimum": 0 },
+    "reversibility": { "enum": ["high", "medium", "low"] },
+    "status": {
+      "enum": [
+        "draft",
+        "review",
+        "testable",
+        "tested",
+        "rejected",
+        "accepted_with_limits"
+      ]
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string" },
+        "artifact_uri": { "type": "string", "format": "uri" },
+        "observed_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}
