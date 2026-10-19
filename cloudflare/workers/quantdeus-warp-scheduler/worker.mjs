@@ -116,6 +116,13 @@ async function runTick(controller, env) {
         model: MODEL,
         message: String(primaryError?.message || primaryError).slice(0, 160)
       }));
+      // Count the fallback inference separately so total model attempts never exceed DAILY_MAX.
+      const fallbackReservation = await env.DB.prepare(
+        "UPDATE swarm_scheduler_daily SET ai_calls=ai_calls+1 WHERE day=? AND ai_calls<?"
+      ).bind(day, DAILY_MAX).run();
+      if (!fallbackReservation.meta?.changes) {
+        throw new Error("daily_ai_call_limit_before_fallback");
+      }
       usedModel = FALLBACK_MODEL;
       result = await env.AI.run(FALLBACK_MODEL, inferenceInput);
     }
