@@ -306,6 +306,43 @@
     ],
     "money_rule": "Средства не выдаются за красивую тему: до расхода должны быть определены проверяемый результат, критерий опровержения/неуспеха, бюджет/ресурсная карта и артефакт, который останется после работы."
   },
+  "win_win_economy": {
+    "status": "proposal-for-human-and-qa-review",
+    "canonical_manifest": "neon-horizon-v4",
+    "scope": "commercial-offers-marketplaces-partnerships-bounties-game-economy",
+    "principle": "Win-Win: добровольная проверяемая взаимная выгода, а не выгода платформы за счёт пользователя, автора или среды.",
+    "stakeholder_value": {
+      "participants": "Пользователь или участник получает проверяемую пользу, понятную цену/условия и право отказа/EXIT.",
+      "creators_and_partners": "Исполнитель, автор или партнёр получает прозрачную оплату или другую явно согласованную пользу; сохраняются права и возможность ухода.",
+      "quantdeus_platform": "QuantDeus покрывает реальные издержки и создаёт устойчивый ресурс для развития; просмотры и обещания не считаются выручкой."
+    },
+    "impact_guard": "Отдельно учитывать экологические и социальные издержки. Для заявлений Triple-Win о положительном общественном эффекте, прибыльности и снижении вреда нужны измеренные ΔU>0, Δπ>0 и ΔH<0 соответственно; при неизвестных данных статус UNKNOWN, не PASS.",
+    "unit_economics_metrics": [
+      "verified_user_benefit_or_outcome",
+      "creator_net_benefit_after_costs",
+      "platform_contribution_after_direct_costs",
+      "consent_and_exit_rights",
+      "ecological_or_social_externalities"
+    ],
+    "decision_states": [
+      "PASS",
+      "FAIL",
+      "UNKNOWN",
+      "NOT_APPLICABLE"
+    ],
+    "mandatory_gates": [
+      "declare-stakeholders-and-what-each-receives",
+      "document-actual-costs-pricing-fees-and-refund-or-exit-terms",
+      "protect-consent-privacy-ip-and-portability",
+      "record-evidence-for-benefit-not-views-or-promises",
+      "report-externalities-or-mark-unknown",
+      "independent-qa-before-commercial-impact-claim",
+      "human-approval-before-production-pricing-payments-mint-or-outreach"
+    ],
+    "noncommercial_rule": "Исследовательским, образовательным и open-source миссиям не требуется искусственно придуманная прибыль; оценивать их через пользу людям, вклад партнёров, доступность и ресурсные издержки.",
+    "no_auto_actions": "Этот слой не разрешает оплату, выпуск токенов, автономные сделки, изменение тарифов или массовые рассылки без отдельной команды владельца.",
+    "implementation": "Сначала применять как чек-лист при формировании коммерческих задач; внедрение в live Cloudflare Galactic Swarm и каждого MCP-исполнителя требует отдельной интеграции и QA, наследование 29 GitHub-реестров не является доказательством переноса в 10000 виртуальных профилей."
+  },
   "epidemic_of_good": {
     "definition": "Добровольная репликационная петля: доказуемый полезный результат становится понятной историей и шаблоном, который позволяет другим людям и автономным узлам повторить, улучшить и передать результат дальше.",
     "replication_loop": [
