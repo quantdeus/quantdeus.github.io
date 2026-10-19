@@ -7,11 +7,11 @@ This directory is the version-controlled source for the Cloudflare Worker curren
 - Primary model: `@cf/google/gemma-4-26b-a4b-it`
 - Fallback model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
 - Trigger: `*/10 * * * *` (every 10 minutes)
-- Daily AI-call cap: 100
+- Daily AI inference-attempt cap: 100 (primary and fallback attempts are counted separately)
 - Bindings: `AI` (Workers AI) and `DB` (existing D1 database)
 - GitHub remains the source of truth for task definitions; generated plans remain drafts requiring scientific review.
 
-The scheduler tries Gemma 4 first. If that inference call throws, it tries Llama 3.3 and records the model actually used in `warp_reports.model` and the successful tick log. The daily reservation is shared across both attempts: fallback does not reserve a second task slot.
+The scheduler tries Gemma 4 first. If that inference call throws, it tries Llama 3.3 and records the model actually used in `warp_reports.model` and the successful tick log. Each inference attempt consumes one daily quota unit, including fallback. If the quota is exhausted after a failed Gemma attempt, the scheduler skips the fallback rather than exceeding the cap.
 
 ## Deployment and verification
 
@@ -20,7 +20,7 @@ Do not paste API tokens into the repository, Issues, PRs, or chat. Use the autho
 Before deploying:
 1. Confirm the account's Workers AI binding can run the Gemma model with a small Russian prompt.
 2. Confirm the target Worker still has the `AI` and `DB` bindings.
-3. Confirm the cron remains `*/10 * * * *` and the daily limit remains 100.
+3. Confirm the cron remains `*/10 * * * *` and the daily inference-attempt cap remains 100.
 4. Run static syntax validation on `worker.mjs`.
 
 After deploying:
