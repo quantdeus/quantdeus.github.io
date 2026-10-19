@@ -98,7 +98,7 @@ async function generateWithStrata(normalized) {
   if (!baseUrl) throw new Error('strata_base_url_missing');
 
   const model = String(process.env.QD_STRATA_MODEL || 'kimi-k3').trim();
-  const timeoutMs = Math.max(1000, Math.min(120000, Number(process.env.QD_STRATA_TIMEOUT_MS || 90000)));
+  const timeoutMs = Math.max(1000, Math.min(50000, Number(process.env.QD_STRATA_TIMEOUT_MS || 45000)));
   const endpoint = /\/v1$/i.test(baseUrl) ? baseUrl + '/chat/completions' : baseUrl + '/v1/chat/completions';
   const headers = { 'content-type': 'application/json', accept: 'application/json' };
   const apiKey = String(process.env.QD_STRATA_API_KEY || '').trim();
@@ -147,7 +147,7 @@ async function generateWithCloudflare(normalized) {
   };
   if (gatewayId) headers['cf-aig-gateway-id'] = gatewayId;
 
-  const timeoutMs = Math.max(1000, Math.min(120000, Number(process.env.QD_CLOUDFLARE_AI_TIMEOUT_MS || 90000)));
+  const timeoutMs = Math.max(1000, Math.min(50000, Number(process.env.QD_CLOUDFLARE_AI_TIMEOUT_MS || 45000)));
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
