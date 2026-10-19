@@ -1,6 +1,6 @@
 const MODEL = "@cf/google/gemma-4-26b-a4b-it";
 const FALLBACK_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-const DAILY_MAX = 100;
+const DAILY_MAX = 2;
 const EXPECTED_CRON = "*/10 * * * *";
 const refs = [
   "Alcubierre (1994) DOI:10.1088/0264-9381/11/5/001",
