@@ -21,6 +21,23 @@ Set these as deployment environment variables/secrets, never in client JavaScrip
 
 The endpoint must be protected by TLS and authentication/firewall rules. Do not expose an unauthenticated GPU inference server to the public internet.
 
+## Cloudflare Workers AI: Kimi K2.6
+
+QuantDeus also supports an opt-in Cloudflare Workers AI route, with the hosted Vercel AI Gateway as fallback. The model ID is `@cf/moonshotai/kimi-k2.6`; Cloudflare documents this as a hosted model with tool calling, reasoning, vision, and a 262,144-token context window. Access requires a Workers Paid plan or prepaid AI Gateway credits; do not assume the account has billing/access enabled.
+
+Set these as Vercel server-side environment variables/secrets only:
+
+- `QD_CLOUDFLARE_AI_ENABLED=true` — activates the Cloudflare route.
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID.
+- `CLOUDFLARE_API_TOKEN` — API token with the minimum permissions needed to run Workers AI; store as a secret, never commit it.
+- `QD_CLOUDFLARE_AI_MODEL=@cf/moonshotai/kimi-k2.6` — optional model override.
+- `CLOUDFLARE_AI_GATEWAY_ID` — optional AI Gateway ID for routing/analytics/billing.
+- `QD_CLOUDFLARE_AI_TIMEOUT_MS=90000` — optional timeout, bounded to 1–120 seconds.
+
+The bridge posts to Cloudflare's OpenAI-compatible `/ai/v1/chat/completions` endpoint. If credentials, account access, model access, or the upstream request fail, it logs a short error without prompts/secrets and falls back to the existing Vercel AI Gateway. This only changes the bridge path used by the authenticated GitHub workflow; it does not automatically reconfigure every agent, OpenClaw, or unrelated provider configuration.
+
+**Rollout checklist:** configure the account ID and API token in deployment secrets, verify Workers AI billing/model access, enable the flag in a preview deployment first, test the actual authenticated workflow and fallback, inspect token usage/costs, and only then enable production. Kimi K2.6 pricing shown in Cloudflare's model catalog is $0.95/M input tokens, $4.00/M output tokens, and $0.16/M cached input tokens at the time this document was prepared; confirm current pricing before broad rollout.
+
 ## Kimi-K3 assessment
 
 The upstream `ro99/strata` README lists `kimi-k3` as a supported model type and provides an OpenAI-compatible `strata-server` endpoint. Its published reference table reports Kimi-K3 at about **1.45 TB** and **38.6 seconds per step** on a 64 GiB VRAM / 251 GiB RAM workstation, described as I/O-dependent; vision is not implemented in that route. This makes it technically interesting for experimentation, but a poor default for latency-sensitive agent traffic without a substantially larger, benchmarked host.
