@@ -496,7 +496,7 @@ async function getGitHubOidcToken() {
   }
 
   const separator = requestUrl.includes('?') ? '&' : '?';
-  const r = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent('quantdeus-vercel-llm'), {
+  const r = await fetch(requestUrl + separator + 'audience=' + encodeURIComponent('quantdeus-cloudflare-llm'), {
     headers: {
       authorization: 'Bearer ' + requestToken,
       accept: 'application/json'
@@ -510,9 +510,11 @@ async function getGitHubOidcToken() {
   return data.value;
 }
 
-async function callVercelOidcBridge(messages) {
+async function callCloudflareOidcBridge(messages) {
+  const bridgeUrl = String(process.env.QD_CLOUDFLARE_LLM_BRIDGE || '').trim();
+  if (!bridgeUrl) throw new Error('QD_CLOUDFLARE_LLM_BRIDGE_NOT_CONFIGURED');
   const oidc = await getGitHubOidcToken();
-  const r = await fetch('https://quantdeus.vercel.app/api/quantdeus/llm', {
+  const r = await fetch(bridgeUrl, {
     method: 'POST',
     headers: {
       authorization: 'Bearer ' + oidc,
@@ -523,7 +525,7 @@ async function callVercelOidcBridge(messages) {
   });
 
   const raw = await r.text();
-  if (!r.ok) throw new Error('Vercel LLM bridge ' + r.status + ': ' + raw.slice(0, 1000));
+  if (!r.ok) throw new Error('Cloudflare LLM gateway ' + r.status + ': ' + raw.slice(0, 1000));
 
   let data;
   try { data = JSON.parse(raw); }
@@ -533,7 +535,7 @@ async function callVercelOidcBridge(messages) {
     throw new Error('Vercel LLM bridge returned an empty response');
   }
 
-  activeProvider = 'vercel-oidc-bridge';
+  activeProvider = data.provider || 'cloudflare-workers-ai';
   activeModel = data.model || activeModel;
   return String(data.text).trim();
 }
@@ -583,7 +585,7 @@ async function callModel(messages) {
   }
   activeProvider = 'oidc-bridge';
   activeModel = 'runtime-configured';
-  return callVercelOidcBridge(messages);
+  return callCloudflareOidcBridge(messages);
 }
 
 async function buildReply(agentId, query) {
