@@ -12,8 +12,8 @@ function cors(req,env) {
 }
 function pathOnly(s) { if(typeof s!=="string")return "/"; const p=s.split("?")[0].split("#")[0].slice(0,300); return p.startsWith("/")?p:"/"; }
 function hostOf(s) { try{return new URL(s).hostname.toLowerCase().slice(0,160);}catch{return null;} }
-function sourceOf(host,url) {
- const tagged=(url.searchParams.get("utm_source")||"").trim().toLowerCase();
+function sourceOf(host,utmSource) {
+ const tagged=(typeof utmSource==="string"?utmSource:"").trim().toLowerCase();
  if(tagged)return tagged.slice(0,60);
  if(!host)return "direct";
  if(host.includes("google."))return "google";
@@ -42,7 +42,7 @@ async function collect(req,env,ch) {
   const day=occurred.toISOString().slice(0,10),url=new URL(req.url),ref=hostOf(typeof item.referrer==="string"?item.referrer:"");
   const campaign=typeof item.utm_campaign==="string"?item.utm_campaign.slice(0,100):null;
   const eventId=validId(item.event_id)?item.event_id:crypto.randomUUID();
-  statements.push(env.METRICS_DB.prepare("INSERT OR IGNORE INTO analytics_events (event_id,occurred_at,day_utc,site_id,event_type,path,referrer_host,source,campaign,visitor_id,session_id,user_agent_class) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").bind(eventId,occurred.toISOString(),day,item.site_id,item.event_type,pathOnly(item.path),ref,sourceOf(ref,url),campaign,item.visitor_id,item.session_id,"browser"));
+  statements.push(env.METRICS_DB.prepare("INSERT OR IGNORE INTO analytics_events (event_id,occurred_at,day_utc,site_id,event_type,path,referrer_host,source,campaign,visitor_id,session_id,user_agent_class) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").bind(eventId,occurred.toISOString(),day,item.site_id,item.event_type,pathOnly(item.path),ref,sourceOf(ref,item.utm_source),campaign,item.visitor_id,item.session_id,"browser"));
   statements.push(env.METRICS_DB.prepare("INSERT OR IGNORE INTO analytics_visitors_daily (day_utc,site_id,visitor_id,first_seen_at) VALUES (?,?,?,?)").bind(day,item.site_id,item.visitor_id,occurred.toISOString()));
   if(item.event_type==="page_view")statements.push(env.METRICS_DB.prepare("INSERT OR IGNORE INTO analytics_sessions (session_id,site_id,visitor_id,started_at,day_utc) VALUES (?,?,?,?,?)").bind(item.session_id,item.site_id,item.visitor_id,occurred.toISOString(),day));
   accepted++;
