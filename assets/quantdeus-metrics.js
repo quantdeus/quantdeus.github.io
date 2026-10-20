@@ -22,7 +22,7 @@ function banner(){
 function setConsent(value){try{localStorage.setItem(CONSENT,value);}catch{}document.getElementById("qd-metrics-consent")?.remove();if(value==="granted")start();}
 function send(type,extra={}){
  if(!started||!allowed.has(type))return;
- const url=new URL(location.href),payload={event_id:randomId(),site_id:siteId,event_type:type,timestamp:new Date().toISOString(),path:location.pathname.slice(0,300)||"/",referrer:document.referrer||"",visitor_id:visitorId,session_id:sessionId,utm_campaign:(url.searchParams.get("utm_campaign")||"").slice(0,100),...extra};
+ const url=new URL(location.href),payload={event_id:randomId(),site_id:siteId,event_type:type,timestamp:new Date().toISOString(),path:location.pathname.slice(0,300)||"/",referrer:document.referrer||"",visitor_id:visitorId,session_id:sessionId,utm_source:(url.searchParams.get("utm_source")||"").slice(0,60),utm_campaign:(url.searchParams.get("utm_campaign")||"").slice(0,100),...extra};
  const body=JSON.stringify(payload);
  try{if(navigator.sendBeacon&&navigator.sendBeacon(endpoint,new Blob([body],{type:"application/json"})))return;fetch(endpoint,{method:"POST",mode:"cors",headers:{"content-type":"application/json"},body,keepalive:true,credentials:"omit"}).catch(()=>{});}catch{}
 }
