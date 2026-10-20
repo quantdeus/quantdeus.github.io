@@ -51,7 +51,7 @@ test('workflow pins agent-browser and cannot mask execution failure', () => {
   assert.match(workflow, /agent-browser@0\.38\.1/);
   assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
   assert.match(workflow, /id-token: write/);
-  assert.match(workflow, /QD_BROWSER_LLM_BRIDGE/);
+  assert.match(workflow, /QD_CLOUDFLARE_LLM_BRIDGE/);
   assert.doesNotMatch(workflow, /AI_GATEWAY_API_KEY/);
 });
 
@@ -73,14 +73,16 @@ test('planner accepts only bounded browser decisions', () => {
 });
 
 test('LLM bridge scopes browser OIDC to the browser workflow', () => {
-  const bridge = fs.readFileSync(path.join(__dirname, '../../vercel-dispatcher/api/quantdeus/llm.js'), 'utf8');
+  const bridge = fs.readFileSync(path.join(__dirname, '../../cloudflare/llm-gateway/index.js'), 'utf8');
   assert.match(bridge, /browser-homunculus\\\.yml@/);
   assert.match(bridge, /workflow_dispatch/);
   assert.match(bridge, /issues/);
   assert.match(bridge, /github_oidc_wrong_event_or_workflow/);
   assert.match(bridge, /generateText/);
-  assert.match(bridge, /vercel-ai-gateway-oidc/);
-  assert.match(bridge, /google\/gemini-3\.6-flash/);
+  assert.match(bridge, /cloudflare-workers-ai/);
+  assert.match(bridge, /github-models-fallback/);
+  assert.match(bridge, /quantdeus-cloudflare-llm/);
+  assert.match(bridge, /gemma-4-26b-a4b-it/);
   assert.match(bridge, /message\.role === 'system'/);
   assert.match(bridge, /instructions/);
   assert.match(bridge, /message\.role !== 'system'/);
