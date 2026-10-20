@@ -44,7 +44,7 @@ async function verify(token) {
   }
   const event = String(claims.event_name || '');
   const workflow = String(claims.workflow_ref || claims.job_workflow_ref || '');
-  const allowed = event === 'issue_comment' ||
+  const allowed = (event === 'issue_comment' && /\.github\/workflows\/site-agent-replies\.yml@/.test(workflow)) ||
     (['issues', 'workflow_dispatch'].includes(event) && /\.github\/workflows\/browser-homunculus\.yml@/.test(workflow));
   if (!allowed) throw new Error('github_oidc_wrong_event_or_workflow');
   return claims;
