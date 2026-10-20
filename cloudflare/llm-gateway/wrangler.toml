@@ -1,0 +1,10 @@
+name = "quantdeus-llm-gateway"
+main = "index.js"
+compatibility_date = "2026-10-20"
+
+[vars]
+CF_MODEL = "@cf/google/gemma-4-26b-a4b-it"
+GITHUB_MODELS_MODEL = "openai/gpt-4.1-mini"
+
+[ai]
+binding = "AI"
