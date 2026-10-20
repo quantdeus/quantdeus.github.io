@@ -78,13 +78,13 @@ test('LLM bridge scopes browser OIDC to the browser workflow', () => {
   assert.match(bridge, /workflow_dispatch/);
   assert.match(bridge, /issues/);
   assert.match(bridge, /github_oidc_wrong_event_or_workflow/);
-  assert.match(bridge, /generateText/);
+  assert.match(bridge, /env\.AI\.run/);
   assert.match(bridge, /cloudflare-workers-ai/);
   assert.match(bridge, /github-models-fallback/);
   assert.match(bridge, /quantdeus-cloudflare-llm/);
   assert.match(bridge, /gemma-4-26b-a4b-it/);
-  assert.match(bridge, /message\.role === 'system'/);
-  assert.match(bridge, /instructions/);
-  assert.match(bridge, /message\.role !== 'system'/);
+  assert.match(bridge, /role === 'system'/);
+  assert.match(bridge, /normalizeMessages/);
+  assert.match(bridge, /GITHUB_MODELS_TOKEN/);
   assert.doesNotMatch(bridge, /text\.pollinations\.ai/);
 });
