@@ -45,7 +45,7 @@ async function main() {
   const snapshot = {
     agent:'seven-of-nine',
     timestamp:new Date().toISOString(),
-    role:'QuantDeus Coordinator / AI Chief of Staff',
+    role:'Deputy AI Chief of Staff / Swarm Efficiency Officer',
     tasks:{total:tasks.length,ready:ready.length,active:active.length,blocked:blocked.length,stale_active:staleActive.length},
     open_non_draft_prs:reviewQueue.length
   };
