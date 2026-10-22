@@ -25,9 +25,11 @@ A configured provider is not considered healthy merely because an API key exists
 | Gemini | `gemini-3.8-flash` | `GEMINI_API_KEY`, optional `GEMINI_MODEL` |
 | NVIDIA NIM | `openai/gpt-oss-120b` | `NVIDIA_API_KEY`, optional `NVIDIA_MODEL` |
 | xAI | `grok-4.7` | `XAI_API_KEY`, optional `XAI_MODEL` |
-| Cloudflare Workers AI | `@cf/zai-org/glm-4.7-flash` | `CLOUDFLARE_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, optional `CLOUDFLARE_MODEL` |
+| Cloudflare Workers AI | `@cf/google/gemma-4-26b-a4b-it` | `CLOUDFLARE_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, optional `CLOUDFLARE_MODEL` |
 | OpenRouter | `openrouter/free` | `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL` / `QD_LLM_MODEL` |
 | Pollinations | `openai` | anonymous by default, optional `POLLINATIONS_API_KEY` / `POLLINATIONS_MODEL` |
+
+Cloudflare model selection: Gemma 4 (`@cf/google/gemma-4-26b-a4b-it`) is the default because it passed a live inference smoke test on the connected account. GLM-5.3 (`@cf/zai-org/glm-5.3`) exists, supports reasoning and function calling with a 1M-token context, but Cloudflare refused it on this account with a Workers Free plan restriction; it requires Workers Paid or prepaid AI Gateway credits. Do not route production agents to GLM-5.3 until billing access and a capability probe are confirmed.
 
 Only configured keyed routes are added. Pollinations remains the final emergency route and must pass the same capability gate.
 
