@@ -1,0 +1,34 @@
+name: QuantDeus VK — manifesto one-shot publish
+run-name: "VK manifesto: ${{ inputs.mode }}"
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'check first; publish only by explicit manual dispatch'
+        type: choice
+        required: true
+        default: check
+        options:
+          - check
+          - publish
+permissions:
+  contents: read
+concurrency:
+  group: quantdeus-vk-manifesto-once
+  cancel-in-progress: false
+jobs:
+  vk-manifesto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      VK_TOKEN_GROUP: ${{ secrets.VK_TOKEN_GROUP }}
+      VK_MANIFESTO_MODE: ${{ inputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check target and optionally publish official manifesto
+        run: node scripts/vk-manifesto-one-shot.mjs
