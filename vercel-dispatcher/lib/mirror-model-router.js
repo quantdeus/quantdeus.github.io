@@ -23,7 +23,7 @@ export function buildMirrorCandidates(env = process.env) {
 
   const cfAccount = String(env.CLOUDFLARE_ACCOUNT_ID || '').trim();
   if (cfAccount) {
-    push(candidate('quantdeus-cloudflare','CLOUDFLARE_API_KEY',env.CLOUDFLARE_API_KEY,env.CLOUDFLARE_MODEL || '@cf/zai-org/glm-4.7-flash','https://api.cloudflare.com/client/v4/accounts/' + cfAccount + '/ai/v1/chat/completions',90));
+    push(candidate('quantdeus-cloudflare','CLOUDFLARE_API_KEY',env.CLOUDFLARE_API_KEY,env.CLOUDFLARE_MODEL || '@cf/google/gemma-4-26b-a4b-it','https://api.cloudflare.com/client/v4/accounts/' + cfAccount + '/ai/v1/chat/completions',1));
   }
 
   push(candidate('quantdeus-openrouter','OPENROUTER_API_KEY',env.OPENROUTER_API_KEY,env.OPENROUTER_MODEL || env.QD_LLM_MODEL || 'openrouter/free','https://openrouter.ai/api/v1/chat/completions',100));
