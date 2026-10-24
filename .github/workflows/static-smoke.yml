@@ -44,7 +44,7 @@ jobs:
           node --check scripts/orchestrator.js
           node --check scripts/contributor-onboarding.js
           node --check vercel-dispatcher/api/quantdeus/hourly.js
-          node --check vercel-dispatcher/api/quantdeus/llm.js
+          node --check cloudflare/llm-gateway/index.js
           node --check vercel-dispatcher/api/quantdeus/browser.js
           node --check vercel-dispatcher/api/quantdeus/hermes.js
           node --check vercel-dispatcher/api/quantdeus/openclaw.js

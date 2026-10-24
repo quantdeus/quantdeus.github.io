@@ -51,7 +51,7 @@ jobs:
       - name: Проверить governance and manifest before installing a browser
         run: node scripts/browser-homunculus.js --validate
 
-      - name: Установить Vercel agent-browser and Chrome
+      - name: Установить agent-browser and Chrome
         run: |
           npm install -g agent-browser@0.38.1
           agent-browser install --with-deps
@@ -63,7 +63,7 @@ jobs:
           QD_BROWSER_PASSWORD: ${{ secrets.QD_BROWSER_PASSWORD }}
           QD_BROWSER_PHONE: ${{ secrets.QD_BROWSER_PHONE }}
           QD_BROWSER_RECOVERY_EMAIL: ${{ secrets.QD_BROWSER_RECOVERY_EMAIL }}
-          QD_BROWSER_LLM_BRIDGE: https://quantdeus.vercel.app/api/quantdeus/llm
+          QD_CLOUDFLARE_LLM_BRIDGE: ${{ vars.QD_CLOUDFLARE_LLM_BRIDGE }}
         run: node scripts/browser-homunculus.js
 
       - name: Опубликовать public-safe result to the Issue
