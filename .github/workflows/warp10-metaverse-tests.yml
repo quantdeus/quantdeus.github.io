@@ -1,0 +1,30 @@
+name: Warp-10 — проверка метавселенной и QD
+on:
+  pull_request:
+    paths:
+      - "metaverse/**"
+      - "tests/warp10-metaverse-static.test.js"
+      - ".github/workflows/warp10-metaverse-tests.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Проверить код
+        run: node --test tests/warp10-metaverse-static.test.js
+      - name: Компиляция NFT-контракта Solidity
+        run: |
+          npm install --prefix metaverse/qd --no-audit --no-fund
+          npm run build --prefix metaverse/qd
+      - name: Проверить наличие файлов
+        run: |
+          test -s metaverse/index.html
+          test -s metaverse/qd/badge.svg
+          test -s metaverse/qd/metadata.json

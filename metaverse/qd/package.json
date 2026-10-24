@@ -1,0 +1,13 @@
+{
+  "name": "quantdeus-qd-genesis-testnet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Base Sepolia ERC721 compilation QA; not deployed",
+  "scripts": {
+    "build": "node compile.cjs"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.4.0",
+    "solc": "0.8.24"
+  }
+}

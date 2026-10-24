@@ -1,0 +1,19 @@
+{
+  "name": "QD Genesis · QuantDeus",
+  "description": "Пробный NFT-значок участника Федерации QuantDeus. Никаких обещаний прибыли, доходности или предоставления прав администратора. ERC-721.",
+  "image": "https://quantdeus.github.io/metaverse/qd/badge.svg",
+  "attributes": [
+    {
+      "trait_type": "Коллекция",
+      "value": "QD Genesis"
+    },
+    {
+      "trait_type": "Этап",
+      "value": "Staging / Base Sepolia"
+    },
+    {
+      "trait_type": "Назначение",
+      "value": "Коллекционный знак"
+    }
+  ]
+}
