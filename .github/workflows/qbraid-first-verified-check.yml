@@ -1,0 +1,34 @@
+name: QuantDeus qBraid First Verified Check
+run-name: "Квантовая проверка qBraid — без расходов"
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/qbraid-first-verified-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: quantdeus-qbraid-first-verification
+  cancel-in-progress: false
+jobs:
+  verify-free-tier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Verify free access through QuantDeus Cloudflare Gateway
+        env:
+          GATEWAY: https://quantdeus-qbraid-mcp.quantdeus-galactic-swarm.workers.dev/verify
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error --max-time 28 --retry 1 -o /tmp/qd-qbraid-verify.json "$GATEWAY"
+          python3 - <<'PY'
+          import json
+          obj=json.load(open('/tmp/qd-qbraid-verify.json'))
+          print('Gateway verified:',obj.get('verified'))
+          print('Simulator paid fallover disabled:',obj.get('billing_disabled'))
+          print('Last verified at:',obj.get('last_checked'))
+          print('IMPORTANT: This only checks quota API. It does not execute a quantum job.')
+          if not obj.get('verified') or not obj.get('billing_disabled'):
+            raise SystemExit('Gateway not ready for free quantum simulator job; NO JOBS SUBMITTED.')
+          PY
