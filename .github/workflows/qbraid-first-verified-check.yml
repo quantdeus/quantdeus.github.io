@@ -1,5 +1,5 @@
 name: QuantDeus qBraid First Verified Check
-run-name: "Квантовая проверка qBraid — без расходов"
+run-name: "Получение результатов qBraid — бесплатно"
 on:
   push:
     branches: [main]
