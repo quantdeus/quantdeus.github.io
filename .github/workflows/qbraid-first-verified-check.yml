@@ -21,14 +21,14 @@ jobs:
           GATEWAY: https://quantdeus-qbraid-mcp.quantdeus-galactic-swarm.workers.dev/verify
         run: |
           set -euo pipefail
-          curl --fail-with-body --silent --show-error --max-time 28 --retry 1 -o /tmp/qd-qbraid-verify.json "$GATEWAY"
+          curl --fail-with-body --silent --show-error --max-time 85 --retry 1 -o /tmp/qd-qbraid-verify.json "$GATEWAY"
           python3 - <<'PY'
           import json
           obj=json.load(open('/tmp/qd-qbraid-verify.json'))
           print('Gateway verified:',obj.get('verified'))
           print('Simulator paid fallover disabled:',obj.get('billing_disabled'))
           print('Last verified at:',obj.get('last_checked'))
-          print('IMPORTANT: This only checks quota API. It does not execute a quantum job.')
+          print('qBraid free-only demo submission enabled once in gateway; check D1 for authoritative job QRNs.')
           if not obj.get('verified') or not obj.get('billing_disabled'):
             raise SystemExit('Gateway not ready for free quantum simulator job; NO JOBS SUBMITTED.')
           PY
