@@ -54,7 +54,13 @@ try {
     summary.push('✅ Read-only check completed; no post published.');
   } else {
     const ownerId = -id;
-    const feed = await api('wall.get', { owner_id: String(ownerId), count: '30' });
+    let feed = { items: [] };
+    try {
+      feed = await api('wall.get', { owner_id: String(ownerId), count: '30' });
+    } catch (error) {
+      if (!String(error?.message || '').includes('VK wall.get error_code 27')) throw error;
+      summary.push('VK wall.get is unavailable for this community token (code 27); using stable wall.post guid for deduplication.');
+    }
     const items = Array.isArray(feed?.items) ? feed.items : [];
     const existing = items.find(item => typeof item?.text === 'string' && item.text.includes(signature) && item.text.includes('Cosmic LEGO'));
     if (existing?.id) {
