@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24.22.1'
       - name: Проверить QuantDeus shared mission
         run: node scripts/mission-alignment.js
       - name: Read real GitHub Issues and PRs without Vercel
