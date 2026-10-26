@@ -1,0 +1,41 @@
+name: "Запрос: автоматизация бизнеса"
+description: "Предварительная заявка на услуги QuantDeus. Не указывайте секреты и персональные данные третьих лиц."
+title: "[B2B] "
+labels: ["growth-lead"]
+body:
+  - type: markdown
+    attributes:
+      value: "Публичная заявка GitHub. Не публикуйте телефоны, e-mail, договоры, токены, платёжные реквизиты и конфиденциальные данные. Для приватных переговоров используйте официальные контакты на quantdeus.ru."
+  - type: input
+    id: company
+    attributes:
+      label: "Организация / проект (публичное название)"
+      placeholder: "Название организации"
+    validations:
+      required: true
+  - type: dropdown
+    id: interest
+    attributes:
+      label: "Задача"
+      options:
+        - "Автоматизация процессов"
+        - "ИИ-агенты"
+        - "Аналитика и отчёты"
+        - "Интеграция сервисов"
+        - "Партнёрство"
+        - "Другое"
+    validations:
+      required: true
+  - type: textarea
+    id: brief
+    attributes:
+      label: "Описание задачи (без конфиденциальных данных)"
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: "Согласие"
+      options:
+        - label: "Понимаю, что эта заявка публична, и согласен на ответ по этой заявке"
+          required: true
