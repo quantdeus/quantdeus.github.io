@@ -1,0 +1,45 @@
+name: "Запрос: концерт Ксении Чередниковой"
+description: "Предварительный запрос на выступление. Дата и цена не подтверждаются автоматически."
+title: "[Concert] "
+labels: ["growth-lead"]
+body:
+  - type: markdown
+    attributes:
+      value: "Заявка публична. Не публикуйте телефон, e-mail, паспортные данные, договоры или бюджет, если он конфиденциален. Концертный менеджер уточнит детали через согласованный канал. Это не бронирование."
+  - type: input
+    id: city
+    attributes:
+      label: "Город"
+    validations:
+      required: true
+  - type: input
+    id: date
+    attributes:
+      label: "Желаемая дата (ориентировочно)"
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: "Формат"
+      options:
+        - "Концерт"
+        - "Корпоратив"
+        - "Частное мероприятие"
+        - "Фестиваль"
+        - "Другое"
+    validations:
+      required: true
+  - type: textarea
+    id: venue
+    attributes:
+      label: "Площадка и детали (только публичная информация)"
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: "Согласие"
+      options:
+        - label: "Понимаю, что запрос публичен и не является подтверждением выступления"
+          required: true
