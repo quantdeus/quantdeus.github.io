@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "status": "pilot-dry-run",
+  "funnels": {
+    "community": {
+      "owner": "unity",
+      "cta": "join",
+      "destination": "https://quantdeus.ru/"
+    },
+    "automation": {
+      "owner": "synthesis",
+      "cta": "request-consultation",
+      "destination": "https://quantdeus.ru/services/"
+    },
+    "concert": {
+      "owner": "herald",
+      "cta": "request-concert-brief",
+      "destination": "https://quantdeus.ru/ksenia-cherednikova/"
+    }
+  },
+  "states": [
+    "discovered",
+    "approved",
+    "contacted",
+    "replied",
+    "qualified",
+    "handoff",
+    "converted",
+    "declined",
+    "not_contactable"
+  ],
+  "rules": {
+    "dry_run": true,
+    "external_send_enabled": false,
+    "human_approval_required": true,
+    "max_messages_per_day": 100,
+    "max_vk_messages_per_day": 10,
+    "do_not_publish_private_contract": true,
+    "do_not_sign_contracts": true,
+    "do_not_confirm_concert_date_without_human": true
+  },
+  "lead_fields": [
+    "funnel",
+    "organization",
+    "public_source_url",
+    "request_summary",
+    "permission_basis",
+    "status",
+    "owner",
+    "last_checked"
+  ],
+  "metrics": {
+    "verified_leads": null,
+    "qualified_leads": null,
+    "booked_concerts": null,
+    "paid_orders": null
+  }
+}
