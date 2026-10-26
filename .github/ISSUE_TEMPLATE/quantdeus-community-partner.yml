@@ -1,0 +1,30 @@
+name: "Запрос: сообщество или партнёрство"
+description: "Присоединиться к QuantDeus или предложить сотрудничество"
+title: "[Community] "
+labels: ["growth-lead"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: "Интерес"
+      options:
+        - "Участие в сообществе"
+        - "Исследовательское сотрудничество"
+        - "Образовательное партнёрство"
+        - "Контент и медиа"
+        - "Другое"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "Предложение (публичная информация)"
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: "Согласие"
+      options:
+        - label: "Понимаю, что заявка публична, и согласен на ответ в GitHub"
+          required: true
