@@ -1,0 +1,30 @@
+name: QuantDeus — маршрутизация входящих заявок
+on:
+  issues:
+    types: [opened, reopened]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  classify:
+    if: startsWith(github.event.issue.title, '[B2B]') || startsWith(github.event.issue.title, '[Concert]') || startsWith(github.event.issue.title, '[Community]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Пометить тип заявки и передать человеку
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          case "$ISSUE_TITLE" in
+            "[B2B]"*) TYPE="b2b" ;;
+            "[Concert]"*) TYPE="concert" ;;
+            "[Community]"*) TYPE="community" ;;
+            *) exit 0 ;;
+          esac
+          gh label create "lead-$TYPE" --color "BFD4F2" --description "Входящая заявка: $TYPE" --force
+          gh label create "needs-human-review" --color "F9D0C4" --description "Требуется проверка человеком" --force
+          gh issue edit "$ISSUE_NUMBER" --add-label "lead-$TYPE,needs-human-review"
+          echo "Заявка #$ISSUE_NUMBER: $TYPE. Никаких автоматических контактов, подтверждений брони или коммерческих обязательств." >> "$GITHUB_STEP_SUMMARY"
