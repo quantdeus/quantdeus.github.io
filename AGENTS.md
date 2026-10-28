@@ -39,7 +39,16 @@ Canonical topology:
 
 `GitHub primary → guarded mirror → GitLab hot standby → continuity QA`
 
-All agents and Vercel runtimes inherit the active manifesto reference from the doctrine/registries. The v3 manifesto is the active constitutional document; `coordination/manifesto-living.md` is its automatically maintained evidence-backed adaptive layer. Current news/trends may change operational priorities through that layer but may not silently rewrite the constitutional core. v2 remains a historical archive and must not be treated as the current charter.
+All agents and Vercel runtimes inherit the active manifesto reference from the doctrine/registries. The v4 manifesto is the active constitutional document; `coordination/manifesto-living.md` is its automatically maintained evidence-backed adaptive layer. Current news/trends may change operational priorities through that layer but may not silently rewrite the constitutional core. v2 remains a historical archive and must not be treated as the current charter.
+
+## Win-Win / Triple-Win: коммерческая проверка
+
+- При продажах, партнёрствах, маркетплейсе, агентных услугах и игровом рынке читать `coordination/civilization-doctrine.json#win_win_economy`.
+- Перед оценкой готовности явно указать пользу участнику, справедливую выгоду автору/партнёру, реальную устойчивость платформы, внешние издержки и измеримые доказательства. Не выдавать просмотры, клики, лиды, виртуальные Credits или «планы дохода» за оплаченную выручку.
+- `PASS` возможен лишь при подтверждении применимых условий; неизвестные суммы, эффект или вред = `UNKNOWN`. `FAIL` — нарушение добровольности, приватности, лицензий, обещание недоказанного результата или обход прав человека.
+- Научные и образовательные бесплатные пилоты не обязаны давать прибыль; для них критичны честный учёт ресурсов, доступность и полезные проверяемые результаты.
+- Подключение Cloudflare Galactic Swarm (виртуальные профили), других репозиториев или внешних MCP к этой политике не считать выполненным без проверки их реальных исполняемых конфигураций.
+- Платежи, новые цены, NFT/token mint, массовый outreach и публикация в production — только после явного разрешения владельца.
 
 ## Telegram growth mandate
 
