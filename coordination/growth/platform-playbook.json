@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-09-29",
+  "updated": "2026-10-24",
   "purpose": "Turn verified QuantDeus work into truthful multi-platform discovery, education and contributor growth without spam or fake engagement.",
   "source_of_truth": [
     "coordination/manifesto-living.md",
@@ -122,5 +122,55 @@
         "platform-native package"
       ]
     }
-  ]
+  ],
+  "proposed_modular_positioning": {
+    "status": "draft-owner-review-required",
+    "canonical_base": "Neon Horizon v4.0 remains unchanged until explicit approval",
+    "proposal_documents": [
+      "docs/MANIFESTO_MODULAR_FREEDOM_VNEXT_PROPOSAL.md",
+      "docs/MARKETING_MODULAR_FREEDOM_V1_PROPOSAL.md"
+    ],
+    "category": "open modular platform for self-development, education, culture, and collaborative projects",
+    "promise_ru": "QuantDeus — собери свой путь к целостности.",
+    "supporting_ru": "Выбирай и соединяй психологию, духовные традиции, науку, творчество и технологии; сохраняй свободу изменений и выхода.",
+    "commitments": [
+      "individual-module-choice",
+      "no-mandatory-worldview",
+      "optional-spiritual-frameworks",
+      "optional-4d-5d-metaphors",
+      "explicit-consent-for-personal-data",
+      "clear-exit-and-portability",
+      "evidence-grades-for-testable-claims",
+      "no-guaranteed-transformation-or-healing-claims",
+      "transparent-free-core-and-optional-paid-services"
+    ],
+    "module_families": [
+      "psychology-and-self-regulation",
+      "philosophy-and-spirituality",
+      "science-and-research",
+      "creativity-and-y2k",
+      "relationships-and-community",
+      "technology-and-ai",
+      "projects-and-contributions"
+    ],
+    "pilot_funnel": [
+      "discover",
+      "inspect",
+      "choose",
+      "try",
+      "reflect",
+      "return-or-contribute"
+    ],
+    "primary_cta_ru": "Исследовать модули",
+    "proposed_channels": [
+      "quantdeus-site",
+      "telegram",
+      "vk",
+      "youtube",
+      "github",
+      "habr",
+      "reddit"
+    ],
+    "publication_gate": "No automatic production publication or canonical promotion without owner review, staging validation, privacy and ethics checks, and explicit approval"
+  }
 }
