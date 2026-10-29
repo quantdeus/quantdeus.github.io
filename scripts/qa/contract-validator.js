@@ -536,6 +536,8 @@ for (const name of fs.readdirSync(workflowDir).filter(x=>/\.ya?ml$/.test(x))) {
         check(parts[0] === '41' && parts[1] === '*/6', name, 'news/manifest cycle uses the approved six-hour cadence: '+cron);
       } else if (name === 'growth-site-cycle.yml') {
         check(parts[0] === '53' && parts[1] === '*/4', name, 'growth/site cycle uses the approved four-hour cadence: '+cron);
+      } else if (name === 'seven-native-readonly.yml') {
+        check(cron === '41 */6 * * *', name, 'Seven native read-only uses the approved six-hour cadence: '+cron);
       } else {
         check(/^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1]), name, 'scheduled workflow runs no more than once per day: '+cron);
       }
