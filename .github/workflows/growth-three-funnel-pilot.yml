@@ -19,5 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Проверить защитные ограничения пилота
+        run: node --test scripts/qa/growth-three-funnel-pilot.test.mjs
       - name: Проверить три воронки и запрет внешней отправки
         run: node scripts/growth-three-funnel-pilot.mjs
