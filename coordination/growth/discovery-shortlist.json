@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "purpose": "Проверка публичных источников для Issue #634; не список лидов и не разрешение на коммуникации",
+  "mode": "read-only",
+  "external_contact_enabled": false,
+  "sources": [
+    {
+      "funnel": "community",
+      "topic": "Godot, разработка игр и метавселенные",
+      "audience_need": "Обмен опытом и обсуждение проектов по разработке игр на Godot",
+      "source_url": "https://godotforums.org/",
+      "source_name": "Godot Forums (независимый форум сообщества)",
+      "channel": "публичный тематический форум",
+      "rules_url": "https://godotforums.org/p/2-rules",
+      "rules_summary": "Тематическое обсуждение игровых проектов возможно; спам, навязчивая реклама и сообщения не по теме запрещены",
+      "permission_basis": null,
+      "contact_state": "not_contactable",
+      "verified": true,
+      "verified_scope": "Наличие публичного форума и опубликованных правил; НЕ разрешение на размещение материалов QuantDeus",
+      "offer": "Потенциальный образовательный материал или демонстрация проекта по Godot; без публикации",
+      "cta": "join",
+      "owner": "archivist",
+      "last_checked": "2026-10-29"
+    }
+  ]
+}
