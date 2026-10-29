@@ -2,7 +2,7 @@ name: Seven of Nine — GitHub-native read-only 🖖
 on:
   workflow_dispatch:
   schedule:
-    - cron: '41 */6 * * *'
+    - cron: '41 6 * * *'
 permissions:
   contents: read
   issues: read
