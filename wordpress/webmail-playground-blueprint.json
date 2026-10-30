@@ -1,0 +1,27 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/plugins.php",
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "7.1.2"
+  },
+  "features": {
+    "networking": true
+  },
+  "steps": [
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "pressedmail"
+      },
+      "options": {
+        "activate": true
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\n$found=false;\nforeach (get_plugins() as $path=>$meta) {\n  if (strpos($path, 'pressedmail/') === 0 && is_plugin_active($path)) { $found=true; break; }\n}\nif (!$found) { throw new Exception('PressedMail was not installed or activated'); }\nif (!is_ssl() && defined('WP_CLI') && WP_CLI) { /* CLI has no browser transport; this is not an HTTPS production claim. */ }\necho 'QD_WEBMAIL_PLUGIN_ACTIVATION_OK';\n"
+    }
+  ]
+}
