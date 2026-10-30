@@ -168,6 +168,14 @@
     },
     "smtp_delivery_test_verified": false,
     "form_created": false,
-    "form_embedded": false
+    "form_embedded": false,
+    "sender": {
+      "primary_email": "info@quantdeus.ru",
+      "sender_display_name": "QuantDeus",
+      "mailbox_exists_verified": false,
+      "smtp_identity_verified": false,
+      "configuration_status": "selected-not-provisioned",
+      "public_display_enabled": false
+    }
   }
 }
