@@ -63,3 +63,17 @@ test("Нет ложных метрик или автоматической пу�
   for(const v of Object.values(config.measured)) assert.equal(v,null);
   assert.equal(config.consent.github_issue_is_not_newsletter_consent,true);
 });
+
+test("WordPress publishing gate is closed until real form and policy exist",()=>{
+ assert.equal(config.wordpress.newsletter_page.id,218);
+ assert.equal(config.wordpress.newsletter_page.slug,"newsletter");
+ assert.equal(config.wordpress.newsletter_page.status,"draft");
+ assert.equal(config.wordpress.newsletter_page.form_embedded,false);
+ assert.equal(config.wordpress.newsletter_page.groundhogg_form_shortcode,null);
+ assert.equal(config.wordpress.privacy_policy_page.id,3);
+ assert.equal(config.wordpress.privacy_policy_page.status,"draft");
+ assert.equal(config.wordpress.privacy_policy_page.publicly_accessible,false);
+ assert.equal(config.wordpress.plugin_installed,false);
+ assert.equal(config.wordpress.smtp_configured,false);
+ assert.equal(config.wordpress.production_gate,"closed");
+});
