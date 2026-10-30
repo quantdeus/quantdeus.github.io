@@ -11,6 +11,9 @@ on:
       - 'scripts/newsletter-engine.mjs'
       - 'scripts/newsletter-dryrun.mjs'
       - 'scripts/tests/newsletter-engine.test.mjs'
+      - 'coordination/growth/newsletter-message-drafts.json'
+      - 'coordination/growth/newsletter-wordpress-staging-runbook.md'
+      - 'scripts/tests/newsletter-wordpress-contract.test.mjs'
 
 permissions:
   contents: read
@@ -34,6 +37,6 @@ jobs:
         with:
           node-version: '24'
       - name: Согласие, дубли и отписка
-        run: node --test scripts/tests/newsletter-engine.test.mjs
+        run: node --test scripts/tests/newsletter-engine.test.mjs scripts/tests/newsletter-wordpress-contract.test.mjs
       - name: Проверка расписания на искусственных данных без внешних запросов
         run: node scripts/newsletter-dryrun.mjs
