@@ -55,3 +55,9 @@ Groundhogg (CRM, рассылки) ──> SMTP Mailer ──> одобренн�
 - https://pressedmail.com/docs/custom-imap-smtp
 - https://pressedmail.com/docs/where-your-mail-lives
 - https://timeweb.com/ru/docs/pochta/tarif-pochtovyj/ — отдельная почта **95 ₽/мес** при помесячной оплате, если нет платного Timeweb хостинга; не подключать автоматически.
+
+## Реальный результат первого CI и корректировка теста
+
+Первый запуск установки с `activate=true` в WordPress Playground был **FAILED**. Установочный экран самого PressedMail отказал в активации с причиной: `Your site is running on ... mysql-on-sqlite ... SQLite and WordPress Playground are not supported.` Это предсказанное ограничение пакета; никакие проверки PressedMail не отключены. Запуск: https://github.com/quantdeus/quantdeus.github.io/actions/runs/41107956827 .
+
+В новом Playground smoke пакет скачивается и распаковывается, но остаётся **inactive** (`activate=false`). Проверяется файл плагина и SQLite, а не пригодность почтового клиента к запуску. Для **полноценной** проверки нужен MariaDB/MySQL staging. Нельзя считать этот тест green свидетельством активного почтового клиента.
