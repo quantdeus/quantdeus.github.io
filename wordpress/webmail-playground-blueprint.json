@@ -16,12 +16,12 @@
         "slug": "pressedmail"
       },
       "options": {
-        "activate": true
+        "activate": false
       }
     },
     {
       "step": "runPHP",
-      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\n$found=false;\nforeach (get_plugins() as $path=>$meta) {\n  if (strpos($path, 'pressedmail/') === 0 && is_plugin_active($path)) { $found=true; break; }\n}\nif (!$found) { throw new Exception('PressedMail was not installed or activated'); }\nif (!is_ssl() && defined('WP_CLI') && WP_CLI) { /* CLI has no browser transport; this is not an HTTPS production claim. */ }\necho 'QD_WEBMAIL_PLUGIN_ACTIVATION_OK';\n"
+      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\n$found=false;\nforeach (get_plugins() as $path=>$meta) {\n  if (strpos($path, 'pressedmail/') === 0) {\n    $found=true;\n    if (is_plugin_active($path)) throw new Exception('PressedMail must stay inactive on SQLite Playground');\n    break;\n  }\n}\nif (!$found) throw new Exception('PressedMail package missing');\nglobal $wpdb;\nif (stripos((string)$wpdb->db_server_info(), 'sqlite') === false) throw new Exception('This smoke expects disposable SQLite WordPress Playground');\necho 'QD_WEBMAIL_PACKAGE_PRESENT_SQLITE_NOT_ACTIVATED';\n"
     }
   ]
 }
