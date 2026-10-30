@@ -153,8 +153,21 @@
       "status": "draft",
       "publicly_accessible": false
     },
-    "plugin_installed": false,
-    "smtp_configured": false,
-    "production_gate": "closed"
+    "plugin_installed": true,
+    "smtp_configured": null,
+    "production_gate": "closed",
+    "production_verified_plugins": {
+      "groundhogg": {
+        "version": "4.10",
+        "status": "active"
+      },
+      "smtp_mailer": {
+        "version": "1.1.28",
+        "status": "active"
+      }
+    },
+    "smtp_delivery_test_verified": false,
+    "form_created": false,
+    "form_embedded": false
   }
 }
