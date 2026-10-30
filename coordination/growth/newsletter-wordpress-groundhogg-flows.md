@@ -55,3 +55,7 @@
 - https://help.groundhogg.io/article/601-contact-marketability-explained
 - https://groundhogg.io/doc/cron-jobs/
 - https://wordpress.org/plugins/smtp-mailer/
+
+## Live WordPress inventory verified 2026-10-30
+
+`Groundhogg 4.10` and `SMTP Mailer 1.1.28` are installed and active on `quantdeus.ru` according to MCP installed plugin list. Sender configuration and delivered test remain **unknown/not verified**. Do not infer `SMTP configured` from `plugin activated`. Keep page #218 draft, privacy page #3 draft and no actual marketing messages.
