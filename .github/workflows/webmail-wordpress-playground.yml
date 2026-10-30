@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   plugin-smoke:
-    name: Установка PressedMail в одноразовом WordPress (без писем)
+    name: Установка пакета PressedMail без активации (Playground SQLite)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -36,9 +36,9 @@ jobs:
           if(x.steps[0].step!=='installPlugin'||
              x.steps[0].pluginData.resource!=='wordpress.org/plugins'||
              x.steps[0].pluginData.slug!=='pressedmail'||
-             x.steps[0].options?.activate!==true)throw Error('Official PressedMail installation not configured');
-          if(x.steps[1].step!=='runPHP'||!x.steps[1].code.includes('QD_WEBMAIL_PLUGIN_ACTIVATION_OK'))
-            throw Error('Missing activation smoke');
+             x.steps[0].options?.activate!==false)throw Error('Official PressedMail installation not configured');
+          if(x.steps[1].step!=='runPHP'||!x.steps[1].code.includes('QD_WEBMAIL_PACKAGE_PRESENT_SQLITE_NOT_ACTIVATED'))
+            throw Error('Missing package-presence smoke');
           const s=fs.readFileSync('coordination/growth/webmail-pressedmail-plan.md','utf8');
           if(!s.includes('info@quantdeus.ru')||!s.includes('IMAP')||!s.includes('SMTP')||!s.includes('НЕ НАСТРОЕН'))
             throw Error('Handoff data missing');
@@ -51,5 +51,5 @@ jobs:
       - name: Итог проверки
         if: success()
         run: |
-          echo '## QuantDeus Webmail: activation smoke' >> "$GITHUB_STEP_SUMMARY"
-          echo 'PressedMail activated in disposable WordPress Playground. IMAP/SMTP mailbox setup was NOT tested: Playground uses SQLite, while real PressedMail mailbox setup needs MariaDB/MySQL.' >> "$GITHUB_STEP_SUMMARY"
+          echo '## QuantDeus Webmail: SQLite package-only smoke' >> "$GITHUB_STEP_SUMMARY"
+          echo 'PressedMail package installed but intentionally NOT activated: SQLite Playground does not meet its database requirements. Real activation and IMAP/SMTP need MySQL/MariaDB staging. No messages sent.' >> "$GITHUB_STEP_SUMMARY"
