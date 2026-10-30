@@ -3,7 +3,7 @@
   "status": "dry-run-only",
   "orchestrator": "github-actions-ci-dry-run-only",
   "source_of_truth": "coordination/growth/marketing-operating-system.md",
-  "notes": "WordPress Groundhogg owns marketing consent, flows, subscriber storage and future real queue. FluentSMTP is a wp_mail transport adapter, not an ESP. GitHub Actions runs synthetic tests only. Do not access private contacts from public repo/Actions.",
+  "notes": "WordPress Groundhogg owns marketing consent, flows, subscriber storage and future real queue. SMTP Mailer is a wp_mail transport adapter, not an ESP. GitHub Actions runs synthetic tests only. Do not access private contacts from public repo/Actions.",
   "delivery": {
     "external_send_enabled": false,
     "provider": null,
@@ -123,7 +123,7 @@
   "wordpress": {
     "site": "https://quantdeus.ru",
     "crm_plugin": "groundhogg",
-    "transport_plugin": "fluent-smtp",
+    "transport_plugin": "smtp-mailer",
     "queue_owner": "groundhogg",
     "sender_owner": "groundhogg-via-wp-mail",
     "github_actions_role": "ci-and-synthetic-dry-run-only",
