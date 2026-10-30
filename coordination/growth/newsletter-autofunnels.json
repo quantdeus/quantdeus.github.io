@@ -140,6 +140,21 @@
       "single_active_topic_until_cross_topic_cap_verified": true,
       "working_unsubscribe_and_suppression": true,
       "verified_sender_spf_dkim_dmarc": true
-    }
+    },
+    "newsletter_page": {
+      "id": 218,
+      "slug": "newsletter",
+      "status": "draft",
+      "groundhogg_form_shortcode": null,
+      "form_embedded": false
+    },
+    "privacy_policy_page": {
+      "id": 3,
+      "status": "draft",
+      "publicly_accessible": false
+    },
+    "plugin_installed": false,
+    "smtp_configured": false,
+    "production_gate": "closed"
   }
 }
