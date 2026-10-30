@@ -1,0 +1,43 @@
+name: QuantDeus — рассылка, безопасная проверка без отправки
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * *'
+  pull_request:
+    paths:
+      - '.github/workflows/growth-newsletter-dryrun.yml'
+      - 'coordination/growth/newsletter-autofunnels.json'
+      - 'scripts/newsletter-engine.mjs'
+      - 'scripts/newsletter-dryrun.mjs'
+      - 'scripts/tests/newsletter-engine.test.mjs'
+      - 'coordination/growth/newsletter-message-drafts.json'
+      - 'coordination/growth/newsletter-wordpress-staging-runbook.md'
+      - 'coordination/growth/newsletter-wordpress-groundhogg-flows.md'
+      - 'scripts/tests/newsletter-wordpress-contract.test.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantdeus-newsletter-dryrun
+  cancel-in-progress: true
+
+jobs:
+  validate-only:
+    name: Проверка подтверждённой подписки (без писем)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      QD_NEWSLETTER_SEND_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Согласие, дубли и отписка
+        run: node --test scripts/tests/newsletter-engine.test.mjs scripts/tests/newsletter-wordpress-contract.test.mjs
+      - name: Проверка расписания на искусственных данных без внешних запросов
+        run: node scripts/newsletter-dryrun.mjs
