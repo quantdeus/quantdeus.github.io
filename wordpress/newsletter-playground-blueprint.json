@@ -23,7 +23,7 @@
       "step": "installPlugin",
       "pluginData": {
         "resource": "wordpress.org/plugins",
-        "slug": "fluent-smtp"
+        "slug": "smtp-mailer"
       },
       "options": {
         "activate": true
@@ -31,7 +31,7 @@
     },
     {
       "step": "runPHP",
-      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\nforeach (['groundhogg/groundhogg.php', 'fluent-smtp/fluent-smtp.php'] as $plugin) {\n  if (!is_plugin_active($plugin)) throw new Exception('Plugin not active: ' . $plugin);\n}\nif (!shortcode_exists('gh_form')) throw new Exception('Groundhogg form shortcode missing');\n// Only create a WordPress DRAFT page: no form, contacts, API tokens, or outbound mails.\n$page=wp_insert_post([\n  'post_type'=>'page',\n  'post_status'=>'draft',\n  'post_title'=>'Вестник QuantDeus — тестовая подписка',\n  'post_name'=>'newsletter',\n  'post_content'=>'<!-- wp:paragraph --><p>Тестовый стенд: подписка выключена до проверки подтверждения email, отписки и SMTP.</p><!-- /wp:paragraph -->',\n],true);\nif (is_wp_error($page) || get_post_status($page)!=='draft') throw new Exception('Newsletter draft page was not created');\necho 'QD_NEWSLETTER_WORDPRESS_STAGING_OK';"
+      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\nforeach (['groundhogg/groundhogg.php', 'smtp-mailer/smtp-mailer.php'] as $plugin) {\n  if (!is_plugin_active($plugin)) throw new Exception('Plugin not active: ' . $plugin);\n}\nif (!shortcode_exists('gh_form')) throw new Exception('Groundhogg form shortcode missing');\n// Only create a WordPress DRAFT page: no form, contacts, API tokens, or outbound mails.\n$page=wp_insert_post([\n  'post_type'=>'page',\n  'post_status'=>'draft',\n  'post_title'=>'Вестник QuantDeus — тестовая подписка',\n  'post_name'=>'newsletter',\n  'post_content'=>'<!-- wp:paragraph --><p>Тестовый стенд: подписка выключена до проверки подтверждения email, отписки и SMTP.</p><!-- /wp:paragraph -->',\n],true);\nif (is_wp_error($page) || get_post_status($page)!=='draft') throw new Exception('Newsletter draft page was not created');\necho 'QD_NEWSLETTER_WORDPRESS_STAGING_OK';"
     }
   ]
 }
