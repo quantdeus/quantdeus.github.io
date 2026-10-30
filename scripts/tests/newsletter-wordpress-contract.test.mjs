@@ -73,7 +73,14 @@ test("WordPress publishing gate is closed until real form and policy exist",()=>
  assert.equal(config.wordpress.privacy_policy_page.id,3);
  assert.equal(config.wordpress.privacy_policy_page.status,"draft");
  assert.equal(config.wordpress.privacy_policy_page.publicly_accessible,false);
- assert.equal(config.wordpress.plugin_installed,false);
- assert.equal(config.wordpress.smtp_configured,false);
+ assert.equal(config.wordpress.plugin_installed,true);
+ assert.equal(config.wordpress.production_verified_plugins.groundhogg.status,"active");
+ assert.equal(config.wordpress.production_verified_plugins.smtp_mailer.status,"active");
+ assert.equal(config.wordpress.production_verified_plugins.groundhogg.version,"4.10");
+ assert.equal(config.wordpress.production_verified_plugins.smtp_mailer.version,"1.1.28");
+ assert.equal(config.wordpress.smtp_configured,null);
+ assert.equal(config.wordpress.smtp_delivery_test_verified,false);
+ assert.equal(config.wordpress.form_created,false);
+ assert.equal(config.wordpress.form_embedded,false);
  assert.equal(config.wordpress.production_gate,"closed");
 });
