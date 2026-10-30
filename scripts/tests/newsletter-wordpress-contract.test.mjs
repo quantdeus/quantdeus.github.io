@@ -7,7 +7,7 @@ const drafts = JSON.parse(fs.readFileSync("coordination/growth/newsletter-messag
 
 test("WordPress владеет будущей рассылкой; GitHub только тестирует", () => {
   assert.equal(config.wordpress.crm_plugin,"groundhogg");
-  assert.equal(config.wordpress.transport_plugin,"fluent-smtp");
+  assert.equal(config.wordpress.transport_plugin,"smtp-mailer");
   assert.equal(config.wordpress.queue_owner,"groundhogg");
   assert.equal(config.wordpress.github_actions_role,"ci-and-synthetic-dry-run-only");
   assert.equal(config.orchestrator,"github-actions-ci-dry-run-only");
