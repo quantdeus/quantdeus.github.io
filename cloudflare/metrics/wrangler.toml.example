@@ -1,0 +1,13 @@
+name = "quantdeus-metrics"
+main = "worker.js"
+compatibility_date = "2026-10-20"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://quantdeus.ru,https://www.quantdeus.ru,https://quantdeus.github.io"
+
+[[d1_databases]]
+binding = "METRICS_DB"
+database_name = "quantdeus-metrics"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+# Configure METRICS_ADMIN_TOKEN separately as a Worker secret; never commit it.
