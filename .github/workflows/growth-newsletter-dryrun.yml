@@ -1,0 +1,39 @@
+name: QuantDeus Newsletter — consent-first dry run
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * *'
+  pull_request:
+    paths:
+      - '.github/workflows/growth-newsletter-dryrun.yml'
+      - 'coordination/growth/newsletter-autofunnels.json'
+      - 'scripts/newsletter-engine.mjs'
+      - 'scripts/newsletter-dryrun.mjs'
+      - 'scripts/tests/newsletter-engine.test.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantdeus-newsletter-dryrun
+  cancel-in-progress: true
+
+jobs:
+  validate-only:
+    name: Validate mock opt-ins (no sends)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      QD_NEWSLETTER_SEND_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Consent, dedupe and unsubscribe gates
+        run: node --test scripts/tests/newsletter-engine.test.mjs
+      - name: Dry-run synthetic scheduler, no external network
+        run: node scripts/newsletter-dryrun.mjs

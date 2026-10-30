@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "status": "dry-run-only",
+  "orchestrator": "github-actions",
+  "source_of_truth": "coordination/growth/marketing-operating-system.md",
+  "notes": "GitHub Actions is a scheduler/worker, not an email provider or subscriber database. Never write subscriber PII to repository or artifacts.",
+  "delivery": {
+    "external_send_enabled": false,
+    "provider": null,
+    "real_subscriber_fetch_enabled": false,
+    "double_opt_in_required": true,
+    "contact_store": "none-configured",
+    "public_newsletter_signup_enabled": false,
+    "minimum_days_between_marketing_emails": 7,
+    "unsubscribe_required": true
+  },
+  "consent": {
+    "required_state": "confirmed",
+    "required_marketing_choice": true,
+    "required_fields": [
+      "consent.source",
+      "consent.version",
+      "consent.checked",
+      "consent.timestamp",
+      "confirmed_at"
+    ],
+    "github_issue_is_not_newsletter_consent": true
+  },
+  "segments": {
+    "eco": {
+      "title": "Экофутуризм и новости",
+      "messages": [
+        {
+          "id": "eco-welcome",
+          "after_days": 0,
+          "subject": "Добро пожаловать в QuantDeus 🌿",
+          "url": "https://quantdeus.ru/news/"
+        },
+        {
+          "id": "eco-vision",
+          "after_days": 7,
+          "subject": "Единство природы, человека и технологий",
+          "url": "https://quantdeus.ru/manifesto/"
+        },
+        {
+          "id": "eco-research",
+          "after_days": 14,
+          "subject": "Исследования QuantDeus: следующий горизонт",
+          "url": "https://quantdeus.ru/research/"
+        }
+      ]
+    },
+    "books": {
+      "title": "Книги и знания",
+      "messages": [
+        {
+          "id": "books-welcome",
+          "after_days": 0,
+          "subject": "Библиотека QuantDeus",
+          "url": "https://quantdeus.ru/books/"
+        },
+        {
+          "id": "books-ideas",
+          "after_days": 7,
+          "subject": "Единство в многообразии: открытая философия",
+          "url": "https://quantdeus.ru/knowledge/"
+        }
+      ]
+    },
+    "ai": {
+      "title": "ИИ и автоматизация",
+      "messages": [
+        {
+          "id": "ai-welcome",
+          "after_days": 0,
+          "subject": "Флот ИИ QuantDeus",
+          "url": "https://quantdeus.ru/ai-fleet/"
+        },
+        {
+          "id": "ai-usecase",
+          "after_days": 7,
+          "subject": "С чего начать автоматизацию",
+          "url": "https://quantdeus.ru/services/business-automation/"
+        },
+        {
+          "id": "ai-inquiry",
+          "after_days": 14,
+          "subject": "Есть задача? Отправьте добровольную заявку",
+          "url": "https://quantdeus.ru/services/business-automation/"
+        }
+      ]
+    },
+    "media": {
+      "title": "Медиа и события",
+      "messages": [
+        {
+          "id": "media-welcome",
+          "after_days": 0,
+          "subject": "Культура будущего QuantDeus",
+          "url": "https://quantdeus.ru/media/"
+        },
+        {
+          "id": "media-news",
+          "after_days": 7,
+          "subject": "Экофутуризм и Y2K: новости сообщества",
+          "url": "https://quantdeus.ru/community/"
+        }
+      ]
+    }
+  },
+  "measured": {
+    "subscribers_confirmed": null,
+    "emails_sent": null,
+    "delivered": null,
+    "unsubscribed": null,
+    "requests": null,
+    "revenue": null
+  }
+}
