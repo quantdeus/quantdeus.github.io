@@ -1,4 +1,4 @@
-name: QuantDeus Newsletter — consent-first dry run
+name: QuantDeus — рассылка, безопасная проверка без отправки
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   validate-only:
-    name: Validate mock opt-ins (no sends)
+    name: Проверка подтверждённой подписки (без писем)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Consent, dedupe and unsubscribe gates
+      - name: Согласие, дубли и отписка
         run: node --test scripts/tests/newsletter-engine.test.mjs
-      - name: Dry-run synthetic scheduler, no external network
+      - name: Проверка расписания на искусственных данных без внешних запросов
         run: node scripts/newsletter-dryrun.mjs
