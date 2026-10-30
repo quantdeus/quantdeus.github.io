@@ -5,7 +5,7 @@
 ## Границы компонентов
 
 - **Groundhogg:** получение контакта через встроенную Web Form, согласие, подтверждение, сегмент, очереди и письма. Не принимать заявки GitHub Issue за согласие на маркетинг.
-- **FluentSMTP:** внешний подключаемый SMTP/API транспорт через `wp_mail`, реальную совместимость подтвердить тестом; без сервиса отправки не включать.
+- **SMTP Mailer:** внешний подключаемый SMTP/API транспорт через `wp_mail`, реальную совместимость подтвердить тестом; без сервиса отправки не включать.
 - **GitHub Actions:** только синтетические тесты; никогда не получает email контактов и не запускает живую очередь.
 - **WordPress:** черновик `/newsletter/`, ID=218, без `gh_form` до появления настоящего ID.
 
@@ -54,4 +54,4 @@
 - https://help.groundhogg.io/article/719-settings
 - https://help.groundhogg.io/article/601-contact-marketability-explained
 - https://groundhogg.io/doc/cron-jobs/
-- https://fluentsmtp.com/docs/installing-fluent-smtp/
+- https://wordpress.org/plugins/smtp-mailer/
