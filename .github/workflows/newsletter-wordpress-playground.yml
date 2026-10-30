@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   wordpress-newsletter-plugins:
-    name: Groundhogg + FluentSMTP в WordPress Playground (без отправки)
+    name: Groundhogg + SMTP Mailer в WordPress Playground (без отправки)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -34,7 +34,7 @@ jobs:
           const plugins=(b.steps||[]).filter(s=>s.step==='installPlugin');
           if(plugins.length!==2)throw Error('Expected exactly two WordPress plugins');
           const slugs=plugins.map(s=>s.pluginData?.slug).sort();
-          if(JSON.stringify(slugs)!==JSON.stringify(['fluent-smtp','groundhogg']))throw Error('Plugin slugs mismatch');
+          if(JSON.stringify(slugs)!==JSON.stringify(['groundhogg','smtp-mailer']))throw Error('Plugin slugs mismatch');
           if(plugins.some(s=>s.pluginData.resource!=='wordpress.org/plugins'||s.options?.activate!==true))throw Error('Plugins must use official source');
           if(!(b.steps||[]).some(s=>s.step==='runPHP'&&s.code.includes("'post_status'=>'draft'")&&s.code.includes("shortcode_exists('gh_form')")))throw Error('Draft + form-shortcode check missing');
           if(JSON.stringify(b).includes('wp_mail(')||JSON.stringify(b).includes('wp_remote_post('))throw Error('No outbound mail/network actions');
@@ -46,5 +46,5 @@ jobs:
       - name: Зафиксировать безопасный тестовый результат
         if: success()
         run: |
-          echo '## Groundhogg + FluentSMTP' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Groundhogg + SMTP Mailer' >> "$GITHUB_STEP_SUMMARY"
           echo 'Тестовая WordPress Playground-инсталляция успешна. Только черновик, никакой настройки SMTP, реальных подписчиков или отправки писем.' >> "$GITHUB_STEP_SUMMARY"
