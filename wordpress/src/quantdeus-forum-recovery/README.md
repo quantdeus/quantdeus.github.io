@@ -1,4 +1,4 @@
-# QuantDeus Forum Recovery
+# QuantDeus · восстановление форума
 
 Goal: turn the historical public WordPress forum archive into real bbPress forums/topics without deleting the source or inventing missing replies.
 
