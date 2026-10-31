@@ -2,6 +2,7 @@ import fs from 'node:fs';
 const config=JSON.parse(fs.readFileSync('coordination/growth/three-funnel-pipeline.json','utf8'));
 const required=['community','automation','concert'];
 for(const key of required){if(!config.funnels[key]?.destination?.startsWith('https://'))throw Error('Invalid funnel '+key);}
+if(config.rules?.human_approval_required !== true)throw Error('Для пилота обязательно подтверждение человеком');
 if(config.rules.external_send_enabled || !config.rules.dry_run)throw Error('Pilot must remain dry-run');
 if(config.rules.max_messages_per_day>100 || config.rules.max_vk_messages_per_day>10)throw Error('Message caps exceeded');
 const report={mode:'dry-run',date:new Date().toISOString(),funnels:required.map(id=>({id,owner:config.funnels[id].owner,cta:config.funnels[id].cta,destination:config.funnels[id].destination,status:'configured-not-sent'})),outbound_messages:0,leads_collected:0,conversions_verified:0,warning:'No discovery, outreach, CRM writes or external API calls were performed.'};
