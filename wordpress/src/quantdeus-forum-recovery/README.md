@@ -28,3 +28,11 @@ Goal: turn the historical public WordPress forum archive into real bbPress forum
 The importer migrates the 32 topic previews from the public archive into a real database-backed forum, not the 189 replies. It never automatically runs, never installs bbPress, never modifies the production theme and never changes member permissions. A GitHub PR does not deploy the website.
 
 Related tracking: #167, #175, #176, #391, #579.
+
+## Snapshot and automated QA
+
+- Live public archive page #78 was read and preserved on 2026-11-01 as `archive-source-20261101.json`, with its original HTML in the `html` field, not as a second public page.
+- The captured source comprises 5 sections and 32 preview records, including 27 public GitHub Issues previews. Summaries are not necessarily the original full posts.
+- The 189 historical replies are **unverified and not present** in this source snapshot. Locate the source SQL/XML backup, validate authors and thread mappings, and import only verified replies.
+- `node --test scripts/qa/forum-archive-snapshot.test.mjs` is part of the existing WordPress CI workflow and checks source counts, importer nonce/capability/idempotence guards and explicit reply-restore limitations.
+- Do not merge, install, switch page #40 or publish live until bbPress, secure login, staging migrations and guest/member/moderator verification all pass. No production writes were made by the archive capture.
