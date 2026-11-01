@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const archive = readFileSync(new URL("../../wordpress/src/quantdeus-forum-recovery/archive-source-20261101.html", import.meta.url), "utf8");
+const archive = JSON.parse(readFileSync(new URL("../../wordpress/src/quantdeus-forum-recovery/archive-source-20261101.json", import.meta.url), "utf8")).html;
 const importer = readFileSync(new URL("../../wordpress/src/quantdeus-forum-recovery/quantdeus-forum-recovery.php", import.meta.url), "utf8");
 
 function sections(html) {
