@@ -60,5 +60,65 @@ class BridgeTest(unittest.TestCase):
                 os.environ["QD_MAIL_POLL_ENABLED"] = old
 
 
+    def test_json_single_secret(self):
+        from unittest.mock import patch
+        for name in ("login", "username", "email", "QD_MAIL_USER"):
+            for secret_key in ("password", "pass", "QD_MAIL_PASSWORD"):
+                value = json.dumps({name: "info@quantdeus.ru", secret_key: "test-no-real-password"})
+                with self.subTest(name=name, password_field=secret_key), patch.dict(os.environ, {"QD_MAIL_DATA": value}):
+                    self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "test-no-real-password"))
+
+    def test_key_value_secret(self):
+        from unittest.mock import patch
+        value = "LOGIN: info@quantdeus.ru\nPASSWORD: example value with : colons"
+        with patch.dict(os.environ, {"QD_MAIL_DATA": value}):
+            self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "example value with : colons"))
+
+    def test_two_line_secret(self):
+        from unittest.mock import patch
+        with patch.dict(os.environ, {"QD_MAIL_DATA": "info@quantdeus.ru\nvalue:with:colons"}):
+            self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "value:with:colons"))
+
+    def test_one_line_colon_secret(self):
+        from unittest.mock import patch
+        with patch.dict(os.environ, {"QD_MAIL_DATA": "info@quantdeus.ru:abc:test"}):
+            self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "abc:test"))
+
+    def test_invalid_credentials_are_fail_closed(self):
+        from unittest.mock import patch
+        cases = ['{"login":"hacker@example.test","password":"shhh"}', '{"username":"info@quantdeus.ru"}', "{invalid"]
+        for value in cases:
+            with self.subTest(secret=value[:4]), patch.dict(os.environ, {"QD_MAIL_DATA": value}):
+                with self.assertRaises(RuntimeError) as caught:
+                    bridge.resolve_credentials()
+                self.assertNotIn("shhh", str(caught.exception))
+                self.assertNotIn(value, str(caught.exception))
+
+    def test_legacy_separate_secret_env(self):
+        from unittest.mock import patch
+        with patch.dict(os.environ, {"QD_MAIL_DATA": "", "QD_MAIL_USER": "info@quantdeus.ru", "QD_MAIL_PASSWORD": "fake"}):
+            self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "fake"))
+
+    def test_auth_check_never_selects_or_reads(self):
+        from unittest.mock import patch
+        class FakeIMAP:
+            def __init__(self, *args, **kwargs):
+                self.logged_in = False
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+            def login(self, username, password):
+                assert username == "info@quantdeus.ru" and password == "fake"
+                self.logged_in = True
+            def logout(self):
+                assert self.logged_in
+            def select(self, *args, **kwargs):
+                raise AssertionError("auth-check may not read folders")
+        with patch.object(bridge, "resolve_credentials", return_value=("info@quantdeus.ru", "fake")), patch.object(bridge.imaplib, "IMAP4_SSL", FakeIMAP):
+            bridge.auth_check()
+
+
+
 if __name__ == "__main__":
     unittest.main()
