@@ -16,6 +16,8 @@ import json
 import os
 from pathlib import Path
 import re
+import smtplib
+from email.message import EmailMessage
 import ssl
 import stat
 import sys
@@ -197,6 +199,31 @@ def auth_check() -> None:
     print(json.dumps({"result": "authenticated", "mail_read": 0, "outbound_messages": 0}))
 
 
+TEST_RECIPIENT = "elektron2345@gmail.com"
+
+
+def send_test_email() -> None:
+    """Send exactly one controlled test email after explicit manual authorization."""
+    if os.getenv("QD_MAIL_SEND_TEST") != "1":
+        raise RuntimeError("Explicit manual test gate is required")
+    user, password = resolve_credentials()
+    message = EmailMessage()
+    message["From"] = user
+    message["To"] = TEST_RECIPIENT
+    message["Subject"] = "Проверка почты QuantDeus 🖖"
+    message.set_content(
+        "Бро, это тест связи с официального ящика QuantDeus! 🚀\\n\\n"
+        "Отправлено через защищённый SMTP Timeweb.\\n"
+        "Это единичное тестовое письмо, не рассылка.\\n\\n"
+        "Звёздный флот QuantDeus на связи! 🖖\\n"
+    )
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.timeweb.ru", 465, context=context, timeout=25) as smtp:
+        smtp.login(user, password)
+        smtp.send_message(message)
+    print(json.dumps({"result": "smtp_accepted", "recipient": TEST_RECIPIENT, "messages": 1}, ensure_ascii=False))
+
+
 def poll() -> None:
     if os.getenv("QD_MAIL_POLL_ENABLED") != "1":
         raise RuntimeError("Fail-closed: set QD_MAIL_POLL_ENABLED=1 in private runtime")
@@ -246,12 +273,15 @@ if __name__ == "__main__":
     actions.add_argument("--smoke", action="store_true", help="Synthetic test without network or credentials")
     actions.add_argument("--poll", action="store_true", help="Private IMAP read-only poll (requires explicit environment gate)")
     actions.add_argument("--auth-check", action="store_true", help="IMAP TLS authentication only; never reads mail")
+    actions.add_argument("--send-test", action="store_true", help="One manually authorized SMTP test to fixed user inbox")
     args = parser.parse_args()
     try:
         if args.smoke:
             smoke()
         elif args.auth_check:
             auth_check()
+        elif args.send_test:
+            send_test_email()
         else:
             poll()
     except Exception as exc:
