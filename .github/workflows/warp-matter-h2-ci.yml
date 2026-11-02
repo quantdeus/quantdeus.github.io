@@ -1,0 +1,26 @@
+name: QuantDeus Warp Matter H2 QA
+on:
+  push:
+    branches: ['research/warp-matter-h2-20261102']
+    paths:
+      - 'research/warp-matter/**'
+      - '.github/workflows/warp-matter-h2-ci.yml'
+  pull_request:
+    paths:
+      - 'research/warp-matter/**'
+      - '.github/workflows/warp-matter-h2-ci.yml'
+permissions:
+  contents: read
+jobs:
+  h2-local-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run deterministic H2 baseline tests
+        run: |
+          cd research/warp-matter
+          python3 -m unittest -v
+          python3 h2_baseline.py
+          python3 h2_baseline.py --qasm z
+          python3 h2_baseline.py --qasm x
