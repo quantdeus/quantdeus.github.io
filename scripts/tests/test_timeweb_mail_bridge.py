@@ -79,6 +79,18 @@ class BridgeTest(unittest.TestCase):
         with patch.dict(os.environ, {"QD_MAIL_DATA": "info@quantdeus.ru\nvalue:with:colons"}):
             self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "value:with:colons"))
 
+    def test_two_line_secret_reverse_order(self):
+        from unittest.mock import patch
+        test_cases = (
+            "fake-pass\\ninfo@quantdeus.ru",
+            "password fake-pass\\nlogin info@quantdeus.ru",
+            "info@quantdeus.ru\\npassword fake-pass",
+        )
+        for raw in test_cases:
+            raw = raw.replace("\\\\n", "\\n")
+            with self.subTest(raw_prefix=raw.startswith("info@")), patch.dict(os.environ, {"QD_MAIL_DATA": raw}):
+                self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "fake-pass"))
+
     def test_one_line_colon_secret(self):
         from unittest.mock import patch
         with patch.dict(os.environ, {"QD_MAIL_DATA": "info@quantdeus.ru:abc:test"}):
