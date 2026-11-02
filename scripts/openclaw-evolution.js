@@ -43,6 +43,14 @@ function text(value, field, max = 2000) {
   }
   return value;
 }
+function parseModelJson(raw) {
+  if (typeof raw !== 'string') throw new Error('Model output must be a string');
+  const value = raw.trim();
+  // Accept only a complete fenced JSON block or raw JSON; never extract from prose.
+  const fenced = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i.exec(value);
+  return JSON.parse(fenced ? fenced[1].trim() : value);
+}
+
 function normalizeNoAction(proposal) {
   if (proposal?.action !== 'none') return proposal;
   // Explicit no-op carries no files or mutation authority. Preserve the original
@@ -297,7 +305,7 @@ async function observe() {
   boundedReadTools(generation, 'Darwin generation');
   let envelope;
   try {
-    envelope = JSON.parse(generation.text);
+    envelope = parseModelJson(generation.text);
   } catch (error) {
     failClosedNoOp(
       'MALFORMED_GENERATION_OUTPUT: ' + String(error.message || error).slice(0, 1200) + '; no mutation performed',
@@ -375,7 +383,7 @@ async function observe() {
   boundedReadTools(materialized, 'Darwin materialization');
   let parsedProposal;
   try {
-    parsedProposal = JSON.parse(materialized.text);
+    parsedProposal = parseModelJson(materialized.text);
   } catch (error) {
     failClosedNoOp(
       'MALFORMED_MATERIALIZATION_OUTPUT: ' + String(error.message || error).slice(0, 1200) + '; no mutation performed',
