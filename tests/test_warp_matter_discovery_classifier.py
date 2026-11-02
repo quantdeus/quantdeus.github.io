@@ -64,6 +64,9 @@ class BananaNobelClassifierTests(unittest.TestCase):
         self.assertTrue(row["geometry_metadata_consistent"])
         self.assertEqual(row["geometry_coordinate_type"], "cartesian_angstrom")
         self.assertFalse(row["metamaterial_property_confirmed"])
+        self.assertEqual(row["atomic_geometry_snapshot"]["coordinates"][1], [0, 0, 2])
+        self.assertEqual(row["atomic_geometry_snapshot"]["units"], "angstrom")
+        self.assertTrue(row["atomic_geometry_snapshot"]["complete"])
 
     def test_unmatched_sites_rejected(self):
         crystal = {
