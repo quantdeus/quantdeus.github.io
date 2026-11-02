@@ -129,13 +129,78 @@ def enqueue(folder: Path, event: dict) -> bool:
     return True
 
 
+def resolve_credentials() -> tuple[str, str]:
+    """Resolve an opaque private secret; never expose secret bytes in output or exceptions.
+
+    Supports JSON objects, KEY=VALUE / KEY: VALUE lines, or two lines
+    (username, password). For legacy secure runtimes, separate env vars
+    remain supported when QD_MAIL_DATA is absent.
+    """
+    raw = os.getenv("QD_MAIL_DATA", "")
+    if raw:
+        raw = raw.strip()
+        user = password = ""
+        if raw.startswith("{"):
+            try:
+                parsed = json.loads(raw)
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError("Invalid QD_MAIL_DATA format") from None
+            if not isinstance(parsed, dict):
+                raise RuntimeError("Invalid QD_MAIL_DATA format")
+            normalized = {str(key).casefold(): value for key, value in parsed.items()}
+            for key in ("login", "username", "user", "email", "qd_mail_user"):
+                if isinstance(normalized.get(key), str) and normalized[key].strip():
+                    user = normalized[key].strip()
+                    break
+            for key in ("password", "pass", "pwd", "qd_mail_password"):
+                if isinstance(normalized.get(key), str) and normalized[key]:
+                    password = normalized[key]
+                    break
+        else:
+            lines = [item.strip() for item in raw.splitlines() if item.strip()]
+            pairs: dict[str, str] = {}
+            for line in lines:
+                match = re.match(
+                    r"^(login|username|user|email|qd_mail_user|password|pass|pwd|qd_mail_password)\\s*[:=]\\s*(.*)$",
+                    line,
+                    flags=re.IGNORECASE,
+                )
+                if match:
+                    pairs[match.group(1).casefold()] = match.group(2)
+            if pairs:
+                for key in ("login", "username", "user", "email", "qd_mail_user"):
+                    if pairs.get(key):
+                        user = pairs[key].strip()
+                        break
+                for key in ("password", "pass", "pwd", "qd_mail_password"):
+                    if pairs.get(key):
+                        password = pairs[key]
+                        break
+            elif len(lines) == 2:
+                user, password = lines
+            elif len(lines) == 1 and lines[0].casefold().startswith(MAILBOX + ":"):
+                user, password = lines[0].split(":", 1)
+    else:
+        user = os.getenv("QD_MAIL_USER", "").strip()
+        password = os.getenv("QD_MAIL_PASSWORD", "")
+    if user.casefold() != MAILBOX or not password:
+        raise RuntimeError("Mailbox credentials are missing or incorrectly formatted")
+    return MAILBOX, password
+
+
+def auth_check() -> None:
+    """Explicit login-only test. Never select a folder, read mail or send."""
+    user, password = resolve_credentials()
+    with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ssl.create_default_context(), timeout=20) as imap:
+        imap.login(user, password)
+        imap.logout()
+    print(json.dumps({"result": "authenticated", "mail_read": 0, "outbound_messages": 0}))
+
+
 def poll() -> None:
     if os.getenv("QD_MAIL_POLL_ENABLED") != "1":
         raise RuntimeError("Fail-closed: set QD_MAIL_POLL_ENABLED=1 in private runtime")
-    user = os.getenv("QD_MAIL_USER", "")
-    password = os.getenv("QD_MAIL_PASSWORD", "")
-    if user != MAILBOX or not password:
-        raise RuntimeError("Verified mailbox identity and a private password are required")
+    user, password = resolve_credentials()
     queue = private_directory(os.getenv("QD_MAIL_PRIVATE_QUEUE", ""))
     saved = skipped = 0
     with imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ssl.create_default_context(), timeout=20) as imap:
@@ -180,9 +245,15 @@ if __name__ == "__main__":
     actions = parser.add_mutually_exclusive_group(required=True)
     actions.add_argument("--smoke", action="store_true", help="Synthetic test without network or credentials")
     actions.add_argument("--poll", action="store_true", help="Private IMAP read-only poll (requires explicit environment gate)")
+    actions.add_argument("--auth-check", action="store_true", help="IMAP TLS authentication only; never reads mail")
     args = parser.parse_args()
     try:
-        smoke() if args.smoke else poll()
+        if args.smoke:
+            smoke()
+        elif args.auth_check:
+            auth_check()
+        else:
+            poll()
     except Exception as exc:
         # Never print exception details containing mail content or auth credentials.
         print(json.dumps({"result": "blocked", "reason": type(exc).__name__, "outbound_messages": 0}), file=sys.stderr)
