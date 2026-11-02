@@ -82,12 +82,11 @@ class BridgeTest(unittest.TestCase):
     def test_two_line_secret_reverse_order(self):
         from unittest.mock import patch
         test_cases = (
-            "fake-pass\\ninfo@quantdeus.ru",
-            "password fake-pass\\nlogin info@quantdeus.ru",
-            "info@quantdeus.ru\\npassword fake-pass",
+            "fake-pass\ninfo@quantdeus.ru",
+            "password fake-pass\nlogin info@quantdeus.ru",
+            "info@quantdeus.ru\npassword fake-pass",
         )
         for raw in test_cases:
-            raw = raw.replace("\\\\n", "\\n")
             with self.subTest(raw_prefix=raw.startswith("info@")), patch.dict(os.environ, {"QD_MAIL_DATA": raw}):
                 self.assertEqual(bridge.resolve_credentials(), ("info@quantdeus.ru", "fake-pass"))
 
