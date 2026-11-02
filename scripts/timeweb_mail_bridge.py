@@ -161,7 +161,7 @@ def resolve_credentials() -> tuple[str, str]:
             pairs: dict[str, str] = {}
             for line in lines:
                 match = re.match(
-                    r"^(login|username|user|email|qd_mail_user|password|pass|pwd|qd_mail_password)\\s*[:=]\\s*(.*)$",
+                    r"^(login|username|user|email|qd_mail_user|password|pass|pwd|qd_mail_password)\s*[:=]\s*(.*)$",
                     line,
                     flags=re.IGNORECASE,
                 )
