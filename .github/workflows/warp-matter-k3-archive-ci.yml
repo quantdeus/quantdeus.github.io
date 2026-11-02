@@ -7,6 +7,7 @@ on:
       - 'scripts/warp_matter_*'
       - 'tests/test_warp_matter_*'
       - 'research/warp-matter/archives/**'
+      - 'research/warp-matter/catalog/**'
       - 'coordination/research/warp-matter-k3-literature.json'
       - '.github/workflows/warp-matter-k3-archive-ci.yml'
   pull_request:
@@ -14,9 +15,13 @@ on:
       - 'scripts/warp_matter_*'
       - 'tests/test_warp_matter_*'
       - 'research/warp-matter/archives/**'
+      - 'research/warp-matter/catalog/**'
       - 'coordination/research/warp-matter-k3-literature.json'
       - '.github/workflows/warp-matter-k3-archive-ci.yml'
   workflow_dispatch:
+  # Weekly read-only survey becomes effective only if this draft is explicitly merged.
+  schedule:
+    - cron: '17 7 * * 1'
 permissions:
   contents: read
 jobs:
@@ -25,16 +30,38 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-      - name: Проверить Python-разборщик архива и список исследований
+      - name: Проверить Python-парсеры архивов и научных данных
         run: |
           python3 -m unittest discover -s tests -p 'test_warp_matter_*.py' -v
-      - name: Разобрать только существующие результаты qBraid 24–25 октября
+      - name: Разобрать сохранённые результаты qBraid
         run: |
           python3 scripts/warp_matter_k3_audit.py --output /tmp/warp-matter-k3-audit.md
           cat /tmp/warp-matter-k3-audit.md
-      - name: Сохранить отчёт для независимой проверки
+      - name: Классифицировать статьи и опубликованные атомные структуры
+        run: |
+          python3 scripts/warp_matter_discovery_classifier.py \
+            --fetch-openalex \
+            --fetch-optimade-url 'https://optimade.materialscloud.org/main/2dtopo/v1/structures?page_limit=3' \
+            --since '2026-09-01' \
+            --known research/warp-matter/catalog/known-paper-dois.json \
+            --output /tmp/warp-matter-discovery.json
+          python3 - <<'PY'
+          import json
+          report = json.load(open('/tmp/warp-matter-discovery.json', encoding='utf-8'))
+          print('Обнаружено публикаций по темам:', report['counts']['relevant_unique_publications'])
+          print('Новых для каталога:', report['counts']['new_to_catalog'])
+          print('Записей структур:', report['counts']['input_structure_entries'])
+          print('Структур с согласованной геометрией:', report['counts']['consistent_atomic_geometries'])
+          print('Подтверждённых новых физических эффектов:', report['counts']['verified_new_effects'])
+          print('Подтверждённых FTL-материалов:', report['counts']['confirmed_ftl_materials'])
+          for item in report['papers'][:5]:
+              print('Кандидат на проверку:', item['title'][:160], item['linked_source'])
+          PY
+      - name: Сохранить научные отчёты для проверки капитаном
         uses: actions/upload-artifact@v4
         with:
-          name: warp-matter-k3-readonly-report
-          path: /tmp/warp-matter-k3-audit.md
+          name: banana-nobel-lab-research-results
+          path: |
+            /tmp/warp-matter-k3-audit.md
+            /tmp/warp-matter-discovery.json
           retention-days: 30
