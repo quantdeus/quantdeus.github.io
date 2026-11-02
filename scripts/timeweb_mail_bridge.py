@@ -224,6 +224,48 @@ def send_test_email() -> None:
     print(json.dumps({"result": "smtp_accepted", "recipient": TEST_RECIPIENT, "messages": 1}, ensure_ascii=False))
 
 
+def diagnose_secret_shape() -> None:
+    """Describe only a whitelist of formatting traits; never echo credential bytes."""
+    raw = os.getenv("QD_MAIL_DATA", "").strip()
+    low = raw.casefold()
+    rows = [line.strip() for line in raw.splitlines() if line.strip()]
+    scheme = "missing" if not raw else "json" if raw.startswith("{") else "text"
+    json_valid = None
+    known_json_keys = []
+    if scheme == "json":
+        try:
+            obj = json.loads(raw)
+            json_valid = isinstance(obj, dict)
+            if isinstance(obj, dict):
+                allow = {
+                    "login", "username", "user", "email", "qd_mail_user",
+                    "password", "pass", "pwd", "qd_mail_password",
+                    "mail", "mail_login", "mail_pass", "mail_password",
+                    "smtp_user", "smtp_password", "imap_user", "imap_password",
+                }
+                known_json_keys = sorted(str(k).casefold() for k in obj if str(k).casefold() in allow)
+        except (TypeError, ValueError):
+            json_valid = False
+    lines_bucket = "none" if not rows else "one" if len(rows) == 1 else "two" if len(rows) == 2 else "three_or_more"
+    features = {
+        "kind": scheme,
+        "json_valid": json_valid,
+        "known_json_keys": known_json_keys,
+        "line_count": lines_bucket,
+        "expected_mailbox_literal_present": MAILBOX in low,
+        "has_pipe": "|" in raw,
+        "has_semicolon": ";" in raw,
+        "has_equals": "=" in raw,
+        "has_colon": ":" in raw,
+        "has_russian_labels": any(word in low for word in ("логин", "пароль")),
+        "known_key_value_lines": any(
+            re.match(r"^(login|username|user|email|password|pass|pwd|qd_mail_user|qd_mail_password)\\s*[:=]", line, re.I)
+            for line in rows
+        ),
+    }
+    print(json.dumps({"result": "format_only", "traits": features}, ensure_ascii=False))
+
+
 def poll() -> None:
     if os.getenv("QD_MAIL_POLL_ENABLED") != "1":
         raise RuntimeError("Fail-closed: set QD_MAIL_POLL_ENABLED=1 in private runtime")
@@ -274,6 +316,7 @@ if __name__ == "__main__":
     actions.add_argument("--poll", action="store_true", help="Private IMAP read-only poll (requires explicit environment gate)")
     actions.add_argument("--auth-check", action="store_true", help="IMAP TLS authentication only; never reads mail")
     actions.add_argument("--send-test", action="store_true", help="One manually authorized SMTP test to fixed user inbox")
+    actions.add_argument("--diagnose-secret", action="store_true", help="Print only safe format traits, never credentials")
     args = parser.parse_args()
     try:
         if args.smoke:
@@ -282,6 +325,8 @@ if __name__ == "__main__":
             auth_check()
         elif args.send_test:
             send_test_email()
+        elif args.diagnose_secret:
+            diagnose_secret_shape()
         else:
             poll()
     except Exception as exc:
