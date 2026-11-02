@@ -179,7 +179,24 @@ def resolve_credentials() -> tuple[str, str]:
                         password = pairs[key]
                         break
             elif len(lines) == 2:
-                user, password = lines
+                # Users may save username and password in either order or add
+                # a harmless label before the known corporate address.
+                address_line_indexes = [
+                    i for i, line in enumerate(lines)
+                    if MAILBOX in line.casefold()
+                ]
+                if len(address_line_indexes) == 1:
+                    address_index = address_line_indexes[0]
+                    user = MAILBOX
+                    password = lines[1 - address_index]
+                    password = re.sub(
+                        r"^(?:password|pass|pwd|пароль)\s+",
+                        "",
+                        password,
+                        flags=re.IGNORECASE,
+                    )
+                else:
+                    user, password = lines
             elif len(lines) == 1 and lines[0].casefold().startswith(MAILBOX + ":"):
                 user, password = lines[0].split(":", 1)
     else:
