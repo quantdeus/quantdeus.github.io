@@ -1,0 +1,40 @@
+name: Banana Lab — Kardashev III archive-only audit
+on:
+  push:
+    branches:
+      - research/warp-matter-python-parser-20261102
+    paths:
+      - 'scripts/warp_matter_*'
+      - 'tests/test_warp_matter_*'
+      - 'research/warp-matter/archives/**'
+      - 'coordination/research/warp-matter-k3-literature.json'
+      - '.github/workflows/warp-matter-k3-archive-ci.yml'
+  pull_request:
+    paths:
+      - 'scripts/warp_matter_*'
+      - 'tests/test_warp_matter_*'
+      - 'research/warp-matter/archives/**'
+      - 'coordination/research/warp-matter-k3-literature.json'
+      - '.github/workflows/warp-matter-k3-archive-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test archive parser and literature audit
+        run: |
+          python3 -m unittest discover -s tests -p 'test_warp_matter_*.py' -v
+      - name: Parse only existing 2026-10-24/25 qBraid results
+        run: |
+          python3 scripts/warp_matter_k3_audit.py --output /tmp/warp-matter-k3-audit.md
+          cat /tmp/warp-matter-k3-audit.md
+      - name: Attach independently reviewable report
+        uses: actions/upload-artifact@v4
+        with:
+          name: warp-matter-k3-readonly-report
+          path: /tmp/warp-matter-k3-audit.md
+          retention-days: 30
