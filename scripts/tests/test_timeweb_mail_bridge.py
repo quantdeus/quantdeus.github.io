@@ -120,5 +120,36 @@ class BridgeTest(unittest.TestCase):
 
 
 
+    def test_smtp_no_send_without_explicit_gate(self):
+        from unittest.mock import patch
+        with patch.dict(os.environ, {"QD_MAIL_SEND_TEST": "0"}):
+            with self.assertRaises(RuntimeError):
+                bridge.send_test_email()
+
+    def test_smtp_only_one_message_to_confirmed_owner(self):
+        from unittest.mock import patch
+        sent = []
+        class FakeSMTP:
+            def __init__(self, host, port, **kwargs):
+                assert host == "smtp.timeweb.ru" and port == 465
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+            def login(self, username, password):
+                assert username == "info@quantdeus.ru" and password == "synthetic"
+            def send_message(self, msg):
+                sent.append(msg)
+        with patch.dict(os.environ, {"QD_MAIL_SEND_TEST": "1"}), \
+             patch.object(bridge, "resolve_credentials", return_value=("info@quantdeus.ru", "synthetic")), \
+             patch.object(bridge.smtplib, "SMTP_SSL", FakeSMTP):
+            bridge.send_test_email()
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(str(sent[0]["From"]), "info@quantdeus.ru")
+        self.assertEqual(str(sent[0]["To"]), "elektron2345@gmail.com")
+        self.assertIn("Проверка почты", str(sent[0]["Subject"]))
+
+
+
 if __name__ == "__main__":
     unittest.main()
