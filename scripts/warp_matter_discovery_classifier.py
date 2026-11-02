@@ -181,6 +181,16 @@ def classify_optimade(item):
         "metamaterial_property_confirmed": False,
         "ftl_confirmed": False,
         "manual_review_required": True,
+        # Only provenance-preserving copies of ALREADY-PUBLISHED coordinates.
+        # Max 128 sites in JSON output, never interpret as fabrication instructions.
+        "atomic_geometry_snapshot": ({
+            "units": "angstrom" if basis == "cartesian_angstrom" else "fractional",
+            "coordinates": coords[:128],
+            "species_at_sites": species_at_sites[:128],
+            "species_definitions": species,
+            "lattice_vectors": lattice,
+            "complete": len(coords) <= 128,
+        } if geometry_valid else None),
     }
 
 
