@@ -212,10 +212,10 @@ def send_test_email() -> None:
     message["To"] = TEST_RECIPIENT
     message["Subject"] = "Проверка почты QuantDeus 🖖"
     message.set_content(
-        "Бро, это тест связи с официального ящика QuantDeus! 🚀\\n\\n"
-        "Отправлено через защищённый SMTP Timeweb.\\n"
-        "Это единичное тестовое письмо, не рассылка.\\n\\n"
-        "Звёздный флот QuantDeus на связи! 🖖\\n"
+        "Бро, это тест связи с официального ящика QuantDeus! 🚀\n\n"
+        "Отправлено через защищённый SMTP Timeweb.\n"
+        "Это единичное тестовое письмо, не рассылка.\n\n"
+        "Звёздный флот QuantDeus на связи! 🖖\n"
     )
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL("smtp.timeweb.ru", 465, context=context, timeout=25) as smtp:
