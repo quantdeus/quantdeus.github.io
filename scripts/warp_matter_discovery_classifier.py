@@ -20,8 +20,9 @@ from urllib.request import Request, urlopen
 
 TOPICS = {
     "casimir_vacuum": ("casimir", "vacuum fluctuation", "quantum vacuum"),
-    "metamaterials": ("metamaterial", "metasurface", "negative refractive", "negative index",
-                      "hyperbolic material", "photonic crystal"),
+    "metamaterials": ("metamaterial", "metamaterials", "metasurface", "metasurfaces",
+                      "negative refraction", "negative refractive", "negative index",
+                      "hyperbolic material", "photonic crystal", "photonic crystals"),
     "topological_quantum": ("topological insulator", "topological superconductor",
                             "quantum anomalous hall", "weyl semimetal", "chern insulator"),
     "quantum_emergent": ("time crystal", "floquet", "non hermitian", "quantum entanglement",
@@ -108,6 +109,17 @@ def classify_work(item, known_ids, since):
     date = str(item.get("publication_date") or "")
     published_in_window = bool(date and date >= since)
     source = item.get("doi") or item.get("id")
+    source_meta = (item.get("primary_location") or {}).get("source") or {}
+    source_type = str(source_meta.get("type") or "").lower()
+    doi = str(item.get("doi") or "").lower()
+    work_type = str(item.get("type") or "").lower()
+    if ("10.5281/zenodo" in doi or source_type == "repository"
+            or work_type in {"preprint", "posted-content"}):
+        source_category = "repository_or_preprint"
+    elif source_type == "journal":
+        source_category = "journal_indexed_not_independently_verified"
+    else:
+        source_category = "other_or_unspecified"
     return {
         "id": key,
         "title": title,
@@ -116,6 +128,9 @@ def classify_work(item, known_ids, since):
         "recent_publication": published_in_window,
         "novel_physics_confirmed": False,
         "evidence_hint_not_verified": evidence,
+        "source_category": source_category,
+        "independent_peer_review_confirmed": False,
+        "reproducibility_confirmed": False,
         "topic_labels": tags,
         "atomic_geometry_present": False,
         "linked_source": source,
