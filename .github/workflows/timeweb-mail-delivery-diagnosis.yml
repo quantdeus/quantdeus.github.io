@@ -1,0 +1,86 @@
+name: QuantDeus — диагностика доставки почты без отправки
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnosis:
+    name: Проверить почтовые записи и уведомления о недоставке
+    if: github.repository == 'quantdeus/quantdeus.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Проверить публичные DNS-записи без изменений
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          def records(name, kind):
+              try:
+                  r = subprocess.run(["dig", "+short", "+time=3", "+tries=1", name, kind], capture_output=True, text=True, timeout=8, check=True)
+                  return r.stdout.splitlines()
+              except (OSError, subprocess.SubprocessError):
+                  return None
+          mx=records("quantdeus.ru", "MX")
+          txt=records("quantdeus.ru", "TXT")
+          dmarc=records("_dmarc.quantdeus.ru", "TXT")
+          result={
+              "dns_checked": mx is not None and txt is not None and dmarc is not None,
+              "mx_timeweb": None if mx is None else any("timeweb.ru" in item.lower() for item in mx),
+              "spf_present": None if txt is None else any("v=spf1" in item.lower() for item in txt),
+              "spf_timeweb_included": None if txt is None else any("_spf.timeweb.ru" in item.lower() for item in txt if "v=spf1" in item.lower()),
+              "spf_record_count": None if txt is None else sum("v=spf1" in item.lower() for item in txt),
+              "dmarc_present": None if dmarc is None else any("v=dmarc1" in item.lower() for item in dmarc),
+          }
+          print(json.dumps(result,ensure_ascii=False))
+          PY
+      - name: Проверить наличие возвратов в почтовом ящике без просмотра писем
+        env:
+          QD_MAIL_DATA: ${{ secrets.QD_MAIL_DATA }}
+        run: |
+          python3 - <<'PY'
+          import email
+          from email import policy
+          import importlib.util, imaplib, json, re, ssl
+          try:
+              spec=importlib.util.spec_from_file_location("mailbridge", "scripts/timeweb_mail_bridge.py")
+              mod=importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(mod)
+              user,pwd=mod.resolve_credentials()
+              candidates=0
+              scanned=0
+              with imaplib.IMAP4_SSL("imap.timeweb.ru",993,ssl_context=ssl.create_default_context(),timeout=20) as conn:
+                  conn.login(user,pwd)
+                  status,_=conn.select("INBOX",readonly=True)
+                  if status!="OK":
+                      raise RuntimeError("Cannot select inbox")
+                  status,ids=conn.uid("SEARCH",None,"SINCE","02-Nov-2026")
+                  if status!="OK":
+                      raise RuntimeError("Cannot query inbox")
+                  for uid in (ids[0] or b"").split()[-100:]:
+                      st,rows=conn.uid("FETCH",uid,"(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
+                      if st!="OK":continue
+                      raw=next((part[1] for part in rows if isinstance(part,tuple) and isinstance(part[1],bytes)),b"")
+                      if not raw:continue
+                      scanned+=1
+                      header=email.message_from_bytes(raw,policy=policy.default)
+                      sender=str(header.get("From","")).casefold()
+                      subject=str(header.get("Subject","")).casefold()
+                      if ("mailer-daemon" in sender or "postmaster" in sender or
+                          re.search(r"undeliver|delivery.status|delivery.failure|failure.notice|недостав", subject)):
+                          candidates+=1
+                  conn.logout()
+              print(json.dumps({"mailbox_readonly":True,"headers_checked":scanned,"possible_bounce_messages":candidates,"bodies_read":0,"outbound_messages":0}))
+          except Exception as exc:
+              # Never print email headers, mailbox content, secret bytes or raw exception messages.
+              print(json.dumps({"mailbox_readonly":False,"error_type":type(exc).__name__,"bodies_read":0,"outbound_messages":0}))
+              raise SystemExit(1)
+          PY
