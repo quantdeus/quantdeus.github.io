@@ -259,7 +259,7 @@ def diagnose_secret_shape() -> None:
         "has_colon": ":" in raw,
         "has_russian_labels": any(word in low for word in ("логин", "пароль")),
         "known_key_value_lines": any(
-            re.match(r"^(login|username|user|email|password|pass|pwd|qd_mail_user|qd_mail_password)\\s*[:=]", line, re.I)
+            re.match(r"^(login|username|user|email|password|pass|pwd|qd_mail_user|qd_mail_password)\s*[:=]", line, re.I)
             for line in rows
         ),
     }
