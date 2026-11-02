@@ -1,0 +1,36 @@
+name: QuantDeus — одно тестовое письмо с Timeweb
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Для отправки ровно одного тестового письма введите SEND_ONE'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  one-mail:
+    name: Отправить одно проверочное письмо владельцу
+    if: github.repository == 'quantdeus/quantdeus.github.io' && github.ref == 'refs/heads/main' && github.event.inputs.confirm == 'SEND_ONE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Отправить тест через защищённый SMTP
+        env:
+          QD_MAIL_DATA: ${{ secrets.QD_MAIL_DATA }}
+          QD_MAIL_SEND_TEST: '1'
+        run: |
+          if [ -z "$QD_MAIL_DATA" ]; then
+            echo "::error::Почтовый секрет не передан в задачу"
+            exit 1
+          fi
+          python3 scripts/timeweb_mail_bridge.py --send-test
