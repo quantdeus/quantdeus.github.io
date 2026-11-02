@@ -1,4 +1,4 @@
-name: Banana Lab — Kardashev III archive-only audit
+name: 🍌 Банановая лаборатория — архив Кардашёва III
 on:
   push:
     branches:
@@ -25,14 +25,14 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-      - name: Test archive parser and literature audit
+      - name: Проверить Python-разборщик архива и список исследований
         run: |
           python3 -m unittest discover -s tests -p 'test_warp_matter_*.py' -v
-      - name: Parse only existing 2026-10-24/25 qBraid results
+      - name: Разобрать только существующие результаты qBraid 24–25 октября
         run: |
           python3 scripts/warp_matter_k3_audit.py --output /tmp/warp-matter-k3-audit.md
           cat /tmp/warp-matter-k3-audit.md
-      - name: Attach independently reviewable report
+      - name: Сохранить отчёт для независимой проверки
         uses: actions/upload-artifact@v4
         with:
           name: warp-matter-k3-readonly-report
