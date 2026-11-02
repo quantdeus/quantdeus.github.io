@@ -46,8 +46,8 @@ function text(value, field, max = 2000) {
 function parseModelJson(raw) {
   if (typeof raw !== 'string') throw new Error('Model output must be a string');
   const value = raw.trim();
-  // Accept a single complete JSON code fence, but never extract JSON from prose.
-  const fenced = /^\`\`\`(?:json)?[ \\t]*\\r?\\n([\\s\\S]*?)\\r?\\n\`\`\`$/i.exec(value);
+  // Accept only a complete fenced JSON block or raw JSON; never extract from prose.
+  const fenced = /^```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```$/i.exec(value);
   return JSON.parse(fenced ? fenced[1].trim() : value);
 }
 
