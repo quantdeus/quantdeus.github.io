@@ -1,0 +1,30 @@
+name: QuantDeus — проверка авторизации почты Timeweb
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  imap-auth:
+    name: Проверить вход в почтовый ящик без чтения писем
+    if: github.repository == 'quantdeus/quantdeus.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Проверить защищённый вход без чтения и отправки
+        env:
+          QD_MAIL_DATA: ${{ secrets.QD_MAIL_DATA }}
+        run: |
+          if [ -z "$QD_MAIL_DATA" ]; then
+            echo "::error::Секрет QD_MAIL_DATA не передан в задачу"
+            exit 1
+          fi
+          python3 scripts/timeweb_mail_bridge.py --auth-check
