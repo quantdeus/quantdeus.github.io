@@ -97,6 +97,31 @@ class BananaNobelClassifierTests(unittest.TestCase):
         self.assertEqual(report["counts"]["confirmed_ftl_materials"], 0)
         self.assertFalse(report["automatic_printing"])
 
+    def test_repository_preprint_not_a_verified_discovery(self):
+        w = {
+            "id": "https://openalex.org/W100",
+            "doi": "https://doi.org/10.5281/zenodo.999999",
+            "title": "Claimed E8 quantum metamaterial breakthrough",
+            "type": "preprint",
+            "primary_location": {"source": {"type": "repository"}},
+            "publication_date": "2026-10-30",
+        }
+        row = classify_work(w, set(), "2026-10-01")
+        self.assertEqual(row["source_category"], "repository_or_preprint")
+        self.assertFalse(row["independent_peer_review_confirmed"])
+        self.assertFalse(row["novel_physics_confirmed"])
+
+    def test_journal_indexed_is_not_automatically_verified(self):
+        w = {
+            "id": "https://openalex.org/W101",
+            "doi": "https://doi.org/10.0000/fictional-study",
+            "title": "Experimental Casimir metamaterials",
+            "primary_location": {"source": {"type": "journal"}},
+        }
+        row = classify_work(w, set(), "2026-10-01")
+        self.assertEqual(row["source_category"], "journal_indexed_not_independently_verified")
+        self.assertFalse(row["independent_peer_review_confirmed"])
+
     def test_no_private_or_unapproved_remote_requests(self):
         with self.assertRaises(ValueError):
             safe_get_json("https://example.com/structures")
