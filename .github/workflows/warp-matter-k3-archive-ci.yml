@@ -55,7 +55,9 @@ jobs:
           print('Подтверждённых новых физических эффектов:', report['counts']['verified_new_effects'])
           print('Подтверждённых FTL-материалов:', report['counts']['confirmed_ftl_materials'])
           for item in report['papers'][:5]:
-              print('Кандидат на проверку:', item['title'][:160], item['linked_source'])
+              print('Кандидат на проверку:', item['title'][:160], item['linked_source'], item['source_category'])
+          for item in report['structures'][:3]:
+              print('Структура из OPTIMADE:', item['id'], item['formula'], item['elements'], item['sites'], item['geometry_coordinate_type'])
           PY
       - name: Сохранить научные отчёты для проверки капитаном
         uses: actions/upload-artifact@v4
