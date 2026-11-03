@@ -92,7 +92,7 @@ jobs:
           openclaw setup --baseline
           # Keep WordPress.com OAuth credentials isolated; no tokens in GitHub.
           # This registers the MCP server, not a completed login.
-          openclaw mcp set wpcom-mcp '{"url":"https://public-api.wordpress.com/wpcom/v2/mcp/v1","transport":"streamable-http","auth":"oauth","toolFilter":{"include":["wpcom-user-sites","wpcom-mcp-posts-list","wpcom-mcp-pages-list","wpcom-mcp-media-list","wpcom-mcp-content-search"]}}'
+          openclaw mcp set wpcom-mcp '{"url":"https://public-api.wordpress.com/wpcom/v2/mcp/v1","transport":"streamable-http","auth":"oauth","toolFilter":{"include":["wpcom-user-sites","wpcom-mcp-site-editor-context","wpcom-mcp-jetpack-search-voice"]}}'
           echo "JETPACK_MCP_CONFIG_REGISTERED_FOR_Q_KRYON"
           openclaw models list --provider ollama
           case "${GITHUB_EVENT_NAME:-}" in
