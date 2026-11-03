@@ -1,0 +1,50 @@
+name: QuantDeus — WordPress проверка двух почтовых плагинов
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'wordpress/newsletter-playground-blueprint.json'
+      - '.github/workflows/newsletter-wordpress-playground.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantdeus-newsletter-wp-staging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wordpress-newsletter-plugins:
+    name: Groundhogg + SMTP Mailer в WordPress Playground (без отправки)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Проверить изолированную конфигурацию
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const b=JSON.parse(fs.readFileSync('wordpress/newsletter-playground-blueprint.json','utf8'));
+          const plugins=(b.steps||[]).filter(s=>s.step==='installPlugin');
+          if(plugins.length!==2)throw Error('Expected exactly two WordPress plugins');
+          const slugs=plugins.map(s=>s.pluginData?.slug).sort();
+          if(JSON.stringify(slugs)!==JSON.stringify(['groundhogg','smtp-mailer']))throw Error('Plugin slugs mismatch');
+          if(plugins.some(s=>s.pluginData.resource!=='wordpress.org/plugins'||s.options?.activate!==true))throw Error('Plugins must use official source');
+          if(!(b.steps||[]).some(s=>s.step==='runPHP'&&s.code.includes("'post_status'=>'draft'")&&s.code.includes("shortcode_exists('gh_form')")))throw Error('Draft + form-shortcode check missing');
+          if(JSON.stringify(b).includes('wp_mail(')||JSON.stringify(b).includes('wp_remote_post('))throw Error('No outbound mail/network actions');
+          console.log('Official WordPress newsletter staging contract OK');
+          NODE
+      - name: Установить плагины в временном WordPress и проверить shortcode
+        run: |
+          npx -y @wp-playground/cli@latest run-blueprint --blueprint=wordpress/newsletter-playground-blueprint.json
+      - name: Зафиксировать безопасный тестовый результат
+        if: success()
+        run: |
+          echo '## Groundhogg + SMTP Mailer' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Тестовая WordPress Playground-инсталляция успешна. Только черновик, никакой настройки SMTP, реальных подписчиков или отправки писем.' >> "$GITHUB_STEP_SUMMARY"

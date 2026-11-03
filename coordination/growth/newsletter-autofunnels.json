@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "status": "dry-run-only",
+  "orchestrator": "github-actions-ci-dry-run-only",
+  "source_of_truth": "coordination/growth/marketing-operating-system.md",
+  "notes": "WordPress Groundhogg owns marketing consent, flows, subscriber storage and future real queue. SMTP Mailer is a wp_mail transport adapter, not an ESP. GitHub Actions runs synthetic tests only. Do not access private contacts from public repo/Actions.",
+  "delivery": {
+    "external_send_enabled": false,
+    "provider": null,
+    "real_subscriber_fetch_enabled": false,
+    "double_opt_in_required": true,
+    "contact_store": "none-configured",
+    "public_newsletter_signup_enabled": false,
+    "minimum_days_between_marketing_emails": 7,
+    "unsubscribe_required": true,
+    "multi_topic_delivery_enabled": false,
+    "secure_private_subscriber_storage_verified": false,
+    "unsubscribe_endpoint_verified": false,
+    "sender_identity_verified": false
+  },
+  "consent": {
+    "required_state": "confirmed",
+    "required_marketing_choice": true,
+    "required_fields": [
+      "consent.source",
+      "consent.version",
+      "consent.checked",
+      "consent.timestamp",
+      "confirmed_at"
+    ],
+    "github_issue_is_not_newsletter_consent": true
+  },
+  "segments": {
+    "eco": {
+      "title": "Экофутуризм и новости",
+      "messages": [
+        {
+          "id": "eco-welcome",
+          "after_days": 0,
+          "subject": "Добро пожаловать в QuantDeus 🌿",
+          "url": "https://quantdeus.ru/news/"
+        },
+        {
+          "id": "eco-vision",
+          "after_days": 7,
+          "subject": "Единство природы, человека и технологий",
+          "url": "https://quantdeus.ru/manifesto/"
+        },
+        {
+          "id": "eco-research",
+          "after_days": 14,
+          "subject": "Исследования QuantDeus: следующий горизонт",
+          "url": "https://quantdeus.ru/research/"
+        }
+      ]
+    },
+    "books": {
+      "title": "Книги и знания",
+      "messages": [
+        {
+          "id": "books-welcome",
+          "after_days": 0,
+          "subject": "Библиотека QuantDeus",
+          "url": "https://quantdeus.ru/books/"
+        },
+        {
+          "id": "books-ideas",
+          "after_days": 7,
+          "subject": "Единство в многообразии: открытая философия",
+          "url": "https://quantdeus.ru/knowledge/"
+        }
+      ]
+    },
+    "ai": {
+      "title": "ИИ и автоматизация",
+      "messages": [
+        {
+          "id": "ai-welcome",
+          "after_days": 0,
+          "subject": "Флот ИИ QuantDeus",
+          "url": "https://quantdeus.ru/ai-fleet/"
+        },
+        {
+          "id": "ai-usecase",
+          "after_days": 7,
+          "subject": "С чего начать автоматизацию",
+          "url": "https://quantdeus.ru/services/business-automation/"
+        },
+        {
+          "id": "ai-inquiry",
+          "after_days": 14,
+          "subject": "Есть задача? Отправьте добровольную заявку",
+          "url": "https://quantdeus.ru/services/business-automation/"
+        }
+      ]
+    },
+    "media": {
+      "title": "Медиа и события",
+      "messages": [
+        {
+          "id": "media-welcome",
+          "after_days": 0,
+          "subject": "Культура будущего QuantDeus",
+          "url": "https://quantdeus.ru/media/"
+        },
+        {
+          "id": "media-news",
+          "after_days": 7,
+          "subject": "Экофутуризм и Y2K: новости сообщества",
+          "url": "https://quantdeus.ru/community/"
+        }
+      ]
+    }
+  },
+  "measured": {
+    "subscribers_confirmed": null,
+    "emails_sent": null,
+    "delivered": null,
+    "unsubscribed": null,
+    "requests": null,
+    "revenue": null
+  },
+  "wordpress": {
+    "site": "https://quantdeus.ru",
+    "crm_plugin": "groundhogg",
+    "transport_plugin": "smtp-mailer",
+    "queue_owner": "groundhogg",
+    "sender_owner": "groundhogg-via-wp-mail",
+    "github_actions_role": "ci-and-synthetic-dry-run-only",
+    "installation_target": "staging-before-production",
+    "plugin_installation_approved_on_production": false,
+    "mail_service_provider_approved": false,
+    "staging_requirements": {
+      "only_send_to_confirmed": true,
+      "confirmation_grace_period_days": 0,
+      "enable_gdpr_features": true,
+      "do_not_send_email_without_consent": true,
+      "consent_checkbox_default_checked": false,
+      "honour_global_frequency_days": 7,
+      "single_active_topic_until_cross_topic_cap_verified": true,
+      "working_unsubscribe_and_suppression": true,
+      "verified_sender_spf_dkim_dmarc": true
+    },
+    "newsletter_page": {
+      "id": 218,
+      "slug": "newsletter",
+      "status": "draft",
+      "groundhogg_form_shortcode": null,
+      "form_embedded": false
+    },
+    "privacy_policy_page": {
+      "id": 3,
+      "status": "draft",
+      "publicly_accessible": false
+    },
+    "plugin_installed": true,
+    "smtp_configured": null,
+    "production_gate": "closed",
+    "production_verified_plugins": {
+      "groundhogg": {
+        "version": "4.10",
+        "status": "active"
+      },
+      "smtp_mailer": {
+        "version": "1.1.28",
+        "status": "active"
+      }
+    },
+    "smtp_delivery_test_verified": false,
+    "form_created": false,
+    "form_embedded": false,
+    "sender": {
+      "primary_email": "info@quantdeus.ru",
+      "sender_display_name": "QuantDeus",
+      "mailbox_exists_verified": false,
+      "smtp_identity_verified": false,
+      "configuration_status": "selected-not-provisioned",
+      "public_display_enabled": false
+    }
+  }
+}
