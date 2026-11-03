@@ -1347,31 +1347,6 @@ export default async function handler(req, res) {
         ]
       }
     };
-    // Official WordPress.com MCP for the Jetpack-connected QuantDeus site.
-    // Separate from the native Easy MCP server; OAuth is client-specific and must
-    // be completed by the owner in this trusted persistent OpenClaw environment.
-    // Keep disabled until that authentication is verified. Never copy ChatGPT tokens.
-    const jetpackMcpEnabled = String(process.env.QUANTDEUS_JETPACK_MCP_ENABLED || '') === '1';
-    const jetpackMcp = {
-      transport: 'streamable-http',
-      url: 'https://public-api.wordpress.com/wpcom/v2/mcp/v1',
-      auth: 'oauth',
-      connectionTimeoutMs: 10000,
-      requestTimeoutMs: 45000,
-      supportsParallelToolCalls: false,
-      // The WordPress.com MCP also exposes write-capable multiplexed tools.
-      // Expose only intrinsically read-only tool families to this shared agent lane.
-      toolFilter: {
-        include: [
-          'wpcom-user-sites',
-          'wpcom-mcp-posts-list',
-          'wpcom-mcp-pages-list',
-          'wpcom-mcp-media-list',
-          'wpcom-mcp-content-search',
-          'wpcom-mcp-site-posts-search'
-        ]
-      }
-    };
     const bingxVstBrokerToken = String(process.env.QUANTDEUS_BINGX_VST_BROKER_TOKEN || '').trim();
     const bingxVstMcp = {
       transport: 'streamable-http',
@@ -1399,7 +1374,6 @@ export default async function handler(req, res) {
             github: githubMcp,
             playwright: playwrightMcp,
             wordpress: wordpressMcp,
-            ...(jetpackMcpEnabled ? { 'wpcom-mcp': jetpackMcp } : {}),
             ...(bingxVstBrokerToken ? { bingxvst: bingxVstMcp } : {})
           })
       : { publicrepo: publicReadMcp };
