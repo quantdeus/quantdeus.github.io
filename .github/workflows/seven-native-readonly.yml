@@ -34,7 +34,7 @@ jobs:
           gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title,labels,updatedAt,url > artifacts/seven-native/issues.json
           gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title,headRefName,url > artifacts/seven-native/prs.json
           gh run list --repo "$GITHUB_REPOSITORY" --limit 25 --json databaseId,workflowName,status,conclusion,url > artifacts/seven-native/actions.json
-      - name: Capture Jetpack public REST evidence (read-only, no credentials)
+      - name: Снять публичный снимок Jetpack WordPress (только чтение, без ключей)
         run: node scripts/jetpack-wordpress-readonly.js
       - name: Install native OpenClaw CLI
         shell: bash
