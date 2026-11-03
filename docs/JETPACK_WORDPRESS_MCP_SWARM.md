@@ -47,6 +47,34 @@ Direct WordPress writes, new roles, plugins, updates, theme publish, customer-da
 - [ ] Authenticated `tools/list` and read-only `tools/call` verified **from the agent runtime**.
 - [ ] Seven's actual downstream handoff to Data/Archivist tested.
 
+## CEO OAuth authorization — operator runbook (2026-11-03)
+
+The CEO has authorized **starting the separate Jetpack MCP sign-in** for the trusted swarm runtime. This is not proof that a token has been issued. This operation cannot run from the ChatGPT WordPress connector: that connector's OAuth session belongs to ChatGPT.
+
+**Best option when the existing OpenClaw Gateway / Control UI is actually available:**
+
+1. Open **Settings → MCP → Add server** on the **actual existing trusted Gateway** (not the public QuantDeus website). Set name `quantdeus-jetpack`, transport `Streamable HTTP`, URL `https://public-api.wordpress.com/wpcom/v2/mcp/v1`, and OAuth authentication.
+2. Select **Sign in**. Log into the WordPress.com account that owns Jetpack connection to `quantdeus.ru`, and approve the browser prompt. Do **not** share the callback URL, authorization code or token in the Issue/chat.
+3. If WordPress.com offers **Keep existing access**, choose it to avoid changing permissions used by the existing ChatGPT connection. **Read only** on that consent screen changes shared account-level tool settings and may disable ChatGPT's existing write operations; choose it only if that broader restriction is intended. Keep the scheduled swarm broker read-only independently.
+4. Return to OpenClaw, run **Test/Probe** and verify site ID `258399627`, without modifying WordPress. If OpenClaw has no live Gateway, use the terminal of its actual **persistent** trusted runtime instead.
+
+**Native OpenClaw CLI in the persistent runtime** (confirmed syntax in OpenClaw docs):
+
+```bash
+openclaw mcp set quantdeus-jetpack '{"url":"https://public-api.wordpress.com/wpcom/v2/mcp/v1","transport":"streamable-http","auth":"oauth"}'
+openclaw mcp login quantdeus-jetpack
+openclaw mcp doctor quantdeus-jetpack --probe
+openclaw mcp status --verbose
+```
+
+The login prints a **client-specific OAuth link**. There is no reusable generic WordPress login URL that safely completes this flow: the client must first create an OAuth registration/PKCE verifier and own a redirect. For remote/mobile browsers unable to reach a server-local loopback callback, use the native `openclaw mcp login quantdeus-jetpack --code ...` fallback **in the server terminal**, never via chat, as instructed by OpenClaw.
+
+**Important runtime limitation:** repository GitHub Actions jobs are ephemeral. Do not authorize this in an Actions runner and assume OAuth tokens survive the next run. Auth must live in a persistent trusted OpenClaw state, with storage permissions and backup defined by that runtime's operator. A read-only public snapshot from this PR is only a bridge, not the new authenticated MCP connection.
+
+- [WordPress.com MCP permissions and shared consent effects](https://wordpress.com/support/mcp/)
+- [OpenClaw MCP OAuth and login](https://docs.openclaw.ai/cli/mcp/transports)
+- [OpenClaw Gateway MCP server settings](https://docs.openclaw.ai/tools/mcp)
+
 ## Official documentation
 
 - [WordPress.com MCP overview](https://developer.wordpress.com/docs/mcp/)
