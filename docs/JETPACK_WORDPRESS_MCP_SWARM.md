@@ -47,6 +47,20 @@ Direct WordPress writes, new roles, plugins, updates, theme publish, customer-da
 - [ ] Authenticated `tools/list` and read-only `tools/call` verified **from the agent runtime**.
 - [ ] Seven's actual downstream handoff to Data/Archivist tested.
 
+## Actual QuantDeus Vercel agent MCP configuration
+
+The actual trusted-swarm configuration is assembled in `vercel-dispatcher/api/quantdeus/openclaw.js`, in the local JavaScript variable `mcpServers` and then projected as `config.mcp.servers` (not a top-level `mcpServers` object). Preserve all existing servers.
+
+This change adds `wpcom-mcp` pointing to `https://public-api.wordpress.com/wpcom/v2/mcp/v1` with `transport: streamable-http`, `auth: oauth` and a strict allowlist of read-only list/search tools. It is installed **only for normal trusted Office runs**, not public or smoke lanes, and only when `QUANTDEUS_JETPACK_MCP_ENABLED=1` is configured. **Do not turn this switch on before successful OAuth token setup in the persistent trusted runtime.** A disabled switch is not proof of authentication or tool access.
+
+To enable after the owner signs in:
+1. In the persistent Vercel OpenClaw Office sandbox, set `OPENCLAW_HOME` and `OPENCLAW_STATE_DIR` to the same values used by the trusted Office application. Never send authorization codes/tokens through GitHub or the public site.
+2. Ensure `wpcom-mcp` exists in the corresponding config, run `openclaw mcp login wpcom-mcp` and complete the browser redirect **in a client capable of receiving the callback**. OpenClaw Control UI's **Settings → MCP → Sign in** is preferred if available.
+3. Confirm `openclaw mcp doctor wpcom-mcp --probe` succeeds and run a read-only site query for site ID `258399627`.
+4. Enable the exact `QUANTDEUS_JETPACK_MCP_ENABLED=1` switch only after verified login, QA, and the reviewed PR is merged. If authentication fails, leave it unset; the native `wordpress` server remains unchanged.
+
+Important: a user-supplied snippet using `"url":"[https://...](https://...)"` is **invalid as an MCP URL value**; the URL value must be a literal HTTPS URL without Markdown wrapping.
+
 ## CEO OAuth authorization — operator runbook (2026-11-03)
 
 The CEO has authorized **starting the separate Jetpack MCP sign-in** for the trusted swarm runtime. This is not proof that a token has been issued. This operation cannot run from the ChatGPT WordPress connector: that connector's OAuth session belongs to ChatGPT.
