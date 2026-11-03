@@ -68,7 +68,7 @@ jobs:
           openclaw setup --baseline
           # GitHub-native OpenClaw MCP: credentials are NOT copied from ChatGPT.
           # Actions runners are disposable; do not perform interactive OAuth here.
-          openclaw mcp set wpcom-mcp '{"url":"https://public-api.wordpress.com/wpcom/v2/mcp/v1","transport":"streamable-http","auth":"oauth","toolFilter":{"include":["wpcom-user-sites","wpcom-mcp-posts-list","wpcom-mcp-pages-list","wpcom-mcp-media-list","wpcom-mcp-content-search"]}}'
+          openclaw mcp set wpcom-mcp '{"url":"https://public-api.wordpress.com/wpcom/v2/mcp/v1","transport":"streamable-http","auth":"oauth","toolFilter":{"include":["wpcom-user-sites","wpcom-mcp-site-editor-context","wpcom-mcp-jetpack-search-voice"]}}'
           echo "JETPACK_MCP_CONFIG_REGISTERED_FOR_SEVEN"
           mkdir -p artifacts/seven-native/workspace
           cp AGENTS.md artifacts/seven-native/workspace/AGENTS.md
