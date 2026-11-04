@@ -1,4 +1,4 @@
-name: QuantDeus Federation Bridge — safe QDRP checks
+name: QuantDeus — безопасный мост GitHub, WordPress и Cloudflare
 
 on:
   pull_request:
@@ -20,26 +20,26 @@ concurrency:
 
 jobs:
   test:
-    name: QDRP deny/allow contract + public WordPress preview
+    name: Проверка разрешений QDRP и публичных данных WordPress
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout the reviewed branch
+      - name: Получить проверяемую ветку
         uses: actions/checkout@v4
 
-      - name: Use Node 20
+      - name: Подготовить Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Verify QDRP staging gate and Cloudflare topology
+      - name: Проверить права QDRP и связи Cloudflare
         run: node --test scripts/tests/federation-bridge.test.mjs
 
-      - name: Prepare public WordPress + Cloudflare inventory preview
+      - name: Собрать предварительный снимок публичных данных
         if: github.event_name == 'workflow_dispatch'
         run: node scripts/quantdeus-federation-bridge.mjs snapshot --out "$RUNNER_TEMP/quantdeus-federation-public-preview.json"
 
-      - name: Upload safe preview artifact only
+      - name: Сохранить временный отчёт без записи на сайт
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
