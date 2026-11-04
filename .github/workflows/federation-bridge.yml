@@ -1,0 +1,48 @@
+name: QuantDeus Federation Bridge — safe QDRP checks
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/federation-bridge.yml"
+      - "coordination/federation-bridge.json"
+      - "coordination/qdrp-wordpress-site-access.json"
+      - "scripts/quantdeus-federation-bridge.mjs"
+      - "scripts/tests/federation-bridge.test.mjs"
+  workflow_dispatch:
+
+# Deliberately no write permissions and no integration credentials.
+permissions:
+  contents: read
+
+concurrency:
+  group: qdrp-federation-readonly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: QDRP deny/allow contract + public WordPress preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout the reviewed branch
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify QDRP staging gate and Cloudflare topology
+        run: node --test scripts/tests/federation-bridge.test.mjs
+
+      - name: Prepare public WordPress + Cloudflare inventory preview
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/quantdeus-federation-bridge.mjs snapshot --out "$RUNNER_TEMP/quantdeus-federation-public-preview.json"
+
+      - name: Upload safe preview artifact only
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantdeus-federation-public-preview
+          path: ${{ runner.temp }}/quantdeus-federation-public-preview.json
+          retention-days: 3
