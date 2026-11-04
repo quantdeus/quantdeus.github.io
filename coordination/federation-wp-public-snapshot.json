@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-11-04T19:06:23.442Z",
+  "source": "WordPress MCP live published content metadata only",
+  "site": "https://quantdeus.ru",
+  "visibility": "published_only",
+  "direction": "wordpress_to_github_staging",
+  "publish_back": false,
+  "post_or_page_bodies_included": false,
+  "private_data_included": false,
+  "wp_git_sync_plugin_transport_used": false,
+  "counts": {
+    "post": {
+      "returned": 9,
+      "reported_total": 9
+    },
+    "page": {
+      "returned": 71,
+      "reported_total": 71
+    }
+  },
+  "total_records": 0,
+  "records": []
+}
