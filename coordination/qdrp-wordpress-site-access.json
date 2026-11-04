@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "policy_id": "quantdeus.qdrp.wordpress.site-access",
+  "directive_date": "2026-11-04",
+  "directive": "Снята заморозка разработки сайта QuantDeus; работа агентов разрешена через независимую проверку репутации, ограниченный допуск и аудит.",
+  "enforcement_status": "proposal_pending_broker_and_ci",
+  "production_site": "https://quantdeus.ru",
+  "canonical_repository": "quantdeus/quantdeus.github.io",
+  "wordpress_git_sync_target": "unverified",
+  "development": {
+    "frozen": false,
+    "allowed_targets": [
+      "scoped_feature_branch",
+      "isolated_staging",
+      "draft_pull_request"
+    ],
+    "production_mutations_default": "deny"
+  },
+  "roles": {
+    "human_ceo": "final_authority_for_each_production_write",
+    "seven-of-nine": "agent_coordination_and_scoped_grant_requests",
+    "tuvok": "independent_security_review",
+    "data": "independent_qa_and_integrity_evidence",
+    "other_agents": "least_privilege_by_verified_score"
+  },
+  "score": {
+    "minimum": 0,
+    "maximum": 100,
+    "weights": {
+      "integrity": 30,
+      "security": 25,
+      "user_value": 20,
+      "reliability": 15,
+      "verified_economic_impact": 10
+    },
+    "economic_method": "Verified incremental net economic value against the latest documented actual QuantDeus total-income baseline. No unverified revenue, gross vanity metrics, or self-reported attribution.",
+    "default_when_unverified": 0,
+    "issuer": "independent_approved_reputation_service_required",
+    "agent_self_scoring_forbidden": true,
+    "collusive_scoring_forbidden": true
+  },
+  "tiers": [
+    {
+      "min": 0,
+      "max": 39,
+      "allows": [
+        "read_only_diagnostics"
+      ]
+    },
+    {
+      "min": 40,
+      "max": 59,
+      "allows": [
+        "read_only_diagnostics",
+        "analysis",
+        "issue_proposal"
+      ]
+    },
+    {
+      "min": 60,
+      "max": 79,
+      "allows": [
+        "read_only_diagnostics",
+        "analysis",
+        "issue_proposal",
+        "scoped_staging_edit",
+        "draft_pull_request"
+      ]
+    },
+    {
+      "min": 80,
+      "max": 94,
+      "allows": [
+        "read_only_diagnostics",
+        "analysis",
+        "issue_proposal",
+        "scoped_staging_edit",
+        "draft_pull_request",
+        "release_candidate_in_staging"
+      ]
+    },
+    {
+      "min": 95,
+      "max": 100,
+      "allows": [
+        "read_only_diagnostics",
+        "analysis",
+        "issue_proposal",
+        "scoped_staging_edit",
+        "draft_pull_request",
+        "release_candidate_in_staging",
+        "bounded_agent_coordination"
+      ]
+    }
+  ],
+  "required_for_any_mutation": [
+    "authenticated_individual_agent_identity",
+    "independently_verified_non_expired_score",
+    "approved_issue_and_task_scope",
+    "minimum_sufficient_file_or_api_permission",
+    "short_lived_nonrenewable_grant",
+    "audit_event_with_evidence_and_result",
+    "no_secret_or_personal_data_exfiltration",
+    "kill_switch_and_automatic_revocation"
+  ],
+  "required_for_stage_release": [
+    "passing_relevant_ci_and_qa",
+    "independent_tuvok_security_review",
+    "independent_data_integrity_review",
+    "tested_backup_and_rollback"
+  ],
+  "production_rules": {
+    "default": "deny",
+    "publishing_requires": "explicit_per_change_ceo_approval_and_verified_rollback",
+    "no_blanket_wordpress_edit_token": true,
+    "deny_operations": [
+      "auto_publish",
+      "auto_merge_to_production",
+      "auto_deploy",
+      "live_wp_write_without_approval",
+      "wordpress_admin_role_grant",
+      "secrets_read",
+      "payments_change",
+      "billing_change",
+      "dns_change",
+      "branch_protection_change",
+      "policy_self_modification",
+      "private_user_data_export"
+    ],
+    "note": "Policy document is not itself a permission broker or GitHub branch protection. An external trusted runtime must enforce it before agents receive any write credentials."
+  },
+  "acceptance": [
+    "verify_wp_git_sync_repo_branch_direction_without_exposing_pat",
+    "implement_broker_with_allow_and_deny_tests",
+    "prove_one_reputation_gated_staging_pull_request_with_independent_reviews",
+    "demonstrate_auto_revocation_and_failed_live_publish",
+    "request_separate_ceo_approval_for_specific_production_change"
+  ],
+  "tracking_issues": [
+    "https://github.com/quantdeus/quantdeus.github.io/issues/579",
+    "https://github.com/quantdeus/quantdeus.github.io/issues/421"
+  ]
+}
