@@ -1,4 +1,4 @@
-# QuantDeus Federation Bridge v0.1 — GitHub ↔ WordPress ↔ Cloudflare
+# Мост QuantDeus v0.1 — GitHub ↔ WordPress ↔ Cloudflare
 
 Дата директивы CEO: 2026-11-04. **Разморозка разработки**, не разрешение на автоматическую публикацию.
 
