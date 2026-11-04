@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "bridge_id": "quantdeus-federation-bridge",
+  "documented_at": "2026-11-04",
+  "stage": "read_only_staging_preview",
+  "wordpress": {
+    "site": "https://quantdeus.ru",
+    "wpcom_site_id": "258399627",
+    "active_plugin": {
+      "name": "WP Git Sync",
+      "version": "0.1.2",
+      "reported_capability": "Sync WordPress posts to GitHub",
+      "target_repository": "unverified",
+      "target_branch": "unverified",
+      "direction": "unverified"
+    },
+    "public_rest": {
+      "post_types": [
+        "posts",
+        "pages"
+      ],
+      "max_per_type": 25,
+      "fields": [
+        "id",
+        "slug",
+        "status",
+        "link",
+        "modified",
+        "title"
+      ]
+    }
+  },
+  "github": {
+    "canonical_repo": "quantdeus/quantdeus.github.io",
+    "qdrp_policy": "coordination/qdrp-wordpress-site-access.json",
+    "live_publish": "requires_new_specific_CEO_approval",
+    "integrations": "no_direct_live_writes"
+  },
+  "cloudflare": {
+    "inventory_source": "read_only_authenticated_cloudflare_api",
+    "account_scoped_worker_ids": [
+      "quantdeus-seven-bridge",
+      "quantdeus-galactic-metaverse",
+      "quantdeus-warp-research",
+      "quantdeus-warp-scheduler",
+      "quantdeus-qbraid-mcp",
+      "quantdeus-braket-mcp",
+      "quantdeus-anti-shaitan-pwa",
+      "quantdeus-finance-research-browser",
+      "quantdeus-ftl-monkeys-trailer"
+    ],
+    "bridge_worker": "quantdeus-seven-bridge",
+    "existing_service_bindings": [
+      {
+        "name": "METAVERSE",
+        "service": "quantdeus-galactic-metaverse",
+        "environment": "production"
+      },
+      {
+        "name": "WARP_RESEARCH",
+        "service": "quantdeus-warp-research",
+        "environment": "production"
+      },
+      {
+        "name": "WARP_SCHEDULER",
+        "service": "quantdeus-warp-scheduler",
+        "environment": "production"
+      }
+    ],
+    "metaverse_worker": "quantdeus-galactic-metaverse",
+    "worker_deployments_reported": true,
+    "github_webhook_or_dispatch": "not_configured_or_verified",
+    "live_telemetry": "not_verified",
+    "note": "Cloudflare worker script identifiers are services, not verified independent agent identities. No Cloudflare secret or write grant is exposed."
+  },
+  "sync_contract": {
+    "read_only_wp_snapshot": true,
+    "read_only_cf_inventory_in_repo": true,
+    "agent_reviewed_stage_changes": true,
+    "bidirectional_wp_git_sync": "not_yet_verified",
+    "github_to_live_wordpress": false,
+    "cloudflare_to_github_dispatch": false,
+    "secrets_in_source": false,
+    "no_auto_merge": true,
+    "no_auto_deploy": true,
+    "production_writes_need_specific_ceo_approval": true
+  }
+}
