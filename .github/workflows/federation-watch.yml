@@ -1,0 +1,43 @@
+name: QuantDeus — живой контроль мостов Федерации
+
+on:
+  schedule:
+    - cron: "18 */6 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/federation-watch.yml"
+      - "scripts/federation-live-probe.mjs"
+      - "scripts/tests/federation-live-probe.test.mjs"
+      - "cloudflare/federation-staging/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qd-federation-watch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  federation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Получить код для проверок
+        uses: actions/checkout@v4
+      - name: Подготовить Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Проверить контракт мониторинга
+        run: node --test scripts/tests/federation-live-probe.test.mjs
+      - name: Проверить действующий тестовый мост Cloudflare и WordPress
+        run: node scripts/federation-live-probe.mjs --out "$RUNNER_TEMP/federation-live-report.json"
+      - name: Сохранить отчёт о состоянии связей
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: federation-live-report
+          path: ${{ runner.temp }}/federation-live-report.json
+          if-no-files-found: warn
+          retention-days: 7
