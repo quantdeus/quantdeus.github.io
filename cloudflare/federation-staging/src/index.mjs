@@ -8,7 +8,7 @@ const JSON_HEADERS = Object.freeze({
   "access-control-allow-origin": "https://quantdeus.ru"
 });
 const WP_URL = "https://quantdeus.ru";
-const API_VERSION = "0.2.0";
+const API_VERSION = "0.2.1";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
@@ -31,24 +31,40 @@ async function inspectService(service, path) {
   }
 }
 async function inspectWp(fetcher) {
-  const url = WP_URL + "/wp-json/wp/v2/posts?per_page=1&status=publish&_fields=id";
-  try {
-    const response = await fetcher(new Request(url, {
-      method: "GET",
-      headers: { accept: "application/json" },
-      redirect: "error",
-      signal: AbortSignal.timeout(6000)
-    }));
-    const kind = response.headers?.get("content-type") || "";
-    // Status check only: do not echo WordPress content or any private data.
-    return {
-      configured: true,
-      responding: response.ok && kind.includes("json"),
-      http_status: statusCode(response.status)
-    };
-  } catch {
-    return { configured: true, responding: false, http_status: null };
+  // WordPress origin is occasionally unreachable outside Russia. Jetpack public API
+  // provides an independent public metadata health route, without exposing content.
+  const routes = [
+    {
+      id: "direct_wp_rest",
+      url: WP_URL + "/wp-json/wp/v2/posts?per_page=1&status=publish&_fields=id",
+      timeout: 3200,
+      valid: body => Array.isArray(body)
+    },
+    {
+      id: "jetpack_public_api",
+      url: "https://public-api.wordpress.com/rest/v1.1/sites/quantdeus.ru/posts/?number=1&fields=ID,URL",
+      timeout: 5800,
+      valid: body => !!body && Array.isArray(body.posts)
+    }
+  ];
+  let lastStatus = null;
+  for (const target of routes) {
+    try {
+      const response = await fetcher(new Request(target.url, {
+        method: "GET", headers: { accept: "application/json" },
+        redirect: "error", signal: AbortSignal.timeout(target.timeout)
+      }));
+      lastStatus = statusCode(response.status);
+      const kind = response.headers?.get("content-type") || "";
+      if (!response.ok || !kind.includes("json")) continue;
+      const data = await response.json();
+      if (!target.valid(data)) continue;
+      return { configured: true, responding: true, http_status: lastStatus, route: target.id };
+    } catch {
+      // An unavailable endpoint is never treated as a successful response.
+    }
   }
+  return { configured: true, responding: false, http_status: lastStatus, route: "unverified" };
 }
 export function createFederationHandler({ fetcher = fetch } = {}) {
   return async function handle(request, env = {}) {
