@@ -8,6 +8,7 @@ on:
       - "coordination/qdrp-wordpress-site-access.json"
       - "scripts/quantdeus-federation-bridge.mjs"
       - "scripts/tests/federation-bridge.test.mjs"
+      - "cloudflare/federation-staging/**"
   workflow_dispatch:
 
 # Deliberately no write permissions and no integration credentials.
@@ -33,7 +34,7 @@ jobs:
           node-version: '20'
 
       - name: Проверить права QDRP и связи Cloudflare
-        run: node --test scripts/tests/federation-bridge.test.mjs
+        run: node --test scripts/tests/federation-bridge.test.mjs cloudflare/federation-staging/tests/bridge.test.mjs
 
       - name: Собрать предварительный снимок публичных данных
         if: github.event_name == 'workflow_dispatch'
