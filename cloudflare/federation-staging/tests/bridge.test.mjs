@@ -46,3 +46,22 @@ test('all write methods and unspecified paths are denied', async () => {
   }
   assert.equal((await handler(new Request('https://example.com/admin'),{})).status,404);
 });
+
+test('Jetpack public API fallback restores WordPress health when origin is unreachable', async () => {
+  const visited=[];
+  const fetcher = async request => {
+    visited.push(request.url);
+    if (request.url.startsWith('https://quantdeus.ru/')) throw new Error('origin_timeout');
+    assert.match(request.url, /public-api\.wordpress\.com\/rest\/v1\.1\/sites\/quantdeus\.ru/);
+    return new Response(JSON.stringify({posts:[{ID:209, URL:'https://quantdeus.ru/posts'}],secret:'NOT-TO-RETURN'}), {
+      status:200,headers:{'content-type':'application/json'}
+    });
+  };
+  const h=createFederationHandler({fetcher});
+  const response=await h(new Request('https://example.com/api/federation/status'),{SEVEN:bound(true),METAVERSE:bound(true)});
+  const body=await response.json();
+  assert.equal(body.components.wordpress.responding,true);
+  assert.equal(body.components.wordpress.route,'jetpack_public_api');
+  assert.equal(visited.length,2);
+  assert.equal(JSON.stringify(body).includes('NOT-TO-RETURN'),false);
+});
