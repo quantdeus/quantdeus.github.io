@@ -45,7 +45,41 @@ export async function probeFederation(fetcher = fetch) {
   if (!r.ok) throw new Error('worker_http_' + r.status);
   const type = r.headers.get('content-type') || '';
   if (!type.includes('application/json')) throw new Error('unexpected_response_type');
-  return summarizeStatus(await r.json());
+  const report = summarizeStatus(await r.json());
+  const cloudflareWordPressReached = report.components.wordpress.responding;
+  report.wordpress_from_cloudflare = cloudflareWordPressReached;
+
+  // Network routes differ: Cloudflare→WordPress can fail while a GitHub runner
+  // can read the same site's public Jetpack API. These are independent checks.
+  if (!cloudflareWordPressReached) {
+    const fallback = 'https://public-api.wordpress.com/rest/v1.1/sites/quantdeus.ru/posts/?number=1&fields=ID,URL';
+    try {
+      const wp = await fetcher(fallback, {
+        method:'GET', headers:{accept:'application/json'},
+        redirect:'error', signal:AbortSignal.timeout(9500)
+      });
+      const ctype = wp.headers.get('content-type') || '';
+      if (wp.ok && ctype.includes('json')) {
+        const payload = await wp.json();
+        if (Array.isArray(payload?.posts)) {
+          report.components.wordpress = {
+            configured:true, responding:true, http_status:wp.status,
+            route:'github_jetpack_public_api'
+          };
+          report.wordpress_from_github = true;
+        }
+      }
+    } catch {
+      report.wordpress_from_github = false;
+    }
+  } else {
+    report.wordpress_from_github = null;
+  }
+  if (!report.components.wordpress.responding && report.wordpress_from_github === undefined) {
+    report.wordpress_from_github = false;
+  }
+  report.status = Object.values(report.components).every(x=>x.responding) ? 'healthy' : 'degraded';
+  return report;
 }
 async function main() {
   const index = process.argv.indexOf('--out');
