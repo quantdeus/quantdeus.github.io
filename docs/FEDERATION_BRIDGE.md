@@ -46,3 +46,24 @@ WordPress публичный REST API может быть недоступен �
 Запрещены: экспорт личных данных в публичные репозитории, прямые админские PAT у агентов, self-scoring, авто-публикация, автоматические правки Cloudflare Worker/DNS/WordPress без отдельного разрешения, обход QA и отката.
 
 Ссылки: https://github.com/quantdeus/quantdeus/issues/106; https://github.com/quantdeus/quantdeus.github.io/issues/579; https://github.com/quantdeus/quantdeus.github.io/issues/421.
+
+## Контроль живого моста — 5 ноября 2026
+
+### Что реально введено
+- Отдельный Cloudflare Worker quantdeus-federation-staging развёрнут; workers.dev subdomain включён. Это отдельный read-only сервис.
+- Служебные привязки к quantdeus-seven-bridge (SEVEN) и quantdeus-galactic-metaverse (METAVERSE).
+- Реальные ответы в GitHub Actions: Seven HTTP 200, Metaverse HTTP 200.
+- Прямой Cloudflare Worker → WordPress в успешном прогоне не сработал. GitHub Runner отдельно проверил публичный Jetpack API: https://public-api.wordpress.com/rest/v1.1/sites/quantdeus.ru/posts/ — HTTP 200.
+- Workflow .github/workflows/federation-watch.yml: один запуск в сутки в 06:18 UTC (09:18 MSK), read-only, сохраняет временный отчёт, на сбой отвечает красным статусом.
+- Коммит c2a673dd5d5caf7be646c301386b5896e32c8c0e: пять проверок зелёные, включая живой мониторинг.
+- Разовый снимок: 9 опубликованных записей, 71 опубликованная страница, у всех 80 password_protected=false.
+
+### Важное различие
+Мониторинг трёх систем и разовый снимок публичных WordPress-метаданных в GitHub **работают**.
+Обратная публикация через WP Git Sync, подписанный Cloudflare→GitHub dispatch для изменяющих действий и реальная выдача полномочий по репутации **ещё не включены**.
+
+### Приёмочный статус
+- Сделано: Cloudflare Workers → Federation Staging Worker → GitHub monitor; GitHub → Jetpack public API; WordPress MCP → GitHub staging snapshot; тестовые QDRP ограничения.
+- Требует отдельных настроек: WP Git Sync repo/branch/direction, независимый capability broker, GitHub App/Webhook с ограниченными правами, WordPress staging и откат.
+- Публикация на действующем quantdeus.ru требует отдельного решения CEO для конкретного изменения.
+- Никаких постоянных админских токенов, копирования личных данных или самоповышения репутации.
