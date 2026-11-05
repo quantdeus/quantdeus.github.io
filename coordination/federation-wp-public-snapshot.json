@@ -1,0 +1,665 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-11-04T19:06:55.222Z",
+  "source": "WordPress MCP live published content metadata only",
+  "site": "https://quantdeus.ru",
+  "visibility": "published_only",
+  "direction": "wordpress_to_github_staging",
+  "publish_back": false,
+  "post_or_page_bodies_included": false,
+  "private_data_included": false,
+  "wp_git_sync_plugin_transport_used": false,
+  "counts": {
+    "post": {
+      "returned": 9,
+      "reported_total": 9
+    },
+    "page": {
+      "returned": 71,
+      "reported_total": 71
+    }
+  },
+  "total_records": 80,
+  "records": [
+    {
+      "kind": "post",
+      "id": 209,
+      "slug": "quantdeus-eco-futurism-core-2026",
+      "link": "https://quantdeus.ru/2026/10/30/quantdeus-eco-futurism-core-2026/",
+      "modified": "2026-10-30T14:02:16",
+      "title": "Экофутуризм — центральное направление QuantDeus: природа, человек и технологии"
+    },
+    {
+      "kind": "post",
+      "id": 206,
+      "slug": "metaverse-prototype-portal-2026",
+      "link": "https://quantdeus.ru/2026/10/25/metaverse-prototype-portal-2026/",
+      "modified": "2026-10-25T04:49:22",
+      "title": "Метавселенная QuantDeus: открыт портал игрового исследовательского прототипа"
+    },
+    {
+      "kind": "post",
+      "id": 204,
+      "slug": "integral-philosophy-book-progress-october-2026",
+      "link": "https://quantdeus.ru/2026/10/25/integral-philosophy-book-progress-october-2026/",
+      "modified": "2026-10-25T04:49:10",
+      "title": "«Интегральная философия QuantDeus»: работа над открытой книгой продолжается"
+    },
+    {
+      "kind": "post",
+      "id": 201,
+      "slug": "quantdeus-unity-in-diversity-2026",
+      "link": "https://quantdeus.ru/2026/10/25/quantdeus-unity-in-diversity-2026/",
+      "modified": "2026-10-25T04:48:08",
+      "title": "QuantDeus: «Единство Бога в многообразии» — новый философский девиз"
+    },
+    {
+      "kind": "post",
+      "id": 52,
+      "slug": "quantdeus-pro-%d0%b3%d0%be%d1%82%d0%be%d0%b2%d0%b8%d1%82%d1%81%d1%8f-%d0%ba-%d0%bf%d0%be%d0%bb%d1%8c%d0%b7%d0%be%d0%b2%d0%b0%d1%82%d0%b5%d0%bb%d1%8c%d1%81%d0%ba%d0%be%d0%bc%d1%83-%d0%b7%d0%b0%d0%bf",
+      "link": "https://quantdeus.ru/2026/10/16/quantdeus-pro-%d0%b3%d0%be%d1%82%d0%be%d0%b2%d0%b8%d1%82%d1%81%d1%8f-%d0%ba-%d0%bf%d0%be%d0%bb%d1%8c%d0%b7%d0%be%d0%b2%d0%b0%d1%82%d0%b5%d0%bb%d1%8c%d1%81%d0%ba%d0%be%d0%bc%d1%83-%d0%b7%d0%b0%d0%bf/",
+      "modified": "2026-10-16T22:32:26",
+      "title": "QuantDeus Pro готовится к пользовательскому запуску"
+    },
+    {
+      "kind": "post",
+      "id": 50,
+      "slug": "community-%d0%b8-federation-%d0%bf%d0%be%d0%bb%d1%83%d1%87%d0%b8%d0%bb%d0%b8-%d1%80%d0%b0%d0%b1%d0%be%d1%87%d0%b5%d0%b5-%d0%bf%d1%80%d0%be%d1%81%d1%82%d1%80%d0%b0%d0%bd%d1%81%d1%82%d0%b2%d0%be",
+      "link": "https://quantdeus.ru/2026/10/16/community-%d0%b8-federation-%d0%bf%d0%be%d0%bb%d1%83%d1%87%d0%b8%d0%bb%d0%b8-%d1%80%d0%b0%d0%b1%d0%be%d1%87%d0%b5%d0%b5-%d0%bf%d1%80%d0%be%d1%81%d1%82%d1%80%d0%b0%d0%bd%d1%81%d1%82%d0%b2%d0%be/",
+      "modified": "2026-10-16T22:29:52",
+      "title": "Community и Federation получили рабочее пространство"
+    },
+    {
+      "kind": "post",
+      "id": 48,
+      "slug": "ai-fleet-%d1%81%d1%82%d0%b0%d0%bb-%d1%80%d0%b0%d0%b1%d0%be%d1%87%d0%b8%d0%bc-%d0%ba%d0%be%d0%bd%d1%82%d1%83%d1%80%d0%be%d0%bc-quantdeus",
+      "link": "https://quantdeus.ru/2026/10/16/ai-fleet-%d1%81%d1%82%d0%b0%d0%bb-%d1%80%d0%b0%d0%b1%d0%be%d1%87%d0%b8%d0%bc-%d0%ba%d0%be%d0%bd%d1%82%d1%83%d1%80%d0%be%d0%bc-quantdeus/",
+      "modified": "2026-10-16T22:29:47",
+      "title": "AI Fleet стал рабочим контуром QuantDeus"
+    },
+    {
+      "kind": "post",
+      "id": 46,
+      "slug": "warp-research-%d0%bf%d0%be%d0%bb%d1%83%d1%87%d0%b8%d0%bb-%d1%84%d0%be%d1%80%d0%bc%d0%b0%d0%bb%d1%8c%d0%bd%d1%8b%d0%b5-evidence-gates",
+      "link": "https://quantdeus.ru/2026/10/16/warp-research-%d0%bf%d0%be%d0%bb%d1%83%d1%87%d0%b8%d0%bb-%d1%84%d0%be%d1%80%d0%bc%d0%b0%d0%bb%d1%8c%d0%bd%d1%8b%d0%b5-evidence-gates/",
+      "modified": "2026-10-16T22:29:43",
+      "title": "Warp Research получил формальные evidence gates"
+    },
+    {
+      "kind": "post",
+      "id": 44,
+      "slug": "quantdeus-mvp-production",
+      "link": "https://quantdeus.ru/2026/10/16/quantdeus-mvp-production/",
+      "modified": "2026-10-16T22:29:38",
+      "title": "QuantDeus MVP вышел в живой production"
+    },
+    {
+      "kind": "page",
+      "id": 424,
+      "slug": "store",
+      "link": "https://quantdeus.ru/en/store/",
+      "modified": "2026-11-04T16:06:19",
+      "title": "QuantDeus Store"
+    },
+    {
+      "kind": "page",
+      "id": 423,
+      "slug": "ksenia-cherednikova",
+      "link": "https://quantdeus.ru/en/ksenia-cherednikova/",
+      "modified": "2026-11-04T16:06:12",
+      "title": "Ksenia Cherednikova"
+    },
+    {
+      "kind": "page",
+      "id": 422,
+      "slug": "books",
+      "link": "https://quantdeus.ru/en/books/",
+      "modified": "2026-11-04T16:06:04",
+      "title": "Books &#038; Philosophy"
+    },
+    {
+      "kind": "page",
+      "id": 421,
+      "slug": "manifesto",
+      "link": "https://quantdeus.ru/en/manifesto/",
+      "modified": "2026-11-04T16:05:56",
+      "title": "The QuantDeus Manifesto"
+    },
+    {
+      "kind": "page",
+      "id": 420,
+      "slug": "media",
+      "link": "https://quantdeus.ru/en/media/",
+      "modified": "2026-11-04T16:05:47",
+      "title": "Media &#038; Culture"
+    },
+    {
+      "kind": "page",
+      "id": 419,
+      "slug": "news",
+      "link": "https://quantdeus.ru/en/news/",
+      "modified": "2026-11-04T16:05:39",
+      "title": "News &#038; Updates"
+    },
+    {
+      "kind": "page",
+      "id": 418,
+      "slug": "services",
+      "link": "https://quantdeus.ru/en/services/",
+      "modified": "2026-11-04T16:05:25",
+      "title": "Services"
+    },
+    {
+      "kind": "page",
+      "id": 417,
+      "slug": "knowledge",
+      "link": "https://quantdeus.ru/en/knowledge/",
+      "modified": "2026-11-04T16:05:14",
+      "title": "Knowledge Base"
+    },
+    {
+      "kind": "page",
+      "id": 416,
+      "slug": "ai-fleet",
+      "link": "https://quantdeus.ru/en/ai-fleet/",
+      "modified": "2026-11-04T16:03:39",
+      "title": "AI Fleet"
+    },
+    {
+      "kind": "page",
+      "id": 415,
+      "slug": "community",
+      "link": "https://quantdeus.ru/en/community/",
+      "modified": "2026-11-04T16:03:27",
+      "title": "Community"
+    },
+    {
+      "kind": "page",
+      "id": 414,
+      "slug": "horizons",
+      "link": "https://quantdeus.ru/en/horizons/",
+      "modified": "2026-11-04T16:03:16",
+      "title": "Horizons"
+    },
+    {
+      "kind": "page",
+      "id": 413,
+      "slug": "research",
+      "link": "https://quantdeus.ru/en/research/",
+      "modified": "2026-11-04T16:03:00",
+      "title": "Research &#038; Warp Concepts"
+    },
+    {
+      "kind": "page",
+      "id": 412,
+      "slug": "about",
+      "link": "https://quantdeus.ru/en/about/",
+      "modified": "2026-11-04T16:02:02",
+      "title": "About QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 411,
+      "slug": "projects",
+      "link": "https://quantdeus.ru/en/projects/",
+      "modified": "2026-11-04T16:01:53",
+      "title": "Projects &#038; Development"
+    },
+    {
+      "kind": "page",
+      "id": 410,
+      "slug": "federation",
+      "link": "https://quantdeus.ru/en/federation/",
+      "modified": "2026-11-04T16:01:44",
+      "title": "The QuantDeus Federation"
+    },
+    {
+      "kind": "page",
+      "id": 409,
+      "slug": "en",
+      "link": "https://quantdeus.ru/en/",
+      "modified": "2026-11-04T15:59:21",
+      "title": "QuantDeus — English"
+    },
+    {
+      "kind": "page",
+      "id": 348,
+      "slug": "cart",
+      "link": "https://quantdeus.ru/store/cart/",
+      "modified": "2026-11-01T17:25:13",
+      "title": "Корзина QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 257,
+      "slug": "complete-20-audio-collection",
+      "link": "https://quantdeus.ru/store/subliminals/complete-20-audio-collection/",
+      "modified": "2026-11-01T16:27:31",
+      "title": "Все 20 миров QuantDeus — набор QuantDeus Sound Lab"
+    },
+    {
+      "kind": "page",
+      "id": 256,
+      "slug": "bundle-resource-cosmos",
+      "link": "https://quantdeus.ru/store/subliminals/bundle-resource-cosmos/",
+      "modified": "2026-11-01T16:27:28",
+      "title": "Ресурс и медитация — набор QuantDeus Sound Lab"
+    },
+    {
+      "kind": "page",
+      "id": 255,
+      "slug": "bundle-calm-rest",
+      "link": "https://quantdeus.ru/store/subliminals/bundle-calm-rest/",
+      "modified": "2026-11-01T16:27:26",
+      "title": "Спокойствие и отдых — набор QuantDeus Sound Lab"
+    },
+    {
+      "kind": "page",
+      "id": 254,
+      "slug": "bundle-creative-connect",
+      "link": "https://quantdeus.ru/store/subliminals/bundle-creative-connect/",
+      "modified": "2026-11-01T16:27:23",
+      "title": "Творчество и общение — набор QuantDeus Sound Lab"
+    },
+    {
+      "kind": "page",
+      "id": 253,
+      "slug": "bundle-focus-action",
+      "link": "https://quantdeus.ru/store/subliminals/bundle-focus-action/",
+      "modified": "2026-11-01T16:24:57",
+      "title": "Фокус и действие — набор QuantDeus Sound Lab"
+    },
+    {
+      "kind": "page",
+      "id": 252,
+      "slug": "audio-20-peaceful-sleep",
+      "link": "https://quantdeus.ru/store/subliminals/audio-20-peaceful-sleep/",
+      "modified": "2026-11-01T16:27:21",
+      "title": "Спокойный сон — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 251,
+      "slug": "audio-19-quiet-evening",
+      "link": "https://quantdeus.ru/store/subliminals/audio-19-quiet-evening/",
+      "modified": "2026-11-01T16:27:19",
+      "title": "Тихий вечер — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 250,
+      "slug": "audio-18-cosmos-meditation",
+      "link": "https://quantdeus.ru/store/subliminals/audio-18-cosmos-meditation/",
+      "modified": "2026-11-01T16:27:17",
+      "title": "Медитация «Космос» — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 249,
+      "slug": "audio-17-gratitude",
+      "link": "https://quantdeus.ru/store/subliminals/audio-17-gratitude/",
+      "modified": "2026-11-01T16:26:43",
+      "title": "Благодарность — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 248,
+      "slug": "audio-16-kindness",
+      "link": "https://quantdeus.ru/store/subliminals/audio-16-kindness/",
+      "modified": "2026-11-01T16:26:41",
+      "title": "Отношения и доброта — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 247,
+      "slug": "audio-15-clear-decisions",
+      "link": "https://quantdeus.ru/store/subliminals/audio-15-clear-decisions/",
+      "modified": "2026-11-01T16:26:39",
+      "title": "Ясные решения — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 246,
+      "slug": "audio-14-post-workout",
+      "link": "https://quantdeus.ru/store/subliminals/audio-14-post-workout/",
+      "modified": "2026-11-01T16:26:36",
+      "title": "После тренировки — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 245,
+      "slug": "audio-13-time-to-move",
+      "link": "https://quantdeus.ru/store/subliminals/audio-13-time-to-move/",
+      "modified": "2026-11-01T16:26:34",
+      "title": "Время двигаться — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 244,
+      "slug": "audio-12-stage-ready",
+      "link": "https://quantdeus.ru/store/subliminals/audio-12-stage-ready/",
+      "modified": "2026-11-01T16:26:32",
+      "title": "Перед выступлением — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 243,
+      "slug": "audio-11-sales-talks",
+      "link": "https://quantdeus.ru/store/subliminals/audio-11-sales-talks/",
+      "modified": "2026-11-01T16:26:30",
+      "title": "Продажи и переговоры — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 242,
+      "slug": "audio-10-easy-conversation",
+      "link": "https://quantdeus.ru/store/subliminals/audio-10-easy-conversation/",
+      "modified": "2026-11-01T16:26:27",
+      "title": "Лёгкое общение — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 241,
+      "slug": "audio-09-steady-breathing",
+      "link": "https://quantdeus.ru/store/subliminals/audio-09-steady-breathing/",
+      "modified": "2026-11-01T16:25:53",
+      "title": "Ровное дыхание — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 240,
+      "slug": "audio-08-calm-oasis",
+      "link": "https://quantdeus.ru/store/subliminals/audio-08-calm-oasis/",
+      "modified": "2026-11-01T16:25:51",
+      "title": "Оазис спокойствия — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 239,
+      "slug": "audio-07-confidence",
+      "link": "https://quantdeus.ru/store/subliminals/audio-07-confidence/",
+      "modified": "2026-11-01T16:25:48",
+      "title": "Уверенность — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 238,
+      "slug": "audio-06-money-discipline",
+      "link": "https://quantdeus.ru/store/subliminals/audio-06-money-discipline/",
+      "modified": "2026-11-01T16:25:46",
+      "title": "Денежная дисциплина — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 237,
+      "slug": "audio-05-y2k-inspiration",
+      "link": "https://quantdeus.ru/store/subliminals/audio-05-y2k-inspiration/",
+      "modified": "2026-11-01T16:25:43",
+      "title": "Y2K-вдохновение — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 236,
+      "slug": "audio-04-creative-flow",
+      "link": "https://quantdeus.ru/store/subliminals/audio-04-creative-flow/",
+      "modified": "2026-11-01T16:25:41",
+      "title": "Творческий поток — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 235,
+      "slug": "audio-03-deep-work",
+      "link": "https://quantdeus.ru/store/subliminals/audio-03-deep-work/",
+      "modified": "2026-11-01T16:25:39",
+      "title": "Глубокая работа — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 234,
+      "slug": "audio-02-study-focus",
+      "link": "https://quantdeus.ru/store/subliminals/audio-02-study-focus/",
+      "modified": "2026-11-01T16:25:37",
+      "title": "Учёба и фокус — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 233,
+      "slug": "audio-01-morning-energy",
+      "link": "https://quantdeus.ru/store/subliminals/audio-01-morning-energy/",
+      "modified": "2026-11-01T16:24:55",
+      "title": "Утро и энергия — аудиотрек QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 227,
+      "slug": "subliminals",
+      "link": "https://quantdeus.ru/store/subliminals/",
+      "modified": "2026-11-01T17:14:42",
+      "title": "Саблиминалы — 20 MP3 с бинауральными ритмами"
+    },
+    {
+      "kind": "page",
+      "id": 226,
+      "slug": "store",
+      "link": "https://quantdeus.ru/store/",
+      "modified": "2026-11-01T17:14:45",
+      "title": "QuantDeus Store — магазин цифровых товаров"
+    },
+    {
+      "kind": "page",
+      "id": 222,
+      "slug": "gh",
+      "link": "https://quantdeus.ru/gh/",
+      "modified": "2026-10-30T17:36:54",
+      "title": "Preference Center"
+    },
+    {
+      "kind": "page",
+      "id": 208,
+      "slug": "books",
+      "link": "https://quantdeus.ru/books/",
+      "modified": "2026-11-04T14:33:29",
+      "title": "Книги QuantDeus — интегральная философия и цифровая теософия"
+    },
+    {
+      "kind": "page",
+      "id": 183,
+      "slug": "metaverse",
+      "link": "https://quantdeus.ru/metaverse/",
+      "modified": "2026-10-18T21:42:25",
+      "title": "Метавселенная QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 78,
+      "slug": "forum-archive",
+      "link": "https://quantdeus.ru/forum-archive/",
+      "modified": "2026-10-16T22:47:57",
+      "title": "Архив форума QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 69,
+      "slug": "business-automation",
+      "link": "https://quantdeus.ru/services/business-automation/",
+      "modified": "2026-10-17T15:03:21",
+      "title": "Автоматизация бизнеса"
+    },
+    {
+      "kind": "page",
+      "id": 68,
+      "slug": "ksenia-concert",
+      "link": "https://quantdeus.ru/services/ksenia-concert/",
+      "modified": "2026-10-16T22:41:34",
+      "title": "Концерт Ксении Чередниковой"
+    },
+    {
+      "kind": "page",
+      "id": 53,
+      "slug": "account",
+      "link": "https://quantdeus.ru/account/",
+      "modified": "2026-11-01T17:58:05",
+      "title": "Личный кабинет"
+    },
+    {
+      "kind": "page",
+      "id": 54,
+      "slug": "login",
+      "link": "https://quantdeus.ru/login/",
+      "modified": "2026-10-17T16:33:20",
+      "title": "Вход"
+    },
+    {
+      "kind": "page",
+      "id": 70,
+      "slug": "pro",
+      "link": "https://quantdeus.ru/ai-fleet/pro/",
+      "modified": "2026-11-01T19:09:05",
+      "title": "Pro"
+    },
+    {
+      "kind": "page",
+      "id": 7,
+      "slug": "home",
+      "link": "https://quantdeus.ru/",
+      "modified": "2026-11-01T20:12:44",
+      "title": "QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 40,
+      "slug": "forum",
+      "link": "https://quantdeus.ru/forum/",
+      "modified": "2026-11-01T20:20:56",
+      "title": "Форум"
+    },
+    {
+      "kind": "page",
+      "id": 38,
+      "slug": "public-offer",
+      "link": "https://quantdeus.ru/public-offer/",
+      "modified": "2026-10-16T22:26:25",
+      "title": "Публичная оферта об оказании услуг"
+    },
+    {
+      "kind": "page",
+      "id": 36,
+      "slug": "lite",
+      "link": "https://quantdeus.ru/lite/",
+      "modified": "2026-10-17T13:49:18",
+      "title": "Облегчённая версия QuantDeus"
+    },
+    {
+      "kind": "page",
+      "id": 34,
+      "slug": "coordination",
+      "link": "https://quantdeus.ru/coordination/",
+      "modified": "2026-10-17T14:12:07",
+      "title": "Центр координации"
+    },
+    {
+      "kind": "page",
+      "id": 32,
+      "slug": "manifesto",
+      "link": "https://quantdeus.ru/manifesto/",
+      "modified": "2026-10-17T13:49:14",
+      "title": "Манифест"
+    },
+    {
+      "kind": "page",
+      "id": 30,
+      "slug": "ksenia-cherednikova",
+      "link": "https://quantdeus.ru/ksenia-cherednikova/",
+      "modified": "2026-10-17T11:52:57",
+      "title": "Ксения Чередникова"
+    },
+    {
+      "kind": "page",
+      "id": 28,
+      "slug": "services",
+      "link": "https://quantdeus.ru/services/",
+      "modified": "2026-10-17T14:12:05",
+      "title": "Услуги"
+    },
+    {
+      "kind": "page",
+      "id": 26,
+      "slug": "news",
+      "link": "https://quantdeus.ru/news/",
+      "modified": "2026-10-30T13:07:13",
+      "title": "Новости"
+    },
+    {
+      "kind": "page",
+      "id": 24,
+      "slug": "media",
+      "link": "https://quantdeus.ru/media/",
+      "modified": "2026-10-17T13:48:18",
+      "title": "Медиа"
+    },
+    {
+      "kind": "page",
+      "id": 22,
+      "slug": "federation",
+      "link": "https://quantdeus.ru/federation/",
+      "modified": "2026-10-17T13:48:17",
+      "title": "Федерация"
+    },
+    {
+      "kind": "page",
+      "id": 20,
+      "slug": "horizons",
+      "link": "https://quantdeus.ru/horizons/",
+      "modified": "2026-10-17T13:48:15",
+      "title": "Горизонты"
+    },
+    {
+      "kind": "page",
+      "id": 18,
+      "slug": "research",
+      "link": "https://quantdeus.ru/research/",
+      "modified": "2026-10-17T13:48:13",
+      "title": "Исследования"
+    },
+    {
+      "kind": "page",
+      "id": 16,
+      "slug": "projects",
+      "link": "https://quantdeus.ru/projects/",
+      "modified": "2026-10-17T13:48:11",
+      "title": "Проекты"
+    },
+    {
+      "kind": "page",
+      "id": 14,
+      "slug": "ai-fleet",
+      "link": "https://quantdeus.ru/ai-fleet/",
+      "modified": "2026-10-17T13:48:09",
+      "title": "Флот ИИ"
+    },
+    {
+      "kind": "page",
+      "id": 12,
+      "slug": "community",
+      "link": "https://quantdeus.ru/community/",
+      "modified": "2026-10-17T14:07:23",
+      "title": "Сообщество"
+    },
+    {
+      "kind": "page",
+      "id": 10,
+      "slug": "knowledge",
+      "link": "https://quantdeus.ru/knowledge/",
+      "modified": "2026-10-30T13:07:18",
+      "title": "База знаний"
+    },
+    {
+      "kind": "page",
+      "id": 8,
+      "slug": "about",
+      "link": "https://quantdeus.ru/about/",
+      "modified": "2026-10-17T13:48:05",
+      "title": "О проекте QuantDeus"
+    }
+  ]
+}
