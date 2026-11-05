@@ -31,6 +31,16 @@ jobs:
           node-version: "20"
       - name: Проверить контракт мониторинга
         run: node --test scripts/tests/federation-live-probe.test.mjs
+      - name: Проверить доступность публичных интерфейсов WordPress
+        run: |
+          for url in \
+            'https://quantdeus.ru/wp-json/wp/v2/posts?per_page=1' \
+            'https://public-api.wordpress.com/rest/v1.1/sites/258399627/posts/?number=1' \
+            'https://public-api.wordpress.com/rest/v1.1/sites/quantdeus.ru/posts/?number=1'
+          do
+            status=$(curl --location --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 8 "$url") || status='network_error'
+            echo "Проверка источника: ${url%%\?*}, результат: $status"
+          done
       - name: Проверить действующий тестовый мост Cloudflare и WordPress
         run: node scripts/federation-live-probe.mjs --out "$RUNNER_TEMP/federation-live-report.json"
       - name: Показать безопасную сводку причин сбоя
