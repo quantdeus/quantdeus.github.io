@@ -21,7 +21,8 @@ export function summarizeStatus(payload) {
     }
     safe[name] = {
       configured: p.configured, responding: p.responding,
-      http_status: Number.isInteger(p.http_status) ? p.http_status : null
+      http_status: Number.isInteger(p.http_status) ? p.http_status : null,
+      ...(name === 'wordpress' ? { route: ['direct_wp_rest','jetpack_public_api','unverified'].includes(p.route) ? p.route : 'unverified' } : {})
     };
   }
   if (payload.qdrp?.production_write !== false) throw new Error('live_write_must_be_disabled');
