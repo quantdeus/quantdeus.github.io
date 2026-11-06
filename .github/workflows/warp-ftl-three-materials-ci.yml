@@ -1,0 +1,33 @@
+name: ⚛️ Варп-модель трёх кристаллов
+on:
+  push:
+    branches: [research/warp-ftl-three-materials-20261102]
+    paths:
+      - 'research/warp-ftl-materials/**'
+      - 'tests/test_warp_ftl_three_materials.py'
+      - '.github/workflows/warp-ftl-three-materials-ci.yml'
+  pull_request:
+    paths:
+      - 'research/warp-ftl-materials/**'
+      - 'tests/test_warp_ftl_three_materials.py'
+      - '.github/workflows/warp-ftl-three-materials-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  metric-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Проверить модель варпа и атомные слои
+        run: python3 -m unittest discover -s tests -p 'test_warp_ftl_three_materials.py' -v
+      - name: Получить опубликованные структуры и рассчитать модель
+        run: |
+          python3 research/warp-ftl-materials/compare.py --out /tmp/warp-ftl-three-materials
+      - name: Сохранить результаты для научной проверки
+        uses: actions/upload-artifact@v4
+        with:
+          name: warp-ftl-three-materials-simulation
+          path: /tmp/warp-ftl-three-materials/
+          retention-days: 30
