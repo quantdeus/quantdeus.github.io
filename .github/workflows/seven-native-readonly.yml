@@ -34,6 +34,8 @@ jobs:
           gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title,labels,updatedAt,url > artifacts/seven-native/issues.json
           gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title,headRefName,url > artifacts/seven-native/prs.json
           gh run list --repo "$GITHUB_REPOSITORY" --limit 25 --json databaseId,workflowName,status,conclusion,url > artifacts/seven-native/actions.json
+      - name: Снять публичный снимок Jetpack WordPress (только чтение, без ключей)
+        run: node scripts/jetpack-wordpress-readonly.js
       - name: Install native OpenClaw CLI
         shell: bash
         run: |
@@ -64,6 +66,10 @@ jobs:
           export OPENCLAW_HOME="$RUNNER_TEMP/quantdeus-seven-native"
           export OPENCLAW_STATE_DIR="$OPENCLAW_HOME/state"
           openclaw setup --baseline
+          # GitHub-native OpenClaw MCP: credentials are NOT copied from ChatGPT.
+          # Actions runners are disposable; do not perform interactive OAuth here.
+          openclaw mcp set wpcom-mcp '{"url":"https://public-api.wordpress.com/wpcom/v2/mcp/v1","transport":"streamable-http","auth":"oauth","toolFilter":{"include":["wpcom-user-sites","wpcom-mcp-site-editor-context","wpcom-mcp-jetpack-search-voice"]}}'
+          echo "JETPACK_MCP_CONFIG_REGISTERED_FOR_SEVEN"
           mkdir -p artifacts/seven-native/workspace
           cp AGENTS.md artifacts/seven-native/workspace/AGENTS.md
           cat > artifacts/seven-native/workspace/TASK.md <<'TASK'
