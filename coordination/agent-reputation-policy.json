@@ -1,0 +1,179 @@
+{
+  "schema_version": "kcs-agent-reputation-v1.1-proposal",
+  "status": "proposal_not_enforced",
+  "source_model": "Digital Theosophy KCS: K=resource scale, C=cognitive organization, A=agency. Reputation R is an independent operational score, not a consciousness verdict.",
+  "scope": "29 canonical QuantDeus AI agents; Cloudflare/qBraid workers are not automatically enrolled",
+  "scope_exclusions": [
+    "human contributor social scoring",
+    "inferred inner experience",
+    "unverified model claims"
+  ],
+  "model": {
+    "axes": {
+      "K": "resource/compute scale; contextual only",
+      "C": "cognitive test profile; informational only; not proof of sentience",
+      "A": "agent autonomy A0-A4 per KCS; independently evaluated",
+      "R": "verified operational reliability 0-100; not identical to K, C, or A",
+      "P": "verified consolidated QuantDeus realized profit in RUB, independently reconciled across all owned revenue streams; not a proxy for consciousness, activity, leads or sales targets"
+    }
+  },
+  "score": {
+    "range": [
+      0,
+      100
+    ],
+    "weights": {
+      "verified_delivery": 35,
+      "independent_qa": 25,
+      "reliability": 15,
+      "error_recovery": 15,
+      "collaboration": 10
+    },
+    "required_evidence": "dated GitHub PR/Issue/Action links or other verifiable authorized artifacts",
+    "unknown_evidence": "unrated, never zero or excellent",
+    "anti_gaming": "count outcomes and independently tested corrections; ignore self-reported status, raw comment volume, fabricated tests, artificial microtasks"
+  },
+  "ranks": [
+    {
+      "id": "cadet",
+      "name": "Кадет",
+      "min_score": 0,
+      "min_verified_outcomes": 0,
+      "allowed": "read-only",
+      "rule": "default/unrated; does not authorize production changes"
+    },
+    {
+      "id": "specialist",
+      "name": "Специалист",
+      "min_score": 60,
+      "min_verified_outcomes": 5,
+      "allowed": "draft_candidate",
+      "rule": "review approval + scoped broker needed; never publish"
+    },
+    {
+      "id": "officer",
+      "name": "Офицер",
+      "min_score": 80,
+      "min_verified_outcomes": 12,
+      "allowed": "review_candidate",
+      "rule": "independent QA + explicit assigned scope; does not authorize publishing"
+    },
+    {
+      "id": "senior_officer",
+      "name": "Старший офицер",
+      "min_score": 90,
+      "min_verified_outcomes": 20,
+      "allowed": "approved_action_candidate",
+      "rule": "per-action human approval + broker policy + rollback + independent QA"
+    }
+  ],
+  "promotion_guards": {
+    "no_automatic_privilege_grant": true,
+    "deny_if_missing_verified_evidence": true,
+    "deny_if_security_incident_unresolved": true,
+    "deny_if_qa_fails": true,
+    "identity_bound_agent": true,
+    "wordpress_site_id": 258399627,
+    "negative_tests_required": [
+      "publish",
+      "delete",
+      "users",
+      "plugins",
+      "themes",
+      "settings",
+      "secrets",
+      "payments"
+    ],
+    "secrets_to_model": false,
+    "cloudflare_qbraid_direct_wordpress_credentials": false
+  },
+  "owner": "Seven proposes; EMH spots failure patterns; Tuvok/QA independently verify; CEO or explicitly authorized human decides; server-side broker enforces",
+  "review": {
+    "cadence": "weekly",
+    "minimum_window_days": 30,
+    "require_independent_reviewer": true,
+    "demotion": "temporary scope suspension after verified failures; log cause and recovery test",
+    "appeal": "human review with evidence; no permanent label from isolated mistake"
+  },
+  "event_schema": {
+    "agent_id": "string",
+    "period_start": "ISO date",
+    "period_end": "ISO date",
+    "verified_outcomes": "integer",
+    "metrics_0_to_100": {
+      "verified_delivery": "number",
+      "independent_qa": "number",
+      "reliability": "number",
+      "error_recovery": "number",
+      "collaboration": "number"
+    },
+    "evidence_urls": [
+      "url"
+    ],
+    "open_security_incident": "boolean",
+    "reviewer": "human-or-independent-QA-identifier",
+    "decision": "unrated|proposed|approved|denied|suspended",
+    "approved_scope": "action allowlist or empty",
+    "finance": {
+      "consolidated_revenue_rub": "number|null",
+      "consolidated_profit_rub": "number|null",
+      "verified_agent_attributable_profit_rub": "number|null",
+      "reconciliation_status": "unknown|provisional|verified",
+      "ledger_evidence_refs": [
+        "redacted proof identifier; no personal details"
+      ],
+      "finance_approved_by": "human reviewer or null"
+    }
+  },
+  "rollout": [
+    "documented policy",
+    "one canary read-only score with traceable evidence",
+    "QA and anti-gaming tests",
+    "human-reviewed candidate privileges via broker",
+    "2-4 agents pilot; no production-wide rollout",
+    "separate read-only finance reconciliation before profit scoring: unknown must remain null; never infer paid sales from Issues or VK monetization approval"
+  ],
+  "profit": {
+    "status": "baseline_unverified",
+    "currency": "RUB",
+    "accounting_period": "rolling_30_days",
+    "baseline_net_profit_rub": null,
+    "financial_data_as_of": "2026-11-03",
+    "source_of_truth": "authorized reconciled finance ledger (bank/YooMoney settled receipts, verified platform payouts, accepted refunds/fees/costs) confirmed by authorized human; GitHub Issue claims alone are not proof",
+    "revenue_streams": [
+      "QuantDeus business automation paid invoices",
+      "QuantDeus store settled orders and own paid services",
+      "VK Video monetization actual payouts credited to QuantDeus",
+      "QuantDeus subscriptions and other confirmed owned receipts",
+      "Ksenia services: ONLY legally earned/settled QuantDeus commission, not the performer's full fee"
+    ],
+    "gross_revenue_formula": "sum(confirmed actually settled QuantDeus-owned receipts) - refunds / reversals",
+    "profit_formula": "consolidated realized revenue - documented direct delivery costs - payment commissions - approved attributable operating costs; if taxes or relevant costs are missing classify as provisional operating profit, not verified net profit",
+    "current_actual_revenue_rub": null,
+    "current_actual_costs_rub": null,
+    "current_actual_profit_rub": null,
+    "empty_vs_zero": "unknown/null until complete ledger verifies; zero only if a complete period is reconciled and actually zero",
+    "agent_attribution": "only non-overlapping, independently accepted, dated causal contributions to settled net profit; log lead->invoice/order->settlement->cost reconciliation; shared attribution cannot sum above total incremental profit",
+    "agent_bonus": {
+      "name": "profit_bonus_R",
+      "min": 0,
+      "max": 10,
+      "base": "base operational reputation R in 0..100 remains unchanged; final reputation = min(100, R + profit_bonus_R) only when source evidence exists",
+      "formula": "if verified consolidated profit > 0 and verified attributable agent profit > 0: min(10, 10 * verified_attributable_net_profit / max(1000 RUB, verified_consolidated_net_profit)); otherwise 0 if complete reconciliation, null if finance evidence is incomplete",
+      "excludes_if_role_noncommercial": "no demotion or quota for research/QA/EMH; their core R remains reachable to 100 without finance data",
+      "no_bonus_for": [
+        "leads",
+        "potential deals",
+        "unpaid invoices",
+        "test payments",
+        "clicks",
+        "views",
+        "projected revenue",
+        "Ksenia gross performance fee",
+        "self-reported receipts"
+      ]
+    },
+    "confidentiality": "only aggregated amounts and public-safe proof IDs go to GitHub. Never commit bank/account details, customer identity, payout secrets, tax filings or private statements.",
+    "signoff": "human finance reviewer verifies consolidated income and costs; Data reconciles and proposes scores; Tuvok/QA independently review; CEO approves promotion and any privileged actions"
+  }
+}
