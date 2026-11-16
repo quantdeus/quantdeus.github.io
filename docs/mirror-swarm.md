@@ -91,8 +91,14 @@ OIDC audience: `quantdeus-vercel-mirror`
 
 The scheduled Action supplies its ephemeral GitHub token to the Vercel mirror only for the bounded repair operation. The repository does not store that token.
 
-Optional Vercel environment variable:
-- `QD_MIRROR_MODEL` — overrides the Vercel AI Gateway model used by the mirror.
+Optional model credentials (no new billing required):
+- Vercel provider credentials, if configured, are used first by the independent model router.
+- If Vercel has no `OPENROUTER_API_KEY`, the existing GitHub Actions `OPENROUTER_API_KEY` repository secret may be forwarded **only after the Mirror endpoint verifies GitHub OIDC**. This route forces `openrouter/free`, regardless of `QD_LLM_MODEL`.
+- The secret is not persisted in the repository, returned in API responses, or included in evidence. Do not print model credentials in Actions logs.
+- If the Actions secret is absent, the free route is exhausted, or the model fails strict-JSON capability checks, Mirror Swarm still produces a deterministic, deduplicated escalation (Issue #505); it must never claim an AI repair occurred.
+- Mirror Swarm uses an ordinary Vercel Serverless Function, not Vercel Sandbox. A Vercel Sandbox 402 quota block affects OpenClaw/Sandbox work separately and must not trigger self-heal loops.
+
+The mirror does not depend on the retired GitHub Models inference API and does not create a paid fallback.
 
 ## Failure-domain rule
 

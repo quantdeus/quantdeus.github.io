@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deterministicDiagnosis, deterministicStageDiagnosis, safeRepairPath, fingerprint, providerExhausted, mirrorIncidentKey, publicHeadText } from '../api/quantdeus/mirror.js';
+import { deterministicDiagnosis, deterministicStageDiagnosis, safeRepairPath, fingerprint, providerExhausted, mirrorIncidentKey, publicHeadText, mirrorProviderEnv } from '../api/quantdeus/mirror.js';
 
 test('deterministic fallback stays healthy on clean evidence', () => {
   const result = deterministicDiagnosis({
@@ -66,4 +66,19 @@ test('model-plane recurrences share one semantic incident key across changing ev
 test('mirror incident titles keep the beginning of the summary', () => {
   const title = publicHeadText('Mirror model routes unavailable; deterministic evidence captured a repair-worthy condition.', 20);
   assert.equal(title, 'Mirror model routes un');
+});
+
+test('optional Actions model key is free-only and never overrides an existing Vercel key', () => {
+  const borrowed = mirrorProviderEnv({ QD_LLM_MODEL:'paid/model' }, '  action-secret  ');
+  assert.equal(borrowed.OPENROUTER_API_KEY, 'action-secret');
+  assert.equal(borrowed.OPENROUTER_MODEL, 'openrouter/free');
+  const configured = { OPENROUTER_API_KEY:'vercel-secret', OPENROUTER_MODEL:'configured/model' };
+  assert.equal(mirrorProviderEnv(configured, 'action-secret'), configured);
+});
+
+test('invalid or absent Actions model key leaves provider configuration unchanged', () => {
+  const env = { QD_LLM_MODEL:'example' };
+  assert.equal(mirrorProviderEnv(env, ''), env);
+  assert.equal(mirrorProviderEnv(env, 'x'.repeat(257)), env);
+  assert.equal(mirrorProviderEnv(env, ['injected-key']), env);
 });

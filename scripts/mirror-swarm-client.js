@@ -29,7 +29,11 @@ async function main() {
         authorization: 'Bearer ' + oidc,
         'content-type': 'application/json',
         accept: 'application/json',
-        'x-quantdeus-github-token': githubToken
+        'x-quantdeus-github-token': githubToken,
+        // The endpoint verifies GitHub OIDC before admitting any model credential.
+        ...(process.env.OPENROUTER_API_KEY
+          ? { 'x-quantdeus-mirror-openrouter-key': process.env.OPENROUTER_API_KEY }
+          : {})
       },
       body: JSON.stringify({ mode, evidence }),
       signal: controller.signal
