@@ -1,12 +1,12 @@
 'use strict';
 // Tool calls are simulated locally. No external tool, repository mutation, or write occurs.
 const key = String(process.env.OPENROUTER_API_KEY || '').trim();
-const model = 'openrouter/free';
+const model = String(process.env.OPENROUTER_MODEL || 'openrouter/free').trim();
 const tools = [
   {type:'function',function:{name:'quantdeus_probe_step_one',description:'Call first, once',parameters:{type:'object',properties:{},additionalProperties:false}}},
   {type:'function',function:{name:'quantdeus_probe_step_two',description:'Call after step one, once',parameters:{type:'object',properties:{},additionalProperties:false}}}
 ];
-async function call(messages,choice,maxTokens=256) {
+async function call(messages,choice,maxTokens=512) {
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(),25000);
   try {
@@ -35,7 +35,7 @@ function exactly(message,name) {
  const c1=exactly(first,'quantdeus_probe_step_one');
  const second=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'}],'required');
  const c2=exactly(second,'quantdeus_probe_step_two');
- const third=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'},{role:'assistant',content:second.content||null,tool_calls:[c2]},{role:'tool',tool_call_id:c2.id,content:'STEP_TWO_OK'},{role:'user',content:'Reply PROBE_DONE without tools.'}],'none',256);
+ const third=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'},{role:'assistant',content:second.content||null,tool_calls:[c2]},{role:'tool',tool_call_id:c2.id,content:'STEP_TWO_OK'},{role:'user',content:'Reply PROBE_DONE without tools.'}] ,'none',128);
  const text=String(third.content||'').trim();
  if(text!=='PROBE_DONE'||(third.tool_calls||[]).length) throw new Error('OPENROUTER_TOOL_PROBE_FINAL_MISMATCH');
  console.log(JSON.stringify({ok:true,model,first_tool:true,second_tool:true,final_marker:true,no_external_tools:true}));
