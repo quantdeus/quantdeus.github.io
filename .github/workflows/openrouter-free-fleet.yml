@@ -93,9 +93,6 @@ jobs:
           node --test scripts/qa/cloud-llm-client.test.js scripts/qa/openrouter-agent-smoke.test.js scripts/qa/agent-cron-map.test.js vercel-dispatcher/tests/openrouter-free-bridge.test.mjs vercel-dispatcher/tests/mirror-model-router.test.mjs
       - name: Проверить production OIDC маршрут без inference
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.preflight_only == true }}
-        env:
-          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
         run: node scripts/openrouter-production-preflight.js
 
       - name: Реальный ответ одной бесплатной модели
