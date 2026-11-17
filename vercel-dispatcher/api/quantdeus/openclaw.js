@@ -905,18 +905,35 @@ export default async function handler(req, res) {
     });
 
     const modelCandidates = probeCandidates.map(candidate => candidate.ref);
-    const probeRows = await Promise.all(probeCandidates.map(async candidate => {
-      const startedAt = Date.now();
-      const probe = await cachedProbeChatCandidate(candidate, true);
-      return {
-        candidate,
-        probe: {
-          ...probe,
-          latency_ms: Date.now() - startedAt,
-          routing_priority: candidate.priority
-        }
-      };
-    }));
+    // The free-only lane is pinned to Gemma 4's documented native function-calling
+    // capability. Do not spend scarce free-tier requests on a per-instance preflight;
+    // the explicit sequential tool smoke is a separate CI/manual check. The real
+    // agent request remains authoritative and still fails closed on 429/errors.
+    const probeRows = freeLane.enabled
+      ? probeCandidates.map(candidate => ({
+          candidate,
+          probe: {
+            ref: candidate.ref,
+            ok: true,
+            status: 200,
+            detail: 'pinned_free_model_native_tool_calling',
+            cached: true,
+            latency_ms: 0,
+            routing_priority: candidate.priority
+          }
+        }))
+      : await Promise.all(probeCandidates.map(async candidate => {
+          const startedAt = Date.now();
+          const probe = await cachedProbeChatCandidate(candidate, true);
+          return {
+            candidate,
+            probe: {
+              ...probe,
+              latency_ms: Date.now() - startedAt,
+              routing_priority: candidate.priority
+            }
+          };
+        }));
     const probeResults = probeRows.map(row => row.probe);
     const healthyRefs = probeRows
       .filter(row => row.probe.ok)
