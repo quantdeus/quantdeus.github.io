@@ -1,12 +1,12 @@
 'use strict';
 // Tool calls are simulated locally. No external tool, repository mutation, or write occurs.
 const key = String(process.env.OPENROUTER_API_KEY || '').trim();
-const model = 'openrouter/free';
+const model = String(process.env.OPENROUTER_MODEL || 'google/gemma-4-26b-a4b-it:free').trim();
 const tools = [
   {type:'function',function:{name:'quantdeus_probe_step_one',description:'Call first, once',parameters:{type:'object',properties:{},additionalProperties:false}}},
   {type:'function',function:{name:'quantdeus_probe_step_two',description:'Call after step one, once',parameters:{type:'object',properties:{},additionalProperties:false}}}
 ];
-async function call(messages,choice,maxTokens=256) {
+async function call(messages,choice,maxTokens=512) {
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(),25000);
   try {
