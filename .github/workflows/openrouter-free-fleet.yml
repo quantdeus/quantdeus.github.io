@@ -7,6 +7,7 @@ on:
       - 'scripts/cloud-llm-client.js'
       - 'scripts/qa/cloud-llm-client.test.js'
       - 'scripts/openrouter-agent-smoke.js'
+      - 'scripts/qa/openrouter-agent-smoke.test.js'
       - 'scripts/site-agent-reply.js'
       - 'scripts/telegram-bot.js'
       - 'scripts/mirror-swarm-client.js'
@@ -52,7 +53,7 @@ jobs:
           node --check scripts/mirror-swarm-client.js
           node --check vercel-dispatcher/lib/mirror-model-router.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
-          node --test scripts/qa/cloud-llm-client.test.js vercel-dispatcher/tests/mirror-model-router.test.mjs
+          node --test scripts/qa/cloud-llm-client.test.js scripts/qa/openrouter-agent-smoke.test.js vercel-dispatcher/tests/mirror-model-router.test.mjs
       - name: Реальный ответ одной бесплатной модели
         if: ${{ github.event_name != 'pull_request' }}
         env:
