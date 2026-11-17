@@ -21,10 +21,7 @@ test('agent registry has unique ids and 16 alternating-day role specialists', ()
 
 test('each UTC weekday has exactly eight role cycles with no hour collision', () => {
   for (let weekday = 0; weekday <= 6; weekday += 1) {
-    const due = roleAgents.filter(agent =>
-      agent.utc_hours.includes(slots.find(hour => agent.utc_hours.includes(hour))) &&
-      agent.utc_days.includes(weekday)
-    );
+    const due = roleAgents.filter(agent => agent.utc_days.includes(weekday));
     assert.equal(due.length, 8, 'weekday ' + weekday + ' must have eight scheduled role agents');
     const hours = due.map(agent => agent.utc_hours[0]);
     assert.equal(new Set(hours).size, 8, 'weekday ' + weekday + ' must not schedule two agents in one hour');
