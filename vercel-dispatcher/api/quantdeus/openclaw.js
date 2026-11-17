@@ -468,6 +468,20 @@ async function cachedProbeChatCandidate(candidate, requireTools = false) {
 export default async function handler(req, res) {
   const qdRoute = String(req.query?.qd_route || '');
 
+  // Signed compatibility preflight. Prevent new free-only callers from hitting
+  // an old deployment that could silently select a paid-capable provider.
+  if (qdRoute === 'openrouter-free-capability') {
+    if (req.method !== 'GET') return res.status(405).json({ok:false,error:'method_not_allowed'});
+    try {
+      const token = String(req.headers.authorization || '').replace(/^Bearer\\s+/i,'');
+      const claims = await verify(token);
+      if (claims.ref !== 'refs/heads/main') return res.status(403).json({ok:false,error:'not_main'});
+      return res.status(200).json({ok:true,free_only_supported:true,contract_version:1});
+    } catch {
+      return res.status(401).json({ok:false,error:'invalid_oidc'});
+    }
+  }
+
   if (qdRoute === 'bingx-vst-signal') {
     if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'method_not_allowed' });
     try {
