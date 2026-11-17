@@ -111,3 +111,18 @@ test('OpenRouter retains direct route unless gateway authentication is configure
   assert.equal(route.model, 'example/model:free');
   assert.equal('cfAigToken' in route, false);
 });
+
+test('OpenRouter-only mode excludes potentially paid fallbacks and fails closed without key', () => {
+  const rows = buildMirrorCandidates({
+    CEREBRAS_API_KEY: 'paid-capable-key',
+    GROQ_API_KEY: 'paid-capable-key',
+    OPENROUTER_API_KEY: 'or-secret',
+    QD_OPENROUTER_ONLY: 'true',
+    QD_OPENROUTER_FREE_ONLY: 'true',
+    OPENROUTER_MODEL: 'potentially/paid'
+  });
+  assert.deepEqual(rows.map(row => row.id), ['quantdeus-openrouter']);
+  assert.equal(rows[0].model, 'openrouter/free');
+  const missing = buildMirrorCandidates({ QD_OPENROUTER_ONLY: 'true' });
+  assert.deepEqual(missing, []);
+});
