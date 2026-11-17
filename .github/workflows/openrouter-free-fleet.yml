@@ -23,6 +23,11 @@ on:
         description: 'Один ID из coordination/agents.json; пустой = автоматическая ротация'
         required: false
         type: string
+      model:
+        description: 'ID бесплатной текстовой модели (:free); пустой = стабильная модель по умолчанию'
+        required: false
+        type: string
+        default: 'liquid/lfm-2.5-2.6b:free'
   schedule:
     - cron: '19 7 * * *'
 
@@ -58,7 +63,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENROUTER_MODEL: openrouter/free
+          OPENROUTER_MODEL: ${{ inputs.model || 'liquid/lfm-2.5-2.6b:free' }}
           QD_OPENROUTER_FREE_ONLY: "true"
           CLOUDFLARE_ACCOUNT_ID: 97ba2df0316dd1b7137e535c5f47cc76
           CLOUDFLARE_AI_GATEWAY_ID: quantdeus-openrouter

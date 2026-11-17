@@ -34,7 +34,7 @@ async function main() {
       role:'user',
       content:'Agent profile ' + agent.id + '. Reply exactly QD_AGENT_SMOKE_OK and nothing else.'
     }
-  ], {maxTokens: 40, timeoutMs: 25000});
+  ], {maxTokens: 512, timeoutMs: 25000});
 
   // Nonempty text proves connectivity; exact instruction-following is a separate signal.
   const markerMatch = markerMatches(result.text);
