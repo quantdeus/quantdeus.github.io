@@ -905,9 +905,9 @@ export default async function handler(req, res) {
     });
 
     const modelCandidates = probeCandidates.map(candidate => candidate.ref);
-    // The free-only lane is pinned to Gemma 4's documented native function-calling
-    // capability. Do not spend scarce free-tier requests on a per-instance preflight;
-    // the explicit sequential tool smoke is a separate CI/manual check. The real
+    // The OpenRouter free router selects available free models that satisfy request
+    // requirements, including tool support. Do not spend scarce free-tier requests
+    // on a per-instance preflight; the explicit sequential tool smoke is separate. The real
     // agent request remains authoritative and still fails closed on 429/errors.
     const probeRows = freeLane.enabled
       ? probeCandidates.map(candidate => ({
@@ -916,7 +916,7 @@ export default async function handler(req, res) {
             ref: candidate.ref,
             ok: true,
             status: 200,
-            detail: 'pinned_free_model_native_tool_calling',
+            detail: 'openrouter_free_router_tool_capability_contract',
             cached: true,
             latency_ms: 0,
             routing_priority: candidate.priority
