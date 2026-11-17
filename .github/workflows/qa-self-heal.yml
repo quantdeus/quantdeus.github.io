@@ -3,10 +3,10 @@ run-name: "Поиск и исправление ошибок"
 
 on:
   schedule:
-    # Site lane: 00:17 / 06:17 / 12:17 / 18:17 UTC.
-    - cron: '17 */6 * * *'
-    # Actions lane: 03:47 / 09:47 / 15:47 / 21:47 UTC.
-    - cron: '47 3-23/6 * * *'
+    # Site lane: one daily pass, 05:17 MSK.
+    - cron: '17 2 * * *'
+    # Actions lane: one daily pass, 17:47 MSK.
+    - cron: '47 14 * * *'
   workflow_dispatch:
     inputs:
       lane:
@@ -178,9 +178,9 @@ jobs:
           const input = String(process.env.INPUT_LANE || '').trim();
           const lane = input && input !== 'full'
             ? input
-            : schedule === '17 */6 * * *'
+            : schedule === '17 2 * * *'
               ? 'site'
-              : schedule === '47 3-23/6 * * *'
+              : schedule === '47 14 * * *'
                 ? 'actions'
                 : 'full';
 
