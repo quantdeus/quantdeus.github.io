@@ -66,6 +66,10 @@ export function buildMirrorCandidates(env = process.env) {
     1000
   ));
 
+  // Explicit zero-budget lane: do not silently fall through to potentially paid providers.
+  if (env.QD_OPENROUTER_ONLY === 'true') {
+    return rows.filter(row => row.id === 'quantdeus-openrouter');
+  }
   return rows.sort((a,b) => a.priority - b.priority);
 }
 
