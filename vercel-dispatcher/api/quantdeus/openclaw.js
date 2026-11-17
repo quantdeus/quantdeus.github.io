@@ -1670,7 +1670,7 @@ export default async function handler(req, res) {
         toolFailures > 0 ||
         incompleteToolTurn;
       const failedExecutionText = String(raw || '').slice(-1800);
-      const upstreamRateLimited = /(?:\\b429\\b|rate.?limit|free.?quota)/i.test(failedExecutionText);
+      const upstreamRateLimited = /(?:\b429\b|rate.?limit|free.?quota)/i.test(failedExecutionText);
       const safeRetry =
         attempt === 1 &&
         executionFailed &&
@@ -1740,7 +1740,7 @@ export default async function handler(req, res) {
       /vercel sandbox[^\n]*usage limit/i.test(message) ||
       /status code 402[^\n]*sandbox/i.test(message);
     const explicitStatus = Number(error?.status || 0);
-    const upstreamRateLimited = explicitStatus === 429 || /(?:\\b429\\b|rate.?limit|free.?quota)/i.test(message);
+    const upstreamRateLimited = explicitStatus === 429 || /(?:\b429\b|rate.?limit|free.?quota)/i.test(message);
     const status = sandboxCapacityBlocked
       ? 503
       : (upstreamRateLimited
