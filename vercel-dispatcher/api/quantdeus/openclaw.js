@@ -473,7 +473,7 @@ export default async function handler(req, res) {
   if (qdRoute === 'openrouter-free-capability') {
     if (req.method !== 'GET') return res.status(405).json({ok:false,error:'method_not_allowed'});
     try {
-      const token = String(req.headers.authorization || '').replace(/^Bearer\\s+/i,'');
+      const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i,'');
       const claims = await verify(token);
       if (claims.ref !== 'refs/heads/main') return res.status(403).json({ok:false,error:'not_main'});
       return res.status(200).json({ok:true,free_only_supported:true,contract_version:1});
