@@ -8,11 +8,11 @@ const claims = {
   workflow_ref:'quantdeus/quantdeus.github.io/.github/workflows/agent-role-cron.yml@refs/heads/main'
 };
 const key = 'sk-or-v1-test-secret-safe-value';
-test('main signed workflow can select only free model', () => {
+test('main signed workflow can select the pinned free tool-capable Gemma model', () => {
   assert.deepEqual(freeOnlyBridge({headers:{
     'x-quantdeus-openrouter-only':'true',
     'x-quantdeus-openrouter-key':key
-  }},claims), {enabled:true,key,model:'openrouter/free'});
+  }},claims), {enabled:true,key,model:'google/gemma-4-26b-a4b-it:free'});
 });
 test('no opt-in means no credential admitted', () => {
   assert.deepEqual(freeOnlyBridge({headers:{}},claims), {enabled:false,key:''});
