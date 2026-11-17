@@ -1,7 +1,7 @@
 'use strict';
 // Tool calls are simulated locally. No external tool, repository mutation, or write occurs.
 const key = String(process.env.OPENROUTER_API_KEY || '').trim();
-const model = String(process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free').trim();
+const model = String(process.env.OPENROUTER_MODEL || 'openrouter/free').trim();
 const probeSteps = Math.max(1, Math.min(2, Number(process.env.OPENROUTER_TOOL_PROBE_STEPS || 2)));
 const tools = [
   {type:'function',function:{name:'quantdeus_probe_step_one',description:'Call first, once',parameters:{type:'object',properties:{},additionalProperties:false}}},
