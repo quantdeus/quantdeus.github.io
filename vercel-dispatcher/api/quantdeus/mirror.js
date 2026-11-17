@@ -437,7 +437,22 @@ export default async function handler(req, res) {
         : []
     };
 
-    const providerProbes = await probeMirrorProviders(buildMirrorCandidates(process.env));
+    // GitHub Actions secrets are not automatically present in Vercel. The caller can
+    // forward its OpenRouter credential ONLY after GitHub OIDC has been verified above.
+    const borrowedOpenRouterKey = String(req.headers['x-quantdeus-openrouter-key'] || '').trim();
+    if (borrowedOpenRouterKey && !/^[A-Za-z0-9._-]{20,256}$/.test(borrowedOpenRouterKey)) {
+      throw new Error('openrouter_key_shape_invalid');
+    }
+    const providerEnv = borrowedOpenRouterKey
+      ? {
+          ...process.env,
+          OPENROUTER_API_KEY: borrowedOpenRouterKey,
+          OPENROUTER_MODEL: 'openrouter/free',
+          QD_OPENROUTER_FREE_ONLY: 'true',
+          QD_OPENROUTER_ONLY: 'true'
+        }
+      : process.env;
+    const providerProbes = await probeMirrorProviders(buildMirrorCandidates(providerEnv));
     const providerState = providerProbes.map(({ ref, ok, status, detail }) => ({ ref, ok, status, detail }));
     const healthyRoutes = providerProbes
       .filter(item => item.ok)
