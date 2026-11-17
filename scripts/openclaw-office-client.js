@@ -110,6 +110,19 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
     };
     const brokerGithubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
     if (brokerGithubToken) headers['x-quantdeus-github-token'] = brokerGithubToken;
+    // Ephemeral credential only for the signed Actions -> Vercel free-only lane.
+    // Never send the key to an untrusted URL or put it into the JSON body.
+    if (process.env.QD_OPENROUTER_ONLY === 'true') {
+      const targetUrl = process.env.OPENCLAW_VERCEL_URL || DEFAULT_VERCEL_URL;
+      const target = new URL(targetUrl);
+      if (target.protocol !== 'https:' || target.origin !== 'https://quantdeus.vercel.app' ||
+          target.pathname !== '/api/quantdeus/openclaw') {
+        throw officeError('OPENROUTER_FREE_ROUTE_UNTRUSTED_TARGET', {code:'OPENROUTER_FREE_UNTRUSTED_TARGET'});
+      }
+      headers['x-quantdeus-openrouter-only'] = 'true';
+      const key = String(process.env.OPENROUTER_API_KEY || '').trim();
+      if (key) headers['x-quantdeus-openrouter-key'] = key;
+    }
 
     let response;
     try {
