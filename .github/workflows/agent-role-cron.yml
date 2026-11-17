@@ -3,7 +3,7 @@ run-name: "Задачи агентов по расписанию"
 
 on:
   schedule:
-    - cron: '23 0-15 * * *'
+    - cron: '23 0,3,6,9,12,15,18,21 * * *'
   workflow_dispatch:
     inputs:
       agent_id:
@@ -14,10 +14,11 @@ on:
         description: Optional explicit GitHub Issue to inspect first
         required: false
         type: string
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/agent-role-cron.yml'
+      smoke_all_agents:
+        description: Run the expensive read-only smoke for every registered agent (manual only)
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -36,7 +37,7 @@ concurrency:
 
 jobs:
   role-cycle:
-    if: github.event_name != 'push'
+    if: github.event_name != 'push' && inputs.smoke_all_agents != true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -67,14 +68,20 @@ jobs:
           const manual = String(process.env.INPUT_AGENT_ID || '').trim();
           if (manual === 'q' || manual === 'kryon') throw new Error('Q/Kryon run via q-kryon-github-native.yml (Vercel disabled for these agents)');
           const explicitIssue = String(process.env.INPUT_ISSUE_NUMBER || '').trim();
-          const hour = new Date().getUTCHours();
+          const now = new Date();
+          const hour = now.getUTCHours();
+          const weekday = now.getUTCDay();
           const due = manual
             ? map.agents.filter(a => a.id === manual)
-            : map.agents.filter(a => a.workflow === 'agent-role-cron.yml' && a.utc_hours.includes(hour));
+            : map.agents.filter(a =>
+                a.workflow === 'agent-role-cron.yml' &&
+                a.utc_hours.includes(hour) &&
+                (!Array.isArray(a.utc_days) || a.utc_days.includes(weekday))
+              );
           if (manual && due.length !== 1) throw new Error('Unknown agent id: ' + manual);
           if (explicitIssue && !/^\d+$/.test(explicitIssue)) throw new Error('Invalid explicit Issue number: ' + explicitIssue);
           if (!due.length) {
-            console.log(JSON.stringify({ok:true,action:'none',reason:'no role agent due at UTC hour '+hour}));
+            console.log(JSON.stringify({ok:true,action:'none',reason:'no role agent due at UTC weekday '+weekday+' hour '+hour}));
             process.exit(0);
           }
           if (due.length > 1) throw new Error('Role cron map must schedule at most one agent per hour');
@@ -260,7 +267,7 @@ jobs:
 
 
   smoke-all-agents:
-    if: github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' && inputs.smoke_all_agents == true
     name: smoke-${{ matrix.agent_id }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
