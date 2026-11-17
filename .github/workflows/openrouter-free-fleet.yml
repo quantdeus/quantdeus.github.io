@@ -45,6 +45,16 @@ on:
         required: false
         type: boolean
         default: false
+      tool_model:
+        description: 'Отдельная бесплатная модель для tool smoke'
+        required: false
+        type: string
+        default: 'nvidia/nemotron-3-super-120b-a12b:free'
+      probe_steps:
+        description: 'Число шагов tool smoke: 1 для первичного теста, 2 для полного roundtrip'
+        required: false
+        type: string
+        default: '2'
       probe_tools:
         description: 'Проверить 2 последовательных безопасных вызова инструментов'
         required: false
@@ -124,4 +134,6 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.probe_tools == true && inputs.preflight_only != true && inputs.quota_status_only != true }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ inputs.tool_model || 'nvidia/nemotron-3-super-120b-a12b:free' }}
+          OPENROUTER_TOOL_PROBE_STEPS: ${{ inputs.probe_steps || '2' }}
         run: node scripts/openrouter-tool-smoke.js
