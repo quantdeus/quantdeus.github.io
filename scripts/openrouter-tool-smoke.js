@@ -59,7 +59,7 @@ function exactly(message,name) {
  const third=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'},{role:'assistant',content:second.content||null,tool_calls:[c2]},{role:'tool',tool_call_id:c2.id,content:'STEP_TWO_OK'},{role:'user',content:'Reply PROBE_DONE without tools.'}],'none',256);
  const finalText=String(third.content||'').trim();
  const finalToolCount=Array.isArray(third.tool_calls)?third.tool_calls.length:0;
- if(!/\\bPROBE_DONE\\b/i.test(finalText)||finalToolCount) {
+ if(!/\bPROBE_DONE\b/i.test(finalText)||finalToolCount) {
    throw new Error('OPENROUTER_TOOL_PROBE_FINAL_MISMATCH: text='+finalText.slice(0,120)+' tools='+finalToolCount);
  }
  console.log(JSON.stringify({
