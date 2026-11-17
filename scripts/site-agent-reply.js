@@ -591,7 +591,8 @@ async function buildReply(agentId, query) {
     return createIssueFromRequest(agent, normalizedQuery, snapshot);
   }
 
-  if (openclawOffice.configured()) {
+  // Text turns use the free model. Owner/admin tool requests retain their trusted broker.
+  if (openclawOffice.configured() && (process.env.QD_OPENROUTER_FIRST !== 'true' || trustedAction)) {
     try {
       const result = await openclawOffice.ask({
         profile: agent.id,

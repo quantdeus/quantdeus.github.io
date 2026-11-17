@@ -53,6 +53,9 @@ jobs:
         id: openclaw_fallback
         if: steps.github_native.outcome == 'failure'
         env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_OPENROUTER_ONLY: 'true'
+          QD_OPENROUTER_FREE_ONLY: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_AGENT_ID: ${{ inputs.agent_id }}
         run: |

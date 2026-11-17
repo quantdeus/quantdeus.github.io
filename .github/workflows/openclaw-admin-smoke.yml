@@ -81,6 +81,9 @@ jobs:
 
       - name: Проверить trusted OpenClaw GitHub MCP lane
         env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_OPENROUTER_ONLY: 'true'
+          QD_OPENROUTER_FREE_ONLY: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node <<'NODE'
@@ -130,6 +133,10 @@ jobs:
           NODE
 
       - name: Проверить brokered-read OpenClaw publicrepo MCP lane
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_OPENROUTER_ONLY: 'true'
+          QD_OPENROUTER_FREE_ONLY: 'true'
         run: |
           node <<'NODE'
           const office = require('./scripts/openclaw-office-client');
@@ -172,6 +179,9 @@ jobs:
 
       - name: Проверить trusted OpenClaw Playwright MCP lane
         env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_OPENROUTER_ONLY: 'true'
+          QD_OPENROUTER_FREE_ONLY: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node <<'NODE'

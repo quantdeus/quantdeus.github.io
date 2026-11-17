@@ -51,6 +51,9 @@ jobs:
       - name: Запустить due role agent
         id: role
         env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_OPENROUTER_ONLY: 'true'
+          QD_OPENROUTER_FREE_ONLY: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_AGENT_ID: ${{ inputs.agent_id }}
           INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
@@ -303,6 +306,9 @@ jobs:
         run: node scripts/mission-alignment.js
       - name: Read-only trusted OpenClaw profile smoke
         env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_OPENROUTER_ONLY: 'true'
+          QD_OPENROUTER_FREE_ONLY: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENT_ID: ${{ matrix.agent_id }}
         run: |

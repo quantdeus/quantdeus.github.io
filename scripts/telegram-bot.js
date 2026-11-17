@@ -793,6 +793,10 @@ async function handleMessage(message) {
       return;
     }
     const query = stripCommand(text);
+    if (process.env.QD_OPENROUTER_FIRST === 'true' && cloudLlm.configured()) {
+      await send(chatId, await askFreeTextAgent(agentId, query), replyId);
+      return;
+    }
     if (openclawOffice.configured()) {
       try {
         const result = await askChatAgent(
@@ -814,6 +818,11 @@ async function handleMessage(message) {
 
   const requestedAgentId = autoAgent(text);
   const agentId = resolveActiveAgentId(requestedAgentId);
+  if (process.env.QD_OPENROUTER_FIRST === 'true' && cloudLlm.configured()) {
+    const freeText = await askFreeTextAgent(agentId, text);
+    await send(chatId, '🔀 Авто-роль: ' + agentId + (requestedAgentId !== agentId ? ' (временно за ' + requestedAgentId + ')' : '') + '\n\n' + freeText, replyId);
+    return;
+  }
   if (openclawOffice.configured()) {
     try {
       const result = await askChatAgent(
