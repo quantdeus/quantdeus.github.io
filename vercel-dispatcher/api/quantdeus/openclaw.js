@@ -4,6 +4,7 @@ import { getVercelOidcToken } from '@vercel/oidc';
 import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../lib/office-session.js';
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
 import bingxVstMcpHandler from '../../lib/bingx-vst-mcp-handler.js';
+import { freeOnlyBridge } from '../../lib/openrouter-free-bridge.js';
 import {
   getBalance as getBingxVstBalance,
   getPositions as getBingxVstPositions,
@@ -608,6 +609,7 @@ export default async function handler(req, res) {
         repository: REPOSITORY
       };
     }
+    const freeLane = freeOnlyBridge(req, claims, {vercelInternal});
     const trustedOffice = vercelInternal ? false : trustedOfficeRequest(req, claims);
     const hourlyOffice = !vercelInternal && trustedOffice && hourlyOfficeRequest(req, claims);
     const autonomousWorker = !vercelInternal && trustedOffice && autonomousWorkerRequest(req, claims);
@@ -701,6 +703,8 @@ export default async function handler(req, res) {
       maxTokens = 8192,
       priority = 100
     }) => {
+      // Once free-only is requested, never probe or configure a paid-capable fallback.
+      if (freeLane.enabled && id !== 'quantdeus-openrouter') return;
       const apiKey = String(key || '').trim();
       const modelId = String(model || '').trim();
       const normalizedBaseUrl = String(baseUrl || '').trim().replace(/\/+$/, '');
@@ -820,11 +824,11 @@ export default async function handler(req, res) {
     addProvider({
       id: 'quantdeus-openrouter',
       keyEnv: 'OPENROUTER_API_KEY',
-      key: process.env.OPENROUTER_API_KEY,
-      model: process.env.OPENROUTER_MODEL || process.env.QD_LLM_MODEL || 'openrouter/free',
+      key: freeLane.enabled ? freeLane.key : process.env.OPENROUTER_API_KEY,
+      model: freeLane.enabled ? 'openrouter/free' : (process.env.OPENROUTER_MODEL || process.env.QD_LLM_MODEL || 'openrouter/free'),
       baseUrl: 'https://openrouter.ai/api/v1',
       contextWindow: 131072,
-      priority: 100
+      priority: freeLane.enabled ? 1 : 100
     });
 
     // Reuse the existing Hermes production route when configured. The values stay
@@ -847,7 +851,7 @@ export default async function handler(req, res) {
     // Some Vercel accounts require payment verification even for zero-price models,
     // so the Gateway must not be an implicit production dependency.
     const gatewayModel = String(process.env.OPENCLAW_GATEWAY_MODEL || process.env.LLM_BRIDGE_MODEL || process.env.BROWSER_PLANNER_MODEL || '').trim();
-    if (gatewayModel) {
+    if (!freeLane.enabled && gatewayModel) {
       let gatewayToken = String(process.env.AI_GATEWAY_API_KEY || '').trim();
       if (!gatewayToken) { try { gatewayToken = await getVercelOidcToken(); } catch {} }
       addProvider({ id: 'quantdeus-vercel-gateway', keyEnv: 'QUANTDEUS_GATEWAY_REQUEST_TOKEN', key: gatewayToken, model: gatewayModel, baseUrl: 'https://ai-gateway.vercel.sh/v1', priority: 110 });
