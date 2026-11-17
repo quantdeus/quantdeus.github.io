@@ -7,6 +7,7 @@ on:
       - 'scripts/cloud-llm-client.js'
       - 'scripts/qa/cloud-llm-client.test.js'
       - 'scripts/openrouter-agent-smoke.js'
+      - 'scripts/openrouter-tool-smoke.js'
       - 'scripts/qa/openrouter-agent-smoke.test.js'
       - 'scripts/site-agent-reply.js'
       - 'scripts/telegram-bot.js'
@@ -23,6 +24,11 @@ on:
         description: 'Один ID из coordination/agents.json; пустой = автоматическая ротация'
         required: false
         type: string
+      probe_tools:
+        description: 'Проверить 2 последовательных безопасных вызова инструментов'
+        required: false
+        type: boolean
+        default: false
       model:
         description: 'ID бесплатной текстовой модели (:free) или openrouter/free; пустой = бесплатный роутер'
         required: false
@@ -53,6 +59,7 @@ jobs:
         run: |
           node --check scripts/cloud-llm-client.js
           node --check scripts/openrouter-agent-smoke.js
+          node --check scripts/openrouter-tool-smoke.js
           node --check scripts/site-agent-reply.js
           node --check scripts/telegram-bot.js
           node --check scripts/mirror-swarm-client.js
@@ -70,3 +77,9 @@ jobs:
           CLOUDFLARE_AI_GATEWAY_TOKEN: ${{ secrets.CLOUDFLARE_AI_GATEWAY_TOKEN }}
           QD_SMOKE_AGENT_ID: ${{ inputs.agent_id }}
         run: node scripts/openrouter-agent-smoke.js
+
+      - name: Проверить последовательный tool calling без внешних действий
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.probe_tools == true }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: node scripts/openrouter-tool-smoke.js
