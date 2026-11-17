@@ -128,44 +128,113 @@ async function retireLegacyVstScheduler(sandbox, { home, workdir }) {
     });
   };
 
-  const listJobs = async () => {
-    const result = await sandbox.runCommand({
-      cmd: 'openclaw',
-      args: ['automations', 'list', '--all', '--json'],
-      cwd: workdir
-    });
-    const stdout = (await result.stdout()).trim();
-    const stderr = (await result.stderr()).trim();
-    if (result.exitCode !== 0) {
-      failRetirement('openclaw_vst_retirement_list_failed: ' + (stderr || stdout).slice(-1200));
-    }
-    let parsed;
-    try {
-      parsed = JSON.parse(stdout || '{"jobs":[]}');
-    } catch {
-      failRetirement('openclaw_vst_retirement_list_invalid_json');
-    }
-    return openClawAutomationRows(parsed);
-  };
+  // The Office runs `openclaw agent exec` in an isolated request process; it does
+  // not run a Gateway daemon. Calling `openclaw automations list` here implicitly
+  // tries to connect to a Gateway which does not exist and fails before websocket
+  // setup. Audit every persisted OpenClaw cron database and legacy JSON store
+  // read-only instead. If a matching job is found, fail closed: never delete rows
+  // directly from SQLite while a Gateway could own them.
+  const auditScript = String.raw`
+import glob, json, os, sqlite3, sys
+root = sys.argv[1]
+target = sys.argv[2].strip().lower()
+matches = []
+sqlite_databases = 0
+legacy_json_stores = 0
 
-  const existing = (await listJobs()).filter(job => String(job?.name || '').trim().toLowerCase() === jobName);
-  let removedJobs = 0;
-  for (const job of existing) {
-    const id = openClawAutomationId(job);
-    if (!id) failRetirement('openclaw_vst_retirement_job_missing_id');
-    const remove = await sandbox.runCommand({
-      cmd: 'openclaw',
-      args: ['automations', 'remove', id, '--json'],
-      cwd: workdir
-    });
-    if (remove.exitCode !== 0) {
-      failRetirement('openclaw_vst_retirement_remove_failed: ' + ((await remove.stderr()) || (await remove.stdout())).slice(-1200));
-    }
-    removedJobs += 1;
+for path in glob.glob(os.path.join(root, '**', '*.sqlite'), recursive=True):
+    try:
+        con = sqlite3.connect('file:' + path + '?mode=ro', uri=True, timeout=3)
+        has_table = con.execute(
+            "select 1 from sqlite_master where type='table' and name='cron_jobs'"
+        ).fetchone()
+        if not has_table:
+            con.close()
+            continue
+        sqlite_databases += 1
+        columns = {row[1] for row in con.execute('pragma table_info(cron_jobs)')}
+        selected = [name for name in ('job_id', 'name', 'job_json') if name in columns]
+        if not selected:
+            con.close()
+            raise RuntimeError('cron_jobs_schema_unrecognized:' + path)
+        for values in con.execute('select ' + ','.join(selected) + ' from cron_jobs'):
+            record = dict(zip(selected, values))
+            names = [str(record.get('name') or '').strip().lower()]
+            if record.get('job_json'):
+                try:
+                    stored = json.loads(record['job_json'])
+                except Exception:
+                    con.close()
+                    raise RuntimeError('cron_job_json_invalid:' + path)
+                if isinstance(stored, dict):
+                    names.append(str(stored.get('name') or '').strip().lower())
+            if target in names:
+                matches.append({
+                    'store': path,
+                    'job_id': record.get('job_id'),
+                    'name': target
+                })
+        con.close()
+    except Exception as error:
+        print(json.dumps({'ok': False, 'error': str(error)}))
+        sys.exit(2)
+
+for path in glob.glob(os.path.join(root, '**', 'jobs.json'), recursive=True):
+    try:
+        with open(path, encoding='utf-8') as handle:
+            stored = json.load(handle)
+        jobs = stored if isinstance(stored, list) else (
+            stored.get('jobs', []) if isinstance(stored, dict) else None
+        )
+        if not isinstance(jobs, list):
+            raise RuntimeError('legacy_jobs_store_shape_invalid:' + path)
+        legacy_json_stores += 1
+        for job in jobs:
+            if isinstance(job, dict) and str(job.get('name') or '').strip().lower() == target:
+                matches.append({
+                    'store': path,
+                    'job_id': job.get('id') or job.get('jobId'),
+                    'name': target
+                })
+    except Exception as error:
+        print(json.dumps({'ok': False, 'error': str(error)}))
+        sys.exit(2)
+
+print(json.dumps({
+    'ok': True,
+    'sqlite_databases': sqlite_databases,
+    'legacy_json_stores': legacy_json_stores,
+    'matches': matches
+}))
+`;
+
+  const audit = await sandbox.runCommand({
+    cmd: 'python3',
+    args: ['-c', auditScript, `${home}/.openclaw`, jobName],
+    cwd: workdir
+  });
+  const auditStdout = (await audit.stdout()).trim();
+  const auditStderr = (await audit.stderr()).trim();
+  if (audit.exitCode !== 0) {
+    failRetirement('openclaw_vst_retirement_audit_failed: ' + (auditStderr || auditStdout).slice(-1200));
   }
-
-  const remaining = (await listJobs()).filter(job => String(job?.name || '').trim().toLowerCase() === jobName);
-  if (remaining.length !== 0) failRetirement('openclaw_vst_scheduler_retirement_failed');
+  let auditResult;
+  try {
+    auditResult = JSON.parse(auditStdout);
+  } catch {
+    failRetirement('openclaw_vst_retirement_audit_invalid_json');
+  }
+  if (
+    auditResult?.ok !== true ||
+    !Number.isInteger(auditResult.sqlite_databases) ||
+    !Number.isInteger(auditResult.legacy_json_stores) ||
+    !Array.isArray(auditResult.matches)
+  ) {
+    failRetirement('openclaw_vst_retirement_audit_incomplete');
+  }
+  if (auditResult.matches.length !== 0) {
+    failRetirement('openclaw_vst_legacy_job_present: ' + JSON.stringify(auditResult.matches).slice(-1000));
+  }
 
   const removeRunner = await sandbox.runCommand({ cmd: 'rm', args: ['-f', legacyRunnerPath] });
   if (removeRunner.exitCode !== 0) {
@@ -178,9 +247,13 @@ async function retireLegacyVstScheduler(sandbox, { home, workdir }) {
     status: 'retired',
     scheduler: 'github-actions-primary',
     job: jobName,
-    removed_jobs: removedJobs,
+    removed_jobs: 0,
     remaining_jobs: 0,
-    legacy_runner_removed: true
+    legacy_runner_removed: true,
+    verified_absent: true,
+    verification_method: 'read-only-sqlite-and-legacy-json-audit',
+    audited_sqlite_databases: auditResult.sqlite_databases,
+    audited_legacy_json_stores: auditResult.legacy_json_stores
   };
   console.log('[openclaw-vst-retirement] ' + JSON.stringify(result));
   return result;
