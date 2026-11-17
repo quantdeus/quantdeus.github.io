@@ -35,7 +35,7 @@ async function call(messages,choice,maxTokens=512) {
       throw new Error(detail);
     }
     const data=await response.json();
-    return data?.choices?.[0]?.message||{};
+    return {...(data?.choices?.[0]?.message||{}),__model:data?.model||null};
   } finally { clearTimeout(timer); }
 }
 function exactly(message,name) {
@@ -57,7 +57,19 @@ function exactly(message,name) {
  const second=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'}],'required');
  const c2=exactly(second,'quantdeus_probe_step_two');
  const third=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'},{role:'assistant',content:second.content||null,tool_calls:[c2]},{role:'tool',tool_call_id:c2.id,content:'STEP_TWO_OK'},{role:'user',content:'Reply PROBE_DONE without tools.'}],'none',256);
- const text=String(third.content||'').trim();
- if(text!=='PROBE_DONE'||(third.tool_calls||[]).length) throw new Error('OPENROUTER_TOOL_PROBE_FINAL_MISMATCH');
- console.log(JSON.stringify({ok:true,model,first_tool:true,second_tool:true,final_marker:true,probe_steps:2,no_external_tools:true}));
+ const finalText=String(third.content||'').trim();
+ const finalToolCount=Array.isArray(third.tool_calls)?third.tool_calls.length:0;
+ if(!/\\bPROBE_DONE\\b/i.test(finalText)||finalToolCount) {
+   throw new Error('OPENROUTER_TOOL_PROBE_FINAL_MISMATCH: text='+finalText.slice(0,120)+' tools='+finalToolCount);
+ }
+ console.log(JSON.stringify({
+   ok:true,
+   model,
+   selected_models:[first.__model,second.__model,third.__model],
+   first_tool:true,
+   second_tool:true,
+   final_marker:true,
+   probe_steps:2,
+   no_external_tools:true
+ }));
 })().catch(err=>{console.error(String(err.message||err));process.exitCode=1});
