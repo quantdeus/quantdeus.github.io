@@ -4,6 +4,15 @@ run-name: "Проверка бесплатной модели для обезь�
 on:
   pull_request:
     paths:
+      - 'coordination/agent-cron-map.json'
+      - 'scripts/qa/agent-cron-map.test.js'
+      - '.github/workflows/agent-role-cron.yml'
+      - '.github/workflows/quantdeus-hourly-openclaw.yml'
+      - '.github/workflows/seven-priority-cycle.yml'
+      - '.github/workflows/news-manifest-cycle.yml'
+      - '.github/workflows/qa-self-heal.yml'
+      - '.github/workflows/growth-site-cycle.yml'
+      - '.github/workflows/openclaw-admin-smoke.yml'
       - 'scripts/cloud-llm-client.js'
       - 'scripts/qa/cloud-llm-client.test.js'
       - 'scripts/openrouter-agent-smoke.js'
@@ -63,6 +72,7 @@ jobs:
       - name: Проверить код без реальных API-запросов
         run: |
           node --check scripts/cloud-llm-client.js
+          node --check scripts/qa/agent-cron-map.test.js
           node --check scripts/openrouter-agent-smoke.js
           node --check scripts/openrouter-tool-smoke.js
           node --check scripts/site-agent-reply.js
@@ -72,7 +82,7 @@ jobs:
           node --check vercel-dispatcher/lib/openrouter-free-bridge.js
           node --check vercel-dispatcher/lib/mirror-model-router.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
-          node --test scripts/qa/cloud-llm-client.test.js scripts/qa/openrouter-agent-smoke.test.js vercel-dispatcher/tests/openrouter-free-bridge.test.mjs vercel-dispatcher/tests/mirror-model-router.test.mjs
+          node --test scripts/qa/cloud-llm-client.test.js scripts/qa/openrouter-agent-smoke.test.js scripts/qa/agent-cron-map.test.js vercel-dispatcher/tests/openrouter-free-bridge.test.mjs vercel-dispatcher/tests/mirror-model-router.test.mjs
       - name: Реальный ответ одной бесплатной модели
         if: ${{ github.event_name != 'pull_request' && inputs.skip_text != true }}
         env:

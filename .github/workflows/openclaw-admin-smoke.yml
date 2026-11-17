@@ -13,12 +13,6 @@ run-name: "Проверка управления OpenClaw"
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/openclaw-admin-smoke.yml'
-      - 'vercel-dispatcher/api/quantdeus/openclaw.js'
-      - 'scripts/openclaw-vst-cron-bootstrap.js'
 
 permissions:
   contents: write

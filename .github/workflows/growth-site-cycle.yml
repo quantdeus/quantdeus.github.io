@@ -3,7 +3,7 @@ run-name: "Развитие сайта и аудитории"
 
 on:
   schedule:
-    - cron: '53 */4 * * *'
+    - cron: '53 8 * * *'
   workflow_dispatch:
     inputs:
       agent_id:
@@ -70,10 +70,9 @@ jobs:
           const now=new Date();
           const hour=now.getUTCHours();
           const minute=now.getUTCMinutes();
+          const weekday=now.getUTCDay();
           const slots=Object.keys(rotation).map(Number).sort((a,b)=>a-b);
-          const nowMinutes=hour*60+minute;
-          const dueSlots=slots.filter(h=>h*60+53<=nowMinutes);
-          const scheduledHour=dueSlots.length?dueSlots[dueSlots.length-1]:slots[slots.length-1];
+          const scheduledHour=slots[weekday % slots.length];
           const requestedAgentId=manual||rotation[scheduledHour];
           if(manual && !allowed.has(requestedAgentId)) throw new Error('Invalid growth/site agent');
           if(!requestedAgentId || !allowed.has(requestedAgentId)){
@@ -120,7 +119,7 @@ jobs:
                 'or {"action":"issue","issue_number":123,"summary":"..."}',
                 'or {"action":"pr","pr_number":123,"branch":"automation/site-refresh/...","autopublish":true,"summary":"..."}'
               ].join('\n')}],
-              metadata:{source:'quantdeus-growth-site-cycle-openclaw-fallback',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,requested_agent_id:requestedAgentId,delegated_from:delegatedFrom||'',hour_utc:hour,scheduled_hour_utc:scheduledHour}
+              metadata:{source:'quantdeus-growth-site-cycle-openclaw-fallback',repository:process.env.GITHUB_REPOSITORY,agent_id:agentId,requested_agent_id:requestedAgentId,delegated_from:delegatedFrom||'',hour_utc:hour,weekday_utc:weekday,scheduled_hour_utc:scheduledHour}
             });
             if(result.runtime!=='openclaw-agent-exec-trusted-tools') throw new Error('Growth/site cycle lacks trusted tools');
             const d=parse(result.text);

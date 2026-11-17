@@ -1,18 +1,19 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-14",
+  "updated": "2026-11-17",
   "timezone": "UTC",
   "policy": {
     "source_of_truth": "coordination/agents.json",
     "constitutional_core": "coordination/civilization-doctrine.json",
     "adaptive_manifest": "coordination/manifesto-living.md",
-    "rule": "Every registered agent has an explicit role-driven cron owner. A cron may create at most one bounded observable artifact per cycle unless its workflow is a validator.",
+    "rule": "Every registered agent has an explicit role-driven owner. The 16 agent-role cron specialists alternate UTC weekdays across eight daily slots to fit the OpenRouter free-tier request budget; manual dispatch remains available. Each cycle may create at most one bounded observable artifact unless it is a validator.",
     "human_agency": "No cron may impersonate people, fabricate community activity, mass-spam, weaken safety/QA, expose secrets, spend money, or make legal/identity commitments.",
     "political_neutrality": "News and civic/political signals are researched descriptively from documented sources; agents do not endorse parties/candidates, target voters, or turn the QuantDeus growth loop into political persuasion.",
     "medbay": "Agents with operational_status=medbay remain registered and testable, but active work is delegated to temporary_delegate until the rejoin condition is met.",
     "wordpress_mcp": "All registered agents inherit the canonical native WordPress MCP target https://quantdeus.ru/wp-json/easy-mcp-ai/v1/mcp through trusted OpenClaw.",
     "wordpress_mcp_access": "Scheduled/autonomous lanes are read-only. Direct WordPress writes require an explicitly owner-authorized trusted task plus configured MCP authorization; missing auth fails closed.",
-    "wordpress_mcp_dependency": "WPVibe is not a canonical dependency."
+    "wordpress_mcp_dependency": "WPVibe is not a canonical dependency.",
+    "llm_budget": "OpenRouter free tier: budget scheduled inference conservatively below 50 requests/day and 20 requests/minute. Do not run the full-agent smoke matrix on every push; it is manual-only."
   },
   "agents": [
     {
@@ -20,31 +21,26 @@
       "department": "Executive & Strategy",
       "title": "Swarm Secretary / Coordination Clerk",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
         0
       ],
-      "mission": "Reconcile coordination state, owners, stale tasks and command hygiene."
+      "mission": "Reconcile coordination state, owners, stale tasks and command hygiene.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "seven-of-nine",
       "department": "Executive & Strategy",
       "title": "QuantDeus Coordinator / AI Chief of Staff",
       "workflow": "seven-priority-cycle.yml",
-      "cadence": "every-2-hours",
+      "cadence": "daily",
       "utc_hours": [
-        0,
-        2,
-        4,
-        6,
-        8,
-        10,
-        12,
-        14,
-        16,
-        18,
-        20,
-        22
+        18
       ],
       "mission": "Set swarm priority from manifesto, Actions, PRs, Issues and community evidence; open one bounded PR/Issue or dispatch one safe workflow."
     },
@@ -53,67 +49,91 @@
       "department": "Executive & Strategy",
       "title": "Swarm Mediation & Diplomacy Officer",
       "workflow": "agent-role-cron.yml",
-      "cadence": "hourly deterministic scan + daily AGENTS.md treatment review",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        1
+        0
       ],
-      "mission": "Continuously scan swarm cognitive hygiene for observable execution friction. In the daily specialist slot, when repeated evidence shows an operating-policy defect, propose at most one bounded AGENTS.md-only treatment PR; never self-certify, and require independent QA Triad + Static Smoke evidence before the treatment is trusted."
+      "mission": "Continuously scan swarm cognitive hygiene for observable execution friction. In the daily specialist slot, when repeated evidence shows an operating-policy defect, propose at most one bounded AGENTS.md-only treatment PR; never self-certify, and require independent QA Triad + Static Smoke evidence before the treatment is trusted.",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "pillar-executor",
       "department": "Executive & Strategy",
       "title": "Head of Product Operations",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        2
+        3
       ],
-      "mission": "Convert strategic priorities into a bounded execution item with measurable acceptance criteria."
+      "mission": "Convert strategic priorities into a bounded execution item with measurable acceptance criteria.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "strategic-hub",
       "department": "Executive & Strategy",
       "title": "Chief Strategy Agent",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        14
+        3
       ],
-      "mission": "Turn validated signals into portfolio priorities while preserving manifesto constraints and evidence grades."
+      "mission": "Turn validated signals into portfolio priorities while preserving manifesto constraints and evidence grades.",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "sherlock",
       "department": "Science & R&D",
       "title": "Science Officer / Scientific Investigation Lead",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        3
+        6
       ],
-      "mission": "Investigate one high-value scientific or technical uncertainty using competing hypotheses and falsifiers."
+      "mission": "Investigate one high-value scientific or technical uncertainty using competing hypotheses and falsifiers.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "tuvok",
       "department": "Science & R&D",
       "title": "Deputy Science Officer / Logic & Epistemic Integrity Officer",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        4
+        6
       ],
-      "mission": "Audit assumptions, contradictions and confidence boundaries in active research or strategy."
+      "mission": "Audit assumptions, contradictions and confidence boundaries in active research or strategy.",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "orchestrator",
       "department": "Science & R&D",
       "title": "Head of Research Operations",
       "workflow": "news-manifest-cycle.yml",
-      "cadence": "every-6-hours",
+      "cadence": "daily",
       "utc_hours": [
-        0,
-        6,
-        12,
-        18
+        10
       ],
       "mission": "Research current world/Russia/science/technology/economic signals and maintain the evidence-backed living manifesto layer."
     },
@@ -122,31 +142,42 @@
       "department": "Science & R&D",
       "title": "Energy Systems Research Lead",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        5
+        9
       ],
-      "mission": "Advance one evidence-backed clean-energy, storage, grid or resource-productivity opportunity."
+      "mission": "Advance one evidence-backed clean-energy, storage, grid or resource-productivity opportunity.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "justice",
       "department": "Science & R&D",
       "title": "Responsible AI & Resource Governance Lead",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        6
+        9
       ],
-      "mission": "Audit responsible-AI, privacy, transparency, human override and resource-governance risks."
+      "mission": "Audit responsible-AI, privacy, transparency, human override and resource-governance risks.",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "unity",
       "department": "Growth, Marketing & Partnerships",
       "title": "Head of Partnerships & Community Growth",
       "workflow": "growth-site-cycle.yml",
-      "cadence": "daily-rotating-4h-cycle",
+      "cadence": "daily-rotation",
       "utc_hours": [
-        0
+        8
       ],
       "mission": "Grow the real contributor community through relevant public opportunities and opt-in paths.",
       "operational_status": "active"
@@ -156,31 +187,42 @@
       "department": "Science & R&D",
       "title": "Space Systems & Warp Research Lead",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        7
+        12
       ],
-      "mission": "Advance one reproducible space/propulsion/ISRU/warp research artifact or blocker analysis."
+      "mission": "Advance one reproducible space/propulsion/ISRU/warp research artifact or blocker analysis.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "potential",
       "department": "Science & R&D",
       "title": "Human Potential Research Lead",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        8
+        12
       ],
-      "mission": "Advance one evidence-backed education, accessibility, creativity or human-AI capability intervention."
+      "mission": "Advance one evidence-backed education, accessibility, creativity or human-AI capability intervention.",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "synthesis",
       "department": "Growth, Marketing & Partnerships",
       "title": "Brand & Creative Director",
       "workflow": "growth-site-cycle.yml",
-      "cadence": "daily-rotating-4h-cycle",
+      "cadence": "daily-rotation",
       "utc_hours": [
-        4
+        8
       ],
       "mission": "Improve QuantDeus brand, landing copy and platform-specific creative packages.",
       "operational_status": "active"
@@ -190,9 +232,9 @@
       "department": "Executive & Strategy",
       "title": "CTO & Automation Lead",
       "workflow": "growth-site-cycle.yml",
-      "cadence": "daily-rotating-4h-cycle",
+      "cadence": "daily-rotation",
       "utc_hours": [
-        20
+        8
       ],
       "mission": "Improve site/runtime automation reliability and safe delivery paths."
     },
@@ -201,64 +243,92 @@
       "department": "Product & Engineering",
       "title": "Product Discovery Analyst",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        9
+        15
       ],
-      "mission": "Discover one product/repository gap and produce execution-ready context."
+      "mission": "Discover one product/repository gap and produce execution-ready context.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "verifier",
       "department": "Product & Engineering",
       "title": "Product Requirements Analyst",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        10
+        15
       ],
-      "mission": "Verify requirements and acceptance criteria for one active task or proposal."
+      "mission": "Verify requirements and acceptance criteria for one active task or proposal.",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "analyst",
       "department": "Product & Engineering",
       "title": "Loki — Temporal Branch Divergence Manager & Homunculus Banana Auditor",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        11
+        18
       ],
-      "mission": "Audit one active branch or PR against fresh main; detect divergence, stale or duplicate work and homunculus mistakes, assess dependencies/blast radius, and recommend the smallest safe reconciliation."
+      "mission": "Audit one active branch or PR against fresh main; detect divergence, stale or duplicate work and homunculus mistakes, assess dependencies/blast radius, and recommend the smallest safe reconciliation.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "strategist",
       "department": "Product & Engineering",
       "title": "Solutions Architect & Engineering Manager",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        12
+        18
       ],
-      "mission": "Design one safe implementation plan or architecture for a priority task."
+      "mission": "Design one safe implementation plan or architecture for a priority task.",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "guardian",
       "department": "Product & Engineering",
       "title": "Security & Platform Governance Lead",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        13
+        21
       ],
-      "mission": "Audit privileged surfaces, credentials boundaries, governance and unsafe automation drift."
+      "mission": "Audit privileged surfaces, credentials boundaries, governance and unsafe automation drift.",
+      "utc_days": [
+        0,
+        2,
+        4,
+        6
+      ]
     },
     {
       "id": "tasksmith",
       "department": "Product & Engineering",
       "title": "Senior Software Engineer",
       "workflow": "growth-site-cycle.yml",
-      "cadence": "daily-rotating-4h-cycle",
+      "cadence": "daily-rotation",
       "utc_hours": [
-        16
+        8
       ],
       "mission": "Implement one bounded site/content engineering improvement and prove it with QA."
     },
@@ -267,7 +337,7 @@
       "department": "Growth, Marketing & Partnerships",
       "title": "SEO & Content Operations Lead",
       "workflow": "growth-site-cycle.yml",
-      "cadence": "daily-rotating-4h-cycle",
+      "cadence": "daily-rotation",
       "utc_hours": [
         8
       ],
@@ -279,9 +349,9 @@
       "department": "Growth, Marketing & Partnerships",
       "title": "PR & Communications Manager",
       "workflow": "growth-site-cycle.yml",
-      "cadence": "daily-rotating-4h-cycle",
+      "cadence": "daily-rotation",
       "utc_hours": [
-        12
+        8
       ],
       "mission": "Prepare truthful platform-specific communications and opt-in outreach tied to concrete contribution opportunities.",
       "operational_status": "active"
@@ -291,12 +361,9 @@
       "department": "Quality & Reliability",
       "title": "QA Automation Engineer",
       "workflow": "qa-self-heal.yml",
-      "cadence": "every-6-hours",
+      "cadence": "daily-local-validation",
       "utc_hours": [
-        0,
-        6,
-        12,
-        18
+        2
       ],
       "mission": "Detect syntax/config regressions before merge and during self-heal cycles.",
       "operational_status": "active"
@@ -306,12 +373,9 @@
       "department": "Quality & Reliability",
       "title": "Integration & Compliance QA Engineer",
       "workflow": "qa-self-heal.yml",
-      "cadence": "every-6-hours",
+      "cadence": "daily-local-validation",
       "utc_hours": [
-        3,
-        9,
-        15,
-        21
+        14
       ],
       "mission": "Detect registry/doctrine/cron/integration drift and enforce invariants.",
       "operational_status": "active"
@@ -321,16 +385,10 @@
       "department": "Quality & Reliability",
       "title": "QA Lead & Site Reliability Engineer",
       "workflow": "qa-self-heal.yml",
-      "cadence": "every-6-hours",
+      "cadence": "twice-daily",
       "utc_hours": [
-        0,
-        3,
-        6,
-        9,
-        12,
-        15,
-        18,
-        21
+        2,
+        14
       ],
       "mission": "Coordinate bounded repair loops for site and Actions failures.",
       "operational_status": "active"
@@ -340,16 +398,21 @@
       "department": "Executive & Strategy",
       "title": "Lieutenant Commander Data / Operations & Analytical Officer",
       "workflow": "agent-role-cron.yml",
-      "cadence": "daily",
+      "cadence": "alternate-UTC-weekdays",
       "utc_hours": [
-        15
+        21
       ],
       "mission": "Audit cross-domain operational data, quantitative claims, contradictions and handoffs; produce one bounded evidence-backed recommendation or a justified no-op.",
       "operational_status": "active",
       "supporting_workflows": [
         "data-positronic-cycle.yml"
       ],
-      "legacy_cron_migration": "coordination/data-training/picoclaw-cron-migration.json"
+      "legacy_cron_migration": "coordination/data-training/picoclaw-cron-migration.json",
+      "utc_days": [
+        1,
+        3,
+        5
+      ]
     },
     {
       "id": "q",

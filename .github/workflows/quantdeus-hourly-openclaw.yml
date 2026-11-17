@@ -1,5 +1,5 @@
 name: QuantDeus Hourly OpenClaw Swarm 🐒
-run-name: "Ежечасная работа помощников"
+run-name: "Почасовой локальный аудит; OpenClaw 09:00/21:00 MSK"
 
 on:
   schedule:
@@ -76,6 +76,16 @@ jobs:
           }
 
           (async () => {
+            const hourUtc = new Date().getUTCHours();
+            if (process.env.GITHUB_EVENT_NAME === 'schedule' && ![6, 18].includes(hourUtc)) {
+              console.log(JSON.stringify({
+                ok:true,
+                action:'skip_llm_tick',
+                reason:'OpenRouter free-tier budget; full OpenClaw coordination runs at 09:00 and 21:00 MSK',
+                hour_utc:hourUtc
+              }));
+              return;
+            }
             const result = await office.ask({
               profile: 'seven-of-nine',
               trusted: true,
@@ -103,7 +113,7 @@ jobs:
               metadata: {
                 source: 'quantdeus-hourly-openclaw',
                 repository: process.env.GITHUB_REPOSITORY,
-                cadence: 'hourly'
+                cadence: 'twice-daily-09:00-and-21:00-MSK'
               },
               timeoutMs: 120000,
               retryTransient: true
