@@ -1,7 +1,8 @@
 'use strict';
 // Tool calls are simulated locally. No external tool, repository mutation, or write occurs.
 const key = String(process.env.OPENROUTER_API_KEY || '').trim();
-const model = String(process.env.OPENROUTER_MODEL || 'google/gemma-4-26b-a4b-it:free').trim();
+const model = String(process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free').trim();
+const probeSteps = Math.max(1, Math.min(2, Number(process.env.OPENROUTER_TOOL_PROBE_STEPS || 2)));
 const tools = [
   {type:'function',function:{name:'quantdeus_probe_step_one',description:'Call first, once',parameters:{type:'object',properties:{},additionalProperties:false}}},
   {type:'function',function:{name:'quantdeus_probe_step_two',description:'Call after step one, once',parameters:{type:'object',properties:{},additionalProperties:false}}}
@@ -49,10 +50,14 @@ function exactly(message,name) {
  const prompt={role:'user',content:'Call quantdeus_probe_step_one exactly once. After the tool result call quantdeus_probe_step_two exactly once. Then reply PROBE_DONE.'};
  const first=await call([prompt],'required');
  const c1=exactly(first,'quantdeus_probe_step_one');
+ if (probeSteps === 1) {
+   console.log(JSON.stringify({ok:true,model,first_tool:true,second_tool:null,final_marker:null,probe_steps:1,no_external_tools:true}));
+   return;
+ }
  const second=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'}],'required');
  const c2=exactly(second,'quantdeus_probe_step_two');
  const third=await call([prompt,{role:'assistant',content:first.content||null,tool_calls:[c1]},{role:'tool',tool_call_id:c1.id,content:'STEP_ONE_OK'},{role:'assistant',content:second.content||null,tool_calls:[c2]},{role:'tool',tool_call_id:c2.id,content:'STEP_TWO_OK'},{role:'user',content:'Reply PROBE_DONE without tools.'}],'none',256);
  const text=String(third.content||'').trim();
  if(text!=='PROBE_DONE'||(third.tool_calls||[]).length) throw new Error('OPENROUTER_TOOL_PROBE_FINAL_MISMATCH');
- console.log(JSON.stringify({ok:true,model,first_tool:true,second_tool:true,final_marker:true,no_external_tools:true}));
+ console.log(JSON.stringify({ok:true,model,first_tool:true,second_tool:true,final_marker:true,probe_steps:2,no_external_tools:true}));
 })().catch(err=>{console.error(String(err.message||err));process.exitCode=1});
