@@ -1669,9 +1669,12 @@ export default async function handler(req, res) {
         !String(result?.final || '').trim() ||
         toolFailures > 0 ||
         incompleteToolTurn;
+      const failedExecutionText = String(raw || '').slice(-1800);
+      const upstreamRateLimited = /(?:\\b429\\b|rate.?limit|free.?quota)/i.test(failedExecutionText);
       const safeRetry =
         attempt === 1 &&
         executionFailed &&
+        !upstreamRateLimited &&
         !hasMutationEvidence(result) &&
         Boolean(result);
 
@@ -1737,17 +1740,22 @@ export default async function handler(req, res) {
       /vercel sandbox[^\n]*usage limit/i.test(message) ||
       /status code 402[^\n]*sandbox/i.test(message);
     const explicitStatus = Number(error?.status || 0);
+    const upstreamRateLimited = explicitStatus === 429 || /(?:\\b429\\b|rate.?limit|free.?quota)/i.test(message);
     const status = sandboxCapacityBlocked
       ? 503
-      : ([400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
-        ? explicitStatus
-        : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502));
-    const retrySafe = Boolean(error?.retrySafe) ||
+      : (upstreamRateLimited
+        ? 429
+        : ([400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
+          ? explicitStatus
+          : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502)));
+    const retrySafe = !upstreamRateLimited && (Boolean(error?.retrySafe) ||
       sandboxCapacityBlocked ||
-      /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted)/i.test(message);
+      /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted)/i.test(message));
     return res.status(status).json({
       ok: false,
-      error: sandboxCapacityBlocked ? 'openclaw_external_capacity_blocked' : 'openclaw_office_failed',
+      error: sandboxCapacityBlocked
+        ? 'openclaw_external_capacity_blocked'
+        : (upstreamRateLimited ? 'openrouter_free_quota_limited' : 'openclaw_office_failed'),
       retry_safe: retrySafe,
       external_blocker: sandboxCapacityBlocked ? 'vercel_sandbox_capacity' : null,
       detail: message.slice(0, 2000)
