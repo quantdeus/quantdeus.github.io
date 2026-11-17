@@ -29,11 +29,16 @@ on:
         required: false
         type: boolean
         default: false
+      skip_text:
+        description: 'Пропустить отдельный текстовый запрос и сэкономить бесплатную квоту'
+        required: false
+        type: boolean
+        default: false
       model:
-        description: 'ID бесплатной текстовой модели (:free) или openrouter/free; пустой = бесплатный роутер'
+        description: 'ID бесплатной модели (:free) или openrouter/free'
         required: false
         type: string
-        default: 'openrouter/free'
+        default: 'google/gemma-4-26b-a4b-it:free'
   schedule:
     - cron: '19 7 * * *'
 
@@ -63,11 +68,13 @@ jobs:
           node --check scripts/site-agent-reply.js
           node --check scripts/telegram-bot.js
           node --check scripts/mirror-swarm-client.js
+          node --check vercel-dispatcher/api/quantdeus/openclaw.js
+          node --check vercel-dispatcher/lib/openrouter-free-bridge.js
           node --check vercel-dispatcher/lib/mirror-model-router.js
           node --check vercel-dispatcher/api/quantdeus/mirror.js
-          node --test scripts/qa/cloud-llm-client.test.js scripts/qa/openrouter-agent-smoke.test.js vercel-dispatcher/tests/mirror-model-router.test.mjs
+          node --test scripts/qa/cloud-llm-client.test.js scripts/qa/openrouter-agent-smoke.test.js vercel-dispatcher/tests/openrouter-free-bridge.test.mjs vercel-dispatcher/tests/mirror-model-router.test.mjs
       - name: Реальный ответ одной бесплатной модели
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name != 'pull_request' && inputs.skip_text != true }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ inputs.model || 'openrouter/free' }}

@@ -33,8 +33,8 @@ const OPENCLAW_RUNTIME_VERSION = '2026.9.6';
 let jwksCache = [];
 let jwksAt = 0;
 const providerProbeCache = new Map();
-const PROVIDER_PROBE_OK_TTL_MS = 5 * 60 * 1000;
-const PROVIDER_PROBE_FAIL_TTL_MS = 30 * 1000;
+const PROVIDER_PROBE_OK_TTL_MS = 30 * 60 * 1000;
+const PROVIDER_PROBE_FAIL_TTL_MS = 60 * 1000;
 
 function jsonPart(s) { return JSON.parse(Buffer.from(s, 'base64url').toString('utf8')); }
 async function jwks() {
@@ -380,27 +380,22 @@ async function probeChatCandidate(candidate, requireTools = false) {
       };
     }
 
+    // One forced tool call is enough for a per-instance capability preflight.
+    // The sequential two-tool roundtrip is covered by the manual GitHub Actions smoke.
+    // Keeping this to one request protects OpenRouter's free daily/rate budget.
     const probeTools = [
       {
         type: 'function',
         function: {
           name: 'quantdeus_probe_step_one',
-          description: 'Sequential capability probe, first step. Call this first and exactly once.',
-          parameters: { type: 'object', properties: {}, additionalProperties: false }
-        }
-      },
-      {
-        type: 'function',
-        function: {
-          name: 'quantdeus_probe_step_two',
-          description: 'Sequential capability probe, second step. Call this only after step one returns.',
+          description: 'No-op capability check. Call exactly once.',
           parameters: { type: 'object', properties: {}, additionalProperties: false }
         }
       }
     ];
     const probePrompt = {
       role: 'user',
-      content: 'Call quantdeus_probe_step_one exactly once. After its tool result, call quantdeus_probe_step_two exactly once. After the second tool result, reply exactly PROBE_DONE and do not call any more tools.'
+      content: 'Call quantdeus_probe_step_one exactly once with an empty object. Do not call any other tool.'
     };
     const normalizeToolCall = (message, expectedName) => {
       const calls = message?.tool_calls;
@@ -413,18 +408,14 @@ async function probeChatCandidate(candidate, requireTools = false) {
         typeof call?.id !== 'string' ||
         !call.id
       ) return null;
-      return {
-        id: call.id,
-        type: 'function',
-        function: { name: expectedName, arguments: call.function.arguments }
-      };
+      return call;
     };
 
     const first = await request({
       model: candidate.model,
       messages: [probePrompt],
       temperature: 0,
-      max_tokens: 64,
+      max_tokens: 256,
       tools: probeTools,
       tool_choice: 'required'
     });
@@ -434,66 +425,21 @@ async function probeChatCandidate(candidate, requireTools = false) {
     const firstMessage = first.data?.choices?.[0]?.message;
     const firstCall = normalizeToolCall(firstMessage, 'quantdeus_probe_step_one');
     if (!firstCall) {
-      return { ref: candidate.ref, ok: false, status: first.response.status, detail: 'first_tool_call_missing_or_malformed' };
+      const finish = String(first.data?.choices?.[0]?.finish_reason || 'unknown');
+      const callCount = Array.isArray(firstMessage?.tool_calls) ? firstMessage.tool_calls.length : 0;
+      const content = String(firstMessage?.content || '').replace(/\\s+/g, ' ').slice(0, 140);
+      return {
+        ref: candidate.ref,
+        ok: false,
+        status: first.response.status,
+        detail: 'tool_call_missing_or_malformed: finish=' + finish + '; calls=' + callCount + '; content=' + content
+      };
     }
-    const assistantFirst = {
-      role: 'assistant',
-      content: typeof firstMessage?.content === 'string' ? firstMessage.content : null,
-      tool_calls: [firstCall]
-    };
-
-    const second = await request({
-      model: candidate.model,
-      messages: [
-        probePrompt,
-        assistantFirst,
-        { role: 'tool', tool_call_id: firstCall.id, content: 'STEP_ONE_OK' }
-      ],
-      temperature: 0,
-      max_tokens: 64,
-      tools: probeTools,
-      tool_choice: 'required'
-    });
-    if (!second.response.ok) {
-      return { ref: candidate.ref, ok: false, status: second.response.status, detail: second.raw.slice(0, 300) };
-    }
-    const secondMessage = second.data?.choices?.[0]?.message;
-    const secondCall = normalizeToolCall(secondMessage, 'quantdeus_probe_step_two');
-    if (!secondCall) {
-      return { ref: candidate.ref, ok: false, status: second.response.status, detail: 'second_tool_call_missing_or_malformed' };
-    }
-    const assistantSecond = {
-      role: 'assistant',
-      content: typeof secondMessage?.content === 'string' ? secondMessage.content : null,
-      tool_calls: [secondCall]
-    };
-
-    const third = await request({
-      model: candidate.model,
-      messages: [
-        probePrompt,
-        assistantFirst,
-        { role: 'tool', tool_call_id: firstCall.id, content: 'STEP_ONE_OK' },
-        assistantSecond,
-        { role: 'tool', tool_call_id: secondCall.id, content: 'STEP_TWO_OK' },
-        { role: 'user', content: 'The second tool result is complete. Reply with exactly PROBE_DONE and do not call any tool.' }
-      ],
-      temperature: 0,
-      max_tokens: 32,
-      tools: probeTools,
-      tool_choice: 'none'
-    });
-    const thirdMessage = third.data?.choices?.[0]?.message;
-    const finalText = typeof thirdMessage?.content === 'string' ? thirdMessage.content.trim() : '';
-    const extraToolCalls = Array.isArray(thirdMessage?.tool_calls) && thirdMessage.tool_calls.length > 0;
-    const ok = third.response.ok && finalText === 'PROBE_DONE' && !extraToolCalls;
     return {
       ref: candidate.ref,
-      ok,
-      status: third.response.status,
-      detail: ok
-        ? 'sequential_tool_roundtrip_ok'
-        : (third.response.ok ? 'sequential_tool_roundtrip_incomplete_or_malformed' : third.raw.slice(0, 300))
+      ok: true,
+      status: first.response.status,
+      detail: 'single_tool_call_ok'
     };
   } catch (error) {
     return {
@@ -912,7 +858,7 @@ export default async function handler(req, res) {
       id: 'quantdeus-openrouter',
       keyEnv: 'OPENROUTER_API_KEY',
       key: freeLane.enabled ? freeLane.key : process.env.OPENROUTER_API_KEY,
-      model: freeLane.enabled ? 'openrouter/free' : (process.env.OPENROUTER_MODEL || process.env.QD_LLM_MODEL || 'openrouter/free'),
+      model: freeLane.enabled ? freeLane.model : (process.env.OPENROUTER_MODEL || process.env.QD_LLM_MODEL || 'openrouter/free'),
       baseUrl: 'https://openrouter.ai/api/v1',
       contextWindow: 131072,
       priority: freeLane.enabled ? 1 : 100
@@ -959,18 +905,35 @@ export default async function handler(req, res) {
     });
 
     const modelCandidates = probeCandidates.map(candidate => candidate.ref);
-    const probeRows = await Promise.all(probeCandidates.map(async candidate => {
-      const startedAt = Date.now();
-      const probe = await cachedProbeChatCandidate(candidate, true);
-      return {
-        candidate,
-        probe: {
-          ...probe,
-          latency_ms: Date.now() - startedAt,
-          routing_priority: candidate.priority
-        }
-      };
-    }));
+    // The free-only lane is pinned to Gemma 4's documented native function-calling
+    // capability. Do not spend scarce free-tier requests on a per-instance preflight;
+    // the explicit sequential tool smoke is a separate CI/manual check. The real
+    // agent request remains authoritative and still fails closed on 429/errors.
+    const probeRows = freeLane.enabled
+      ? probeCandidates.map(candidate => ({
+          candidate,
+          probe: {
+            ref: candidate.ref,
+            ok: true,
+            status: 200,
+            detail: 'pinned_free_model_native_tool_calling',
+            cached: true,
+            latency_ms: 0,
+            routing_priority: candidate.priority
+          }
+        }))
+      : await Promise.all(probeCandidates.map(async candidate => {
+          const startedAt = Date.now();
+          const probe = await cachedProbeChatCandidate(candidate, true);
+          return {
+            candidate,
+            probe: {
+              ...probe,
+              latency_ms: Date.now() - startedAt,
+              routing_priority: candidate.priority
+            }
+          };
+        }));
     const probeResults = probeRows.map(row => row.probe);
     const healthyRefs = probeRows
       .filter(row => row.probe.ok)
@@ -981,8 +944,14 @@ export default async function handler(req, res) {
       .map(row => row.candidate.ref);
 
     if (!healthyRefs.length) {
-      console.warn('[openclaw-routing] no healthy provider passed the required probe');
-      return res.status(503).json({ ok: false, error: 'openclaw_no_healthy_model_route', retry_safe: true, probes: probeResults });
+      const freeQuotaLimited = freeLane.enabled && probeResults.some(probe => probe.status === 429);
+      console.warn('[openclaw-routing] no healthy provider passed the required probe' + (freeQuotaLimited ? ' (OpenRouter free quota/rate limit)' : ''));
+      return res.status(freeQuotaLimited ? 429 : 503).json({
+        ok: false,
+        error: freeQuotaLimited ? 'openrouter_free_quota_limited' : 'openclaw_no_healthy_model_route',
+        retry_safe: !freeQuotaLimited,
+        probes: probeResults
+      });
     }
     const orderedModels = [...healthyRefs];
     const model = orderedModels[0];
@@ -1700,9 +1669,12 @@ export default async function handler(req, res) {
         !String(result?.final || '').trim() ||
         toolFailures > 0 ||
         incompleteToolTurn;
+      const failedExecutionText = String(raw || '').slice(-1800);
+      const upstreamRateLimited = /(?:\b429\b|rate.?limit|free.?quota)/i.test(failedExecutionText);
       const safeRetry =
         attempt === 1 &&
         executionFailed &&
+        !upstreamRateLimited &&
         !hasMutationEvidence(result) &&
         Boolean(result);
 
@@ -1768,17 +1740,22 @@ export default async function handler(req, res) {
       /vercel sandbox[^\n]*usage limit/i.test(message) ||
       /status code 402[^\n]*sandbox/i.test(message);
     const explicitStatus = Number(error?.status || 0);
+    const upstreamRateLimited = explicitStatus === 429 || /(?:\b429\b|rate.?limit|free.?quota)/i.test(message);
     const status = sandboxCapacityBlocked
       ? 503
-      : ([400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
-        ? explicitStatus
-        : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502));
-    const retrySafe = Boolean(error?.retrySafe) ||
+      : (upstreamRateLimited
+        ? 429
+        : ([400, 401, 403, 404, 409, 422, 503].includes(explicitStatus)
+          ? explicitStatus
+          : (/github_oidc|wrong_repository|wrong_event|vercel_oidc/.test(message) ? 401 : 502)));
+    const retrySafe = !upstreamRateLimited && (Boolean(error?.retrySafe) ||
       sandboxCapacityBlocked ||
-      /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted)/i.test(message);
+      /openclaw_(?:office_busy|workspace_missing_before_exec|repo_clone_failed|request_budget_exhausted)/i.test(message));
     return res.status(status).json({
       ok: false,
-      error: sandboxCapacityBlocked ? 'openclaw_external_capacity_blocked' : 'openclaw_office_failed',
+      error: sandboxCapacityBlocked
+        ? 'openclaw_external_capacity_blocked'
+        : (upstreamRateLimited ? 'openrouter_free_quota_limited' : 'openclaw_office_failed'),
       retry_safe: retrySafe,
       external_blocker: sandboxCapacityBlocked ? 'vercel_sandbox_capacity' : null,
       detail: message.slice(0, 2000)
