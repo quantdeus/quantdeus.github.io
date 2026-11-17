@@ -1,11 +1,11 @@
 const DEFAULT_TIMEOUT_MS = 8000;
 
-function candidate(id, keyEnv, key, model, endpoint, priority) {
+function candidate(id, keyEnv, key, model, endpoint, priority, extras = {}) {
   const apiKey = String(key || '').trim();
   const modelId = String(model || '').trim();
   const url = String(endpoint || '').trim();
   if (!apiKey || !modelId || !url) return null;
-  return { id, keyEnv, key: apiKey, model: modelId, endpoint: url, priority, ref: id + '/' + modelId };
+  return { id, keyEnv, key: apiKey, model: modelId, endpoint: url, priority, ref: id + '/' + modelId, ...extras };
 }
 
 export function buildMirrorCandidates(env = process.env) {
@@ -26,7 +26,29 @@ export function buildMirrorCandidates(env = process.env) {
     push(candidate('quantdeus-cloudflare','CLOUDFLARE_API_KEY',env.CLOUDFLARE_API_KEY,env.CLOUDFLARE_MODEL || '@cf/zai-org/glm-4.7-flash','https://api.cloudflare.com/client/v4/accounts/' + cfAccount + '/ai/v1/chat/completions',90));
   }
 
-  push(candidate('quantdeus-openrouter','OPENROUTER_API_KEY',env.OPENROUTER_API_KEY,env.OPENROUTER_MODEL || env.QD_LLM_MODEL || 'openrouter/free','https://openrouter.ai/api/v1/chat/completions',100));
+  // OpenRouter routes directly by default; optionally use the authenticated Cloudflare AI Gateway.
+  // Never switch to paid models when QD_OPENROUTER_FREE_ONLY=true.
+  const requestedOpenRouterModel = String(env.OPENROUTER_MODEL || env.QD_LLM_MODEL || 'openrouter/free').trim();
+  const freeOnly = env.QD_OPENROUTER_FREE_ONLY === 'true';
+  const openRouterModel = freeOnly && requestedOpenRouterModel !== 'openrouter/free' &&
+    !requestedOpenRouterModel.endsWith(':free') ? 'openrouter/free' : requestedOpenRouterModel;
+  const cfGatewayId = String(env.CLOUDFLARE_AI_GATEWAY_ID || '').trim();
+  const cfGatewayToken = String(env.CLOUDFLARE_AI_GATEWAY_TOKEN || '').trim();
+  const throughGateway = Boolean(cfAccount && cfGatewayId && cfGatewayToken);
+  const openRouterEndpoint = throughGateway
+    ? 'https://gateway.ai.cloudflare.com/v1/' +
+      encodeURIComponent(cfAccount) + '/' + encodeURIComponent(cfGatewayId) +
+      '/openrouter/v1/chat/completions'
+    : 'https://openrouter.ai/api/v1/chat/completions';
+  push(candidate(
+    'quantdeus-openrouter',
+    'OPENROUTER_API_KEY',
+    env.OPENROUTER_API_KEY,
+    openRouterModel,
+    openRouterEndpoint,
+    env.QD_OPENROUTER_PREFERRED === 'true' ? 5 : 100,
+    throughGateway ? { cfAigToken: cfGatewayToken } : {}
+  ));
 
   const hermesBase = String(env.HERMES_LOCAL_BASE_URL || '').trim().replace(/\/+$/, '');
   const hermesKey = String(env.HERMES_LOCAL_API_KEY || '').trim();
@@ -56,7 +78,8 @@ async function postJson(route, body, fetchImpl, timeoutMs) {
       headers: {
         authorization: 'Bearer ' + route.key,
         'content-type': 'application/json',
-        accept: 'application/json'
+        accept: 'application/json',
+        ...(route.cfAigToken ? { 'cf-aig-authorization': 'Bearer ' + route.cfAigToken } : {})
       },
       body: JSON.stringify(body),
       signal: controller.signal
