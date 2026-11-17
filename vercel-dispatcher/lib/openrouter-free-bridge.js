@@ -21,5 +21,5 @@ export function freeOnlyBridge(req, claims, {vercelInternal = false} = {}) {
   if (!/^[A-Za-z0-9._-]{20,256}$/.test(suppliedKey)) {
     throw Object.assign(new Error('openrouter_free_key_missing_or_invalid'), {status:503});
   }
-  return {enabled:true,key:suppliedKey,model:'google/gemma-4-26b-a4b-it:free'};
+  return {enabled:true,key:suppliedKey,model:'openrouter/free'};
 }
