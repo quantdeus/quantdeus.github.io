@@ -152,7 +152,7 @@ async function askFreeTextAgent(agentId, query) {
       'You do not have tools in this route. Never claim to have fetched GitHub, performed actions, sent messages or deployed code.',
       'For private accounts, current status, or actions requiring tools, clearly state that live verification is unavailable.',
       'This role can advise on a task; only the separate authenticated runtime can execute permitted mutations.'
-    ].join('\\n')
+    ].join('\n')
   };
   const messages = [system, ...agentMessages(agentId, inspected.normalized)];
   try {
@@ -829,7 +829,7 @@ async function handleMessage(message) {
     }
   }
   const freeText = await askFreeTextAgent(agentId, text);
-  await send(chatId, '🔀 Авто-роль: ' + agentId + (requestedAgentId !== agentId ? ' (временно за ' + requestedAgentId + ')' : '') + '\\n\\n' + (freeText || advisory(agentId, text)), replyId);
+  await send(chatId, '🔀 Авто-роль: ' + agentId + (requestedAgentId !== agentId ? ' (временно за ' + requestedAgentId + ')' : '') + '\n\n' + (freeText || advisory(agentId, text)), replyId);
 }
 
 function decodeWebhookUpdate() {
