@@ -82,4 +82,5 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.probe_tools == true }}
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ inputs.model || 'openrouter/free' }}
         run: node scripts/openrouter-tool-smoke.js
