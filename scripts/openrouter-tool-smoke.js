@@ -16,7 +16,23 @@ async function call(messages,choice,maxTokens=512) {
       body:JSON.stringify({model,messages,tools,tool_choice:choice,max_tokens:maxTokens,temperature:0}),
       signal:controller.signal
     });
-    if(!response.ok) throw new Error('OPENROUTER_TOOL_PROBE_HTTP_'+response.status);
+    if(!response.ok) {
+      const raw=await response.text();
+      let payload=null;
+      try { payload=JSON.parse(raw); } catch {}
+      const error=payload?.error||{};
+      const metadata=error?.metadata||{};
+      const detail=[
+        'OPENROUTER_TOOL_PROBE_HTTP_'+response.status,
+        'limit_source='+(metadata.limit_source||metadata.error_type||'unknown'),
+        'provider_code='+(metadata.provider_code||'none'),
+        'x_limit_remaining='+(response.headers.get('x-ratelimit-remaining')||'unknown'),
+        'x_limit_reset='+(response.headers.get('x-ratelimit-reset')||'unknown'),
+        'retry_after='+(response.headers.get('retry-after')||'unknown'),
+        'message='+String(error.message||raw).slice(0,220)
+      ].join(' ');
+      throw new Error(detail);
+    }
     const data=await response.json();
     return data?.choices?.[0]?.message||{};
   } finally { clearTimeout(timer); }
