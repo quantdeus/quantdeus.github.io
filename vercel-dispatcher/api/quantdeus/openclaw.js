@@ -927,8 +927,14 @@ export default async function handler(req, res) {
       .map(row => row.candidate.ref);
 
     if (!healthyRefs.length) {
-      console.warn('[openclaw-routing] no healthy provider passed the required probe');
-      return res.status(503).json({ ok: false, error: 'openclaw_no_healthy_model_route', retry_safe: true, probes: probeResults });
+      const freeQuotaLimited = freeLane.enabled && probeResults.some(probe => probe.status === 429);
+      console.warn('[openclaw-routing] no healthy provider passed the required probe' + (freeQuotaLimited ? ' (OpenRouter free quota/rate limit)' : ''));
+      return res.status(freeQuotaLimited ? 429 : 503).json({
+        ok: false,
+        error: freeQuotaLimited ? 'openrouter_free_quota_limited' : 'openclaw_no_healthy_model_route',
+        retry_safe: !freeQuotaLimited,
+        probes: probeResults
+      });
     }
     const orderedModels = [...healthyRefs];
     const model = orderedModels[0];
