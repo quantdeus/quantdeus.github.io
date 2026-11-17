@@ -1,7 +1,8 @@
 const fs = require('fs');
 const openclawOffice = require('./openclaw-office-client');
+const cloudLlm = require('./cloud-llm-client');
 const { getGithubOidcToken } = require('./github-oidc');
-const { QUANTDEUS_SHIELD_VERSION, shieldInput } = require('./prompt-shield');
+const { QUANTDEUS_SHIELD_VERSION, PUBLIC_SAFETY_SYSTEM_PROMPT, shieldInput, shieldOutput } = require('./prompt-shield');
 const { execFileSync } = require('child_process');
 
 const repo = process.env.GITHUB_REPOSITORY;
@@ -132,6 +133,42 @@ async function askChatAgent(agentId, userContent, metadata, options = {}) {
     });
   }
   return result;
+}
+
+// A cheap public conversation fallback, not a substitute for authorized OpenClaw tool execution.
+async function askFreeTextAgent(agentId, query) {
+  if (!cloudLlm.configured()) return null;
+  const inspected = shieldInput(query);
+  if (inspected.blocked) return inspected.response;
+
+  const agent = byId.get(agentId);
+  const system = {
+    role: 'system',
+    content: [
+      PUBLIC_SAFETY_SYSTEM_PROMPT,
+      'You are a text-only QuantDeus chat role. Your name: ' + String(agent?.name || agentId),
+      'Registered task: ' + String(agent?.role || '').slice(0, 1700),
+      'Reply in Russian, unless the user explicitly requests another language.',
+      'You do not have tools in this route. Never claim to have fetched GitHub, performed actions, sent messages or deployed code.',
+      'For private accounts, current status, or actions requiring tools, clearly state that live verification is unavailable.',
+      'This role can advise on a task; only the separate authenticated runtime can execute permitted mutations.'
+    ].join('\n')
+  };
+  const messages = [system, ...agentMessages(agentId, inspected.normalized)];
+  try {
+    const result = await cloudLlm.ask(messages, {maxTokens: 650});
+    const guard = shieldOutput(result.text);
+    return guard.text;
+  } catch (error) {
+    if (error.status === 429) {
+      return '⚠️ Бесплатный OpenRouter временно ограничил запросы. Попробуй позднее: платные модели автоматически не подключаются.';
+    }
+    if (error.status === 402) {
+      return '⚠️ OpenRouter требует доступный баланс/квоту. Платную модель QuantDeus не запускает.';
+    }
+    console.error('OpenRouter text-only agent unavailable: ' + String(error?.message || error).slice(0, 160));
+    return '⚠️ OpenRouter сейчас не ответил. Попробуй позднее.';
+  }
 }
 
 const ghEnv = { ...process.env, GH_TOKEN: githubToken };
@@ -770,7 +807,8 @@ async function handleMessage(message) {
         console.error('OpenClaw Office /agent fallback:', error.message || error);
       }
     }
-    await send(chatId, advisory(agentId, query), replyId);
+    const freeText = await askFreeTextAgent(agentId, query);
+    await send(chatId, freeText || advisory(agentId, query), replyId);
     return;
   }
 
@@ -790,7 +828,8 @@ async function handleMessage(message) {
       console.error('OpenClaw Office auto-route fallback:', error.message || error);
     }
   }
-  await send(chatId, '🔀 Авто-роль: ' + agentId + (requestedAgentId !== agentId ? ' (временно за ' + requestedAgentId + ')' : '') + '\n\n' + advisory(agentId, text), replyId);
+  const freeText = await askFreeTextAgent(agentId, text);
+  await send(chatId, '🔀 Авто-роль: ' + agentId + (requestedAgentId !== agentId ? ' (временно за ' + requestedAgentId + ')' : '') + '\n\n' + (freeText || advisory(agentId, text)), replyId);
 }
 
 function decodeWebhookUpdate() {

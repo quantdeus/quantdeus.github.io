@@ -37,6 +37,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QUANTDEUS_ADMIN_GITHUB_USERS: ${{ vars.QUANTDEUS_ADMIN_GITHUB_USERS }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: openrouter/free
+          QD_OPENROUTER_FREE_ONLY: "true"
+          CLOUDFLARE_ACCOUNT_ID: 97ba2df0316dd1b7137e535c5f47cc76
+          CLOUDFLARE_AI_GATEWAY_ID: quantdeus-openrouter
+          CLOUDFLARE_AI_GATEWAY_TOKEN: ${{ secrets.CLOUDFLARE_AI_GATEWAY_TOKEN }}
           QD_LLM_PROVIDER: auto
           QD_LLM_MODEL: openrouter/free
         run: node scripts/site-agent-reply.js

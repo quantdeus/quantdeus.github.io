@@ -1,0 +1,66 @@
+name: Бесплатная модель OpenRouter для обезьянника 🐒
+run-name: "Проверка бесплатной модели для обезьянника"
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/cloud-llm-client.js'
+      - 'scripts/qa/cloud-llm-client.test.js'
+      - 'scripts/openrouter-agent-smoke.js'
+      - 'scripts/site-agent-reply.js'
+      - 'scripts/telegram-bot.js'
+      - 'scripts/mirror-swarm-client.js'
+      - '.github/workflows/openrouter-free-fleet.yml'
+      - '.github/workflows/site-agent-replies.yml'
+      - '.github/workflows/telegram-bot.yml'
+      - '.github/workflows/mirror-swarm-repair.yml'
+      - 'vercel-dispatcher/lib/mirror-model-router.js'
+      - 'vercel-dispatcher/api/quantdeus/mirror.js'
+  workflow_dispatch:
+    inputs:
+      agent_id:
+        description: 'Один ID из coordination/agents.json; пустой = автоматическая ротация'
+        required: false
+        type: string
+  schedule:
+    - cron: '19 7 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantdeus-openrouter-free-smoke
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Проверить код без реальных API-запросов
+        run: |
+          node --check scripts/cloud-llm-client.js
+          node --check scripts/openrouter-agent-smoke.js
+          node --check scripts/site-agent-reply.js
+          node --check scripts/telegram-bot.js
+          node --check scripts/mirror-swarm-client.js
+          node --check vercel-dispatcher/lib/mirror-model-router.js
+          node --check vercel-dispatcher/api/quantdeus/mirror.js
+          node --test scripts/qa/cloud-llm-client.test.js vercel-dispatcher/tests/mirror-model-router.test.mjs
+      - name: Реальный ответ одной бесплатной модели
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: openrouter/free
+          QD_OPENROUTER_FREE_ONLY: "true"
+          CLOUDFLARE_ACCOUNT_ID: 97ba2df0316dd1b7137e535c5f47cc76
+          CLOUDFLARE_AI_GATEWAY_ID: quantdeus-openrouter
+          CLOUDFLARE_AI_GATEWAY_TOKEN: ${{ secrets.CLOUDFLARE_AI_GATEWAY_TOKEN }}
+          QD_SMOKE_AGENT_ID: ${{ inputs.agent_id }}
+        run: node scripts/openrouter-agent-smoke.js

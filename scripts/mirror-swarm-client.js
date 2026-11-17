@@ -29,7 +29,11 @@ async function main() {
         authorization: 'Bearer ' + oidc,
         'content-type': 'application/json',
         accept: 'application/json',
-        'x-quantdeus-github-token': githubToken
+        'x-quantdeus-github-token': githubToken,
+        // Only the OIDC-authenticated mirror endpoint can read this ephemeral secret.
+        ...(process.env.OPENROUTER_API_KEY
+          ? { 'x-quantdeus-openrouter-key': process.env.OPENROUTER_API_KEY }
+          : {})
       },
       body: JSON.stringify({ mode, evidence }),
       signal: controller.signal

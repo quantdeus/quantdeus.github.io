@@ -1,12 +1,13 @@
 const fs = require('fs');
 const openclawOffice = require('./openclaw-office-client');
+const cloudLlm = require('./cloud-llm-client');
 
 const repo = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
 const eventPath = process.env.GITHUB_EVENT_PATH;
 const requestedProvider = process.env.QD_LLM_PROVIDER || 'auto';
-const openRouterModel = process.env.QD_LLM_MODEL || 'openrouter/free';
-const openRouterKey = process.env.OPENROUTER_API_KEY;
+const openRouterModel = cloudLlm.route().model;
+const openRouterKey = cloudLlm.route().apiKey;
 let activeProvider = openRouterKey ? 'openrouter' : 'oidc-bridge';
 let activeModel = openRouterKey ? openRouterModel : 'runtime-configured';
 const repoOwner = String(repo || '').split('/')[0].toLowerCase();
@@ -538,48 +539,15 @@ async function callVercelOidcBridge(messages) {
   return String(data.text).trim();
 }
 
-async function callProvider(url, key, providerLabel, model, messages) {
-  const headers = {
-    authorization: 'Bearer ' + key,
-    'content-type': 'application/json',
-    accept: 'application/json',
-  };
-  if (providerLabel === 'OpenRouter') {
-    headers['HTTP-Referer'] = 'https://quantdeus.github.io/coordination.html';
-    headers['X-Title'] = 'QuantDeus Site Agents';
-  }
-
-  const r = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.45,
-      max_tokens: 900,
-    }),
-  });
-
-  const raw = await r.text();
-  if (!r.ok) throw new Error(providerLabel + ' ' + r.status + ': ' + raw.slice(0, 1000));
-
-  let data;
-  try { data = JSON.parse(raw); }
-  catch { throw new Error(providerLabel + ' returned non-JSON: ' + raw.slice(0, 300)); }
-
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text || !String(text).trim()) {
-    throw new Error(providerLabel + ' returned an empty response');
-  }
-  return String(text).trim();
-}
-
 async function callModel(messages) {
-  if (requestedProvider === 'openrouter' && !openRouterKey) throw new Error('OPENROUTER_API_KEY_required');
-  if ((requestedProvider === 'openrouter' || requestedProvider === 'auto') && openRouterKey) {
+  if (requestedProvider === 'openrouter' && !cloudLlm.configured()) {
+    throw new Error('OPENROUTER_API_KEY_REQUIRED');
+  }
+  if ((requestedProvider === 'openrouter' || requestedProvider === 'auto') && cloudLlm.configured()) {
+    const answer = await cloudLlm.ask(messages);
     activeProvider = 'openrouter';
-    activeModel = openRouterModel;
-    return callProvider('https://openrouter.ai/api/v1/chat/completions', openRouterKey, 'OpenRouter', openRouterModel, messages);
+    activeModel = answer.model;
+    return answer.text;
   }
   activeProvider = 'oidc-bridge';
   activeModel = 'runtime-configured';
