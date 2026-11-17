@@ -119,6 +119,20 @@ async function askOnce({ profile, messages, metadata, trusted = false, timeoutMs
           target.pathname !== '/api/quantdeus/openclaw') {
         throw officeError('OPENROUTER_FREE_ROUTE_UNTRUSTED_TARGET', {code:'OPENROUTER_FREE_UNTRUSTED_TARGET'});
       }
+      // Challenge the runtime before sending the key or executing any agent.
+      // An old deployment will 405 this route and cannot silently use a paid model.
+      const probeUrl = new URL(targetUrl);
+      probeUrl.searchParams.set('qd_route', 'openrouter-free-capability');
+      const probe = await fetch(probeUrl.toString(), {
+        method:'GET',
+        headers:{authorization:'Bearer ' + oidc,accept:'application/json'},
+        signal: controller.signal
+      });
+      let capability = null;
+      if (probe.ok) { try { capability = await probe.json(); } catch {} }
+      if (!probe.ok || capability?.free_only_supported !== true || capability?.contract_version !== 1) {
+        throw officeError('OPENROUTER_FREE_RUNTIME_NOT_DEPLOYED', {code:'OPENROUTER_FREE_RUNTIME_NOT_DEPLOYED',status:503,transient:true});
+      }
       headers['x-quantdeus-openrouter-only'] = 'true';
       const key = String(process.env.OPENROUTER_API_KEY || '').trim();
       if (key) headers['x-quantdeus-openrouter-key'] = key;
