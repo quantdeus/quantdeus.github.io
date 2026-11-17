@@ -48,6 +48,10 @@ jobs:
           gh run list --repo "$GITHUB_REPOSITORY" --limit 40 --json databaseId,workflowName,status,conclusion,createdAt,headSha,url > /tmp/qd-seven/actions.json
           gh api "repos/$GITHUB_REPOSITORY/contributors?per_page=30" > /tmp/qd-seven/contributors.json
       - name: Let Seven choose one priority action
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          QD_OPENROUTER_ONLY: 'true'
+          QD_OPENROUTER_FREE_ONLY: 'true'
         id: seven
         run: |
           node <<'NODE'
