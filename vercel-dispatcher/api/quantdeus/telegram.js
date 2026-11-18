@@ -1458,6 +1458,15 @@ async function homunculusReply(message, retryUpdate = null) {
     if (researchRequired && research?.ok) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n${groundedResearchFallback(research)}`;
     }
+    // If language generation fails, status queries still have a verified GitHub snapshot.
+    // Do not invent analysis or lose the useful read-only evidence.
+    if (statusRequest && repositoryGrounding?.main?.sha) {
+      console.warn('[telegram-llm] fallback=verified-repository-snapshot reason=provider-unavailable');
+      const verified = repositoryStatusEvidenceBlock(repositoryGrounding)
+        .replace('See the coordinator analysis below; statements not directly represented by the VERIFIED lines remain inference.',
+          'Анализ ИИ временно недоступен; дополнительных выводов нет.');
+      return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n⚠️ ИИ-маршрут временно недоступен. Ниже проверенный снимок GitHub:\n${verified}`.slice(0, 3900);
+    }
     const retryDispatched = retryUpdate ? await dispatchTelegramRetry(retryUpdate) : false;
     if (retryDispatched) {
       return `${agent.emoji || '🤖'} ${agent.name || agent.id}\n🛰️ Основной LLM-маршрут перегружен. Запрос передан в резервный GitHub retry lane; ответ придёт отдельным сообщением.`;

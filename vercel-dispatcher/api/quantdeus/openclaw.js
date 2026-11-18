@@ -5,6 +5,7 @@ import { cleanupOfficeRequest, runOfficeAgent, ensureOfficeWindow } from '../../
 import { publicReadMcpSource } from '../../lib/public-read-mcp-source.js';
 import bingxVstMcpHandler from '../../lib/bingx-vst-mcp-handler.js';
 import { freeOnlyBridge } from '../../lib/openrouter-free-bridge.js';
+import { selectReadyFastRoutes, markFastRouteFailure, nextFastRouteRetrySeconds } from '../../lib/fast-chat-route-health.js';
 import {
   getBalance as getBingxVstBalance,
   getPositions as getBingxVstPositions,
@@ -968,15 +969,18 @@ export default async function handler(req, res) {
     // Mutation authority never comes from model text or tool output.
     if (vercelInternal || !trustedOffice) {
       const FAST_CHAT_TOTAL_BUDGET_MS = 26000;
-      const FAST_CHAT_ATTEMPT_MS = 12000;
-      const fastRoutes = healthyRefs
-        .slice(0, 2)
-        .map(ref => probeCandidates.find(candidate => candidate.ref === ref))
-        .filter(Boolean);
+      const FAST_CHAT_ATTEMPT_MS = 9000;
+      // Do not retry a known rate-limited/empty provider on every Telegram update.
+      // Try up to four distinct healthy routes; no implicit paid fallback is added.
+      const fastRoutes = selectReadyFastRoutes(healthyRefs, probeCandidates, { maxRoutes: 4 });
       if (!fastRoutes.length) {
-        return res.status(503).json({ ok: false, error: 'openclaw_internal_model_missing' });
+        const retryAfterSeconds = nextFastRouteRetrySeconds(healthyRefs);
+        res.setHeader('Retry-After', String(retryAfterSeconds));
+        return res.status(429).json({
+          ok: false, error: 'openclaw_internal_providers_cooling_down',
+          retry_after_seconds: retryAfterSeconds
+        });
       }
-      if (fastRoutes.length === 1) fastRoutes.push(fastRoutes[0]);
 
       const publicReadTools = [
         {
@@ -1126,9 +1130,13 @@ export default async function handler(req, res) {
             messages: baseMessages,
             temperature: 0.2,
             max_tokens: 1000,
-            tools: publicReadTools,
-            tool_choice: 'auto'
+            // Pollinations has intermittently returned empty/malformed tool turns.
+            // Use a plain text completion on this last-resort route.
+            ...(selected.ref.startsWith('quantdeus-pollinations/')
+              ? {}
+              : { tools: publicReadTools, tool_choice: 'auto' })
           }, firstTimeoutMs);
+          let lastStatus = first.response.status;
 
           const firstMessage = first.data?.choices?.[0]?.message || {};
           const calls = Array.isArray(firstMessage?.tool_calls) ? firstMessage.tool_calls.slice(0, 2) : [];
@@ -1171,6 +1179,7 @@ export default async function handler(req, res) {
                 tools: publicReadTools,
                 tool_choice: 'none'
               }, Math.min(FAST_CHAT_ATTEMPT_MS, Math.max(1000, followRemaining)));
+              if (!second.response.ok) lastStatus = second.response.status;
               const secondText = typeof second.data?.choices?.[0]?.message?.content === 'string'
                 ? second.data.choices[0].message.content.trim()
                 : '';
@@ -1193,6 +1202,7 @@ export default async function handler(req, res) {
                 temperature: 0.2,
                 max_tokens: 1000
               }, Math.min(FAST_CHAT_ATTEMPT_MS, Math.max(1500, finalRemaining)));
+              if (!finalOnly.response.ok) lastStatus = finalOnly.response.status;
               const finalText = typeof finalOnly.data?.choices?.[0]?.message?.content === 'string'
                 ? finalOnly.data.choices[0].message.content.trim()
                 : '';
@@ -1229,9 +1239,11 @@ export default async function handler(req, res) {
               attempts
             });
           }
-          console.warn('[openclaw-internal-fast] provider=' + selected.ref + ' attempt=' + attempts + ' status=' + first.response.status + ' empty=' + !output);
+          const cooldownSeconds = markFastRouteFailure(selected.ref, lastStatus, first.response.headers?.get('retry-after'));
+          console.warn('[openclaw-internal-fast] provider=' + selected.ref + ' attempt=' + attempts + ' status=' + lastStatus + ' empty=' + !output + ' cooldown_seconds=' + cooldownSeconds);
         } catch (error) {
-          console.warn('[openclaw-internal-fast] provider=' + selected.ref + ' attempt=' + attempts + ' error=' + String(error?.message || error).slice(0, 300));
+          const cooldownSeconds = markFastRouteFailure(selected.ref, 503);
+          console.warn('[openclaw-internal-fast] provider=' + selected.ref + ' attempt=' + attempts + ' error=' + String(error?.message || error).slice(0, 300) + ' cooldown_seconds=' + cooldownSeconds);
         }
       }
       return res.status(502).json({ ok: false, error: 'openclaw_internal_chat_failed', attempts });

@@ -1,0 +1,30 @@
+name: Telegram LLM failover QA
+on:
+  push:
+    branches:
+      - fix/telegram-openclaw-fallback-20261118
+  pull_request:
+    paths:
+      - 'vercel-dispatcher/api/quantdeus/openclaw.js'
+      - 'vercel-dispatcher/api/quantdeus/telegram.js'
+      - 'vercel-dispatcher/lib/fast-chat-route-health.js'
+      - 'vercel-dispatcher/tests/fast-chat-route-health.test.mjs'
+      - '.github/workflows/fast-chat-failover-qa.yml'
+permissions:
+  contents: read
+jobs:
+  fast-chat-failover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Parse Vercel endpoints
+        run: |
+          node --check vercel-dispatcher/api/quantdeus/openclaw.js
+          node --check vercel-dispatcher/api/quantdeus/telegram.js
+          node --check vercel-dispatcher/lib/fast-chat-route-health.js
+      - name: Run isolated failover tests
+        run: node --test vercel-dispatcher/tests/fast-chat-route-health.test.mjs
