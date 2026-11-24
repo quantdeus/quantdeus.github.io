@@ -91,7 +91,7 @@
   ],
   "charter": {
     "doctrine_version": "2026.10-neon-horizon-v4",
-    "manifesto": "Неоновый горизонт v3.0 + Эпидемия Добра",
+    "manifesto": "Неоновый горизонт v4.0 + Эпидемия Добра",
     "motto": "Единство в цели. Свобода в путях. Доказательства в результатах.",
     "eight_pillars": [
       "human-life-and-dignity-first",
@@ -124,6 +124,7 @@
       "frutiger_aero": "дневной экологический постдефицитный слой",
       "rule": "aesthetics support culture and participation; evidence remains independent"
     },
-    "manifest_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf"
+    "manifest_archive": "Dropbox /quantdeus/QuantDeus_Manifest_Neon_Horizon_v4.0.pdf",
+    "economic_policy": "coordination/civilization-doctrine.json#win_win_economy"
   }
 }

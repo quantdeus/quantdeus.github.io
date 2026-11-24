@@ -48,6 +48,12 @@ check((doctrine.federation_of_nodes?.interface_v1?.fields||[]).includes('EXIT'),
 check(Boolean(doctrine.kpis?.Federation_Score),'doctrine','Federation Score KPI declared');
 check(Boolean(doctrine.kpis?.Replication_Success),'doctrine','Replication Success KPI declared');
 check((doctrine.future_fund?.instruments||[]).length>=4,'doctrine','Future Fund instruments declared');
+const w=doctrine.win_win_economy||{};
+check(w.canonical_manifest==='neon-horizon-v4','doctrine','Win-Win policy targets constitutional v4');
+check(['participants','creators_and_partners','quantdeus_platform'].every(k=>Boolean(w.stakeholder_value?.[k])),'doctrine','Win-Win identifies three stakeholder gains');
+check((w.decision_states||[]).includes('UNKNOWN'),'doctrine','Win-Win cannot silently claim unknown impact as success');
+check((w.mandatory_gates||[]).includes('human-approval-before-production-pricing-payments-mint-or-outreach'),'doctrine','Win-Win preserves approval gate');
+
 check(Boolean(doctrine.cultural_layer?.aesthetics?.synthwave),'doctrine','Synthwave cultural layer declared');
 check(Boolean(doctrine.cultural_layer?.aesthetics?.frutiger_aero),'doctrine','Frutiger Aero cultural layer declared');
 check(doctrine.cultural_layer?.status==='cultural-and-design-layer-not-evidence-source','doctrine','culture cannot substitute for evidence');
