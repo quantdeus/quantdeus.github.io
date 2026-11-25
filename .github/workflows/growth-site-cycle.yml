@@ -3,7 +3,7 @@ run-name: "Развитие сайта и аудитории"
 
 on:
   schedule:
-    - cron: '53 */4 * * *'
+    - cron: '53 8 * * *'
   workflow_dispatch:
     inputs:
       agent_id:
