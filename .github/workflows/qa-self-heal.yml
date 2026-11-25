@@ -6,7 +6,7 @@ on:
     # Site lane: one daily pass, 05:17 MSK.
     - cron: '17 2 * * *'
     # Actions lane: one daily pass, 17:47 MSK.
-    - cron: '47 3-23/6 * * *'
+    - cron: '47 14 * * *'
   workflow_dispatch:
     inputs:
       lane:
