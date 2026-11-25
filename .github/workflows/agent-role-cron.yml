@@ -3,7 +3,7 @@ run-name: "Задачи агентов по расписанию"
 
 on:
   schedule:
-    - cron: '23 0,3,6,9,12,15,18,21 * * *'
+    - cron: '23 0-15 * * *'
   workflow_dispatch:
     inputs:
       agent_id:
