@@ -4,7 +4,7 @@ run-name: "Поиск и исправление ошибок"
 on:
   schedule:
     # Site lane: one daily pass, 05:17 MSK.
-    - cron: '17 */6 * * *'
+    - cron: '17 2 * * *'
     # Actions lane: one daily pass, 17:47 MSK.
     - cron: '47 3-23/6 * * *'
   workflow_dispatch:
