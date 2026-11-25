@@ -91,14 +91,14 @@ jobs:
                 retryTransient: true,
                 messages: [{
                   role: 'user',
-                  content: 'Read-only regression smoke. Use only github__get_file_contents, exactly once, to read README.md from owner quantdeus and repo quantdeus.github.io on main. Do not call any other tool, do not call Playwright, and do not mutate GitHub. After the tool returns, reply exactly OPENCLAW_GITHUB_MCP_OK.'
+                  content: 'Read-only sequential tool-call regression smoke. First call github__get_file_contents exactly once to read README.md from owner quantdeus and repo quantdeus.github.io on main. After its tool result, call github__list_branches exactly once for owner quantdeus and repo quantdeus.github.io. Do not call any other tool, do not call Playwright, and do not mutate GitHub. After both tool results, reply exactly OPENCLAW_GITHUB_MCP_OK.'
                 }],
                 metadata: { source: 'openclaw-admin-smoke', phase: 'github', repository: process.env.GITHUB_REPOSITORY, regression_attempt: attempt }
               });
               if (result.runtime !== 'openclaw-agent-exec-trusted-tools') throw new Error('Unexpected runtime: ' + result.runtime);
               const summary = result.raw?.tool_summary;
-              if (!summary || !Array.isArray(summary.tools) || !summary.tools.includes('github__get_file_contents') || Number(summary.failures || 0) !== 0) {
-                throw new Error('GitHub MCP regression trace missing/failed on pass ' + attempt + ': ' + JSON.stringify(summary));
+              if (!summary || !Array.isArray(summary.tools) || !summary.tools.includes('github__get_file_contents') || !summary.tools.includes('github__list_branches') || Number(summary.failures || 0) !== 0) {
+                throw new Error('GitHub MCP sequential regression trace missing/failed on pass ' + attempt + ': ' + JSON.stringify(summary));
               }
               if (String(result.text || '').trim() !== 'OPENCLAW_GITHUB_MCP_OK') {
                 throw new Error('GitHub MCP regression final response mismatch on pass ' + attempt + ': ' + String(result.text || '').slice(0, 300));
