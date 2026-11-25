@@ -3,7 +3,7 @@ run-name: "Приоритеты Седьмой из Девяти"
 
 on:
   schedule:
-    - cron: '11 */2 * * *'
+    - cron: '11 18 * * *'
   workflow_dispatch:
 
 permissions:
