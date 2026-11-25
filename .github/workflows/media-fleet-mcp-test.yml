@@ -1,0 +1,21 @@
+name: Media Fleet MCP read-only unit tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/media-fleet-mcp.cjs'
+      - 'scripts/qa/media-fleet-mcp.test.cjs'
+      - '.github/workflows/media-fleet-mcp-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Node unit tests (no API credentials)
+        run: node --test scripts/qa/media-fleet-mcp.test.cjs
