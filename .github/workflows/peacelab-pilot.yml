@@ -1,0 +1,29 @@
+name: PeaceLab Pilot Validation
+
+on:
+  pull_request:
+    paths:
+      - 'tools/peacelab/**'
+      - '.github/workflows/peacelab-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read-only-fixture-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax validation
+        run: node --check tools/peacelab/peacelab.js
+      - name: Unit tests
+        run: node --test tools/peacelab/peacelab.test.js
+      - name: Read-only CLI smoke
+        run: |
+          node tools/peacelab/peacelab.js --json > /tmp/peacelab-report.json
+          node -e "const r=require('/tmp/peacelab-report.json'); if(r.scope!=='fictional_training_only'||r.options.filter(x=>x.decision==='candidate_for_dialogue').length!==3) process.exit(1)"

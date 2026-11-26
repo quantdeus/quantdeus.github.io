@@ -1,0 +1,284 @@
+{
+  "schema_version": "qdcm-peacelab-v0.1",
+  "id": "two-shores-001",
+  "title": "Два берега озера Миран — вымышленный конфликт о воде",
+  "fictional": true,
+  "decision_owner": "human_mediator",
+  "objective": "Найти варианты добровольного распределения воды без ущемления базовых потребностей и прав жителей",
+  "context": "Два вымышленных приозёрных сообщества спорят о сезонном распределении воды после засухи. Это учебная симуляция без привязки к реальным государствам или людям.",
+  "stakeholders": [
+    {
+      "id": "north",
+      "name": "Северный берег",
+      "needs": [
+        "питьевая вода",
+        "прозрачный график подачи",
+        "предсказуемость"
+      ]
+    },
+    {
+      "id": "south",
+      "name": "Южный берег",
+      "needs": [
+        "вода для хозяйств",
+        "сохранение рыболовства",
+        "участие в решениях"
+      ]
+    },
+    {
+      "id": "residents",
+      "name": "Общественный совет жителей",
+      "needs": [
+        "безопасность",
+        "недискриминация",
+        "доступ к информации"
+      ]
+    }
+  ],
+  "facts": [
+    {
+      "id": "f1",
+      "text": "В симуляции уровень воды в озере снизился после засухи",
+      "source": "synthetic-fixture"
+    },
+    {
+      "id": "f2",
+      "text": "У сообществ нет общего публичного мониторинга воды",
+      "source": "synthetic-fixture"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "water",
+      "label": "Дефицит воды",
+      "kind": "constraint",
+      "domains": [
+        "ecology",
+        "economics"
+      ],
+      "epistemic_status": "sourced",
+      "evidence": [
+        "synthetic-fixture"
+      ]
+    },
+    {
+      "id": "trust",
+      "label": "Недоверие",
+      "kind": "uncertainty",
+      "domains": [
+        "psychology",
+        "governance"
+      ],
+      "epistemic_status": "hypothesis",
+      "evidence": []
+    },
+    {
+      "id": "safety",
+      "label": "Доступ к безопасной воде",
+      "kind": "need",
+      "domains": [
+        "human_rights",
+        "health"
+      ],
+      "epistemic_status": "sourced",
+      "evidence": [
+        "synthetic-fixture"
+      ]
+    },
+    {
+      "id": "monitor",
+      "label": "Совместные измерения",
+      "kind": "resource",
+      "domains": [
+        "engineering",
+        "governance"
+      ],
+      "epistemic_status": "hypothesis",
+      "evidence": []
+    },
+    {
+      "id": "agreement",
+      "label": "Добровольное соглашение",
+      "kind": "outcome",
+      "domains": [
+        "diplomacy",
+        "governance"
+      ],
+      "epistemic_status": "hypothesis",
+      "evidence": []
+    }
+  ],
+  "edges": [
+    {
+      "from": "water",
+      "to": "safety",
+      "relation": "conflicts_with",
+      "epistemic_status": "sourced"
+    },
+    {
+      "from": "trust",
+      "to": "agreement",
+      "relation": "causes_hypothetically",
+      "epistemic_status": "hypothesis"
+    },
+    {
+      "from": "monitor",
+      "to": "trust",
+      "relation": "mitigates",
+      "epistemic_status": "hypothesis"
+    },
+    {
+      "from": "monitor",
+      "to": "agreement",
+      "relation": "supports",
+      "epistemic_status": "hypothesis"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "h1",
+      "claim": "Публичные измерения снижают недоверие",
+      "falsifier": "После независимых измерений доверие участников не меняется"
+    },
+    {
+      "id": "h2",
+      "claim": "Главное препятствие — не дефицит, а непрозрачные правила",
+      "falsifier": "Даже после согласования прозрачных правил сохраняется объективная нехватка питьевой воды"
+    }
+  ],
+  "uncertainties": [
+    "Нет реальных измерений: все количества в примере условны",
+    "Согласие ни одной стороны пока не получено",
+    "Проверка правовых и инженерных норм в реальном мире не проводилась"
+  ],
+  "rights_guards": [
+    "civilian_safety",
+    "voluntary_consent",
+    "non_discrimination",
+    "no_forced_displacement",
+    "access_to_essentials"
+  ],
+  "options": [
+    {
+      "id": "seasonal",
+      "title": "Сезонные квоты и совместный контроль",
+      "summary": "Опубликовать совместный водный баланс и согласовать гибкие сезонные квоты с обязательным минимумом питьевой воды.",
+      "stakeholders": [
+        "north",
+        "south",
+        "residents"
+      ],
+      "rights": {
+        "civilian_safety": true,
+        "voluntary_consent": true,
+        "non_discrimination": true,
+        "no_forced_displacement": true,
+        "access_to_essentials": true
+      },
+      "safeguards": [
+        "Приоритет питьевой воды",
+        "Независимое измерение и открытая отчётность",
+        "Право пересмотра соглашения"
+      ],
+      "risks": [
+        "Ошибки измерения",
+        "Недоверие к комиссии"
+      ],
+      "metrics": [
+        "Доля дней с доступом к питьевой воде",
+        "Число зафиксированных нарушений квот"
+      ],
+      "reversible": true,
+      "consent_status": "not_obtained"
+    },
+    {
+      "id": "pilot",
+      "title": "30-дневный пилот общего диспетчерского совета",
+      "summary": "Создать временный совместный совет и проверить правила распределения с публичными показаниями датчиков.",
+      "stakeholders": [
+        "north",
+        "south",
+        "residents"
+      ],
+      "rights": {
+        "civilian_safety": true,
+        "voluntary_consent": true,
+        "non_discrimination": true,
+        "no_forced_displacement": true,
+        "access_to_essentials": true
+      },
+      "safeguards": [
+        "Срочная гуманитарная оговорка",
+        "Возможность остановить пилот",
+        "Равное участие представителей"
+      ],
+      "risks": [
+        "Технический сбой датчиков",
+        "Недостаточное представительство"
+      ],
+      "metrics": [
+        "Соблюдение минимального доступа к воде",
+        "Количество рассмотренных жалоб"
+      ],
+      "reversible": true,
+      "consent_status": "not_obtained"
+    },
+    {
+      "id": "mediation",
+      "title": "Добровольный независимый арбитраж",
+      "summary": "Пока стороны ведут переговоры с нейтральными посредниками, сохранить согласованный временный минимум воды.",
+      "stakeholders": [
+        "north",
+        "south",
+        "residents"
+      ],
+      "rights": {
+        "civilian_safety": true,
+        "voluntary_consent": true,
+        "non_discrimination": true,
+        "no_forced_displacement": true,
+        "access_to_essentials": true
+      },
+      "safeguards": [
+        "Публичное описание процедуры",
+        "Свободный выход",
+        "Временное обеспечение основных нужд"
+      ],
+      "risks": [
+        "Затяжные переговоры",
+        "Неравная переговорная сила"
+      ],
+      "metrics": [
+        "Доля принятых совместно процедур",
+        "Число дней до первого согласованного шага"
+      ],
+      "reversible": true,
+      "consent_status": "not_obtained"
+    },
+    {
+      "id": "shutdown",
+      "title": "Одностороннее перекрытие подачи",
+      "summary": "Одна сторона отключает воду другой без её согласия.",
+      "stakeholders": [
+        "north"
+      ],
+      "rights": {
+        "civilian_safety": false,
+        "voluntary_consent": false,
+        "non_discrimination": false,
+        "no_forced_displacement": true,
+        "access_to_essentials": false
+      },
+      "safeguards": [],
+      "risks": [
+        "Гуманитарный ущерб",
+        "Эскалация"
+      ],
+      "metrics": [
+        "Неприемлемо как мирное решение"
+      ],
+      "reversible": false,
+      "consent_status": "not_obtained"
+    }
+  ]
+}
