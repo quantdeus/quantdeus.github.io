@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "release": "prototype-0.1",
+  "baseUrl": "/packs/",
+  "minClientVersion": "0.1.0",
+  "packs": [],
+  "note": "Generated demo has zero downloadable content packs. Add licensed content with sizeBytes and sha256."
+}
