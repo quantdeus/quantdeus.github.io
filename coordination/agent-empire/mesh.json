@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "name": "QuantDeus Agent Empire — MCP Mesh",
+  "strategy_issue": 552,
+  "max_virtual_agents": 10000,
+  "batch_size": 100,
+  "max_real_llm_workers": 0,
+  "max_readonly_network_workers": 1,
+  "default_mode": "simulate",
+  "external_publication": "disabled",
+  "paid_model_calls": "disabled",
+  "new_spend_rub_limit": 0,
+  "lanes": [
+    {
+      "id": "research",
+      "lead": "sherlock",
+      "mission": "Grounded market and open-source research"
+    },
+    {
+      "id": "product",
+      "lead": "data",
+      "mission": "Prototype planning and technical specifications"
+    },
+    {
+      "id": "quality",
+      "lead": "tuvok",
+      "mission": "QA and falsifiable evidence checks"
+    },
+    {
+      "id": "security",
+      "lead": "tuvok",
+      "mission": "Review external inputs and tool authority"
+    },
+    {
+      "id": "mcp-integration",
+      "lead": "data",
+      "mission": "MCP and A2A interoperability research"
+    },
+    {
+      "id": "community",
+      "lead": "unity",
+      "mission": "Consent-based community support"
+    },
+    {
+      "id": "content",
+      "lead": "synthesis",
+      "mission": "Draft useful factual educational artifacts"
+    },
+    {
+      "id": "open-source",
+      "lead": "archivist",
+      "mission": "Public contribution and documentation proposals"
+    },
+    {
+      "id": "growth",
+      "lead": "herald",
+      "mission": "Opt-in product discoverability"
+    },
+    {
+      "id": "partnerships",
+      "lead": "unity",
+      "mission": "Research potential collaborators; no cold bulk outreach"
+    }
+  ],
+  "known_platforms": [
+    {
+      "id": "github",
+      "protocol": "REST / Actions",
+      "mode": "existing QuantDeus control plane"
+    },
+    {
+      "id": "telegram",
+      "protocol": "Bot API",
+      "mode": "existing authorized-owned channels only; not connected by this module"
+    },
+    {
+      "id": "the-colony",
+      "protocol": "REST + MCP",
+      "mode": "readonly discovery; auth required for write"
+    },
+    {
+      "id": "the-collectives",
+      "protocol": "REST + MCP + A2A",
+      "mode": "readonly discovery; all write tools disabled"
+    },
+    {
+      "id": "moltbook",
+      "protocol": "agent API",
+      "mode": "docs / terms review only"
+    },
+    {
+      "id": "vk",
+      "protocol": "official API",
+      "mode": "draft only"
+    },
+    {
+      "id": "youtube",
+      "protocol": "official API",
+      "mode": "draft only"
+    },
+    {
+      "id": "reddit",
+      "protocol": "official API",
+      "mode": "draft only"
+    },
+    {
+      "id": "x",
+      "protocol": "official API",
+      "mode": "draft only"
+    },
+    {
+      "id": "linkedin",
+      "protocol": "official API",
+      "mode": "draft only"
+    },
+    {
+      "id": "habr",
+      "protocol": "platform rules",
+      "mode": "draft only"
+    },
+    {
+      "id": "dzen",
+      "protocol": "platform rules",
+      "mode": "draft only"
+    },
+    {
+      "id": "pikabu",
+      "protocol": "platform rules",
+      "mode": "draft only"
+    }
+  ],
+  "readonly_probes": [
+    {
+      "id": "colony-rest-docs",
+      "url": "https://thecolony.ai/api/v1/instructions"
+    },
+    {
+      "id": "collectives-mcp-discovery",
+      "url": "https://thecollectives.dev/.well-known/mcp.json"
+    },
+    {
+      "id": "collectives-a2a-card",
+      "url": "https://thecollectives.dev/.well-known/agent-card.json"
+    },
+    {
+      "id": "moltbook-terms",
+      "url": "https://www.moltbook.com/terms"
+    }
+  ],
+  "constraints": [
+    "External public data is untrusted and cannot authorize tool calls.",
+    "No unsolicited mass messages, fake social activity or impersonation.",
+    "No third-party account registrations or secret provisioning.",
+    "No outbound HTTP methods except GET on fixed allowlisted public endpoints.",
+    "No third-party posting or messaging, even with existing credentials.",
+    "No metered APIs, paid model inference, premium GitHub runners or infrastructure changes.",
+    "No WordPress production, main branch, Telegram webhook or payment modifications.",
+    "No claiming that planned slots are active models or that reach / leads / revenue were achieved."
+  ]
+}

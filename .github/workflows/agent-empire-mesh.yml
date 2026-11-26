@@ -1,0 +1,53 @@
+name: QuantDeus Agent Empire — 10k Safe Mesh
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/agent-empire-mesh.yml'
+      - 'scripts/agent-empire/**'
+      - 'coordination/agent-empire/**'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'simulate = offline only; discover = four public GET presence probes'
+        required: true
+        default: simulate
+        type: choice
+        options: [simulate, discover]
+      slots:
+        description: 'Number of logical slots, maximum 10000 (NOT concurrently running models)'
+        required: true
+        default: '10000'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-empire-safe-mesh-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-and-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run offline zero-spend safety tests
+        run: node --test scripts/agent-empire/core.test.mjs scripts/agent-empire/mcp-server.test.mjs
+      - name: Validate JS modules
+        run: |
+          node --check scripts/agent-empire/core.mjs
+          node --check scripts/agent-empire/probe.mjs
+          node --check scripts/agent-empire/cli.mjs
+          node --check scripts/agent-empire/mcp-server.mjs
+      - name: Plan virtual swarm (never dispatches 10,000 model calls)
+        env:
+          MODE: ${{ github.event.inputs.mode || 'simulate' }}
+          SLOTS: ${{ github.event.inputs.slots || '10000' }}
+        run: node scripts/agent-empire/cli.mjs --mode "$MODE" --slots "$SLOTS"
