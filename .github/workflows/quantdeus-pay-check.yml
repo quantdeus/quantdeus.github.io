@@ -1,0 +1,62 @@
+name: QuantDeus Pay PHP checks
+
+on:
+  pull_request:
+    paths:
+      - 'wordpress/src/quantdeus-pay/**'
+      - 'tests/quantdeus-pay/**'
+      - '.github/workflows/quantdeus-pay-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantdeus-pay-qa
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Syntax check
+        run: |
+          php --version
+          php -l wordpress/src/quantdeus-pay/quantdeus-pay.php
+          php -l tests/quantdeus-pay/npd-unit.php
+          php -l tests/quantdeus-pay/auto-invoice-flow.php
+      - name: NPD invoice unit tests
+        run: php tests/quantdeus-pay/npd-unit.php
+      - name: Real invoice creation flow (mock bank, no charges)
+        run: |
+          for mode in success bad_nonce no_individual no_terms bot rate_limit; do
+            php tests/quantdeus-pay/auto-invoice-flow.php "$mode"
+          done
+      - name: Guardrail smoke checks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('wordpress/src/quantdeus-pay/quantdeus-pay.php').read_text()
+          must = [
+              "manage_options",
+              "random_bytes(24)",
+              "wp_verify_nonce",
+              "update_post_meta($post->ID, '_qd_pay_state', 'claimed', 'issued')",
+              "show_in_rest'=>false",
+              "post_status'=>'draft'",
+              "no-store",
+              "Referrer-Policy: no-referrer",
+              "+79209869904",
+              "AUTOMATION_PRICE_KOPECKS = 2500000",
+              "qd_pay_individual",
+              "public static function auto_invoice()",
+              "wp_insert_post(["
+          ]
+          for item in must:
+              assert item in source, f"Missing protective control: {item}"
+          print("Static guardrail checks passed; real WordPress integration tests still required.")
+          PY
