@@ -8,6 +8,12 @@ on:
     paths:
       - "truth-glasses-android/**"
       - ".github/workflows/truth-glasses-apk.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "truth-glasses-android/**"
+      - ".github/workflows/truth-glasses-apk.yml"
   workflow_dispatch:
 
 permissions:
