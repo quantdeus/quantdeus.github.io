@@ -115,6 +115,7 @@ jobs:
           test -f wordpress/src/quantdeus-aero/single-qd_forum_thread.php
           find wordpress/src -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check wordpress/src/quantdeus-aero/app.js
+          node --test scripts/qa/forum-archive-snapshot.test.mjs
           test -f vercel-dispatcher/api/quantdeus/github-auth.js
           test -f vercel-dispatcher/api/quantdeus/bot-auth.js
           test -f vercel-dispatcher/lib/github-auth.js
