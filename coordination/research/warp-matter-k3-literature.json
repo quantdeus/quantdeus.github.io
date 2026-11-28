@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "project": "QuantDeus BANANA LAB — Kardashev III research watch",
+    "date": "2026-11-02",
+    "scope": "Existing publications and databases ONLY; no new qBraid jobs, physics calculations, or actual nanofabrication.",
+    "clarification": "Kardashev III denotes galaxy-scale accessible power of a hypothetical civilization, NOT a known category of material or measured FTL effect.",
+    "references": [
+      "https://npl.washington.edu/AV/altvw215.html"
+    ],
+    "classification_terms": [
+      "measured",
+      "theory",
+      "review",
+      "database"
+    ]
+  },
+  "leads": [
+    {
+      "id": "CASIMIR-3D-2025",
+      "title": "Casimir Force Control Enabled by 3D Nanostructures",
+      "year": 2025,
+      "kind": "nanostructure",
+      "evidence_level": "measured",
+      "reference_url": "https://doi.org/10.1021/acs.nanolett.5c01101",
+      "observable": "Casimir force gradient for micro/nanostructured pillars, hollow cylinders, periodic pillar arrays",
+      "geometry_status": "nanostructure shapes reported; atom-by-atom coordinates not verified here",
+      "potential_application": "MEMS/nanoscale force control",
+      "ftl_validation": "none",
+      "manufacturing_status": "research-scale fabrication reported, no reusable production file independently verified"
+    },
+    {
+      "id": "CASIMIR-MEMS-2024",
+      "title": "Casimir Effect in MEMS: Materials, Geometries, and Metrologies—A Review",
+      "year": 2024,
+      "kind": "materials_review",
+      "evidence_level": "review",
+      "reference_url": "https://doi.org/10.3390/ma17143393",
+      "observable": "Literature comparing Casimir attraction and, in some material/fluid configurations, repulsion",
+      "geometry_status": "materials/geometries discussed, no single atomic coordinate structure supplied by this record",
+      "potential_application": "MEMS design; controlling stiction",
+      "ftl_validation": "none",
+      "manufacturing_status": "varies by cited experiment; must inspect primary papers"
+    },
+    {
+      "id": "QSR-CASIMIR-2025",
+      "title": "Nanoscale Casimir Force Softening Originated from Quantum Surface Responses",
+      "year": 2025,
+      "kind": "quantum_surface",
+      "evidence_level": "theory",
+      "reference_url": "https://doi.org/10.1103/PhysRevLett.134.146901",
+      "observable": "Theoretical dependence of nanoscale Casimir force on quantum surface responses and crystal facets",
+      "geometry_status": "specific atomic geometries not extracted",
+      "potential_application": "nanoscale surface-force research",
+      "ftl_validation": "none",
+      "manufacturing_status": "not a verified FTL device or fabrication file"
+    },
+    {
+      "id": "MATERIALS-CLOUD-MC3D",
+      "title": "Materials Cloud MC3D (PBE-v1) structure database",
+      "year": 2026,
+      "kind": "database",
+      "evidence_level": "database",
+      "reference_url": "https://optimade.materialscloud.org/",
+      "observable": "Existing computed/curated crystal structures via OPTIMADE provider",
+      "geometry_status": "atomic cell coordinates available in source database; not yet downloaded or validated per entry",
+      "potential_application": "source of legitimate CIF/atomic geometries for future candidate selection",
+      "ftl_validation": "none",
+      "manufacturing_status": "source crystal coordinates are not manufacturing-ready STL/STEP"
+    },
+    {
+      "id": "MATERIALS-PROJECT",
+      "title": "Materials Project — Structures and Properties",
+      "year": 2026,
+      "kind": "database",
+      "evidence_level": "database",
+      "reference_url": "https://docs.materialsproject.org/methodology/materials-methodology/understanding-structures-and-properties-in-the-materials-project",
+      "observable": "Published computed and curated crystals and materials-property metadata",
+      "geometry_status": "structures present in project API, individual crystal identifiers not retrieved in this pass",
+      "potential_application": "input candidates for dielectric, thermal and electromagnetic design",
+      "ftl_validation": "none",
+      "manufacturing_status": "atomic structure data requires property and experimental validation"
+    },
+    {
+      "id": "FUCHS-2024-SUBLUMINAL",
+      "title": "Constant Velocity Physical Warp Drive Solution",
+      "year": 2024,
+      "kind": "spacetime_metric",
+      "evidence_level": "theory",
+      "reference_url": "https://doi.org/10.1088/1361-6382/ad26aa",
+      "observable": "Theoretical subluminal constant-velocity warp-drive spacetime model",
+      "geometry_status": "mathematical metric, not atom positions or a material",
+      "potential_application": "theoretical relativity and metric modeling",
+      "ftl_validation": "none",
+      "manufacturing_status": "no working warp-drive prototype"
+    }
+  ]
+}
