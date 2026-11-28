@@ -32,11 +32,45 @@ const agent = byId.get(agentId);
 
 function parse(text) {
   const raw = String(text || '').trim();
-  try { return JSON.parse(raw); } catch {}
-  const fence = new RegExp('\\x60\\x60\\x60(?:json)?\\s*([\\s\\S]*?)\\x60\\x60\\x60', 'i');
-  const m = raw.match(fence);
-  if (m) return JSON.parse(m[1].trim());
-  throw new Error('GitHub-native growth response must be strict JSON');
+  const candidates = [raw];
+  const fence = new RegExp('\\x60\\x60\\x60(?:json)?\\s*([\\s\\S]*?)\\x60\\x60\\x60', 'ig');
+  for (const match of raw.matchAll(fence)) candidates.push(match[1].trim());
+
+  // Copilot CLI can print harmless status/prose around its final JSON answer.
+  // Extract balanced JSON objects without evaluating any generated text.
+  for (let start = 0; start < raw.length; start += 1) {
+    if (raw[start] !== '{') continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < raw.length; i += 1) {
+      const ch = raw[i];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === '{') depth += 1;
+      else if (ch === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          candidates.push(raw.slice(start, i + 1));
+          break;
+        }
+      }
+    }
+  }
+
+  for (const candidate of candidates.reverse()) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) &&
+          ['none', 'issue'].includes(parsed.action)) return parsed;
+    } catch {}
+  }
+  throw new Error('GitHub-native growth response did not contain a valid action JSON object');
 }
 
 const prompt = [
