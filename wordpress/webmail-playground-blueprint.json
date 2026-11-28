@@ -1,0 +1,27 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/plugins.php",
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "7.1.2"
+  },
+  "features": {
+    "networking": true
+  },
+  "steps": [
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "wordpress.org/plugins",
+        "slug": "pressedmail"
+      },
+      "options": {
+        "activate": false
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/plugin.php';\n$found=false;\nforeach (get_plugins() as $path=>$meta) {\n  if (strpos($path, 'pressedmail/') === 0) {\n    $found=true;\n    if (is_plugin_active($path)) throw new Exception('PressedMail must stay inactive on SQLite Playground');\n    break;\n  }\n}\nif (!$found) throw new Exception('PressedMail package missing');\nglobal $wpdb;\nif (stripos((string)$wpdb->db_server_info(), 'sqlite') === false) throw new Exception('This smoke expects disposable SQLite WordPress Playground');\necho 'QD_WEBMAIL_PACKAGE_PRESENT_SQLITE_NOT_ACTIVATED';\n"
+    }
+  ]
+}
