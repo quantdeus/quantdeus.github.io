@@ -1,0 +1,87 @@
+name: QuantDeus Replicator 4D - isolated cloud verification
+run-name: "#659 Dirac-4D hosted CPU benchmark and qBraid gateway probe"
+on:
+  push:
+    branches: [research/replicator-4d-20261102]
+    paths:
+      - ".github/workflows/replicator-4d-cloud.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/replicator-4d-cloud.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: replicator-4d-20261102
+  cancel-in-progress: false
+jobs:
+  compute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install benchmark dependency
+        run: python3 -m pip install --disable-pip-version-check numpy
+      - name: Cloud CPU exact and Trotter benchmark
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/replicator-results
+          python3 coordination/research/replicator-4d-baseline.py | tee /tmp/replicator-results/classical-cloud-run.txt
+      - name: Probe qBraid Cloudflare gateway without paid submissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error,datetime
+          base="https://quantdeus-qbraid-mcp.quantdeus-galactic-swarm.workers.dev"
+          out={"probed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"gateway":base,"new_qbraid_job_submitted":False,"new_job_qrn":None,"paths":{}}
+          for path in ("/","/health","/verify","/capabilities"):
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(base+path,method="GET",headers={"User-Agent":"QuantDeus-Replicator-659-Audit/1.0"}),timeout=26) as r:
+                      raw=r.read(25000).decode("utf-8","replace")
+                      try:
+                          data=json.loads(raw)
+                          if isinstance(data,dict):
+                              safe={k:data.get(k) for k in ("verified","billing_disabled","last_checked","status","error","message","gpu_remaining","general_remaining","paths","submit_enabled") if k in data}
+                          else:safe={"payload_type":type(data).__name__}
+                      except Exception:
+                          safe={"text_excerpt":raw[:200]}
+                      out["paths"][path]={"http":r.status,"safe":safe}
+              except urllib.error.HTTPError as e:
+                  out["paths"][path]={"http":e.code,"error":str(e.reason)}
+              except Exception as e:
+                  out["paths"][path]={"error":type(e).__name__+":"+str(e)[:120]}
+          with open("/tmp/replicator-results/gateway-probe.json","w") as f:json.dump(out,f,indent=2)
+          print(json.dumps(out,indent=2))
+          PY
+      - name: Discover read-only qBraid gateway routes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,urllib.error
+          b="https://quantdeus-qbraid-mcp.quantdeus-galactic-swarm.workers.dev"
+          paths=["/jobs","/submit","/run","/quantum","/qbraid","/mcp","/devices","/api/jobs","/quota","/status","/execute","/research","/demo","/demo/submit","/jobs/submit","/submit-job","/quantum/run"]
+          o={}
+          for p in paths:
+              row={}
+              for method in ("GET","OPTIONS"):
+                  try:
+                      with urllib.request.urlopen(urllib.request.Request(b+p,method=method,headers={"Accept":"application/json"}),timeout=4) as resp:
+                          content=resp.read(1000).decode("utf-8","replace")
+                          try:
+                              j=json.loads(content)
+                              schema_keys=list(j)[:15] if isinstance(j,dict) else []
+                          except: schema_keys=[]
+                          row[method]={"http":resp.status,"keys":schema_keys}
+                  except urllib.error.HTTPError as e: row[method]={"http":e.code}
+                  except Exception as e:row[method]={"error":type(e).__name__}
+              o[p]=row
+          with open("/tmp/replicator-results/routes.json","w") as f:json.dump(o,f,indent=2)
+          print(json.dumps(o,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: replicator-659-hosted-benchmark-gateway-probe
+          path: /tmp/replicator-results/
+          retention-days: 14
