@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b3150">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Cosmic LEGO — конструктор путей QuantDeus (черновик)</title>
+  <meta name="description" content="Черновой модульный каталог QuantDeus: свободно выбирайте практики, знания, традиции, культуру и проекты.">
+  <style>
+  :root{color-scheme:light;--ink:#073850;--ink2:#375d70;--edge:#bee5e5;--glass:rgba(255,255,255,.84);--sea:#087ca7;--blue:#075b96;--lime:#33bc9d;--accent:#2f84b9;--shadow:0 10px 36px rgba(20,92,129,.12)}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:linear-gradient(155deg,#b3ebff 0%,#edfffc 42%,#d6f3ee 74%,#acd9ef 100%) fixed}
+  button,input,select{font:inherit}button{cursor:pointer}a{color:#066792}.wrap{max-width:1220px;margin:auto;padding:0 24px}
+  body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 75% -15%,rgba(255,255,255,.97),transparent 40%),radial-gradient(ellipse at 7% 60%,rgba(39,183,217,.22),transparent 48%)}
+  .top{background:rgba(2,44,74,.93);backdrop-filter:blur(16px);color:#fff;border-bottom:1px solid #76cbd1}.top>.wrap{min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{font-weight:850;font-size:1.32rem;letter-spacing:.4px;text-decoration:none;color:#fff}.brand span{color:#77ffe4}.top nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.top nav a{color:#e9fbff;font-size:.88rem;text-decoration:none}.draft{display:inline-flex;gap:6px;align-items:center;border:1px solid #f6eab3;color:#ffe9a1;border-radius:99px;padding:4px 10px;font-size:.72rem;font-weight:700}
+  .hero{padding:60px 0 36px}.hero-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:28px;align-items:stretch}.eyebrow{display:inline-block;font-size:.73rem;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:#15708a}.hero h1{font-size:clamp(2.3rem,5vw,4.35rem);line-height:1.08;letter-spacing:-.045em;margin:14px 0}.hero h1 em{font-style:normal;color:#077caa}.lede{font-size:1.12rem;max-width:760px;color:#375768}.motto{font-weight:800;color:#096c83}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.btn{border:0;border-radius:13px;padding:12px 17px;font-weight:750;transition:transform .15s,box-shadow .15s;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}.btn:hover{transform:translateY(-1px)}.btn:focus-visible,input:focus-visible,select:focus-visible,.chip:focus-visible{outline:3px solid #d4ab00;outline-offset:3px}.primary{background:linear-gradient(145deg,#117ebc,#065982);color:white;box-shadow:0 6px 18px #0c6b993a}.secondary{background:#ecfaff;color:#0d587b;border:1px solid #9ed4dd}.danger{background:#fff9f4;color:#90473a;border:1px solid #ecc6bf}
+  .vessel{background:linear-gradient(150deg,rgba(8,84,138,.96),rgba(9,124,146,.84));border-radius:25px;padding:25px;color:#fff;min-height:260px;box-shadow:var(--shadow);position:relative;overflow:hidden}.vessel:after{content:"✦";position:absolute;right:-2%;bottom:-34%;font-size:17rem;opacity:.08}.vessel .orb{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 35% 25%,#fff,#b3efff 27%,#35a6bd 50%,#103c89 82%);box-shadow:0 0 28px #9feaf2aa;margin:6px 0 22px}.vessel p{color:#e1f7fa}.vessel b{font-size:1.5rem}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:0 0 25px}.stat{padding:18px;border-radius:15px;background:var(--glass);border:1px solid var(--edge);box-shadow:var(--shadow)}.stat strong{font-size:1.6rem;display:block}.stat span{font-size:.85rem;color:var(--ink2)}
+  .workspace{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start;padding-bottom:65px}.panel{background:var(--glass);border:1px solid #c9e4e3;border-radius:22px;padding:24px;box-shadow:var(--shadow);backdrop-filter:blur(12px)}
+  h2{font-size:1.45rem;letter-spacing:-.02em;margin:0 0 10px}h3{margin:0;font-size:1.08rem}p{margin:8px 0 14px}.small{color:var(--ink2);font-size:.86rem}.controls{display:flex;flex-wrap:wrap;gap:10px;margin:17px 0}.controls input,.controls select{min-height:43px;background:#fff;border:1px solid #abd5df;color:var(--ink);border-radius:11px;padding:9px 12px}.controls input{min-width:180px;flex:1}.controls select{max-width:100%}
+  .families{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 20px}.chip{background:#f4fffd;border:1px solid #acdddd;border-radius:99px;padding:6px 12px;color:#19536b;font-size:.82rem}.chip[aria-pressed=true]{background:#096d96;color:#fff;border-color:#096d96}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mod{background:#fff;border:1px solid #c5e1e5;border-radius:17px;padding:17px;display:flex;flex-direction:column;gap:9px;min-width:0}.mod-top{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}.type{background:#e8f8f2;border-radius:7px;padding:3px 8px;color:#15765f;font-size:.71rem;font-weight:700;white-space:nowrap}.mod h3{font-size:1rem}.mod p{color:#436474;margin:0;font-size:.88rem;flex:1}.mod .meta{color:#407f8b;font-size:.75rem}.mod .btn{padding:9px 12px;font-size:.84rem;align-self:flex-start}
+  .builder{position:sticky;top:14px}.selected{list-style:none;padding:0;margin:14px 0;display:grid;gap:8px;max-height:46vh;overflow:auto}.selected li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f4fefd;border:1px solid #cbe9e8;border-radius:11px}.selected span{font-size:.88rem;flex:1}.remove{border:1px solid #c2dbda;background:#fff;color:#7a4950;border-radius:9px;padding:3px 9px}.builder .actions{margin-top:10px}.builder .actions .btn{padding:9px 11px;font-size:.85rem}.notice{font-size:.78rem;border-top:1px solid #d1e7e7;margin-top:18px;padding-top:15px;color:#51717e}.counter{font-weight:700;color:#0d7193}.empty{padding:28px;text-align:center;color:#51717e;background:#f4fffd;border-radius:12px}
+  .footer{border-top:1px solid #9cd2db;padding:22px 0 40px;background:rgba(250,255,255,.7);color:#426b79;font-size:.83rem}.footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  @media(max-width:940px){.workspace{grid-template-columns:1fr}.builder{position:static;order:-1}.hero-grid{grid-template-columns:1fr}.vessel{min-height:210px}.selected{max-height:230px}}
+  @media(max-width:580px){.wrap{padding:0 14px}.hero{padding:36px 0 25px}.top>.wrap{padding-top:10px;padding-bottom:10px}.summary{grid-template-columns:1fr 1fr}.summary .stat:last-child{grid-column:span 2}.cards{grid-template-columns:1fr}.panel{padding:16px}.controls{flex-direction:column}.controls input,.controls select{width:100%}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+  </style>
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="brand" href="/">QUANT<span>DEUS</span> ✦</a><nav aria-label="Главная навигация"><a href="/">Портал</a><a href="../docs/MANIFESTO_MODULAR_FREEDOM_VNEXT_PROPOSAL.md">Манифест (проект)</a><span class="draft">◌ ИЗОЛИРОВАННЫЙ ЧЕРНОВИК</span></nav></div></header>
+<main>
+<section class="hero"><div class="wrap hero-grid"><div><span class="eyebrow">Neon Horizon / Cosmic LEGO v1</span><h1>Собери <em>свой путь</em><br>из множества возможностей</h1><p class="lede"><span class="motto">Единство Бога в многообразии.</span> Ты выбираешь философию, знания, духовные традиции, творчество и технологии. Ничего обязательного. Никакой единой «правильной сборки».</p><div class="actions"><a href="#catalog" class="btn primary">Исследовать модули ↓</a><a href="#my-path" class="btn secondary">Моя сборка 🧩</a></div></div><aside class="vessel" aria-label="Принцип платформы"><div class="orb" aria-hidden="true"></div><b>Единство ≠ единообразие</b><p>Свобода мысли, право сомневаться, менять модули и выходить. Твой маршрут принадлежит тебе.</p><small>Наука • Символы • Практика • Творчество</small></aside></div></section>
+<div class="wrap summary" aria-live="polite"><div class="stat"><strong id="familyCount">12</strong><span>семейств направлений</span></div><div class="stat"><strong id="moduleCount">120</strong><span>стартовых модулей</span></div><div class="stat"><strong id="selectedCount">0</strong><span>в твоей сборке</span></div></div>
+<div class="wrap workspace">
+<section class="panel" id="catalog" aria-labelledby="catalog-heading"><h2 id="catalog-heading">Галактическая библиотека модулей</h2><p class="small">Идеи и практики отличаются по типу знаний: научные темы, традиции, метафоры, навыки и творческие занятия не смешиваются с доказательствами автоматически.</p>
+<div class="controls"><label class="small" for="search">Поиск <input id="search" type="search" placeholder="Например, гнозис, Y2K, ИИ..." autocomplete="off"></label><label class="small" for="typeFilter">Тип содержания <select id="typeFilter"><option value="all">Все виды</option></select></label></div>
+<div class="families" id="families" role="group" aria-label="Фильтр направлений"></div>
+<p class="small" role="status" id="resultsStatus">Загрузка каталога…</p><div class="cards" id="cards"></div>
+</section>
+<aside class="panel builder" id="my-path" aria-labelledby="path-heading"><h2 id="path-heading">🧩 Моя сборка <span class="counter" id="sideCount">0</span></h2><p class="small">Добавляй и удаляй блоки в любом порядке. Мы ничего не отправляем на сервер.</p><ul class="selected" id="selectedList" aria-live="polite"></ul>
+<div class="actions"><button class="btn primary" id="export" type="button">Экспорт JSON ↓</button><button class="btn danger" id="clear" type="button">Очистить</button></div><p class="notice" id="saveStatus">Выбор хранится только в этом браузере. На общем устройстве используй «Очистить». Никаких аккаунтов или платных условий.</p><p class="small">Любой модуль — возможность, а не обязанность. Здесь нет оценки «уровня сознания» и алгоритма выбора веры.</p></aside>
+</div>
+</main>
+<footer class="footer"><div class="wrap"><span>© QuantDeus · Cosmic LEGO · прототип для ревью, не опубликованный продукт</span><span>Единство в цели · Свобода в путях · Доказательства в результатах</span></div></footer>
+<script>
+(() => {
+  'use strict';
+  const KEY='quantdeus-cosmic-lego-selection-v1';
+  const $=id=>document.getElementById(id);
+  const state={catalog:null,category:'all',type:'all',query:'',selected:[]};
+  const persisted=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(_){return []}};
+  const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(state.selected));$('saveStatus').textContent='Выбор сохранён только в этом браузере. Его можно полностью очистить.'}catch(_){$('saveStatus').textContent='Локальное сохранение недоступно; выбор действует только пока открыта страница.'}};
+  const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n};
+  const addButton=(txt,cls,cb)=>{const b=el('button',cls,txt);b.type='button';b.addEventListener('click',cb);return b};
+  function renderFamilies(){
+    const f=$('families');f.replaceChildren();
+    [{key:'all',title:'Все семейства',icon:'🌐'},...state.catalog.families].forEach(family=>{
+      const b=addButton(family.icon+' '+family.title,'chip',()=>{state.category=family.key;renderFamilies();renderCards()});
+      b.setAttribute('aria-pressed',String(state.category===family.key));f.append(b);
+    });
+  }
+  function matches(m){
+    if(state.category!=='all'&&m.family!==state.category)return false;
+    if(state.type!=='all'&&m.type!==state.type)return false;
+    const f=state.catalog.families.find(x=>x.key===m.family);
+    return [m.title,m.first_step,f?.title].join(' ').toLocaleLowerCase('ru').includes(state.query);
+  }
+  function renderCards(){
+    const list=state.catalog.modules.filter(matches);
+    $('resultsStatus').textContent='Найдено модулей: '+list.length+' из '+state.catalog.modules.length;
+    const root=$('cards');root.replaceChildren();if(!list.length){root.append(el('div','empty','Ничего не найдено. Попробуй другой фильтр.'));return}
+    const fragment=document.createDocumentFragment();
+    for(const m of list){
+      const family=state.catalog.families.find(f=>f.key===m.family);
+      const card=el('article','mod');
+      const top=el('div','mod-top');top.append(el('h3','',m.title),el('span','type',state.catalog.types[m.type]||m.type));
+      const step=el('p','',m.first_step);
+      const meta=el('div','meta',(family?.icon||'◌')+' '+(family?.title||''));
+      const chosen=state.selected.includes(m.id);
+      const b=addButton(chosen?'✓ Убрать из сборки':'+ Добавить в сборку','btn '+(chosen?'secondary':'primary'),()=>toggle(m.id));
+      b.setAttribute('aria-pressed',String(chosen));card.append(top,step,meta,b);fragment.append(card);
+    }
+    root.append(fragment);
+  }
+  function renderSelection(){
+    $('selectedCount').textContent=String(state.selected.length);
+    $('sideCount').textContent=String(state.selected.length);
+    const root=$('selectedList');root.replaceChildren();
+    if(!state.selected.length){root.append(el('li','', 'Пока пусто — выбери интересные модули в каталоге.'));return}
+    for(const id of state.selected){
+      const m=state.catalog.modules.find(item=>item.id===id);if(!m)continue;
+      const li=el('li');li.append(el('span','',m.title),addButton('Убрать','remove',()=>toggle(id)));root.append(li);
+    }
+  }
+  function toggle(id){
+    const i=state.selected.indexOf(id);if(i>=0)state.selected.splice(i,1);else state.selected.push(id);
+    store();renderSelection();renderCards();
+  }
+  function download(){
+    const chosen=state.selected.map(id=>state.catalog.modules.find(m=>m.id===id)).filter(Boolean);
+    const payload={format:'quantdeus-cosmic-lego-selection',version:1,created_at:new Date().toISOString(),module_ids:chosen.map(m=>m.id),module_titles:chosen.map(m=>m.title)};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+    const url=URL.createObjectURL(blob);const a=el('a');a.href=url;a.download='quantdeus-my-path.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),250);
+  }
+  async function init(){
+    try{
+      const response=await fetch('./catalog.v1.json',{cache:'no-store'});
+      if(!response.ok)throw Error('HTTP '+response.status);
+      const catalog=await response.json();
+      if(!Array.isArray(catalog.modules)||!Array.isArray(catalog.families))throw Error('bad catalogue');
+      state.catalog=catalog;
+      const valid=new Set(catalog.modules.map(m=>m.id));const restored=persisted();
+      state.selected=Array.isArray(restored)?[...new Set(restored.filter(id=>valid.has(id)))]:[];
+      $('familyCount').textContent=String(catalog.families.length);$('moduleCount').textContent=String(catalog.modules.length);
+      for(const [id,name] of Object.entries(catalog.types||{})){const o=el('option','',name);o.value=id;$('typeFilter').append(o)}
+      $('search').addEventListener('input',e=>{state.query=e.target.value.trim().toLocaleLowerCase('ru');renderCards()});
+      $('typeFilter').addEventListener('change',e=>{state.type=e.target.value;renderCards()});
+      $('clear').addEventListener('click',()=>{state.selected=[];store();renderSelection();renderCards()});
+      $('export').addEventListener('click',download);
+      renderFamilies();renderCards();renderSelection();
+    }catch(err){$('resultsStatus').textContent='Не удалось загрузить каталог. Открой эту страницу через веб-сервер вместе с catalog.v1.json.';$('cards').replaceChildren(el('p','small','Прототип не отправляет запросы к внешним сайтам.'));console.error('Catalog error',err)}
+  }
+  init();
+})();
+</script>
+</body>
+</html>
