@@ -46,4 +46,5 @@ jobs:
           CLOUDFLARE_AI_GATEWAY_TOKEN: ${{ secrets.CLOUDFLARE_AI_GATEWAY_TOKEN }}
           QD_LLM_PROVIDER: auto
           QD_LLM_MODEL: openrouter/free
+          QD_CLOUDFLARE_LLM_BRIDGE: ${{ vars.QD_CLOUDFLARE_LLM_BRIDGE }}
         run: node scripts/site-agent-reply.js

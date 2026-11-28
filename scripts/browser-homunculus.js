@@ -5,7 +5,7 @@ const { getGithubOidcToken } = require('./github-oidc');
 const ISSUE_FILE = process.env.BROWSER_ISSUE_FILE || 'browser-issue.json';
 const RESULT_FILE = process.env.BROWSER_RESULT_FILE || 'browser-result.md';
 const ARTIFACT_DIR = process.env.BROWSER_ARTIFACT_DIR || 'browser-artifacts';
-const LLM_BRIDGE_URL = process.env.QD_BROWSER_LLM_BRIDGE || 'https://quantdeus.vercel.app/api/quantdeus/llm';
+const LLM_BRIDGE_URL = process.env.QD_CLOUDFLARE_LLM_BRIDGE || '';
 const CHAT_MAX_STEPS = Math.max(1, Math.min(12, Number(process.env.QD_BROWSER_CHAT_MAX_STEPS || 8)));
 const ALLOWED_SECRET_KEYS = new Set([
   'QD_BROWSER_EMAIL',
@@ -23,7 +23,7 @@ function writeResult(status, lines) {
     '',
     ...lines,
     '',
-    '_Runtime: GitHub Actions + vercel-labs/agent-browser. Secrets are never written to this report._'
+    '_Runtime: GitHub Actions + agent-browser. Secrets are never written to this report._'
   ].join('\n');
   fs.writeFileSync(RESULT_FILE, body + '\n');
 }
@@ -150,7 +150,8 @@ function parsePlannerDecision(raw) {
 }
 
 async function callPlanner(messages) {
-  const oidc = await getGithubOidcToken('quantdeus-vercel-llm');
+  if (!LLM_BRIDGE_URL) throw new Error('QD_CLOUDFLARE_LLM_BRIDGE_NOT_CONFIGURED');
+  const oidc = await getGithubOidcToken('quantdeus-cloudflare-llm');
   const response = await fetch(LLM_BRIDGE_URL, {
     method: 'POST',
     headers: {
