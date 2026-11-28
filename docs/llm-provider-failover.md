@@ -25,11 +25,11 @@ A configured provider is not considered healthy merely because an API key exists
 | Gemini | `gemini-3.8-flash` | `GEMINI_API_KEY`, optional `GEMINI_MODEL` |
 | NVIDIA NIM | `openai/gpt-oss-120b` | `NVIDIA_API_KEY`, optional `NVIDIA_MODEL` |
 | xAI | `grok-4.7` | `XAI_API_KEY`, optional `XAI_MODEL` |
-| Cloudflare Workers AI | `@cf/zai-org/glm-4.7-flash` | `CLOUDFLARE_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, optional `CLOUDFLARE_MODEL` |
+| Cloudflare Workers AI | `@cf/google/gemma-4-26b-a4b-it` (primary priority 1) | `CLOUDFLARE_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, optional `CLOUDFLARE_MODEL` |
 | OpenRouter | `openrouter/free` | `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL` / `QD_LLM_MODEL` |
 | Pollinations | `openai` | anonymous by default, optional `POLLINATIONS_API_KEY` / `POLLINATIONS_MODEL` |
 
-Only configured keyed routes are added. Pollinations remains the final emergency route and must pass the same capability gate.
+Cloudflare Workers AI Gemma 4 is the preferred configured route (priority 1) and must pass the same capability gate. If it fails the live capability probe, the router may use the next healthy configured provider; this is intentional failover, not a claim that every turn was served by Gemma 4. The Q/Kryon native OpenClaw workflow is configured to use Gemma 4 only and fails closed if its Cloudflare GitHub Actions secrets are missing; it does not silently fall back to Qwen. Pollinations remains the final emergency route and must pass the same capability gate.
 
 The retired Mistral route is intentionally not restored.
 

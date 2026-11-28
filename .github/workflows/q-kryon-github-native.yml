@@ -60,37 +60,32 @@ jobs:
           npm i -g openclaw@latest --allow-scripts=openclaw
           openclaw --version
 
-      - name: Установить Ollama on GitHub runner (local keyless model API)
-        uses: ai-action/setup-ollama@v2
-        with:
-          version: '0.32.15'
-
-      - name: Запустить local LLM service and pull a small open model
-        shell: bash
-        run: |
-          set -euo pipefail
-          ollama serve > "$RUNNER_TEMP/quantdeus-ollama.log" 2>&1 &
-          for i in {1..40}; do
-            if curl --silent --fail http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
-            sleep 2
-          done
-          curl --silent --show-error --fail http://127.0.0.1:11434/api/tags > /dev/null
-          ollama pull qwen2.5:1.5b
-          ollama list
-          test "$(ollama list | grep -c 'qwen2.5:1.5b')" -ge 1
-
-      - name: Register Q + Kryon as isolated OpenClaw agent profiles
+      - name: Configure verified Cloudflare Workers AI Gemma 4 provider
         shell: bash
         env:
-          OLLAMA_API_KEY: ollama-local
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_KEY:-}" || -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+            echo "::error::Gemma 4 migration requires GitHub Actions secrets CLOUDFLARE_API_KEY and CLOUDFLARE_ACCOUNT_ID. No silent fallback to Qwen is allowed."
+            exit 1
+          fi
+          export OPENCLAW_HOME="$RUNNER_TEMP/quantdeus-openclaw"
+          export OPENCLAW_STATE_DIR="$OPENCLAW_HOME/state"
+          openclaw setup --baseline
+          openclaw config set models.providers.quantdeus-gemma4 '{"baseUrl":"https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1","api":"openai-completions","apiKey":"${CLOUDFLARE_API_KEY}","models":[{"id":"@cf/google/gemma-4-26b-a4b-it","name":"Gemma 4 26B A4B IT","contextWindow":1000000,"maxTokens":4096}]}' --strict-json --merge
+          openclaw models list --provider quantdeus-gemma4
+
+      - name: Register Q + Kryon as isolated OpenClaw Gemma 4 profiles
+        shell: bash
+        env:
           AGENT_ID: ${{ inputs.agent_id || 'both' }}
           GITHUB_SCHEDULE: ${{ github.event.schedule }}
         run: |
           set -euo pipefail
           export OPENCLAW_HOME="$RUNNER_TEMP/quantdeus-openclaw"
           export OPENCLAW_STATE_DIR="$OPENCLAW_HOME/state"
-          openclaw setup --baseline
-          openclaw models list --provider ollama
           case "${GITHUB_EVENT_NAME:-}" in
             schedule)
               case "$GITHUB_SCHEDULE" in
@@ -108,15 +103,14 @@ jobs:
           esac
           for id in "${ids[@]}"; do
             node scripts/q-kryon-openclaw.js prepare "$id"
-            openclaw agents add "$id" --workspace "$PWD/artifacts/openclaw-native/$id" --model ollama/qwen2.5:1.5b --non-interactive --json
+            openclaw agents add "$id" --workspace "$PWD/artifacts/openclaw-native/$id" --model 'quantdeus-gemma4/@cf/google/gemma-4-26b-a4b-it' --non-interactive --json
           done
           openclaw agents list --json > artifacts/openclaw-native/registered-agents.json
-          node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync("artifacts/openclaw-native/registered-agents.json"));const t=JSON.stringify(d);for(const id of process.argv.slice(1)){if(!new RegExp("\\b"+id+"\\b").test(t))throw Error("OpenClaw agent absent: "+id)}console.log("REAL_OPENCLAW_PROFILES_REGISTERED",process.argv.slice(1).join(","))' "${ids[@]}"
+          node -e 'const fs=require("fs");const d=JSON.parse(fs.readFileSync("artifacts/openclaw-native/registered-agents.json"));const t=JSON.stringify(d);for(const id of process.argv.slice(1)){if(!new RegExp("\\b"+id+"\\b").test(t))throw Error("OpenClaw agent absent: "+id)}console.log("REAL_OPENCLAW_GEMMA4_PROFILES_REGISTERED",process.argv.slice(1).join(","))' "${ids[@]}"
 
-      - name: Выполнить real OpenClaw model turns (no Vercel)
+      - name: Выполнить real OpenClaw Gemma 4 model turns (no Vercel)
         shell: bash
         env:
-          OLLAMA_API_KEY: ollama-local
           AGENT_ID: ${{ inputs.agent_id || 'both' }}
           GITHUB_SCHEDULE: ${{ github.event.schedule }}
         run: |
@@ -138,8 +132,6 @@ jobs:
                 *) exit 1 ;;
               esac ;;
           esac
-          echo "Using Ollama local API on GitHub Actions; external provider credentials not needed"
-          curl --silent --show-error --fail http://127.0.0.1:11434/api/tags > /dev/null
           for id in "${ids[@]}"; do
             openclaw agent --local --agent "$id" --message "$(cat "artifacts/openclaw-native/$id/TASK.md")" --json > "artifacts/openclaw-native/$id/raw-result.json"
             node scripts/q-kryon-openclaw.js verify "$id"
