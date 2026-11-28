@@ -2,6 +2,14 @@ name: QuantDeus EMH Marketing + QA Stress Test 🩺🐒
 run-name: "Проверка маркетинга и устойчивости"
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'coordination/growth/**'
+      - 'coordination/agents.json'
+      - 'coordination/agent-cron-map.json'
+      - '.github/workflows/emh-marketing-qa-stress.yml'
+      - 'scripts/qa/**'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +24,7 @@ concurrency:
 
 jobs:
   emh-stress:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
